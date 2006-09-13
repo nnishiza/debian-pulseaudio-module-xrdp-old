@@ -1,0 +1,50 @@
+#!/bin/sh -e
+
+DAEMON=/usr/bin/pulseaudio
+PIDFILE=/var/run/pulse/pid 
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+
+test -x $DAEMON || exit 0
+
+PULSEAUDIO_SYSTEM_START=0
+DISALLOW_MODULE_LOADING=1
+test -f /etc/default/pulseaudio && . /etc/default/pulseaudio
+test "$PULSEAUDIO_SYSTEM_START" != "1" && exit 0
+
+pulseaudio_start () {
+	echo -n "Starting PulseAudio Daemon: pulseaudio"
+	start-stop-daemon -x $DAEMON -p $PIDFILE --start -- --system --daemonize --high-priority --log-target=syslog --disallow-module-loading=$DISALLOW_MODULE_LOADING
+	chown pulse:pulse-access /var/run/pulse/.esd_auth
+	chmod 640 /var/run/pulse/.esd_auth
+	chown pulse:pulse-access /var/run/pulse/.pulse-cookie
+	chmod 640 /var/run/pulse/.pulse-cookie
+	echo "."
+}
+
+pulseaudio_stop () {
+	echo -n "Stopping PulseAudio Daemon: pulseaudio"
+	start-stop-daemon -p $PIDFILE --stop || echo -n "... pulseaudio is not running"
+	echo "."
+}
+
+case "$1" in
+	start|stop)
+		pulseaudio_${1}
+		;;
+	restart|reload)
+		pulseaudio_stop
+		pulseaudio_start
+		;;
+	force-stop)
+		pulseaudio_stop
+		killall pulseaudio || true
+		sleep 2
+		killall -9 pulseaudio || true
+		;;
+	*)
+		echo "Usage: /etc/init.d/pulseaudio {start|stop|force-stop|restart|reload}"
+		exit 1
+		;;
+esac
+
+exit 0

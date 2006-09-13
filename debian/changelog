@@ -1,0 +1,29 @@
+pulseaudio (0.9.5-4) unstable; urgency=low
+
+  * rename esdcompat manpage
+  * move client.conf to libpulse0
+  * conflict, replace and provide esound. ESD is dead! Long live PulseAudio!
+  * link esdcompat to esd
+  * add maintainer scripts to create and remove daemon user and groups
+
+ -- CJ van den Berg <cj@vdbonline.com>  Thu, 31 Aug 2006 23:55:26 +0200
+
+pulseaudio (0.9.5-3) unstable; urgency=low
+
+  * fix broken dependencies because of new libpulse0 name
+
+ -- CJ van den Berg <cj@vdbonline.com>  Thu, 31 Aug 2006 16:50:23 +0200
+
+pulseaudio (0.9.5-2) unstable; urgency=low
+
+  * rename library packages
+  * libpulse now suggests pulseaudio
+
+ -- CJ van den Berg <cj@vdbonline.com>  Thu, 31 Aug 2006 15:10:59 +0200
+
+pulseaudio (0.9.5-1) unstable; urgency=low
+
+  * Initial release (Closes: #378626)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Mon, 28 Aug 2006 00:31:10 +0200
+

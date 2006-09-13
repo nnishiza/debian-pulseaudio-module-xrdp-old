@@ -1,0 +1,2 @@
+usr/lib/pulse-*/modules/libavahi-wrap.so
+usr/lib/pulse-*/modules/module-zeroconf-publish.so

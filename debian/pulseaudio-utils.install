@@ -1,0 +1,9 @@
+usr/bin/pabrowse
+usr/bin/pacat
+usr/bin/pacmd
+usr/bin/pactl
+usr/bin/paplay
+usr/bin/parec
+usr/bin/padsp
+usr/bin/pax11publish
+usr/lib/libpulsedsp.so

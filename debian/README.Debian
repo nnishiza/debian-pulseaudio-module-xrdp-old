@@ -1,0 +1,10 @@
+pulseaudio for Debian
+---------------------
+
+The pulseaudio executable is installed suid root. This is the recommended
+configuration as it allows pulseaudio to run with realtime priority. After
+grabbing the realtime capability, pulseaudio drops all other root
+priviledges. Only users in the realtime group are granted realtime
+priviledges in this way.
+
+ -- CJ van den Berg <cj@vdbonline.com>, Mon, 28 Aug 2006 00:31:10 +0200
