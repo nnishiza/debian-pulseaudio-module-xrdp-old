@@ -1,15 +1,16 @@
 This package was debianized by CJ van den Berg <cj@vdbonline.com> on
 Thu, 10 Aug 2006 15:59:43 +0200.
 
-It was downloaded from http://0pointer.de/lennart/projects/pulseaudio/
+It was downloaded from http://pulseaudio.org/wiki/DownloadPulseAudio
 
 Upstream Author: Lennart Poettering <mzihzrgre@0pointer.de>
 
-Copyright: 2004-2006 Lennart Poettering
-Copyright: 1994-2005 Free Software Foundation, Inc.
-Copyright: 1999 Tom Tromey
-Copyright: 2000 Red Hat, Inc.
-Copyright: 2005 Cendio AB.
+Copyright holders:
+    Copyright 2004-2006, Lennart Poettering
+    Copyright 1994-2005, Free Software Foundation, Inc.
+    Copyright 1999, Tom Tromey
+    Copyright 2000, Red Hat, Inc.
+    Copyright 2005, Cendio AB.
 
 License:
 
