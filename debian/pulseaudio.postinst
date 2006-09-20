@@ -27,7 +27,6 @@ case "$1" in
     if ! getent group pulse-rt >/dev/null; then
       addgroup --quiet --system pulse-rt
     fi
-    /etc/init.d/pulseaudio restart
   ;;
   abort-upgrade|abort-remove|abort-deconfigure)
   ;;

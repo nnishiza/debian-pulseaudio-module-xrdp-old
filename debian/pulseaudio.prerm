@@ -1,9 +1,0 @@
-#!/bin/sh -e
-
-if [ "$1" = "remove" ]; then
-    /etc/init.d/pulseaudio stop || true
-fi
-
-#DEBHELPER#
-
-exit 0
