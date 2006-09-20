@@ -1,7 +1,6 @@
 etc/pulse/default.pa
 etc/pulse/daemon.conf
 usr/bin/pulseaudio
-usr/bin/esdcompat
 usr/lib/libpulsecore.so.*
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libauthkey-prop.so
@@ -15,7 +14,6 @@ usr/lib/pulse-*/modules/libpacket.so
 usr/lib/pulse-*/modules/libparseaddr.so
 usr/lib/pulse-*/modules/libpdispatch.so
 usr/lib/pulse-*/modules/libprotocol-cli.so
-usr/lib/pulse-*/modules/libprotocol-esound.so
 usr/lib/pulse-*/modules/libprotocol-http.so
 usr/lib/pulse-*/modules/libprotocol-native.so
 usr/lib/pulse-*/modules/libprotocol-simple.so
@@ -34,10 +32,6 @@ usr/lib/pulse-*/modules/module-cli-protocol-unix.so
 usr/lib/pulse-*/modules/module-cli.so
 usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-detect.so
-usr/lib/pulse-*/modules/module-esound-compat-spawnfd.so
-usr/lib/pulse-*/modules/module-esound-compat-spawnpid.so
-usr/lib/pulse-*/modules/module-esound-protocol-tcp.so
-usr/lib/pulse-*/modules/module-esound-protocol-unix.so
 usr/lib/pulse-*/modules/module-esound-sink.so
 usr/lib/pulse-*/modules/module-http-protocol-tcp.so
 usr/lib/pulse-*/modules/module-http-protocol-unix.so
