@@ -15,7 +15,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}
 Conflicts: esound
 Replaces: esound
 Provides: esound
-Recommends: libpulse0, pulseaudio-module-hal, pulseaudio-module-x11,
+Recommends: pulseaudio-module-hal, pulseaudio-module-x11,
     libasound2-plugins-pulse
 Suggests: pulseaudio-utils, paprefs, pavumeter, pavucontrol, padevchooser,
     paman, libgstreamer-plugins-pulse0.10-0, libao-pulse
