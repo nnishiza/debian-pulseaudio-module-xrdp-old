@@ -1,49 +1,41 @@
 This package was debianized by CJ van den Berg <cj@vdbonline.com> on
 Thu, 10 Aug 2006 15:59:43 +0200.
 
-It was downloaded from http://pulseaudio.org/wiki/DownloadPulseAudio
+ It was downloaded from <http://pulseaudio.org/wiki/DownloadPulseAudio>.
 
-Upstream Author: Lennart Poettering <mzihzrgre@0pointer.de>
+ Upstream Authors
+ ================
 
-Copyright holders:
-    Copyright 2004-2006, Lennart Poettering
-    Copyright 1994-2005, Free Software Foundation, Inc.
-    Copyright 1999, Tom Tromey
-    Copyright 2000, Red Hat, Inc.
-    Copyright 2005, Cendio AB.
+ Lennart Poettering <poettering@users.sourceforge.net>
+ Pierre Ossman <drzeus@drzeus.cx>,
+     through his employer Cendio <http://www.cendio.com/>
 
-License:
+ Licensing
+ =========
 
-    This package is free software; you can redistribute it and/or modify it
-    under the terms of the GNU Lesser General Public License as published by
-    the Free Software Foundation; either version 2 of the License, or (at
-    your option) any later version.
+ The upstream license clarifies pretty well that the sources of pulseaudio are
+ LGPL (please see LGPL license grant below), but that some parts will be
+ effectively GPL since they rely on GPL libraries, quoting the upstream
+ LICENSE:
 
-    This package is distributed in the hope that it will be useful, but
-    WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU Lesser
-    General Public License for more details.
+    """All PulseAudio source files are licensed under the GNU Lesser General
+    Public License. (see file LGPL for details)
 
-    You should have received a copy of the GNU Lesser General Public License
-    along with this package; if not, write to the Free Software Foundation,
-    Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+    However, the server side links to the GPL-only library 'libsamplerate'
+    which practically downgrades the license of the server part to GPL (see
+    file GPL for details), exercising section 3 of the LGPL.
 
-On Debian systems, the complete text of the GNU Lesser General Public
-License can be found in `/usr/share/common-licenses/LGPL'.
+    Hence you should treat the client library ('libpulse') of PulseAudio as
+    being LGPL licensed and the server part ('libpulsecore') as being GPL
+    licensed. Since the PulseAudio daemon and the modules link to
+    'libpulsecore' they are of course also GPL licensed.
 
-Additional licenses and copyrights:
+    -- Lennart Poettering, April 20th, 2006."""
 
-src/pulsecore/g711.h:
-** Copyright (C) 2001 Chris Bagwell
-**
-** Permission to use, copy, modify, and distribute this software and its
-** documentation for any purpose and without fee is hereby granted, provided
-** that the above copyright notice appear in all copies and that both that
-** copyright notice and this permission notice appear in supporting
-** documentation.  This software is provided "as is" without express or
-** implied warranty.
+ However, it should be noted that the file src/pulsecore/g711.c is public
+ domain with the following disclaimer:
 
-src/pulsecore/g711.c:
+"""
  * This source code is a product of Sun Microsystems, Inc. and is provided
  * for unrestricted use.  Users may copy or modify this source code without
  * charge.
@@ -63,10 +55,52 @@ src/pulsecore/g711.c:
  * In no event will Sun Microsystems, Inc. be liable for any lost revenue
  * or profits or other special, indirect and consequential damages, even if
  * Sun has been advised of the possibility of such damages.
- *
- * Sun Microsystems, Inc.
- * 2550 Garcia Avenue
- * Mountain View, California  94043
+"""
 
-The Debian packaging is (C) 2006, CJ van den Berg <cj@vdbonline.com> and is
-licensed under the GPL, see `/usr/share/common-licenses/GPL'.
+ and src/pulsecore/g711.h is Copyright (C) 2001 Chris Bagwell and comes with
+ the following license:
+"""
+** Permission to use, copy, modify, and distribute this software and its
+** documentation for any purpose and without fee is hereby granted, provided
+** that the above copyright notice appear in all copies and that both that
+** copyright notice and this permission notice appear in supporting
+** documentation.  This software is provided "as is" without express or
+** implied warranty.
+"""
+ g711.c and g711.h were copied from sox.
+
+
+ Finally, pulseaudio embeds a copy of GNU libltdl, a system independent dlopen
+ wrapper for GNU libtool, but this isn't used in Debian.
+
+
+ LGPL License grant
+ ==================
+
+    This package is free software; you can redistribute it and/or
+    modify it under the terms of the GNU Lesser General Public
+    License as published by the Free Software Foundation; either
+    version 2 of the License, or (at your option) any later version.
+
+    This package is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+    Lesser General Public License for more details.
+
+    You should have received a copy of the GNU Lesser General Public
+    License along with this package; if not, write to the Free Software
+    Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301 USA
+
+On Debian systems, the complete text of the GNU Lesser General
+Public License can be found in `/usr/share/common-licenses/LGPL'.
+
+
+ Other copyrights
+ ================
+ src/pulsecore/poll.c and poll.h are:
+    Copyright (C)1994,96,97,98,99,2000,2001,2004 Free Software Foundation, Inc.
+    Copyright (C) 2005, Cendio AB.
+ src/pulse/utf8.c is:
+    Copyright (C) 1999 Tom Tromey
+    Copyright (C) 2000 Red Hat, Inc.
+
