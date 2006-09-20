@@ -50,6 +50,10 @@ Package: pulseaudio-utils
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Command line tools for the PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  These tools provide command line access to various features of the
  PulseAudio sound server. Included tools are:
  .
@@ -67,6 +71,10 @@ Package: pulseaudio-module-zeroconf
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Zeroconf module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  This module enables PulseAudio to publish avaliable sinks and sources via
  zeroconf (aka. Avahi, mdns).
  .
@@ -76,6 +84,10 @@ Package: pulseaudio-module-hal
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: HAL device detection module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  This module enables PulseAudio to detect new sound devices dynamically via
  the HAL API.
  .
@@ -85,6 +97,10 @@ Package: pulseaudio-module-jack
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: jackd modules for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  These modules enables PulseAudio to connect to a jackd daemon.
  .
  The modules are called module-jack-sink, module-jack-source.
@@ -93,6 +109,10 @@ Package: pulseaudio-module-lirc
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: lirc module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  This module enables the volume of a PulseAudio sink to be controlled when
  buttons of an infrared remote control are pressed (through LIRC).
  .
@@ -102,6 +122,10 @@ Package: pulseaudio-module-gconf
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: gconf module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  This module enables PulseAudio to store additional configuration in gconf.
  .
  The module is called module-gconf.
@@ -110,6 +134,10 @@ Package: pulseaudio-module-x11
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: X11 module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  This module enables PulseAudio to publish itself as the default sound
  server to the X11 root window automatically upon startup. The is also a
  module to playback a sound file in place of the X11 bell beep.
@@ -121,6 +149,10 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Suggests: pulseaudio
 Description: PulseAudio client libraries
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  Client libraries used by applications that access a PulseAudio sound server
  via PulseAudio's native interface.
 
@@ -128,6 +160,10 @@ Package: libpulse-mainloop-glib0
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: PulseAudio client libraries
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  Client libraries used by applications that access a PulseAudio sound server
  via PulseAudio's native interface.
  .
@@ -137,6 +173,10 @@ Package: libpulse-browse0
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: PulseAudio client libraries
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  Client libraries used by applications that access a PulseAudio sound server
  via PulseAudio's native interface.
  .
@@ -149,5 +189,9 @@ Depends: ${misc:Depends}, libpulse0, libpulse-mainloop-glib0,
     libpulse-browse0, libx11-dev, x11proto-core-dev, libxt-dev,
     libglib2.0-dev, libavahi-client-dev
 Description: PulseAudio client development headers and libraries
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
  Headers and libraries for developing applications that access a PulseAudio
  sound server via PulseAudio's native interface.
