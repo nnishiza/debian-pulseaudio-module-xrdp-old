@@ -57,8 +57,10 @@ install-arch:
 	dh_clean -k -s 
 	dh_installdirs -s
 	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
-	find $(CURDIR)/debian/tmp -name "*.a" | xargs rm
 	find $(CURDIR)/debian/tmp -name "*.la" | xargs rm
+	rm $(CURDIR)/debian/tmp/usr/lib/libpulsecore.so
+	rm $(CURDIR)/debian/tmp/usr/lib/libpulsecore.a
+	rm -R $(CURDIR)/debian/tmp/usr/include/pulsecore
 	dh_install -s --sourcedir=$(CURDIR)/debian/tmp --fail-missing
 
 binary-common:

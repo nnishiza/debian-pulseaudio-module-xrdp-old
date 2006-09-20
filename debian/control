@@ -62,13 +62,6 @@ Description: Command line tools for the PulseAudio sound server
    pax11publish - Store/retrieve PulseAudio default server/sink/source
                   settings in the X11 root window.
 
-Package: pulseaudio-dev
-Architecture: any
-Depends: pulseaudio
-Description: PulseAudio sound server module development files
- Libraries and headers needed to develop extension modules for the
- PulseAudio sound server.
-
 Package: pulseaudio-module-zeroconf
 Architecture: any
 Depends: ${shlibs:Depends}
