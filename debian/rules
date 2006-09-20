@@ -15,7 +15,7 @@ endif
 
 config.status: configure
 	dh_testdir
-	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --sysconfdir=/etc --localstatedir=/var CFLAGS="$(CFLAGS)"
+	./configure --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE) --prefix=/usr --sysconfdir=/etc --localstatedir=/var CFLAGS="$(CFLAGS)" --with-realtime-group=pulse-rt
 
 #Architecture 
 build: build-arch build-indep

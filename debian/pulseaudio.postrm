@@ -8,6 +8,7 @@ if [ "$1" = "purge" ] ; then
         deluser --quiet --system pulse > /dev/null || true
         delgroup --quiet --system pulse > /dev/null || true
         delgroup --quiet --system pulse-access > /dev/null || true
+        delgroup --quiet --system pulse-rt > /dev/null || true
 fi
 
 exit 0
