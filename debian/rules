@@ -20,7 +20,7 @@ else
 	CONFIGURE_FLAGS += --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE)
 endif
 
-config.status: configure
+config.status: patch configure 
 	dh_testdir
 	./configure $(CONFIGURE_FLAGS)
 
@@ -28,7 +28,7 @@ config.status: configure
 build: build-arch build-indep
 
 build-arch: build-arch-stamp
-build-arch-stamp:  config.status
+build-arch-stamp: config.status
 	$(MAKE) 
 	touch $@
 
@@ -36,7 +36,8 @@ build-indep: build-indep-stamp
 build-indep-stamp:  config.status
 	touch $@
 
-clean:
+clean: clean-patched unpatch
+clean-patched:
 	dh_testdir
 	dh_testroot
 	rm -f build-arch-stamp build-indep-stamp #CONFIGURE-STAMP#
@@ -49,6 +50,15 @@ ifneq "$(wildcard /usr/share/misc/config.guess)" ""
 	cp -f /usr/share/misc/config.guess config.guess
 endif
 	dh_clean 
+
+patch: patch-stamp
+patch-stamp:
+	dpatch apply-all
+	touch patch-stamp
+
+unpatch:
+	dpatch deapply-all
+	rm -rf patch-stamp debian/patched
 
 install: install-indep install-arch
 install-indep:

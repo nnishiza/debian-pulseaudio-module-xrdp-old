@@ -2,7 +2,7 @@ Source: pulseaudio
 Section: sound
 Priority: optional
 Maintainer: CJ van den Berg <cj@vdbonline.com>
-Build-Depends: debhelper (>= 5), autotools-dev, m4, libltdl3-dev,
+Build-Depends: debhelper (>= 5), dpatch, autotools-dev, m4, libltdl3-dev,
     liboil-dev, libsamplerate-dev, libsndfile-dev, libx11-dev,
     x11proto-core-dev, libxt-dev, libcap-dev, libasound-dev, libglib2.0-dev,
     libavahi-client-dev, libjack0.100.0-dev, libwrap0-dev,
