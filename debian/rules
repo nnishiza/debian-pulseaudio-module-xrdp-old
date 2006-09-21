@@ -12,7 +12,7 @@ else
 	CFLAGS += -O2
 endif
 
-CONFIGURE_FLAGS = --prefix=/usr --sysconfdir=/etc --localstatedir=/var CFLAGS="$(CFLAGS)" --with-realtime-group=pulse-rt
+CONFIGURE_FLAGS = --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libexecdir=/usr/lib CFLAGS="$(CFLAGS)" --with-realtime-group=pulse-rt
 
 ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
 	CONFIGURE_FLAGS += --build=$(DEB_BUILD_GNU_TYPE)
