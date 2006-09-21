@@ -86,7 +86,7 @@ Description: Zeroconf module for PulseAudio sound server
  WIN32 systems. It is a drop in replacement for the ESD sound server with
  much better latency, mixing/re-sampling quality and overall architecture.
  .
- This module enables PulseAudio to publish avaliable sinks and sources via
+ This module enables PulseAudio to publish available sinks and sources via
  zeroconf (aka. Avahi, mdns).
  .
  The module is called module-zeroconf-publish.
