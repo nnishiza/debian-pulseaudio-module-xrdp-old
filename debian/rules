@@ -20,7 +20,7 @@ else
 	CONFIGURE_FLAGS += --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE)
 endif
 
-config.status: patch configure 
+config.status: patch-stamp configure 
 	dh_testdir
 	./configure $(CONFIGURE_FLAGS)
 
@@ -105,4 +105,4 @@ binary-arch: build-arch install-arch
 	$(MAKE) -f debian/rules DH_OPTIONS=-s binary-common
 
 binary: binary-arch binary-indep
-.PHONY: build clean binary-indep binary-arch binary install install-indep install-arch 
+.PHONY: build clean binary-indep binary-arch binary install install-indep install-arch patch
