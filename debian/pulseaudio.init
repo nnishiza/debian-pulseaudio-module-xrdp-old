@@ -1,4 +1,16 @@
 #!/bin/sh -e
+### BEGIN INIT INFO
+# Provides:          pulseaudio esound
+# Required-Start:    $local_fs $syslog dbus
+# Required-Stop:     $local_fs $syslog dbus
+# Should-Start:      dbus
+# Should-Stop:       dbus
+# Default-Start:     2 3 4 5
+# Default-Stop:      S 0 1 6
+# Short-Description: Start the PulseAudio sound server
+# Description:       System mode startup script for
+#                    the PulseAudio sound server.
+### END INIT INFO
 
 DAEMON=/usr/bin/pulseaudio
 PIDFILE=/var/run/pulse/pid 
@@ -31,7 +43,7 @@ case "$1" in
 	start|stop)
 		pulseaudio_${1}
 		;;
-	restart|reload)
+	restart|reload|force-reload)
 		pulseaudio_stop
 		pulseaudio_start
 		;;
@@ -42,7 +54,7 @@ case "$1" in
 		killall -9 pulseaudio || true
 		;;
 	*)
-		echo "Usage: /etc/init.d/pulseaudio {start|stop|force-stop|restart|reload}"
+		echo "Usage: /etc/init.d/pulseaudio {start|stop|force-stop|restart|reload|force-reload}"
 		exit 1
 		;;
 esac

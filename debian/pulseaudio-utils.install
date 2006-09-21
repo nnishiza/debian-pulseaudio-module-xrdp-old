@@ -7,3 +7,4 @@ usr/bin/parec
 usr/bin/padsp
 usr/bin/pax11publish
 usr/lib/libpulsedsp.so
+usr/share/lintian/overrides/pulseaudio-utils

@@ -78,6 +78,8 @@ install-arch:
 	rm $(CURDIR)/debian/tmp/usr/lib/libpulsecore.so
 	rm $(CURDIR)/debian/tmp/usr/lib/libpulsecore.a
 	rm -R $(CURDIR)/debian/tmp/usr/include/pulsecore
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian
+	cp -a $(CURDIR)/debian/overrides $(CURDIR)/debian/tmp/usr/share/lintian
 	dh_install -s --sourcedir=$(CURDIR)/debian/tmp --fail-missing
 
 binary-common:
@@ -91,9 +93,9 @@ binary-common:
 	dh_strip
 	dh_compress 
 	dh_fixperms --exclude=usr/bin/pulseaudio
-	dh_makeshlibs
+	dh_makeshlibs --exclude=usr/lib/pulse-0.9/modules
 	dh_installdeb
-	dh_shlibdeps --exclude=modules/lib
+	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

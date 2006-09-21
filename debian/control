@@ -11,7 +11,7 @@ Standards-Version: 3.7.2
 
 Package: pulseaudio
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, pulseaudio-module-hal
+Depends: ${shlibs:Depends}, ${misc:Depends}, pulseaudio-module-hal, adduser
 Recommends: pulseaudio-module-x11, libasound2-plugins-pulse
 Suggests: pulseaudio-utils, paprefs, pavumeter, pavucontrol, padevchooser,
     paman, libgstreamer-plugins-pulse0.10-0, libao-pulse,

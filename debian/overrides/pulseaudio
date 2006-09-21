@@ -1,0 +1,5 @@
+pulseaudio: setuid-binary usr/bin/pulseaudio 4755 root/root
+pulseaudio: script-not-executable ./etc/pulse/default.pa
+pulseaudio: description-starts-with-package-name
+pulseaudio: package-name-doesnt-match-sonames libpulsecore2
+pulseaudio: binary-or-shlib-defines-rpath
