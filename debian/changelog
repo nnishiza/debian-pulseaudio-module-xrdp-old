@@ -1,3 +1,10 @@
+pulseaudio (0.9.5-2) unstable; urgency=low
+
+  * Add myself to uploaders
+  * Put libpulse-dev and libpulse0 in the right sections.
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Tue,  3 Oct 2006 15:49:12 +0200
+
 pulseaudio (0.9.5-1) unstable; urgency=low
 
   * Initial release (Closes: #378626)
