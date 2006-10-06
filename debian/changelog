@@ -1,3 +1,12 @@
+pulseaudio (0.9.5-3) unstable; urgency=low
+
+  * Add support for .ifexists configuration directive.
+  * Make default.pa use ifexists when loading optional modules.
+  * Recommend instead of Depend on pulseaudio-module-hal. (Closes: #391232)
+  * Recommend libasound2-plugins instead of -plugins-pulse. (Closes: #391254)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Fri,  6 Oct 2006 01:12:05 +0200
+
 pulseaudio (0.9.5-2) unstable; urgency=low
 
   * Add myself to uploaders

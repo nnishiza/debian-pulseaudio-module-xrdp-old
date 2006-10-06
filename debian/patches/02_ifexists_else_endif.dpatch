@@ -1,0 +1,124 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 02_ifexists_else_endif.dpatch by CJ van den Berg <cj@vdbonline.com>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: add support for .ifexists, .else and .endif meta commands
+
+@DPATCH@
+
+diff -Nru pulseaudio-0.9.5-orig/src/pulsecore/cli-command.c pulseaudio-0.9.5/src/pulsecore/cli-command.c
+--- pulseaudio-0.9.5-orig/src/pulsecore/cli-command.c	2006-08-19 18:25:38.000000000 +0200
++++ pulseaudio-0.9.5/src/pulsecore/cli-command.c	2006-10-06 02:08:00.446876784 +0200
+@@ -28,6 +28,7 @@
+ #include <assert.h>
+ #include <stdlib.h>
+ #include <errno.h>
++#include <unistd.h>
+ 
+ #include <pulse/xmalloc.h>
+ 
+@@ -63,6 +64,13 @@
+ #define INCLUDE_META ".include"
+ #define FAIL_META ".fail"
+ #define NOFAIL_META ".nofail"
++#define IFEXISTS_META ".ifexists"
++#define ELSE_META ".else"
++#define ENDIF_META ".endif"
++
++#define IFSTATE_NONE 0
++#define IFSTATE_TRUE 1
++#define IFSTATE_FALSE 2
+ 
+ /* Prototypes for all available commands */
+ static int pa_cli_command_exit(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, int *fail);
+@@ -953,7 +961,7 @@
+     return 0;
+ }
+ 
+-int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, int *fail) {
++int pa_cli_command_execute_line_stateful(pa_core *c, const char *s, pa_strbuf *buf, int *fail, int *ifstate) {
+     const char *cs;
+     
+     cs = s+strspn(s, whitespace);
+@@ -961,6 +969,25 @@
+     if (*cs == '#' || !*cs)
+         return 0;
+     else if (*cs == '.') {
++        if (!strcmp(cs, ELSE_META)) {
++            if (!ifstate || *ifstate == IFSTATE_NONE) {
++                pa_strbuf_printf(buf, "Meta command %s is not valid in this context\n", cs);
++                return -1;
++            } else if (*ifstate == IFSTATE_TRUE)
++                *ifstate = IFSTATE_FALSE;
++            else
++                *ifstate = IFSTATE_TRUE;
++            return 0;
++        } else if (!strcmp(cs, ENDIF_META)) {
++            if (!ifstate || *ifstate == IFSTATE_NONE) {
++                pa_strbuf_printf(buf, "Meta command %s is not valid in this context\n", cs);
++                return -1;
++            } else
++                *ifstate = IFSTATE_NONE;
++            return 0;
++        }
++        if (ifstate && *ifstate == IFSTATE_FALSE)
++            return 0;
+         if (!strcmp(cs, FAIL_META))
+             *fail = 1;
+         else if (!strcmp(cs, NOFAIL_META))
+@@ -974,6 +1001,21 @@
+ 
+                 if (pa_cli_command_execute_file(c, filename, buf, fail) < 0)
+                     if (*fail) return -1;
++            } else if (l == sizeof(IFEXISTS_META)-1 && !strncmp(cs, IFEXISTS_META, l)) {
++                if (!ifstate) {
++                    pa_strbuf_printf(buf, "Meta command %s is not valid in this context\n", cs);
++                    return -1;
++                } else if (*ifstate != IFSTATE_NONE) {
++                    pa_strbuf_printf(buf, "Nested %s commands not supported\n", cs);
++                    return -1;
++                } else {
++                    const char *filename = cs+l+strspn(cs+l, whitespace);
++
++                    if (access(filename, F_OK) == 0)
++                        *ifstate = IFSTATE_TRUE;
++                    else
++                        *ifstate = IFSTATE_FALSE;
++                }
+             } else {
+                 pa_strbuf_printf(buf, "Invalid meta command: %s\n", cs);
+                 if (*fail) return -1;
+@@ -984,6 +1026,9 @@
+         int unknown = 1;
+         size_t l;
+         
++        if (ifstate && *ifstate == IFSTATE_FALSE)
++            return 0;
++
+         l = strcspn(cs, whitespace);
+ 
+         for (command = commands; command->name; command++) 
+@@ -1011,9 +1056,14 @@
+     return 0;
+ }
+ 
++int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, int *fail) {
++    return pa_cli_command_execute_line_stateful(c, s, buf, fail, NULL);
++}
++
+ int pa_cli_command_execute_file(pa_core *c, const char *fn, pa_strbuf *buf, int *fail) {
+     char line[256];
+     FILE *f = NULL;
++    int ifstate = IFSTATE_NONE;
+     int ret = -1;
+     assert(c && fn && buf);
+ 
+@@ -1028,7 +1078,7 @@
+         char *e = line + strcspn(line, linebreak);
+         *e = 0;
+ 
+-        if (pa_cli_command_execute_line(c, line, buf, fail) < 0 && *fail)
++        if (pa_cli_command_execute_line_stateful(c, line, buf, fail, &ifstate) < 0 && *fail)
+             goto fail;
+     }
+ 
