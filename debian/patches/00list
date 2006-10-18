@@ -1,2 +1,5 @@
 01_use_ifexists_in_default_pa.dpatch
 02_ifexists_else_endif.dpatch
+03_r1352_firefox_workaround.dpatch
+04_r1373_JavaSound_support.dpatch
+05_t28_wrong-endian-convert.dpatch

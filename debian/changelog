@@ -1,3 +1,14 @@
+pulseaudio (0.9.5-4) unstable; urgency=low
+
+  * Add comment about resampling methods and CPU consumption to
+    README.Debian (Closes: #391455)
+  * Patch padsp to work with firefox.
+  * Patch padsp to work with JavaSound.
+  * Patch sconv.c to add additional sample conversions for
+    BE <-> LE network audio.
+
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 18 Oct 2006 23:10:47 +0200
+
 pulseaudio (0.9.5-3) unstable; urgency=low
 
   * Add support for .ifexists configuration directive.
