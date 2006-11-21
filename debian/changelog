@@ -2,10 +2,16 @@ pulseaudio (0.9.5-4) unstable; urgency=low
 
   * Add comment about resampling methods and CPU consumption to
     README.Debian (Closes: #391455)
-  * Patch padsp to work with firefox.
-  * Patch padsp to work with JavaSound.
-  * Patch sconv.c to add additional sample conversions for
-    BE <-> LE network audio.
+  * debian/patches/03_r1352_firefox_workaround.dpatch:
+    + Added. Fix padsp to work with firefox. Patch created from
+      SVN revision 1352.
+  * debian/patches/04_r1373_JavaSound_support.dpatch:
+    + Added. Fix padsp to work with JavaSound. Patch created from
+      SVN revision 1373.
+  * debian/patches/05_t28_wrong-endian-convert.dpatch:
+    + Added. Add additional sample conversions to sconv.c to support
+      BE <-> LE network audio.
+      Patch from http://www.pulseaudio.org/ticket/28
 
  -- CJ van den Berg <cj@vdbonline.com>  Wed, 18 Oct 2006 23:10:47 +0200
 
