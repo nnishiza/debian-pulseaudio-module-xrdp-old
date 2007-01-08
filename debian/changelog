@@ -1,8 +1,10 @@
 pulseaudio (0.9.5-5) unstable; urgency=low
 
   * debian/control: Make Build-deps more specific. (Closes: #401111)
+  * debian/pulseaudio.init: Make sure files in /var/run/pulse exist before
+      calling chown and chmod. (Closes: #405869)
 
- -- CJ van den Berg <cj@vdbonline.com>  Fri,  1 Dec 2006 14:56:17 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Mon,  8 Jan 2007 23:02:53 +0100
 
 pulseaudio (0.9.5-4) unstable; urgency=low
 

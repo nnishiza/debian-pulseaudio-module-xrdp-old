@@ -26,10 +26,14 @@ test "$PULSEAUDIO_SYSTEM_START" != "1" && exit 0
 pulseaudio_start () {
 	echo -n "Starting PulseAudio Daemon: pulseaudio"
 	start-stop-daemon -x $DAEMON -p $PIDFILE --start -- --system --daemonize --high-priority --log-target=syslog --disallow-module-loading=$DISALLOW_MODULE_LOADING
-	chown pulse:pulse-access /var/run/pulse/.esd_auth
-	chmod 640 /var/run/pulse/.esd_auth
-	chown pulse:pulse-access /var/run/pulse/.pulse-cookie
-	chmod 640 /var/run/pulse/.pulse-cookie
+	if [ -e /var/run/pulse/.esd_auth ]; then
+		chown pulse:pulse-access /var/run/pulse/.esd_auth
+		chmod 640 /var/run/pulse/.esd_auth
+	fi
+	if [ -e /var/run/pulse/.pulse-cookie ]; then
+		chown pulse:pulse-access /var/run/pulse/.pulse-cookie
+		chmod 640 /var/run/pulse/.pulse-cookie
+	fi
 	echo "."
 }
 
