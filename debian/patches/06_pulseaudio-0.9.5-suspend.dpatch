@@ -1,0 +1,61 @@
+#! /bin/sh /usr/share/dpatch/dpatch-run
+## 06_pulseaudio-0.9.5-suspend.dpatch.dpatch by <ranma+debianbts@tdiedrich.de>
+##
+## All lines beginning with `## DP:' are a description of the patch.
+## DP: Handle -ESTRPIPE correctly. Allows pulseaudio to survive suspend 
+## DP: operations on ALSA devices (e.g. s2disk).
+
+@DPATCH@
+
+diff -Naru pulseaudio-0.9.5-orig/src/modules/module-alsa-sink.c pulseaudio-0.9.5/src/modules/module-alsa-sink.c
+--- pulseaudio-0.9.5-orig/src/modules/module-alsa-sink.c	2006-08-18 23:38:48.000000000 +0200
++++ pulseaudio-0.9.5/src/modules/module-alsa-sink.c	2007-01-13 21:01:07.000000000 +0100
+@@ -138,6 +138,23 @@
+     return ret;
+ }
+ 
++static int suspend_recovery(struct userdata *u) {
++    int ret;
++    assert(u);
++
++    pa_log_info("*** ALSA-SUSPEND (playback) ***");
++    
++    if ((ret = snd_pcm_prepare(u->pcm_handle)) < 0) {
++        pa_log("snd_pcm_prepare() failed: %s", snd_strerror(-ret));
++
++        clear_up(u);
++        pa_module_unload_request(u->module);
++        return -1;
++    }
++
++    return ret;
++}
++
+ static void do_write(struct userdata *u) {
+     assert(u);
+ 
+@@ -169,6 +186,13 @@
+                 continue;
+             }
+ 
++            if (frames == -ESTRPIPE) {
++                if (suspend_recovery(u) < 0)
++                    return;
++                
++                continue;
++            }
++
+             pa_log("snd_pcm_writei() failed: %s", snd_strerror(-frames));
+ 
+             clear_up(u);
+@@ -200,6 +224,10 @@
+         if (xrun_recovery(u) < 0)
+             return;
+ 
++    if (snd_pcm_state(u->pcm_handle) == SND_PCM_STATE_SUSPENDED)
++        if (suspend_recovery(u) < 0)
++            return;
++
+     do_write(u);
+ }
+ 

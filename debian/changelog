@@ -1,3 +1,12 @@
+pulseaudio (0.9.5-6) unstable; urgency=low
+
+  * debian/patches/06_pulseaudio-0.9.5-suspend.dpatch:
+    + Added. Handle -ESTRPIPE correctly.  Allows pulseaudio to survive suspend
+      operations on ALSA devices (e.g. s2disk). Thanks to Tobias Diedrich.
+      (Closes: #406768)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Mon, 12 Feb 2007 11:24:50 +0100
+
 pulseaudio (0.9.5-5) unstable; urgency=low
 
   * debian/control: Make Build-deps more specific. (Closes: #401111)
