@@ -95,7 +95,7 @@ Description: Zeroconf module for PulseAudio sound server
 
 Package: pulseaudio-module-hal
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, hal
 Description: HAL device detection module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
