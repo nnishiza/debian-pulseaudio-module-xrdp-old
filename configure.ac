@@ -1,0 +1,846 @@
+# -*- Autoconf -*-
+# Process this file with autoconf to produce a configure script.
+
+# $Id: configure.ac 1334 2006-08-26 19:22:14Z lennart $
+
+# This file is part of PulseAudio.
+#
+# PulseAudio is free software; you can redistribute it and/or modify it
+# under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# PulseAudio is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with PulseAudio; if not, write to the Free Software Foundation,
+# Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+
+AC_PREREQ(2.57)
+
+m4_define(PA_MAJOR, [0])
+m4_define(PA_MINOR, [9])
+m4_define(PA_MICRO, [5])
+
+AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzcbylcnhqvb (at) 0pointer (dot) de])
+AC_CONFIG_SRCDIR([src/daemon/main.c])
+AC_CONFIG_HEADERS([config.h])
+AM_INIT_AUTOMAKE([foreign -Wall])
+
+AC_SUBST(PA_MAJORMINOR, "PA_MAJOR.PA_MINOR")
+AC_SUBST(PACKAGE_URL, [http://0pointer.de/lennart/projects/pulseaudio/])
+
+AC_SUBST(PA_API_VERSION, 10)
+AC_SUBST(PA_PROTOCOL_VERSION, 10)
+
+AC_SUBST(LIBPULSE_VERSION_INFO, [1:0:1])
+AC_SUBST(LIBPULSECORE_VERSION_INFO, [2:0:0])
+AC_SUBST(LIBPULSE_SIMPLE_VERSION_INFO, [0:0:0])
+AC_SUBST(LIBPULSE_BROWSE_VERSION_INFO, [1:0:1])
+AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:2:0])
+
+if type -p stow > /dev/null && test -d /usr/local/stow ; then
+   AC_MSG_NOTICE([*** Found /usr/local/stow: default install prefix set to /usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION} ***])
+   ac_default_prefix="/usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION}"
+fi
+
+#### Platform hacks ####
+
+case $host in
+   *-*-solaris* )
+      AC_DEFINE(_XOPEN_SOURCE_EXTENDED, 1, Needed to get declarations for msg_control and msg_controllen on Solaris)
+      AC_DEFINE(_XOPEN_SOURCE,          2, Needed to get declarations for msg_control and msg_controllen on Solaris)
+      AC_DEFINE(__EXTENSIONS__,         1, Needed to get declarations for msg_control and msg_controllen on Solaris)
+      ;;
+esac
+
+#### Checks for programs. ####
+
+# CC
+
+AC_PROG_CC
+AC_PROG_GCC_TRADITIONAL
+AC_GNU_SOURCE
+
+# M4
+
+AC_PATH_PROG([M4], [m4 gm4], [no])
+if test "x$M4" = xno ; then
+   AC_MSG_ERROR([m4 missing])
+fi
+
+# GCC flags
+
+test_gcc_flag() {
+    AC_LANG_CONFTEST([int main() {}])
+    $CC -c conftest.c $CFLAGS $@ > /dev/null 2> /dev/null
+    ret=$?
+    rm -f conftest.o
+    return $ret
+}
+
+# If using GCC specify some additional parameters
+if test "x$GCC" = "xyes" ; then
+
+    # We use gnu99 instead of c99 because many have interpreted the standard
+    # in a way that int64_t isn't defined on non-64 bit platforms.
+    DESIRED_FLAGS="-std=gnu99 -Wall -W -Wextra -pedantic -pipe -Wformat -Wold-style-definition -Wdeclaration-after-statement -Wfloat-equal -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-noreturn -Wshadow -Wendif-labels -Wpointer-arith -Wcast-align -Wwrite-strings -Winline -Wno-unused-parameter"
+
+    for flag in $DESIRED_FLAGS ; do
+        AC_MSG_CHECKING([whether $CC accepts $flag])
+        if test_gcc_flag $flag ; then 
+           CFLAGS="$CFLAGS $flag"
+           AC_MSG_RESULT([yes])
+        else
+           AC_MSG_RESULT([no])
+        fi
+    done 
+fi
+
+#### libtool stuff ####
+
+AC_LTDL_ENABLE_INSTALL
+AC_LIBLTDL_INSTALLABLE
+AC_SUBST(LTDLINCL)
+AC_SUBST(LIBLTDL)
+AC_LIBTOOL_DLOPEN
+AC_LIBTOOL_WIN32_DLL
+AC_PROG_LIBTOOL
+AC_CONFIG_SUBDIRS(libltdl)
+
+if test "x$enable_ltdl_install" = "xno" && test "x$ac_cv_lib_ltdl_lt_dlinit" = "xno" ; then
+    AC_MSG_ERROR([[
+
+        *** Cannot find the libltdl development files.
+        *** Maybe you need to install the libltdl-dev package.
+        ]])
+fi
+
+#### Determine build environment ####
+
+os_is_win32=0
+
+case "$host_os" in
+	mingw*)
+        AC_DEFINE([OS_IS_WIN32], 1, [Build target is Windows.])
+        os_is_win32=1
+		;;
+	esac
+
+AM_CONDITIONAL(OS_IS_WIN32, test "x$os_is_win32" = "x1")
+
+###################################
+#   Basic environment checks      #
+###################################
+
+#### Checks for header files. ####
+
+# ISO
+AC_HEADER_STDC
+
+# POSIX
+AC_CHECK_HEADERS([arpa/inet.h glob.h grp.h netdb.h netinet/in.h \
+    netinet/in_systm.h netinet/ip.h netinet/tcp.h pwd.h sched.h \
+    sys/mman.h sys/resource.h sys/select.h sys/socket.h sys/wait.h \
+    syslog.h])
+AC_CHECK_HEADERS([regex.h], [HAVE_REGEX=1], [HAVE_REGEX=0])
+AC_CHECK_HEADERS([sys/un.h], [HAVE_AF_UNIX=1], [HAVE_AF_UNIX=0])
+
+AM_CONDITIONAL(HAVE_REGEX, test "x$HAVE_REGEX" = "x1")
+AM_CONDITIONAL(HAVE_AF_UNIX, test "x$HAVE_AF_UNIX" = "x1")
+
+# XPG4-UNIX
+AC_CHECK_HEADERS([sys/poll.h])
+
+# Linux
+AC_CHECK_HEADERS([linux/input.h], [HAVE_EVDEV=1], [HAVE_EVDEV=0])
+
+AM_CONDITIONAL([HAVE_EVDEV], [test "x$HAVE_EVDEV" = "x1"])
+
+AC_CHECK_HEADERS([sys/prctl.h])
+
+# Solaris
+AC_CHECK_HEADERS([sys/filio.h])
+
+# Windows
+AC_CHECK_HEADERS([windows.h winsock2.h ws2tcpip.h])
+
+# Other
+AC_CHECK_HEADERS([sys/ioctl.h])
+
+#### Typdefs, structures, etc. ####
+
+AC_C_CONST
+AC_C_BIGENDIAN
+AC_TYPE_PID_T
+AC_TYPE_SIZE_T
+AC_CHECK_TYPES(ssize_t, , [AC_DEFINE([ssize_t], [signed long],
+    [Define ssize_t if it is not done by the standard libs.])])
+AC_TYPE_OFF_T
+AC_TYPE_SIGNAL
+AC_TYPE_UID_T
+
+AC_CHECK_DEFINE([SIGXCPU], [signal.h], [
+HAVE_SIGXCPU=1
+AC_DEFINE([HAVE_SIGXCPU], 1, [Have SIGXCPU?])
+], [HAVE_SIGXCPU=0])
+AM_CONDITIONAL(HAVE_SIGXCPU, test "x$HAVE_SIGXCPU" = "x1")
+
+# Solaris lacks this
+AC_CHECK_DEFINE([INADDR_NONE], [netinet/in.h], [],
+    [AC_CHECK_DEFINE([INADDR_NONE], [winsock2.h], [],
+        [AC_DEFINE([INADDR_NONE],  [0xffffffff], [Define INADDR_NONE if not found in <netinet/in.h>])])])
+
+#### Check for libs ####
+
+# ISO
+AC_SEARCH_LIBS([pow], [m])
+
+# POSIX
+AC_SEARCH_LIBS([sched_setscheduler], [rt])
+AC_SEARCH_LIBS([dlopen], [dl])
+AC_SEARCH_LIBS([shm_open], [rt])
+
+# BSD
+AC_SEARCH_LIBS([connect], [socket])
+
+# Non-standard
+
+# This magic is needed so we do not needlessly add static libs to the win32
+# build, disabling its ability to make dlls.
+AC_CHECK_FUNCS([getopt_long], [], [AC_CHECK_LIB([iberty], [getopt_long])])
+
+#### Check for functions ####
+
+# POSIX
+AC_FUNC_FORK
+AC_FUNC_GETGROUPS
+AC_FUNC_SELECT_ARGTYPES
+AC_CHECK_FUNCS([chmod chown getaddrinfo getgrgid_r getpwuid_r gettimeofday \
+    getuid inet_ntop inet_pton nanosleep pipe posix_memalign setpgid setsid \
+    shm_open sigaction sleep sysconf])
+AC_CHECK_FUNCS([mkfifo], [HAVE_MKFIFO=1], [HAVE_MKFIFO=0])
+
+AM_CONDITIONAL(HAVE_MKFIFO, test "x$HAVE_MKFIFO" = "x1")
+
+# X/OPEN
+AC_CHECK_FUNCS([readlink])
+
+# SUSv2
+AC_CHECK_FUNCS([ctime_r usleep])
+
+# SUSv3
+AC_CHECK_FUNCS([strerror_r])
+
+# BSD
+AC_CHECK_FUNCS([lstat])
+
+# Non-standard
+
+AC_CHECK_FUNCS([setresuid setresgid setreuid setregid seteuid setegid])
+
+#### POSIX threads ####
+
+ACX_PTHREAD
+
+#### Large File-Support (LFS) ####
+
+AC_SYS_LARGEFILE
+
+# Check for open64 to know if the current system does have open64() and similar functions
+AC_CHECK_FUNCS([open64])
+
+#### [lib]iconv ####
+
+AM_ICONV
+
+###################################
+#      External libraries         #
+###################################
+
+#### X11 (optional) ####
+
+HAVE_X11=0
+
+# The macro tests the host, not the build target
+if test "x$os_is_win32" != "x1" ; then
+    AC_PATH_XTRA
+    test "x$no_x" != "xyes" && HAVE_X11=1
+fi
+
+AC_SUBST(HAVE_X11)
+AM_CONDITIONAL(HAVE_X11, test "x$HAVE_X11" = "x1")
+if test "x$HAVE_X11" = "x1" ; then
+    AC_DEFINE([HAVE_X11], 1, [Have X11])
+fi
+
+#### Capabilities (optional) ####
+
+CAP_LIBS=''
+
+AC_ARG_WITH(
+        [caps],
+        AC_HELP_STRING([--without-caps],[Omit support for POSIX capabilities.]))
+
+if test "x${with_caps}" != "xno"; then
+    AC_SEARCH_LIBS([cap_init], [cap], [], [
+                    if test "x${with_caps}" = "xyes" ; then
+                        AC_MSG_ERROR([*** POSIX caps libraries not found])
+                    fi])
+    AC_CHECK_HEADERS([sys/capability.h], [], [
+                    if test "x${with_caps}" = "xyes" ; then
+                        AC_MSG_ERROR([*** POSIX caps headers not found])
+                    fi])
+fi
+
+#### pkg-config ####
+
+# Check for pkg-config manually first, as if its not installed the
+# PKG_PROG_PKG_CONFIG macro won't be defined.
+AC_CHECK_PROG(have_pkg_config, pkg-config, yes, no)
+
+if test x"$have_pkg_config" = "xno"; then
+    AC_MSG_ERROR(pkg-config is required to install this program)
+fi
+
+PKG_PROG_PKG_CONFIG
+
+#### Sample rate conversion ####
+
+PKG_CHECK_MODULES(LIBSAMPLERATE, [ samplerate >= 0.1.0 ])
+AC_SUBST(LIBSAMPLERATE_CFLAGS)
+AC_SUBST(LIBSAMPLERATE_LIBS)
+
+#### Sound file ####
+
+PKG_CHECK_MODULES(LIBSNDFILE, [ sndfile >= 1.0.10 ])
+AC_SUBST(LIBSNDFILE_CFLAGS)
+AC_SUBST(LIBSNDFILE_LIBS)
+
+#### OSS support (optional) ####
+
+AC_ARG_ENABLE([oss], 
+    AC_HELP_STRING([--disable-oss], [Disable optional OSS support]), 
+        [
+            case "${enableval}" in
+                yes) oss=yes ;;
+                no) oss=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-oss) ;;
+            esac
+        ],
+        [oss=auto])
+
+if test "x${oss}" != xno ; then
+    AC_CHECK_HEADERS([sys/soundcard.h],
+        [
+            HAVE_OSS=1
+            AC_DEFINE([HAVE_OSS], 1, [Have OSS?])
+        ],
+        [
+            HAVE_OSS=0
+            if test "x$oss" = xyes ; then
+                AC_MSG_ERROR([*** OSS support not found])
+            fi
+        ])
+else
+    HAVE_OSS=0
+fi
+
+AC_SUBST(HAVE_OSS)
+AM_CONDITIONAL([HAVE_OSS], [test "x$HAVE_OSS" = x1])
+
+
+#### ALSA support (optional) ####
+
+AC_ARG_ENABLE([alsa], 
+    AC_HELP_STRING([--disable-alsa], [Disable optional ALSA support]), 
+        [
+            case "${enableval}" in
+                yes) alsa=yes ;;
+                no) alsa=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-alsa) ;;
+            esac
+        ],
+        [alsa=auto])
+
+if test "x${alsa}" != xno ; then
+    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.0 ],
+        [
+            HAVE_ALSA=1
+            AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?])
+        ],
+        [
+            HAVE_ALSA=0
+            if test "x$alsa" = xyes ; then
+                AC_MSG_ERROR([*** ALSA support not found])
+            fi
+        ])
+else
+    HAVE_ALSA=0
+fi
+
+AC_SUBST(ASOUNDLIB_CFLAGS)
+AC_SUBST(ASOUNDLIB_LIBS) 
+AC_SUBST(HAVE_ALSA)
+AM_CONDITIONAL([HAVE_ALSA], [test "x$HAVE_ALSA" = x1])
+
+#### Solaris audio support (optional) ####
+
+AC_ARG_ENABLE([solaris], 
+    AC_HELP_STRING([--disable-solaris], [Disable optional Solaris audio support]), 
+        [
+            case "${enableval}" in
+                yes) solaris=yes ;;
+                no) solaris=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-solaris) ;;
+            esac
+        ],
+        [solaris=auto])
+
+if test "x${solaris}" != xno ; then
+    AC_CHECK_HEADERS([sys/audio.h],
+        [
+            HAVE_SOLARIS=1
+            AC_DEFINE([HAVE_SOLARIS], 1, [Have Solaris audio?])
+        ],
+        [
+            HAVE_SOLARIS=0
+            if test "x$solaris" = xyes ; then
+                AC_MSG_ERROR([*** Solaris audio support not found])
+            fi
+        ])
+else
+    HAVE_SOLARIS=0
+fi
+
+AC_SUBST(HAVE_SOLARIS)
+AM_CONDITIONAL([HAVE_SOLARIS], [test "x$HAVE_SOLARIS" = x1])
+
+#### GLib 2 support (optional) ####
+
+AC_ARG_ENABLE([glib2], 
+    AC_HELP_STRING([--disable-glib2], [Disable optional GLib 2 support]), 
+        [
+            case "${enableval}" in
+                yes) glib2=yes ;;
+                no) glib2=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-glib2) ;;
+            esac
+        ],
+        [glib2=auto])
+
+if test "x${glib2}" != xno ; then
+    PKG_CHECK_MODULES(GLIB20, [ glib-2.0 >= 2.4.0 ],
+        HAVE_GLIB20=1,
+        [
+            HAVE_GLIB20=0
+            if test "x$glib2" = xyes ; then
+                AC_MSG_ERROR([*** GLib 2 support not found])
+            fi
+        ])
+else
+    HAVE_GLIB20=0
+fi
+
+AC_SUBST(GLIB20_CFLAGS)
+AC_SUBST(GLIB20_LIBS)
+AC_SUBST(HAVE_GLIB20)
+AM_CONDITIONAL([HAVE_GLIB20], [test "x$HAVE_GLIB20" = x1])
+
+#### GConf support (optional) ####
+
+AC_ARG_ENABLE([gconf], 
+    AC_HELP_STRING([--disable-gconf], [Disable optional GConf support]), 
+        [
+            case "${enableval}" in
+                yes) gconf=yes ;;
+                no) gconf=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-gconf) ;;
+            esac
+        ],
+        [glib=auto])
+
+if test "x${gconf}" != xno ; then
+    PKG_CHECK_MODULES(GCONF, [ gconf-2.0 >= 2.4.0 ],
+        HAVE_GCONF=1,
+        [
+            HAVE_GCONF=0
+            if test "x$gconf" = xyes ; then
+                AC_MSG_ERROR([*** GConf support not found])
+            fi
+        ])
+else
+    HAVE_GCONF=0
+fi
+
+AC_SUBST(GCONF_CFLAGS)
+AC_SUBST(GCONF_LIBS)
+AC_SUBST(HAVE_GCONF)
+AM_CONDITIONAL([HAVE_GCONF], [test "x$HAVE_GCONF" = x1])
+
+#### Avahi support (optional) ####
+
+AC_ARG_ENABLE([avahi], 
+    AC_HELP_STRING([--disable-avahi], [Disable optional Avahi support]), 
+        [
+            case "${enableval}" in
+                yes) avahi=yes ;;
+                no) avahi=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-avahi) ;;
+            esac
+        ],
+        [avahi=auto])
+
+if test "x${avahi}" != xno ; then
+    PKG_CHECK_MODULES(AVAHI, [ avahi-client >= 0.6.0 ],
+        HAVE_AVAHI=1,
+        [
+                HAVE_AVAHI=0
+                if test "x$avahi" = xyes ; then
+                        AC_MSG_ERROR([*** Avahi support not found])
+                fi
+        ])
+else
+    HAVE_AVAHI=0
+fi
+
+AC_SUBST(AVAHI_CFLAGS)
+AC_SUBST(AVAHI_LIBS)
+AC_SUBST(HAVE_AVAHI)
+AM_CONDITIONAL([HAVE_AVAHI], [test "x$HAVE_AVAHI" = x1])
+
+### LIBOIL ####
+
+PKG_CHECK_MODULES(LIBOIL, [ liboil-0.3 >= 0.3.0 ])
+AC_SUBST(LIBOIL_CFLAGS)
+AC_SUBST(LIBOIL_LIBS)
+
+### JACK (optional) ####
+
+AC_ARG_ENABLE([jack], 
+    AC_HELP_STRING([--disable-jack], [Disable optional JACK support]), 
+        [
+            case "${enableval}" in
+                yes) jack=yes ;;
+                no) jack=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-jack) ;;
+            esac
+        ],
+        [jack=auto])
+
+if test "x${jack}" != xno ; then
+    PKG_CHECK_MODULES(JACK, [ jack >= 0.100 ],
+        HAVE_JACK=1,
+        [
+            HAVE_JACK=0
+            if test "x$jack" = xyes ; then
+                AC_MSG_ERROR([*** JACK support not found])
+            fi
+        ])
+else
+    HAVE_JACK=0
+fi
+
+AC_SUBST(JACK_CFLAGS)
+AC_SUBST(JACK_LIBS)
+AC_SUBST(HAVE_JACK)
+AM_CONDITIONAL([HAVE_JACK], [test "x$HAVE_JACK" = x1])
+
+#### Async DNS support (optional) ####
+
+AC_ARG_ENABLE([asyncns], 
+    AC_HELP_STRING([--disable-asyncns], [Disable optional Async DNS support]), 
+        [
+            case "${enableval}" in
+                yes) asyncns=yes ;;
+                no) asyncns=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-asyncns) ;;
+            esac
+        ],
+        [asyncns=auto])
+
+if test "x${asyncns}" != xno ; then
+    PKG_CHECK_MODULES(LIBASYNCNS, [ libasyncns >= 0.1 ],
+        HAVE_LIBASYNCNS=1,
+        [
+            HAVE_LIBASYNCNS=0
+            if test "x$asyncns" = xyes ; then
+                AC_MSG_ERROR([*** Async DNS support not found])
+            fi
+        ])
+else
+    HAVE_LIBASYNCNS=0
+fi
+
+AC_SUBST(LIBASYNCNS_CFLAGS)
+AC_SUBST(LIBASYNCNS_LIBS)
+AC_SUBST(HAVE_LIBASYNCNS)
+AM_CONDITIONAL([HAVE_LIBASYNCNS], [test "x$HAVE_LIBASYNCNS" = x1])
+
+if test "x$HAVE_LIBASYNCNS" != "x0" ; then
+   AC_DEFINE([HAVE_LIBASYNCNS], 1, [Have libasyncns?])
+fi
+
+#### TCP wrappers (optional) ####
+
+AC_ARG_ENABLE([tcpwrap], 
+    AC_HELP_STRING([--disable-tcpwrap], [Disable optional TCP wrappers support]), 
+        [
+            case "${enableval}" in
+                yes) tcpwrap=yes ;;
+                no) tcpwrap=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-tcpwrap) ;;
+            esac
+        ],
+        [tcpwrap=auto])
+
+if test "x${tcpwrap}" != xno ; then
+    ACX_LIBWRAP
+    if test "x${LIBWRAP_LIBS}" = x && test "x$tcpwrap" = xyes ; then
+        AC_MSG_ERROR([*** TCP wrappers support not found])
+    fi
+else
+    LIBWRAP_LIBS=
+fi
+
+AC_SUBST(LIBWRAP_LIBS)
+
+#### LIRC support (optional) ####
+
+AC_ARG_ENABLE([lirc], 
+    AC_HELP_STRING([--disable-lirc], [Disable optional LIRC support]), 
+        [
+            case "${enableval}" in
+                yes) lirc=yes ;;
+                no) lirc=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-lirc) ;;
+            esac
+        ],
+        [lirc=auto])
+
+if test "x${lirc}" != xno ; then
+    ACX_LIRC
+    if test "x${HAVE_LIRC}" = x0 && test "x$lirc" = xyes ; then
+        AC_MSG_ERROR([*** LIRC support not found])
+    fi
+else
+    HAVE_LIRC=0
+fi
+
+AC_SUBST(LIRC_CFLAGS)
+AC_SUBST(LIRC_LIBS)
+AM_CONDITIONAL([HAVE_LIRC], [test "x$HAVE_LIRC" = x1])
+
+#### HAL support (optional) ####
+
+AC_ARG_ENABLE([hal], 
+    AC_HELP_STRING([--disable-hal], [Disable optional HAL support]), 
+        [
+            case "${enableval}" in
+                yes) hal=yes ;;
+                no) hal=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-hal) ;;
+            esac
+        ],
+        [hal=auto])
+
+if test "x${hal}" != xno -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \) ; then
+    PKG_CHECK_MODULES(HAL, [ hal >= 0.5.7 ],
+        HAVE_HAL=1,
+        [
+            HAVE_HAL=0
+            if test "x$hal" = xyes ; then
+                AC_MSG_ERROR([*** HAL support not found])
+            fi
+        ])
+else
+    HAVE_HAL=0
+fi
+
+AC_SUBST(HAL_CFLAGS)
+AC_SUBST(HAL_LIBS)
+AC_SUBST(HAVE_HAL)
+AM_CONDITIONAL([HAVE_HAL], [test "x$HAVE_HAL" = x1])
+
+#### PulseAudio system group & user  #####
+
+AC_ARG_WITH(system_user, AS_HELP_STRING([--with-system-user=<user>],[User for running the PulseAudio daemon as a system-wide instance (pulse)]))
+if test -z "$with_system_user" ; then
+    PA_SYSTEM_USER=pulse
+else
+    PA_SYSTEM_USER=$with_system_user
+fi
+AC_SUBST(PA_SYSTEM_USER)
+AC_DEFINE_UNQUOTED(PA_SYSTEM_USER,"$PA_SYSTEM_USER", [User for running the PulseAudio system daemon])
+
+AC_ARG_WITH(system_group,AS_HELP_STRING([--with-system-group=<group>],[Group for running the PulseAudio daemon as a system-wide instance (pulse)]))
+if test -z "$with_system_group" ; then
+    PA_SYSTEM_GROUP=pulse
+else
+    PA_SYSTEM_GROUP=$with_system_group
+fi
+AC_SUBST(PA_SYSTEM_GROUP)
+AC_DEFINE_UNQUOTED(PA_SYSTEM_GROUP,"$PA_SYSTEM_GROUP", [Group for the PulseAudio system daemon])
+
+AC_ARG_WITH(realtime_group,AS_HELP_STRING([--with-realtime-group=<group>],[Group for users that are allowed to start the PulseAudio daemon with realtime scheduling (realtime)]))
+if test -z "$with_realtime_group" ; then
+    PA_REALTIME_GROUP=realtime
+else
+    PA_REALTIME_GROUP=$with_realtime_group
+fi
+AC_SUBST(PA_REALTIME_GROUP)
+AC_DEFINE_UNQUOTED(PA_REALTIME_GROUP,"$PA_REALTIME_GROUP", [Realtime group])
+
+AC_ARG_WITH(access_group,AS_HELP_STRING([--with-access-group=<group>],[Group which is allowed access to a system-wide PulseAudio daemon (pulse-access)]))
+if test -z "$with_access_group" ; then
+    PA_ACCESS_GROUP=pulse-access
+else
+    PA_ACCESS_GROUP=$with_access_group
+fi
+AC_SUBST(PA_ACCESS_GROUP)
+AC_DEFINE_UNQUOTED(PA_ACCESS_GROUP,"$PA_ACCESS_GROUP", [Access group])
+
+#### PulseAudio system runtime dir ####
+PA_SYSTEM_RUNTIME_PATH="${localstatedir}/run/pulse"
+AC_SUBST(PA_SYSTEM_RUNTIME_PATH)
+
+###################################
+#            Output               #
+###################################
+
+AC_ARG_ENABLE(
+        [static-bins],
+        AC_HELP_STRING([--enable-static-bins],[Statically link executables.]),
+        [STATIC_BINS=1], [STATIC_BINS=0])
+AM_CONDITIONAL([STATIC_BINS], [test "x$STATIC_BINS" = "x1"])
+
+AC_ARG_WITH(
+        [preopen-mods],
+        AC_HELP_STRING([--with-preopen-mods],[Modules to preopen in daemon (default: all).]),
+        [PREOPEN_MODS=$withval], [PREOPEN_MODS="all"])
+AM_CONDITIONAL([PREOPEN_MODS], [test "x$PREOPEN_MODS" != "xall"])
+if test "x$PREOPEN_MODS" != "xall" ; then
+    tmpLIBS=""
+    for mod in $PREOPEN_MODS; do
+        tmpLIBS="$tmpLIBS module-$mod.la"
+    done
+    PREOPEN_MODS="$tmpLIBS"
+    AC_SUBST(PREOPEN_MODS)
+fi
+
+AC_ARG_WITH(
+        [module-dir],
+        AC_HELP_STRING([--with-module-dir],[Directory where to install the modules to (defaults to ${libdir}/pulse-${PA_MAJORMINOR}/modules/]),
+        [modlibexecdir=$withval], [modlibexecdir="${libdir}/pulse-${PA_MAJORMINOR}/modules/"])
+
+AC_SUBST(modlibexecdir)
+
+AC_ARG_ENABLE(
+        [force-preopen],
+        AC_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]),
+        [FORCE_PREOPEN=1], [FORCE_PREOPEN=0])
+AM_CONDITIONAL([FORCE_PREOPEN], [test "x$FORCE_PREOPEN" = "x1"])
+
+AC_CONFIG_FILES([
+Makefile
+src/Makefile
+libpulse.pc
+libpulse-simple.pc
+libpulse-browse.pc
+libpulse-mainloop-glib.pc
+doxygen/Makefile
+doxygen/doxygen.conf
+src/pulse/version.h
+])
+AC_OUTPUT
+
+# ==========================================================================
+ENABLE_X11=no
+if test "x$HAVE_X11" = "x1" ; then
+   ENABLE_X11=yes
+fi
+
+ENABLE_OSS=no
+if test "x$HAVE_OSS" = "x1" ; then
+   ENABLE_OSS=yes
+fi
+
+ENABLE_ALSA=no
+if test "x$HAVE_ALSA" = "x1" ; then
+   ENABLE_ALSA=yes
+fi
+
+ENABLE_SOLARIS=no
+if test "x$HAVE_SOLARIS" = "x1" ; then
+   ENABLE_SOLARIS=yes
+fi
+
+ENABLE_GLIB20=no
+if test "x$HAVE_GLIB20" = "x1" ; then
+   ENABLE_GLIB20=yes
+fi
+
+ENABLE_GCONF=no
+if test "x$HAVE_GCONF" = "x1" ; then
+   ENABLE_GCONF=yes
+fi
+
+ENABLE_AVAHI=no
+if test "x$HAVE_AVAHI" = "x1" ; then
+   ENABLE_AVAHI=yes
+fi
+
+ENABLE_JACK=no
+if test "x$HAVE_JACK" = "x1" ; then
+   ENABLE_JACK=yes
+fi
+
+ENABLE_LIBASYNCNS=no
+if test "x$HAVE_LIBASYNCNS" = "x1" ; then
+   ENABLE_LIBASYNCNS=yes
+fi
+
+ENABLE_LIRC=no
+if test "x$HAVE_LIRC" = "x1" ; then
+   ENABLE_LIRC=yes
+fi
+
+ENABLE_HAL=no
+if test "x$HAVE_HAL" = "x1" ; then
+   ENABLE_HAL=yes
+fi
+
+ENABLE_TCPWRAP=no
+if test "x${LIBWRAP_LIBS}" != x ; then
+   ENABLE_TCPWRAP=yes
+fi
+
+echo "
+ ---{ $PACKAGE_NAME $VERSION }---
+
+    prefix:                 ${prefix}
+    sysconfdir:             ${sysconfdir}
+    localstatedir:          ${localstatedir}
+    System Runtime Path:    ${PA_SYSTEM_RUNTIME_PATH}
+    Compiler:               ${CC}
+    CFLAGS:                 ${CFLAGS}
+    Have X11:               ${ENABLE_X11}
+    Enable OSS:             ${ENABLE_OSS}
+    Enable Alsa:            ${ENABLE_ALSA}
+    Enable Solaris:         ${ENABLE_SOLARIS}
+    Enable GLib 2.0:        ${ENABLE_GLIB20}
+    Enable GConf:           ${ENABLE_GCONF}
+    Enable Avahi:           ${ENABLE_AVAHI}
+    Enable Jack:            ${ENABLE_JACK}
+    Enable Async DNS:       ${ENABLE_LIBASYNCNS}
+    Enable LIRC:            ${ENABLE_LIRC}
+    Enable HAL:             ${ENABLE_HAL}
+    Enable TCP Wrappers:    ${ENABLE_TCPWRAP}
+    System User:            ${PA_SYSTEM_USER}
+    System Group:           ${PA_SYSTEM_GROUP}
+    Realtime Group:         ${PA_REALTIME_GROUP}
+    Access Group:           ${PA_ACCESS_GROUP}
+"

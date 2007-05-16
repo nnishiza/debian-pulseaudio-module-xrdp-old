@@ -1,0 +1,101 @@
+# $Id: daemon.conf.in 1287 2006-08-19 01:20:40Z lennart $
+#
+# This file is part of PulseAudio.
+#
+# PulseAudio is free software; you can redistribute it and/or modify
+# it under the terms of the GNU Lesser General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# PulseAudio is distributed in the hope that it will be useful, but
+# WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+#
+# You should have received a copy of the GNU Lesser General Public License
+# along with PulseAudio; if not, write to the Free Software
+# Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+# USA.
+
+## Configuration file for the pulseaudio daemon. Default values are
+## commented out.  Use either ; or # for commenting
+
+# Extra verbositiy
+; verbose = 0
+
+## Daemonize after startup
+; daemonize = 0
+
+## Quit if startup fails
+; fail = 1
+
+## Renice the daemon to level -15 and try to get SCHED_FIFO
+## scheduling. This a good idea if you hear annyoing noise in the
+## playback. However, this is a certain security issue, since it works 
+## when called SUID root only. root is dropped immediately after gaining
+## the nice level and SCHED_FIFO scheduling on startup.
+; high-priority = 0
+
+## Disallow module loading after startup
+; disallow-module-loading = 0
+
+## Terminate the daemon after the last client quit and this time
+## passed. Use a negative value to disable this feature.
+; exit-idle-time = -1
+
+## Unload autoloaded modules after being idle for this time 
+; module-idle-time = 20
+
+## Unload autoloaded sample cache entries after being idle for this time 
+; scache-idle-time = 20
+
+## The path were to look for dynamic shared objects (DSOs aka
+## plugins).  You may specify more than one path seperated by
+## colons. 
+; dl-search-path = @PA_DLSEARCHPATH@
+
+## The default script file to load. Specify an empty string for not
+## loading a default script file. The 
+; default-script-file = @PA_DEFAULT_CONFIG_FILE@
+
+## The default log target. Use either "stderr", "syslog" or
+## "auto". The latter is equivalent to "sylog" in case daemonize is
+## true, otherwise to "stderr".
+; log-target = auto
+
+## The resampling algorithm to use. Use one of src-sinc-best-quality,
+## src-sinc-medium-quality, src-sinc-fastest, src-zero-order-hold,
+## src-linear, trivial. See the documentation of libsamplerate for an
+## explanation for the different methods. The method 'trivial' is the
+## only algorithm implemented without usage of floating point
+## numbers. If you're tight on CPU consider using this. On the other
+## hand it has the worst quality of all.
+; resample-method = sinc-fastest
+
+## Create a PID file in /tmp/pulseaudio-$USER/pid. Of this is enabled
+## you may use commands like "pulseaudio --kill" or "pulseaudio
+## --check". If you are planning to start more than one pulseaudio
+## process per user, you better disable this option since it
+## effectively disables multiple instances.
+; use-pid-file = 1
+
+## Do not install the CPU load limit, even on platforms where it is
+## supported. This option is useful when debugging/profiling 
+## PulseAudio to disable disturbing SIGXCPU signals.
+; no-cpu-limit = 0
+
+## Run the daemon as system-wide instance, requires root priviliges
+; system-instance = 0
+
+## Resource limits, see getrlimit(2) for more information
+; rlimit-as = -1
+; rlimit-core = -1
+; rlimit-data = -1
+; rlimit-fsize = -1
+; rlimit-nofile = 200
+; rlimit-stack = -1
+; rlimit-nproc = -1
+; rlimit-memlock = 25
+
+## Disable shared memory data transfer 
+; disable-shm = 0

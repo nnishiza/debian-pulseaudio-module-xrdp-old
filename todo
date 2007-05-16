@@ -1,0 +1,62 @@
+*** $Id: todo 1318 2006-08-22 12:29:41Z lennart $ ***
+
+Build System:
+- Remove symdef files and use macros (like most other projects)
+- Use own name mangling scheme instead of ltdl's, which will eliminate the
+  need for .la files or extra trickery.
+- build pulsecore only statically by default, it's not a public API yet
+
+Porting:
+- rtp module ported to Win32 (sendmsg/recvmsg emulation)
+
+I18N:
+- iconv stuff sent from utils to server (UTF-8)
+- iconv sample loading in server
+- Document utf8.h, timeval.h and util.h
+- gettextify polypaudio
+
+Cleanups:
+- drop dependency of libpolyp on libX11, instead use an external mini binary
+- merge module-oss-mmap into module-oss
+- module-tunnel: improve latency calculation
+- use software volume when hardware doesn't support all channels (alsa done)
+- silence generation should be moved into the core to avoid races and code
+  duplication in the backends
+- don't read/write audio data from/to ALSA devices if noone is listening
+
+Test:
+- autoload
+
+Auth/Crypto:
+- ssl
+- key rings for auth
+- challenge response auth
+- sasl auth 
+
+Features:
+- alsa mmap driver
+- alsa driver with hw mixing
+- "window manager for sound"
+- chroot()
+- use scatter/gather io for sockets
+- CODECs to reduce bandwidth usage (plug-in based)
+- multiline configuration statements
+- paplay needs to set a channel map. our default is only correct for AIFF.
+  (we need help from libsndfile for this)
+- Fix a way for the threading API to handle state and subscription callbacks
+  in a nice way.
+- examine if it is possible to mimic esd's handling of half duplex cards
+  (switch to capture when a recording client connects and drop playback during
+  that time)
+- Support for device selection in waveout driver
+- add an API to libpulse for allocating memory from the pa_context memory pool
+- allow buffer metric changes during runtime
+
+Long term:
+- pass meta info for hearing impaired
+- X11: support for the X11 synchronization extension
+
+Backends for:
+- portaudio  (semi-done)
+- sdl
+- xine (needs update)
