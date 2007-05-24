@@ -1,0 +1,112 @@
+Don't fail if hal doesn't currently contain any devices. (closes #55)
+
+From: Pierre Ossman <ossman@fefdeb5f-60dc-0310-8127-8f9354f1896f>
+
+And from r1440: Fix build and only load OSS xor ALSA modules if both are
+available.
+git-svn-id: svn://svn.0pointer.net/pulseaudio/trunk@1434 fefdeb5f-60dc-0310-8127-8f9354f1896f
+---
+
+ src/modules/module-hal-detect.c |   38 ++++++++++++++++++++++++++++----------
+ 1 files changed, 28 insertions(+), 10 deletions(-)
+
+diff --git a/src/modules/module-hal-detect.c b/src/modules/module-hal-detect.c
+index 8232cd3..04f9d9d 100644
+--- a/src/modules/module-hal-detect.c
++++ b/src/modules/module-hal-detect.c
+@@ -82,6 +82,9 @@ struct userdata {
+     capability_t capability;
+     pa_dbus_connection *conn;
+     pa_hashmap *devices;
++#if defined(HAVE_ALSA) && defined(HAVE_OSS)
++    int use_oss;
++#endif    
+ };
+ 
+ struct timerdata {
+@@ -181,6 +184,8 @@ static pa_module* hal_device_load_alsa(struct userdata *u, const char *udi,
+         module_name = "module-alsa-source";
+         snprintf(args, sizeof(args), "device=hw:%u source_name=alsa_input.%s", card, strip_udi(udi));
+     }
++
++    pa_log_debug("Loading %s with arguments '%s'", module_name, args);
+         
+     return pa_module_load(u->core, module_name, args);
+ }
+@@ -239,6 +244,8 @@ static pa_module* hal_device_load_oss(struct userdata *u, const char *udi,
+     snprintf(args, sizeof(args), "device=%s sink_name=oss_output.%s source_name=oss_input.%s", device, strip_udi(udi), strip_udi(udi));
+     libhal_free_string(device);
+ 
++    pa_log_debug("Loading module-oss with arguments '%s'", args);
++
+     return pa_module_load(u->core, "module-oss", args);
+ }
+ #endif
+@@ -246,7 +253,7 @@ static pa_module* hal_device_load_oss(struct userdata *u, const char *udi,
+ static dbus_bool_t hal_device_add(struct userdata *u, const char *udi,
+                                   DBusError *error)
+ {
+-    pa_module* m;
++    pa_module* m = NULL;
+     struct device *d;
+ 
+     switch(u->capability) {
+@@ -257,7 +264,10 @@ static dbus_bool_t hal_device_add(struct userdata *u, const char *udi,
+ #endif
+ #ifdef HAVE_OSS
+         case CAP_OSS:
+-            m = hal_device_load_oss(u, udi, error);
++#ifdef HAVE_ALSA
++            if (u->use_oss)
++#endif                
++                m = hal_device_load_oss(u, udi, error);
+             break;
+ #endif
+         default:
+@@ -485,11 +495,11 @@ fail:
+ }
+ 
+ int pa__init(pa_core *c, pa_module*m) {
+-    int n;
+     DBusError error;
+     pa_dbus_connection *conn;
+     struct userdata *u = NULL;
+     LibHalContext *hal_ctx = NULL;
++    int n = 0;
+ 
+     assert(c);
+     assert(m);
+@@ -516,18 +526,26 @@ int pa__init(pa_core *c, pa_module*m) {
+     m->userdata = (void*) u;
+ 
+ #ifdef HAVE_ALSA
+-    if ((n = hal_device_add_all(u, CAP_ALSA)) <= 0)
++    n = hal_device_add_all(u, CAP_ALSA);
+ #endif
++#if defined(HAVE_ALSA) && defined(HAVE_OSS)
++    u->use_oss = 0;
++    
++    if (n <= 0) {
++#endif    
+ #ifdef HAVE_OSS
+-    if ((n = hal_device_add_all(u, CAP_OSS)) <= 0)
++        n += hal_device_add_all(u, CAP_OSS);
+ #endif
+-    {
+-        pa_log_warn("failed to detect any sound hardware.");
+-        userdata_free(u);
+-        return -1;
++#if defined(HAVE_ALSA) && defined(HAVE_OSS)
++
++        /* We found something with OSS, but didn't find anything with
++         * ALSA. Then let's use only OSS from now on. */
++        if (n > 0)
++            u->use_oss = 1;
+     }
++#endif    
+ 
+-    libhal_ctx_set_user_data(hal_ctx, (void*) u);
++    libhal_ctx_set_user_data(hal_ctx, u);
+     libhal_ctx_set_device_added(hal_ctx, device_added_cb);
+     libhal_ctx_set_device_removed(hal_ctx, device_removed_cb);
+     libhal_ctx_set_device_new_capability(hal_ctx, new_capability_cb);

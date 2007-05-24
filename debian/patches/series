@@ -15,4 +15,5 @@ r1422-make-sure-we-report-success-for-SNDCTL_DSP_SETDUPLEX.patch
 r1423-dont-abort-config-loading-when-user-config-cannot-be-loaded.patch
 r1431-handle-when-alsa-tweaks-our-sample-spec.patch
 r1433-handle-suspended-alsa-devices.patch
+r1434-dont-fail-if-hal-doesn-t-contain-any-devices.patch
 r1437-add-support-for-SNDCTL_DSP_SETTRIGGER.patch
