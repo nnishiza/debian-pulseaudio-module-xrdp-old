@@ -17,3 +17,9 @@ r1431-handle-when-alsa-tweaks-our-sample-spec.patch
 r1433-handle-suspended-alsa-devices.patch
 r1434-dont-fail-if-hal-doesn-t-contain-any-devices.patch
 r1437-add-support-for-SNDCTL_DSP_SETTRIGGER.patch
+r1443-treat-empty-DISPLAY-identically-to-unset-DISPLAY.patch
+r1445-fix-a-dos-vulnerability.patch
+r1446-fix-another-dos-vulnerability.patch
+r1448-fix-yet-another-dos-vulnerability.patch
+r1450-fix-a-dos-with-allocating-overly-large-silence-buffers.patch
+r1452-fix-another-dos-vulnerability.patch
