@@ -3,8 +3,8 @@ Section: sound
 Priority: optional
 Maintainer: CJ van den Berg <cj@vdbonline.com>
 Uploaders: Sjoerd Simons <sjoerd@debian.org>
-Build-Depends: debhelper (>= 5), quilt, autotools-dev, m4, libltdl3-dev,
-    liboil0.3-dev (>= 0.3.0) | liboil-dev, libsamplerate-dev,
+Build-Depends: debhelper (>= 5), cdbs, quilt, autotools-dev, m4,
+    libltdl3-dev, liboil0.3-dev (>= 0.3.0) | liboil-dev, libsamplerate-dev,
     libsndfile1-dev (>= 1.0.10) | libsndfile-dev, libx11-dev,
     x11proto-core-dev, libxt-dev, libcap-dev, libasound-dev, libglib2.0-dev,
     libavahi-client-dev, libjack0.100.0-dev, libwrap0-dev,

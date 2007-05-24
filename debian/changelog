@@ -24,8 +24,9 @@ pulseaudio (0.9.5-8) UNRELEASED; urgency=low
     + Added. Don't unload module-hal-detect if HAL doesn't report any devices.
              (Closes: #395893)
   * debian/patches: Backport DOS attack fixes r1445-1450.
+  * debian/rules: Port to CDBS.
 
- -- CJ van den Berg <cj@vdbonline.com>  Thu, 24 May 2007 19:16:36 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 23 May 2007 10:06:00 +0200
 
 pulseaudio (0.9.5-7) unstable; urgency=low
 

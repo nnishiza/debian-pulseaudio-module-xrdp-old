@@ -1,117 +1,15 @@
 #!/usr/bin/make -f
-export DH_OPTIONS
 
-DEB_HOST_GNU_TYPE   ?= $(shell dpkg-architecture -qDEB_HOST_GNU_TYPE)
-DEB_BUILD_GNU_TYPE  ?= $(shell dpkg-architecture -qDEB_BUILD_GNU_TYPE)
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/autotools.mk
+include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 
-CFLAGS = -Wall -g
-
-ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
-	CFLAGS += -O0
-else
-	CFLAGS += -O2
-endif
-
-CONFIGURE_FLAGS = --prefix=/usr --sysconfdir=/etc --localstatedir=/var --libexecdir=/usr/lib CFLAGS="$(CFLAGS)" --with-realtime-group=pulse-rt
-
-ifeq ($(DEB_BUILD_GNU_TYPE),$(DEB_HOST_GNU_TYPE))
-	CONFIGURE_FLAGS += --build=$(DEB_BUILD_GNU_TYPE)
-else
-	CONFIGURE_FLAGS += --host=$(DEB_HOST_GNU_TYPE) --build=$(DEB_BUILD_GNU_TYPE)
-endif
-
-config.status: patch-stamp configure 
-	dh_testdir
-	./configure $(CONFIGURE_FLAGS)
-
-#Architecture 
-build: build-arch build-indep
-
-build-arch: build-arch-stamp
-build-arch-stamp: config.status
-	$(MAKE) 
-	touch $@
-
-build-indep: build-indep-stamp
-build-indep-stamp:  config.status
-	touch $@
-
-clean: clean-patched unpatch
-clean-patched:
-	dh_testdir
-	dh_testroot
-	rm -f build-arch-stamp build-indep-stamp #CONFIGURE-STAMP#
-
-	-$(MAKE) distclean
-	dh_clean 
-
-patch: patch-stamp
-patch-stamp:
-	QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null push -a \
-		      || test $$? = 2
-	# backup config.* files to restore them in the clean target
-	-test -r config.sub && cp config.sub config.sub.orig
-	-test -r config.guess && cp config.guess config.guess.orig
-	# use up-to-date config.* files from autotools-dev
-	-test -r /usr/share/misc/config.sub && \
-		cp -f /usr/share/misc/config.sub config.sub
-	-test -r /usr/share/misc/config.guess && \
-		cp -f /usr/share/misc/config.guess config.guess
-	touch patch-stamp
-
-unpatch:
-	# restore upstream config.* files from backup
-	-test -r config.sub.orig && mv -f config.sub.orig config.sub
-	-test -r config.guess.orig && mv -f config.guess.orig config.guess
-	QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null pop -a -R \
-		      || test $$? = 2
-	rm -rf patch-stamp .pc
-
-install: install-indep install-arch
-install-indep:
-#	dh_testdir
-#	dh_testroot
-#	dh_clean -k -i 
-#	dh_installdirs -i
-#	dh_install -i --sourcedir=$(CURDIR)/debian/tmp
-
-install-arch:
-	dh_testdir
-	dh_testroot
-	dh_clean -k -s 
-	dh_installdirs -s
-	$(MAKE) install DESTDIR=$(CURDIR)/debian/tmp
-	find $(CURDIR)/debian/tmp -name "*.la" | xargs rm
-	rm $(CURDIR)/debian/tmp/usr/lib/libpulsecore.so
-	rm $(CURDIR)/debian/tmp/usr/lib/libpulsecore.a
-	rm -R $(CURDIR)/debian/tmp/usr/include/pulsecore
+common-install-arch::
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian
 	cp -a $(CURDIR)/debian/overrides $(CURDIR)/debian/tmp/usr/share/lintian
-	dh_install -s --sourcedir=$(CURDIR)/debian/tmp --fail-missing
 
-binary-common:
-	dh_testdir
-	dh_testroot
-	dh_installchangelogs 
-	dh_installdocs
-	dh_installman
-	dh_installinit
-	dh_link
-	dh_strip
-	dh_compress 
-	dh_fixperms --exclude=usr/bin/pulseaudio
-	dh_makeshlibs --exclude=usr/lib/pulse-0.9/modules
-	dh_installdeb
-	dh_shlibdeps
-	dh_gencontrol
-	dh_md5sums
-	dh_builddeb
+DEB_CONFIGURE_EXTRA_FLAGS = --with-realtime-group=pulse-rt
+DEB_FIXPERMS_EXCLUDE = usr/bin/pulseaudio
+DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9/modules
+DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
 
-binary-indep: build-indep install-indep
-#	$(MAKE) -f debian/rules DH_OPTIONS=-i binary-common
-
-binary-arch: build-arch install-arch
-	$(MAKE) -f debian/rules DH_OPTIONS=-s binary-common
-
-binary: binary-arch binary-indep
-.PHONY: build clean binary-indep binary-arch binary install install-indep install-arch patch
