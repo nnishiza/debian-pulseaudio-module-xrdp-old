@@ -1,14 +1,24 @@
-#! /bin/sh /usr/share/dpatch/dpatch-run
-## 04_r1373_JavaSound_support.dpatch by Lennart Poettering <mzcnihpbageby@0pointer.de>
-##
-## DP: implement a few more ioctl()s, including a subset of
-## DP: SNDCTL_DSP_GETOPTR.  Just enough to make JavaSound work.
+implement a few more ioctl()s, including a subset of SNDCTL_DSP_GETOPTR.
 
-@DPATCH@
-diff -urNad pulseaudio~/src/utils/padsp.c pulseaudio/src/utils/padsp.c
---- pulseaudio~/src/utils/padsp.c	2006-10-19 00:16:53.841869981 +0200
-+++ pulseaudio/src/utils/padsp.c	2006-10-19 00:17:03.458470981 +0200
-@@ -88,6 +88,8 @@
+From: Lennart Poettering <lennart@fefdeb5f-60dc-0310-8127-8f9354f1896f>
+
+Just enough to make JavaSound work.
+
+git-svn-id: svn://svn.0pointer.net/pulseaudio/trunk@1373 fefdeb5f-60dc-0310-8127-8f9354f1896f
+---
+
+ src/utils/padsp   |    0 
+ src/utils/padsp.c |   77 ++++++++++++++++++++++++++++++++++++++++++++++++++---
+ 2 files changed, 72 insertions(+), 5 deletions(-)
+
+diff --git a/src/utils/padsp b/src/utils/padsp
+old mode 100644
+new mode 100755
+diff --git a/src/utils/padsp.c b/src/utils/padsp.c
+index ffe3974..dbbb9d5 100644
+--- a/src/utils/padsp.c
++++ b/src/utils/padsp.c
+@@ -88,6 +88,8 @@ struct fd_info {
      pa_cvolume sink_volume, source_volume;
      uint32_t sink_index, source_index;
      int volume_modify_count;
@@ -17,7 +27,7 @@ diff -urNad pulseaudio~/src/utils/padsp.c pulseaudio/src/utils/padsp.c
      
      PA_LLIST_FIELDS(fd_info);
  };
-@@ -574,6 +576,7 @@
+@@ -574,6 +576,7 @@ static fd_info* fd_info_new(fd_info_type_t type, int *_errno) {
      i->volume_modify_count = 0;
      i->sink_index = (uint32_t) -1;
      i->source_index = (uint32_t) -1;
@@ -25,7 +35,7 @@ diff -urNad pulseaudio~/src/utils/padsp.c pulseaudio/src/utils/padsp.c
      PA_LLIST_INIT(fd_info, i);
  
      reset_params(i);
-@@ -1947,6 +1950,8 @@
+@@ -1947,6 +1950,8 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno)
              free_streams(i);
              dsp_flush_socket(i);
              reset_params(i);
@@ -34,7 +44,7 @@ diff -urNad pulseaudio~/src/utils/padsp.c pulseaudio/src/utils/padsp.c
              
              pa_threaded_mainloop_unlock(i->mainloop);
              break;
-@@ -2035,14 +2040,76 @@
+@@ -2035,14 +2040,76 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno)
              break;
          }
  

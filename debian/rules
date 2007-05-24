@@ -53,12 +53,14 @@ endif
 
 patch: patch-stamp
 patch-stamp:
-	dpatch apply-all
+	QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null push -a \
+		      || test $$? = 2
 	touch patch-stamp
 
 unpatch:
-	dpatch deapply-all
-	rm -rf patch-stamp debian/patched
+	QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null pop -a -R \
+		      || test $$? = 2
+	rm -rf patch-stamp .pc
 
 install: install-indep install-arch
 install-indep:

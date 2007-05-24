@@ -1,0 +1,138 @@
+Handle suspended alsa devices. Based on patch by ranma. (closes #26)
+
+From: Pierre Ossman <ossman@fefdeb5f-60dc-0310-8127-8f9354f1896f>
+
+git-svn-id: svn://svn.0pointer.net/pulseaudio/trunk@1433 fefdeb5f-60dc-0310-8127-8f9354f1896f
+---
+
+ src/modules/module-alsa-sink.c   |   38 +++++++++++++++++++++++++++++++++++++
+ src/modules/module-alsa-source.c |   39 ++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 77 insertions(+), 0 deletions(-)
+
+diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
+index 6ff9a6e..acf116d 100644
+--- a/src/modules/module-alsa-sink.c
++++ b/src/modules/module-alsa-sink.c
+@@ -138,6 +138,33 @@ static int xrun_recovery(struct userdata *u) {
+     return ret;
+ }
+ 
++static int suspend_recovery(struct userdata *u) {
++    int ret;
++    assert(u);
++
++    pa_log_info("*** ALSA-SUSPEND (playback) ***");
++
++    if ((ret = snd_pcm_resume(u->pcm_handle)) < 0) {
++        if (ret == -EAGAIN)
++            return -1;
++
++        if (ret != -ENOSYS)
++            pa_log("snd_pcm_resume() failed: %s", snd_strerror(-ret));
++        else {
++            if ((ret = snd_pcm_prepare(u->pcm_handle)) < 0)
++                pa_log("snd_pcm_prepare() failed: %s", snd_strerror(-ret));
++        }
++
++        if (ret < 0) {
++            clear_up(u);
++            pa_module_unload_request(u->module);
++            return -1;
++        }
++    }
++
++    return ret;
++}
++
+ static void do_write(struct userdata *u) {
+     assert(u);
+ 
+@@ -169,6 +196,13 @@ static void do_write(struct userdata *u) {
+                 continue;
+             }
+ 
++            if (frames == -ESTRPIPE) {
++                if (suspend_recovery(u) < 0)
++                    return;
++
++                continue;
++            }
++
+             pa_log("snd_pcm_writei() failed: %s", snd_strerror(-frames));
+ 
+             clear_up(u);
+@@ -200,6 +234,10 @@ static void fdl_callback(void *userdata) {
+         if (xrun_recovery(u) < 0)
+             return;
+ 
++    if (snd_pcm_state(u->pcm_handle) == SND_PCM_STATE_SUSPENDED)
++        if (suspend_recovery(u) < 0)
++            return;
++
+     do_write(u);
+ }
+ 
+diff --git a/src/modules/module-alsa-source.c b/src/modules/module-alsa-source.c
+index aa0666f..e1741c9 100644
+--- a/src/modules/module-alsa-source.c
++++ b/src/modules/module-alsa-source.c
+@@ -140,6 +140,34 @@ static int xrun_recovery(struct userdata *u) {
+     return 0;
+ }
+ 
++
++static int suspend_recovery(struct userdata *u) {
++    int ret;
++    assert(u);
++
++    pa_log_info("*** ALSA-SUSPEND (capture) ***");
++
++    if ((ret = snd_pcm_resume(u->pcm_handle)) < 0) {
++        if (ret == -EAGAIN)
++            return -1;
++
++        if (ret != -ENOSYS)
++            pa_log("snd_pcm_resume() failed: %s", snd_strerror(-ret));
++        else {
++            if ((ret = snd_pcm_prepare(u->pcm_handle)) < 0)
++                pa_log("snd_pcm_prepare() failed: %s", snd_strerror(-ret));
++        }
++
++        if (ret < 0) {
++            clear_up(u);
++            pa_module_unload_request(u->module);
++            return -1;
++        }
++    }
++
++    return ret;
++}
++
+ static void do_read(struct userdata *u) {
+     assert(u);
+ 
+@@ -172,6 +200,13 @@ static void do_read(struct userdata *u) {
+                 continue;
+             }
+ 
++            if (frames == -ESTRPIPE) {
++                if (suspend_recovery(u) < 0)
++                    return;
++
++                continue;
++            }
++
+             pa_log("snd_pcm_readi() failed: %s", snd_strerror(-frames));
+ 
+             clear_up(u);
+@@ -207,6 +242,10 @@ static void fdl_callback(void *userdata) {
+         if (xrun_recovery(u) < 0)
+             return;
+ 
++    if (snd_pcm_state(u->pcm_handle) == SND_PCM_STATE_SUSPENDED)
++        if (suspend_recovery(u) < 0)
++            return;
++
+     do_read(u);
+ }
+ 

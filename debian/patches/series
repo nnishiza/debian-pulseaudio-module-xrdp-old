@@ -1,0 +1,7 @@
+# This series applies on GIT commit 2cf3c9da45ac80ba341eb9319b9a8f764ab0bba5
+use-ifexists-in-default-pa.patch
+ifexists-else-endif.patch
+r1352-work-around-bug-in-firefox-in-padsp.patch
+r1373-implement-a-few-more-ioctls-in-padsp.patch
+r1412-support-reversed-endian-floats.patch
+r1433-handle-suspended-alsa-devices.patch
