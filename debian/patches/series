@@ -2,6 +2,7 @@
 use-ifexists-in-default-pa.patch
 ifexists-else-endif.patch
 r1352-work-around-bug-in-firefox-in-padsp.patch
+r1361-fix-esdcompat-for-non-bash-shells.patch
 r1373-implement-a-few-more-ioctls-in-padsp.patch
 r1412-support-reversed-endian-floats.patch
 r1433-handle-suspended-alsa-devices.patch

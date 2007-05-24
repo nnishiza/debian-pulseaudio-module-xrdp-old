@@ -6,8 +6,10 @@ pulseaudio (0.9.5-8) UNRELEASED; urgency=low
       for suspended alsa sources.
   * debian/patches: r1412-support-reversed-endian-floats
     + Refreshed. Updated to the version commited upstream.
+  * debian/patches: r1361-fix-esdcompat-for-non-bash-shells
+    + Added. Corrects parameter handling in esdcompat. (Closes: #414355)
 
- -- CJ van den Berg <cj@vdbonline.com>  Tue, 15 May 2007 12:53:58 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Tue, 15 May 2007 13:29:19 +0200
 
 pulseaudio (0.9.5-7) unstable; urgency=low
 
