@@ -43,21 +43,26 @@ clean-patched:
 	rm -f build-arch-stamp build-indep-stamp #CONFIGURE-STAMP#
 
 	-$(MAKE) distclean
-ifneq "$(wildcard /usr/share/misc/config.sub)" ""
-	cp -f /usr/share/misc/config.sub config.sub
-endif
-ifneq "$(wildcard /usr/share/misc/config.guess)" ""
-	cp -f /usr/share/misc/config.guess config.guess
-endif
 	dh_clean 
 
 patch: patch-stamp
 patch-stamp:
 	QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null push -a \
 		      || test $$? = 2
+	# backup config.* files to restore them in the clean target
+	-test -r config.sub && cp config.sub config.sub.orig
+	-test -r config.guess && cp config.guess config.guess.orig
+	# use up-to-date config.* files from autotools-dev
+	-test -r /usr/share/misc/config.sub && \
+		cp -f /usr/share/misc/config.sub config.sub
+	-test -r /usr/share/misc/config.guess && \
+		cp -f /usr/share/misc/config.guess config.guess
 	touch patch-stamp
 
 unpatch:
+	# restore upstream config.* files from backup
+	-test -r config.sub.orig && mv -f config.sub.orig config.sub
+	-test -r config.guess.orig && mv -f config.guess.orig config.guess
 	QUILT_PATCHES=debian/patches quilt --quiltrc /dev/null pop -a -R \
 		      || test $$? = 2
 	rm -rf patch-stamp .pc
