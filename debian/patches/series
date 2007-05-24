@@ -1,8 +1,17 @@
 # This series applies on GIT commit 2cf3c9da45ac80ba341eb9319b9a8f764ab0bba5
 use-ifexists-in-default-pa.patch
 ifexists-else-endif.patch
+r1336-increase-operation-timeout.patch
 r1352-work-around-bug-in-firefox-in-padsp.patch
+r1355-fix-a-race-condition.patch
 r1361-fix-esdcompat-for-non-bash-shells.patch
 r1373-implement-a-few-more-ioctls-in-padsp.patch
+r1377-fix-alsa-sink-example.patch
+r1378-add-missing-channel-names-fix.patch
+r1411-check-correct-variable-for-return-value.patch
 r1412-support-reversed-endian-floats.patch
+r1416-r1417-fix-incorrect-assert.patch
+r1422-make-sure-we-report-success-for-SNDCTL_DSP_SETDUPLEX.patch
+r1423-dont-abort-config-loading-when-user-config-cannot-be-loaded.patch
 r1433-handle-suspended-alsa-devices.patch
+r1437-add-support-for-SNDCTL_DSP_SETTRIGGER.patch

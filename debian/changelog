@@ -8,8 +8,18 @@ pulseaudio (0.9.5-8) UNRELEASED; urgency=low
     + Refreshed. Updated to the version commited upstream.
   * debian/patches: r1361-fix-esdcompat-for-non-bash-shells
     + Added. Corrects parameter handling in esdcompat. (Closes: #414355)
+  * debian/patches:
+    Backport multiple minor bug fixes from upstream trunk.
+    + Added r1336-increase-operation-timeout
+    + Added r1355-fix-a-race-condition
+    + Added r1377-fix-alsa-sink-example
+    + Added r1378-add-missing-channel-names-fix
+    + Added r1411-check-correct-variable-for-return-value
+    + Added r1416-r1417-fix-incorrect-assert
+    + Added r1422-make-sure-we-report-success-for-SNDCTL_DSP_SETDUPLEX
+    + Added r1423-dont-abort-config-loading-when-user-config-cannot-be-loaded
 
- -- CJ van den Berg <cj@vdbonline.com>  Tue, 15 May 2007 13:29:19 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Tue, 15 May 2007 16:25:26 +0200
 
 pulseaudio (0.9.5-7) unstable; urgency=low
 

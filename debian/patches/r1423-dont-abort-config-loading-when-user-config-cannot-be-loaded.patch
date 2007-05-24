@@ -1,0 +1,47 @@
+Don't abort config loading when the user specific cannot be loaded.
+
+From: Pierre Ossman <ossman@fefdeb5f-60dc-0310-8127-8f9354f1896f>
+
+git-svn-id: svn://svn.0pointer.net/pulseaudio/trunk@1423 fefdeb5f-60dc-0310-8127-8f9354f1896f
+---
+
+ src/pulsecore/core-util.c |   14 ++++++++++----
+ 1 files changed, 10 insertions(+), 4 deletions(-)
+
+diff --git a/src/pulsecore/core-util.c b/src/pulsecore/core-util.c
+index 5f72b34..2c4503e 100644
+--- a/src/pulsecore/core-util.c
++++ b/src/pulsecore/core-util.c
+@@ -184,7 +184,7 @@ int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
+         goto fail;
+     }
+ #else
+-	pa_log_warn("secure directory creation not supported on Win32.");
++    pa_log_warn("secure directory creation not supported on Win32.");
+ #endif
+     
+     return 0;
+@@ -952,14 +952,20 @@ FILE *pa_open_config_file(const char *global, const char *local, const char *env
+                 return NULL;
+             fn = buf;
+ #endif
+-            
+-            if ((f = fopen(fn, mode)) || errno != ENOENT) {
++
++            f = fopen(fn, mode);
++            if (f != NULL) {
+                 if (result)
+                     *result = pa_xstrdup(fn);
+                 pa_xfree(lfn);
+                 return f;
+             }
+-        
++
++            if (errno != ENOENT) {
++                pa_log_warn("WARNING: failed to open configuration file '%s': %s",
++                    lfn, pa_cstrerror(errno));
++            }
++
+             pa_xfree(lfn);
+         }
+     }

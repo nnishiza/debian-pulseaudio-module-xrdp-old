@@ -10,7 +10,7 @@ git-svn-id: svn://svn.0pointer.net/pulseaudio/trunk@1433 fefdeb5f-60dc-0310-8127
  2 files changed, 77 insertions(+), 0 deletions(-)
 
 diff --git a/src/modules/module-alsa-sink.c b/src/modules/module-alsa-sink.c
-index 6ff9a6e..acf116d 100644
+index df04281..0ae4fd7 100644
 --- a/src/modules/module-alsa-sink.c
 +++ b/src/modules/module-alsa-sink.c
 @@ -138,6 +138,33 @@ static int xrun_recovery(struct userdata *u) {
@@ -47,7 +47,7 @@ index 6ff9a6e..acf116d 100644
  static void do_write(struct userdata *u) {
      assert(u);
  
-@@ -169,6 +196,13 @@ static void do_write(struct userdata *u) {
+@@ -173,6 +200,13 @@ static void do_write(struct userdata *u) {
                  continue;
              }
  
@@ -61,7 +61,7 @@ index 6ff9a6e..acf116d 100644
              pa_log("snd_pcm_writei() failed: %s", snd_strerror(-frames));
  
              clear_up(u);
-@@ -200,6 +234,10 @@ static void fdl_callback(void *userdata) {
+@@ -204,6 +238,10 @@ static void fdl_callback(void *userdata) {
          if (xrun_recovery(u) < 0)
              return;
  
