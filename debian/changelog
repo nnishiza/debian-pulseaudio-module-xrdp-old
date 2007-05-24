@@ -18,8 +18,10 @@ pulseaudio (0.9.5-8) UNRELEASED; urgency=low
     + Added r1416-r1417-fix-incorrect-assert
     + Added r1422-make-sure-we-report-success-for-SNDCTL_DSP_SETDUPLEX
     + Added r1423-dont-abort-config-loading-when-user-config-cannot-be-loaded
+  * debian/patch: r1431-handle-when-alsa-tweaks-our-sample-spec
+    + Added. Handle frame size changes. (Closes: #423887)
 
- -- CJ van den Berg <cj@vdbonline.com>  Tue, 15 May 2007 16:25:26 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Tue, 15 May 2007 18:18:16 +0200
 
 pulseaudio (0.9.5-7) unstable; urgency=low
 
