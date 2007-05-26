@@ -23,11 +23,12 @@ pulseaudio (0.9.5-8) UNRELEASED; urgency=low
   * debian/patch: r1434-dont-fail-if-hal-doesn-t-contain-any-devices
     + Added. Don't unload module-hal-detect if HAL doesn't report any devices.
              (Closes: #395893)
-  * debian/patches: Backport DOS attack fixes r1445-1450.
+  * debian/patches: Backport fixes for remote DOS vulnerabilities. Upstream
+      svn commits r1445-1452. This fixes CVE-2007-1804.
   * debian/rules: Port to CDBS.
   * debian/control: Generate -dbg packages for detached symbols.
 
- -- CJ van den Berg <cj@vdbonline.com>  Wed, 23 May 2007 10:08:50 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Sat, 26 May 2007 23:37:07 +0200
 
 pulseaudio (0.9.5-7) unstable; urgency=low
 

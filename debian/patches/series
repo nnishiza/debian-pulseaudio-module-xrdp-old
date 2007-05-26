@@ -21,5 +21,7 @@ r1443-treat-empty-DISPLAY-identically-to-unset-DISPLAY.patch
 r1445-fix-a-dos-vulnerability.patch
 r1446-fix-another-dos-vulnerability.patch
 r1448-fix-yet-another-dos-vulnerability.patch
+r1449-dont-allow-excessively-high-sample-rates.patch
 r1450-fix-a-dos-with-allocating-overly-large-silence-buffers.patch
+r1451-add-a-missing-initialization.patch
 r1452-fix-another-dos-vulnerability.patch
