@@ -1,18 +1,20 @@
-/* $Id: xmalloc.c 1083 2006-07-14 22:42:01Z lennart $ */
+/* $Id: xmalloc.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -60,10 +62,10 @@ void* pa_xmalloc(size_t size) {
     void *p;
     assert(size > 0);
     assert(size < MAX_ALLOC_SIZE);
-    
+
     if (!(p = malloc(size)))
         oom();
-        
+
     return p;
 }
 
@@ -71,18 +73,18 @@ void* pa_xmalloc0(size_t size) {
     void *p;
     assert(size > 0);
     assert(size < MAX_ALLOC_SIZE);
-    
+
     if (!(p = calloc(1, size)))
         oom();
-        
+
     return p;
 }
-    
+
 void *pa_xrealloc(void *ptr, size_t size) {
     void *p;
     assert(size > 0);
     assert(size < MAX_ALLOC_SIZE);
-    
+
     if (!(p = realloc(ptr, size)))
         oom();
     return p;
@@ -107,7 +109,7 @@ char *pa_xstrdup(const char *s) {
 
 char *pa_xstrndup(const char *s, size_t l) {
     char *e, *r;
-    
+
     if (!s)
         return NULL;
 

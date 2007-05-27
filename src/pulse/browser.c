@@ -1,27 +1,29 @@
-/* $Id: browser.c 1069 2006-07-13 17:33:44Z lennart $ */
+/* $Id: browser.c 1453 2007-05-23 23:38:28Z lennart $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
   USA.
 ***/
 
-#ifdef HAVE_CONFIG_H 
-#include "config.h" 
-#endif 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 
 #include <assert.h>
 #include <string.h>
@@ -53,10 +55,10 @@ struct pa_browser {
 
     pa_browser_error_cb_t error_callback;
     void *error_userdata;
-    
+
     AvahiClient *client;
     AvahiServiceBrowser *server_browser, *sink_browser, *source_browser;
-    
+
 };
 
 static int map_to_opcode(const char *type, int new) {
@@ -84,7 +86,7 @@ static void resolve_callback(
         AvahiStringList *txt,
         AvahiLookupResultFlags flags,
         void *userdata) {
-    
+
     pa_browser *b = userdata;
     pa_browse_info i;
     char ip[256], a[256];
@@ -94,7 +96,7 @@ static void resolve_callback(
     pa_sample_spec ss;
     int ss_valid = 0;
     char *key = NULL, *value = NULL;
-    
+
     assert(b);
 
     memset(&i, 0, sizeof(i));
@@ -102,7 +104,7 @@ static void resolve_callback(
 
     if (event != AVAHI_RESOLVER_FOUND)
         goto fail;
-    
+
     if (!b->callback)
         goto fail;
 
@@ -119,10 +121,10 @@ static void resolve_callback(
 
 
     while (txt) {
-        
+
         if (avahi_string_list_get_pair(txt, &key, &value, NULL) < 0)
             break;
-  
+
         if (!strcmp(key, "device")) {
             device_found = 1;
             pa_xfree((char*) i.device);
@@ -138,11 +140,11 @@ static void resolve_callback(
             value = NULL;
         } else if (!strcmp(key, "fqdn")) {
             size_t l;
-            
+
             pa_xfree((char*) i.fqdn);
             i.fqdn = value;
             value = NULL;
-                
+
             l = strlen(a);
             assert(l+1 <= sizeof(a));
             strncat(a, " ", sizeof(a)-l-1);
@@ -151,7 +153,7 @@ static void resolve_callback(
 
             if (pa_atou(value, &cookie) < 0)
                 goto fail;
-            
+
             i.cookie = &cookie;
         } else if (!strcmp(key, "description")) {
             pa_xfree((char*) i.description);
@@ -159,13 +161,13 @@ static void resolve_callback(
             value = NULL;
         } else if (!strcmp(key, "channels")) {
             uint32_t ch;
-            
+
             if (pa_atou(value, &ch) < 0 || ch <= 0 || ch > 255)
                 goto fail;
-            
+
             ss.channels = (uint8_t) ch;
             ss_valid |= 1;
-            
+
         } else if (!strcmp(key, "rate")) {
             if (pa_atou(value, &ss.rate) < 0)
                 goto fail;
@@ -174,7 +176,7 @@ static void resolve_callback(
 
             if ((ss.format = pa_parse_sample_format(value)) == PA_SAMPLE_INVALID)
                 goto fail;
-            
+
             ss_valid |= 4;
         }
 
@@ -186,7 +188,7 @@ static void resolve_callback(
     }
 
     /* No device txt record was sent for a sink or source service */
-    if (opcode != PA_BROWSE_NEW_SERVER && !device_found) 
+    if (opcode != PA_BROWSE_NEW_SERVER && !device_found)
         goto fail;
 
     if (ss_valid == 7)
@@ -203,7 +205,7 @@ fail:
 
     pa_xfree(key);
     pa_xfree(value);
-    
+
     avahi_service_resolver_free(r);
 }
 
@@ -263,19 +265,19 @@ static void browse_callback(
 
             break;
         }
-            
+
         case AVAHI_BROWSER_REMOVE: {
 
             if (b->callback) {
                 pa_browse_info i;
                 int opcode;
-                
+
                 memset(&i, 0, sizeof(i));
                 i.name = name;
 
                 opcode = map_to_opcode(type, 0);
                 assert(opcode >= 0);
-                
+
                 b->callback(b, opcode, &i, b->userdata);
             }
             break;
@@ -285,7 +287,7 @@ static void browse_callback(
             handle_failure(b);
             break;
         }
-            
+
         default:
             ;
     }
@@ -313,7 +315,7 @@ pa_browser *pa_browser_new_full(pa_mainloop_api *mainloop, pa_browse_flags_t fla
 
     if (flags & ~(PA_BROWSE_FOR_SERVERS|PA_BROWSE_FOR_SINKS|PA_BROWSE_FOR_SOURCES) || flags == 0)
         return NULL;
-    
+
     b = pa_xnew(pa_browser, 1);
     b->mainloop = mainloop;
     b->ref = 1;
@@ -335,7 +337,7 @@ pa_browser *pa_browser_new_full(pa_mainloop_api *mainloop, pa_browse_flags_t fla
         !(b->server_browser = avahi_service_browser_new(
                   b->client,
                   AVAHI_IF_UNSPEC,
-                  AVAHI_PROTO_UNSPEC,
+                  AVAHI_PROTO_INET,
                   SERVICE_TYPE_SERVER,
                   NULL,
                   0,
@@ -346,7 +348,7 @@ pa_browser *pa_browser_new_full(pa_mainloop_api *mainloop, pa_browse_flags_t fla
             *error_string = avahi_strerror(avahi_client_errno(b->client));
         goto fail;
     }
-    
+
     if ((flags & PA_BROWSE_FOR_SINKS) &&
         !(b->sink_browser = avahi_service_browser_new(
                   b->client,
@@ -378,13 +380,13 @@ pa_browser *pa_browser_new_full(pa_mainloop_api *mainloop, pa_browse_flags_t fla
             *error_string = avahi_strerror(avahi_client_errno(b->client));
         goto fail;
     }
-    
+
     return b;
 
 fail:
     if (b)
         browser_free(b);
-    
+
     return NULL;
 }
 
@@ -403,7 +405,7 @@ static void browser_free(pa_browser *b) {
 
     if (b->avahi_poll)
         pa_avahi_poll_free(b->avahi_poll);
-    
+
     pa_xfree(b);
 }
 

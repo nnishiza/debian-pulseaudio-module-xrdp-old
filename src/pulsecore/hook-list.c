@@ -1,18 +1,20 @@
-/* $Id: hook-list.c 1261 2006-08-17 20:03:38Z lennart $ */
+/* $Id: hook-list.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -36,9 +38,9 @@ static void slot_free(pa_hook *hook, pa_hook_slot *slot) {
 
     if (hook->last == slot)
         hook->last = slot->prev;
-    
+
     PA_LLIST_REMOVE(pa_hook_slot, hook->slots, slot);
-    
+
     pa_xfree(slot);
 }
 
@@ -48,13 +50,13 @@ void pa_hook_free(pa_hook *hook) {
 
     while (hook->slots)
         slot_free(hook, hook->slots);
-    
+
     pa_hook_init(hook, NULL);
 }
 
 pa_hook_slot* pa_hook_connect(pa_hook *hook, pa_hook_cb_t cb, void *data) {
     pa_hook_slot *slot;
-    
+
     assert(cb);
 
     slot = pa_xnew(pa_hook_slot, 1);
@@ -62,17 +64,17 @@ pa_hook_slot* pa_hook_connect(pa_hook *hook, pa_hook_cb_t cb, void *data) {
     slot->dead = 0;
     slot->callback = cb;
     slot->data = data;
-    
+
     PA_LLIST_INSERT_AFTER(pa_hook_slot, hook->slots, hook->last, slot);
     hook->last = slot;
-    
+
     return slot;
 }
 
 void pa_hook_slot_free(pa_hook_slot *slot) {
     assert(slot);
     assert(!slot->dead);
-    
+
     if (slot->hook->firing > 0) {
         slot->dead = 1;
         slot->hook->n_dead++;
@@ -83,7 +85,7 @@ void pa_hook_slot_free(pa_hook_slot *slot) {
 pa_hook_result_t pa_hook_fire(pa_hook *hook, void *data) {
     pa_hook_slot *slot, *next;
     pa_hook_result_t result = PA_HOOK_OK;
-    
+
     assert(hook);
 
     hook->firing ++;
@@ -91,16 +93,16 @@ pa_hook_result_t pa_hook_fire(pa_hook *hook, void *data) {
     for (slot = hook->slots; slot; slot = slot->next) {
         if (slot->dead)
             continue;
-        
+
         if ((result = slot->callback(hook->data, data, slot->data)) != PA_HOOK_OK)
             break;
     }
-    
+
     hook->firing --;
-    
+
     for (slot = hook->slots; hook->n_dead > 0 && slot; slot = next) {
         next = slot->next;
-        
+
         if (slot->dead) {
             slot_free(hook, slot);
             hook->n_dead--;

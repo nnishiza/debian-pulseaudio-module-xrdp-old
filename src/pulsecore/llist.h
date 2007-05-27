@@ -1,21 +1,23 @@
 #ifndef foollistfoo
 #define foollistfoo
 
-/* $Id: llist.h 1258 2006-08-17 20:01:04Z lennart $ */
+/* $Id: llist.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -75,7 +77,7 @@ do { \
     assert(_head); \
     while ((*_head)->prev) \
         *_head = (*_head)->prev; \
-} while (0) 
+} while (0)
 
 #define PA_LLIST_INSERT_AFTER(t,head,a,b) \
 do { \
@@ -92,7 +94,7 @@ do { \
         _b->prev = _a; \
         _a->next = _b; \
     } \
-} while (0) 
-    
+} while (0)
+
 
 #endif

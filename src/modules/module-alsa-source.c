@@ -1,18 +1,21 @@
-/* $Id: module-alsa-source.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: module-alsa-source.c 1433 2007-03-02 09:20:54Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -96,13 +99,13 @@ static void update_usage(struct userdata *u) {
 
 static void clear_up(struct userdata *u) {
     assert(u);
-    
+
     if (u->source) {
         pa_source_disconnect(u->source);
         pa_source_unref(u->source);
         u->source = NULL;
     }
-    
+
     if (u->pcm_fdl)
         pa_alsa_fdlist_free(u->pcm_fdl);
     if (u->mixer_fdl)
@@ -114,7 +117,7 @@ static void clear_up(struct userdata *u) {
         snd_mixer_close(u->mixer_handle);
         u->mixer_handle = NULL;
     }
-    
+
     if (u->pcm_handle) {
         snd_pcm_drop(u->pcm_handle);
         snd_pcm_close(u->pcm_handle);
@@ -127,7 +130,7 @@ static int xrun_recovery(struct userdata *u) {
     assert(u);
 
     pa_log_info("*** ALSA-XRUN (capture) ***");
-    
+
     if ((ret = snd_pcm_prepare(u->pcm_handle)) < 0) {
         pa_log("snd_pcm_prepare() failed: %s", snd_strerror(-ret));
 
@@ -140,21 +143,49 @@ static int xrun_recovery(struct userdata *u) {
     return 0;
 }
 
+
+static int suspend_recovery(struct userdata *u) {
+    int ret;
+    assert(u);
+
+    pa_log_info("*** ALSA-SUSPEND (capture) ***");
+
+    if ((ret = snd_pcm_resume(u->pcm_handle)) < 0) {
+        if (ret == -EAGAIN)
+            return -1;
+
+        if (ret != -ENOSYS)
+            pa_log("snd_pcm_resume() failed: %s", snd_strerror(-ret));
+        else {
+            if ((ret = snd_pcm_prepare(u->pcm_handle)) < 0)
+                pa_log("snd_pcm_prepare() failed: %s", snd_strerror(-ret));
+        }
+
+        if (ret < 0) {
+            clear_up(u);
+            pa_module_unload_request(u->module);
+            return -1;
+        }
+    }
+
+    return ret;
+}
+
 static void do_read(struct userdata *u) {
     assert(u);
 
     update_usage(u);
-    
+
     for (;;) {
         pa_memchunk post_memchunk;
         snd_pcm_sframes_t frames;
         size_t l;
-        
+
         if (!u->memchunk.memblock) {
             u->memchunk.memblock = pa_memblock_new(u->source->core->mempool, u->memchunk.length = u->fragment_size);
             u->memchunk.index = 0;
         }
-            
+
         assert(u->memchunk.memblock);
         assert(u->memchunk.length);
         assert(u->memchunk.memblock->data);
@@ -164,11 +195,18 @@ static void do_read(struct userdata *u) {
         if ((frames = snd_pcm_readi(u->pcm_handle, (uint8_t*) u->memchunk.memblock->data + u->memchunk.index, u->memchunk.length / u->frame_size)) < 0) {
             if (frames == -EAGAIN)
                 return;
-            
+
             if (frames == -EPIPE) {
                 if (xrun_recovery(u) < 0)
                     return;
-                
+
+                continue;
+            }
+
+            if (frames == -ESTRPIPE) {
+                if (suspend_recovery(u) < 0)
+                    return;
+
                 continue;
             }
 
@@ -180,7 +218,7 @@ static void do_read(struct userdata *u) {
         }
 
         l = frames * u->frame_size;
-        
+
         post_memchunk = u->memchunk;
         post_memchunk.length = l;
 
@@ -188,13 +226,13 @@ static void do_read(struct userdata *u) {
 
         u->memchunk.index += l;
         u->memchunk.length -= l;
-        
+
         if (u->memchunk.length == 0) {
             pa_memblock_unref(u->memchunk.memblock);
             u->memchunk.memblock = NULL;
             u->memchunk.index = u->memchunk.length = 0;
         }
-        
+
         break;
     }
 }
@@ -205,6 +243,10 @@ static void fdl_callback(void *userdata) {
 
     if (snd_pcm_state(u->pcm_handle) == SND_PCM_STATE_XRUN)
         if (xrun_recovery(u) < 0)
+            return;
+
+    if (snd_pcm_state(u->pcm_handle) == SND_PCM_STATE_SUSPENDED)
+        if (suspend_recovery(u) < 0)
             return;
 
     do_read(u);
@@ -223,7 +265,7 @@ static int mixer_callback(snd_mixer_elem_t *elem, unsigned int mask) {
             u->source->get_hw_volume(u->source);
         if (u->source->get_hw_mute)
             u->source->get_hw_mute(u->source);
-        
+
         pa_subscription_post(u->source->core,
             PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE,
             u->source->index);
@@ -256,14 +298,14 @@ static int source_get_hw_volume_cb(pa_source *s) {
 
     for (i = 0;i < s->hw_volume.channels;i++) {
         long set_vol;
-        
+
         assert(snd_mixer_selem_has_capture_channel(u->mixer_elem, i));
-        
+
         if ((err = snd_mixer_selem_get_capture_volume(u->mixer_elem, i, &vol)) < 0)
             goto fail;
 
         set_vol = (long) roundf(((float) s->hw_volume.values[i] * (u->hw_volume_max - u->hw_volume_min)) / PA_VOLUME_NORM) + u->hw_volume_min;
-        
+
         /* Try to avoid superfluous volume changes */
         if (set_vol != vol)
             s->hw_volume.values[i] = (pa_volume_t) roundf(((float) (vol - u->hw_volume_min) * PA_VOLUME_NORM) / (u->hw_volume_max - u->hw_volume_min));
@@ -361,7 +403,7 @@ int pa__init(pa_core *c, pa_module*m) {
     const char *name;
     char *name_buf = NULL;
     int namereg_fail;
-    
+
     if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
         pa_log("failed to parse module arguments");
         goto fail;
@@ -378,17 +420,17 @@ int pa__init(pa_core *c, pa_module*m) {
     /* Fix latency to 100ms */
     periods = 12;
     fragsize = pa_bytes_per_second(&ss)/128;
-    
+
     if (pa_modargs_get_value_u32(ma, "fragments", &periods) < 0 || pa_modargs_get_value_u32(ma, "fragment_size", &fragsize) < 0) {
         pa_log("failed to parse buffer metrics");
         goto fail;
     }
     period_size = fragsize/frame_size;
-    
+
     u = pa_xnew0(struct userdata, 1);
     m->userdata = u;
     u->module = m;
-    
+
     snd_config_update_free_global();
     if ((err = snd_pcm_open(&u->pcm_handle, dev = pa_modargs_get_value(ma, "device", DEFAULT_DEVICE), SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK)) < 0) {
         pa_log("Error opening PCM device %s: %s", dev, snd_strerror(err));
@@ -427,7 +469,7 @@ int pa__init(pa_core *c, pa_module*m) {
         name = name_buf = pa_sprintf_malloc("alsa_input.%s", dev);
         namereg_fail = 0;
     }
-    
+
     if (!(u->source = pa_source_new(c, __FILE__, name, namereg_fail, &ss, &map))) {
         pa_log("Failed to create source object");
         goto fail;
@@ -490,7 +532,7 @@ int pa__init(pa_core *c, pa_module*m) {
     u->memchunk.index = u->memchunk.length = 0;
 
     snd_pcm_start(u->pcm_handle);
-    
+
     ret = 0;
 
     /* Get initial mixer settings */
@@ -507,11 +549,11 @@ finish:
 
     if (pcm_info)
         snd_pcm_info_free(pcm_info);
-    
+
     return ret;
 
 fail:
-    
+
     if (u)
         pa__done(c, m);
 
@@ -526,10 +568,10 @@ void pa__done(pa_core *c, pa_module*m) {
         return;
 
     clear_up(u);
-    
+
     if (u->memchunk.memblock)
         pa_memblock_unref(u->memchunk.memblock);
-    
+
     pa_xfree(u);
 }
 

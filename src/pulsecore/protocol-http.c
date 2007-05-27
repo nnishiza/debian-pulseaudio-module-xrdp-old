@@ -1,18 +1,20 @@
-/* $Id: protocol-http.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: protocol-http.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2005-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -67,7 +69,7 @@ static void http_response(struct connection *c, int code, const char *msg, const
     assert(msg);
     assert(mime);
 
-    snprintf(s, sizeof(s), 
+    snprintf(s, sizeof(s),
              "HTTP/1.0 %i %s\n"
              "Connection: close\n"
              "Content-Type: %s\n"
@@ -137,16 +139,16 @@ static void line_callback(pa_ioline *line, const char *s, void *userdata) {
         }
 
         case MIME_HEADER: {
-            
+
             /* Ignore MIME headers */
             if (strcspn(s, " \r\n") != 0)
                 break;
-            
+
             /* We're done */
             c->state = DATA;
 
             pa_log_info("request for %s", c->url);
-            
+
             if (!strcmp(c->url, URL_ROOT)) {
                 char txt[256];
                 http_response(c, 200, "OK", "text/html");
@@ -168,18 +170,18 @@ static void line_callback(pa_ioline *line, const char *s, void *userdata) {
                 PRINTF_FIELD("Default Sample Specification:", pa_sample_spec_snprint(txt, sizeof(txt), &c->protocol->core->default_sample_spec));
                 PRINTF_FIELD("Default Sink:", pa_namereg_get_default_sink_name(c->protocol->core));
                 PRINTF_FIELD("Default Source:", pa_namereg_get_default_source_name(c->protocol->core));
-                
+
                 pa_ioline_puts(c->line, "</table>");
 
                 pa_ioline_puts(c->line, "<p><a href=\"/status\">Click here</a> for an extensive server status report.</p>");
-                
+
                 pa_ioline_puts(c->line, "</body></html>\n");
-                
-                pa_ioline_defer_close(c->line); 
+
+                pa_ioline_defer_close(c->line);
             } else if (!strcmp(c->url, URL_CSS)) {
                 http_response(c, 200, "OK", "text/css");
 
-                pa_ioline_puts(c->line, 
+                pa_ioline_puts(c->line,
                                "body { color: black; background-color: white; margin: 0.5cm; }\n"
                                "a:link, a:visited { color: #900000; }\n"
                                "p { margin-left: 0.5cm; margin-right: 0.5cm; }\n"
@@ -207,13 +209,13 @@ static void line_callback(pa_ioline *line, const char *s, void *userdata) {
 
             break;
         }
-            
+
         default:
             ;
     }
 
     return;
-            
+
 fail:
     internal_server_error(c);
 }

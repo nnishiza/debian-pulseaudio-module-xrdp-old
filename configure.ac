@@ -1,9 +1,12 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# $Id: configure.ac 1334 2006-08-26 19:22:14Z lennart $
+# $Id: configure.ac 1460 2007-05-27 20:58:29Z lennart $
 
 # This file is part of PulseAudio.
+#
+# Copyright 2004-2006 Lennart Poettering
+# Copyright 2006-2007 Pierre Ossman <ossman@cendio.se> for Cendio AB
 #
 # PulseAudio is free software; you can redistribute it and/or modify it
 # under the terms of the GNU Lesser General Public License as published by
@@ -23,7 +26,7 @@ AC_PREREQ(2.57)
 
 m4_define(PA_MAJOR, [0])
 m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [5])
+m4_define(PA_MICRO, [6])
 
 AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzcbylcnhqvb (at) 0pointer (dot) de])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
@@ -36,11 +39,13 @@ AC_SUBST(PACKAGE_URL, [http://0pointer.de/lennart/projects/pulseaudio/])
 AC_SUBST(PA_API_VERSION, 10)
 AC_SUBST(PA_PROTOCOL_VERSION, 10)
 
-AC_SUBST(LIBPULSE_VERSION_INFO, [1:0:1])
-AC_SUBST(LIBPULSECORE_VERSION_INFO, [2:0:0])
+AC_SUBST(LIBPULSE_VERSION_INFO, [2:0:2])
+AC_SUBST(LIBPULSECORE_VERSION_INFO, [3:0:0])
 AC_SUBST(LIBPULSE_SIMPLE_VERSION_INFO, [0:0:0])
 AC_SUBST(LIBPULSE_BROWSE_VERSION_INFO, [1:0:1])
 AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:2:0])
+
+AC_CANONICAL_HOST
 
 if type -p stow > /dev/null && test -d /usr/local/stow ; then
    AC_MSG_NOTICE([*** Found /usr/local/stow: default install prefix set to /usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION} ***])
@@ -143,9 +148,18 @@ AC_HEADER_STDC
 
 # POSIX
 AC_CHECK_HEADERS([arpa/inet.h glob.h grp.h netdb.h netinet/in.h \
-    netinet/in_systm.h netinet/ip.h netinet/tcp.h pwd.h sched.h \
+    netinet/in_systm.h netinet/tcp.h pwd.h sched.h \
     sys/mman.h sys/resource.h sys/select.h sys/socket.h sys/wait.h \
     syslog.h])
+AC_CHECK_HEADERS([netinet/ip.h], [], [],
+		 [#include <sys/types.h>
+		  #if HAVE_NETINET_IN_H
+		  # include <netinet/in.h>
+		  #endif
+		  #if HAVE_NETINET_IN_SYSTM_H
+		  # include <netinet/in_systm.h>
+		  #endif
+		 ])
 AC_CHECK_HEADERS([regex.h], [HAVE_REGEX=1], [HAVE_REGEX=0])
 AC_CHECK_HEADERS([sys/un.h], [HAVE_AF_UNIX=1], [HAVE_AF_UNIX=0])
 
@@ -319,6 +333,17 @@ AC_SUBST(LIBSAMPLERATE_LIBS)
 PKG_CHECK_MODULES(LIBSNDFILE, [ sndfile >= 1.0.10 ])
 AC_SUBST(LIBSNDFILE_CFLAGS)
 AC_SUBST(LIBSNDFILE_LIBS)
+
+#### atomic-ops ###
+
+AC_CHECK_HEADERS([atomic_ops.h], [], [
+AC_MSG_ERROR([*** libatomic-ops headers not found])
+])
+
+# Win32 does not need the lib and breaks horribly if we try to include it
+if test "x$os_is_win32" != "x1" ; then
+    LIBS="$LIBS -latomic_ops"
+fi
 
 #### OSS support (optional) ####
 
@@ -687,7 +712,7 @@ AC_DEFINE_UNQUOTED(PA_SYSTEM_GROUP,"$PA_SYSTEM_GROUP", [Group for the PulseAudio
 
 AC_ARG_WITH(realtime_group,AS_HELP_STRING([--with-realtime-group=<group>],[Group for users that are allowed to start the PulseAudio daemon with realtime scheduling (realtime)]))
 if test -z "$with_realtime_group" ; then
-    PA_REALTIME_GROUP=realtime
+    PA_REALTIME_GROUP=pulse-rt
 else
     PA_REALTIME_GROUP=$with_realtime_group
 fi

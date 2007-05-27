@@ -1,18 +1,20 @@
-/* $Id: volume.c 1033 2006-06-19 21:53:48Z lennart $ */
+/* $Id: volume.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -36,7 +38,7 @@ int pa_cvolume_equal(const pa_cvolume *a, const pa_cvolume *b) {
 
     if (a->channels != b->channels)
         return 0;
-    
+
     for (i = 0; i < a->channels; i++)
         if (a->values[i] != b->values[i])
             return 0;
@@ -46,7 +48,7 @@ int pa_cvolume_equal(const pa_cvolume *a, const pa_cvolume *b) {
 
 pa_cvolume* pa_cvolume_set(pa_cvolume *a, unsigned channels, pa_volume_t v) {
     int i;
-    
+
     assert(a);
     assert(channels > 0);
     assert(channels <= PA_CHANNELS_MAX);
@@ -115,7 +117,7 @@ char *pa_cvolume_snprint(char *s, size_t l, const pa_cvolume *c) {
     unsigned channel;
     int first = 1;
     char *e;
-    
+
     assert(s);
     assert(l > 0);
     assert(c);
@@ -149,7 +151,7 @@ int pa_cvolume_channels_equal_to(const pa_cvolume *a, pa_volume_t v) {
 
 pa_cvolume *pa_sw_cvolume_multiply(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) {
     unsigned i;
-    
+
     assert(dest);
     assert(a);
     assert(b);

@@ -1,18 +1,21 @@
-/* $Id: module-hal-detect.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: module-hal-detect.c 1440 2007-05-22 23:38:22Z lennart $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2006 Lennart Poettering
+  Copyright 2006 Shams E. King
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -58,7 +61,7 @@ typedef enum {
 #endif
 #ifdef HAVE_OSS
     CAP_OSS,
-#endif    
+#endif
     CAP_MAX
 } capability_t;
 
@@ -82,6 +85,9 @@ struct userdata {
     capability_t capability;
     pa_dbus_connection *conn;
     pa_hashmap *devices;
+#if defined(HAVE_ALSA) && defined(HAVE_OSS)
+    int use_oss;
+#endif    
 };
 
 struct timerdata {
@@ -181,7 +187,9 @@ static pa_module* hal_device_load_alsa(struct userdata *u, const char *udi,
         module_name = "module-alsa-source";
         snprintf(args, sizeof(args), "device=hw:%u source_name=alsa_input.%s", card, strip_udi(udi));
     }
-        
+
+    pa_log_debug("Loading %s with arguments '%s'", module_name, args);
+
     return pa_module_load(u->core, module_name, args);
 }
 
@@ -198,7 +206,7 @@ static dbus_bool_t hal_device_is_oss_pcm(LibHalContext *ctx, const char *udi,
     type = libhal_device_get_property_string(ctx, udi, "oss.type", error);
     if (!type || dbus_error_is_set(error))
         return FALSE;
-    
+
     if (!strcmp(type, "pcm")) {
         char *e;
 
@@ -239,6 +247,8 @@ static pa_module* hal_device_load_oss(struct userdata *u, const char *udi,
     snprintf(args, sizeof(args), "device=%s sink_name=oss_output.%s source_name=oss_input.%s", device, strip_udi(udi), strip_udi(udi));
     libhal_free_string(device);
 
+    pa_log_debug("Loading module-oss with arguments '%s'", args);
+
     return pa_module_load(u->core, "module-oss", args);
 }
 #endif
@@ -246,7 +256,7 @@ static pa_module* hal_device_load_oss(struct userdata *u, const char *udi,
 static dbus_bool_t hal_device_add(struct userdata *u, const char *udi,
                                   DBusError *error)
 {
-    pa_module* m;
+    pa_module* m = NULL;
     struct device *d;
 
     switch(u->capability) {
@@ -257,7 +267,10 @@ static dbus_bool_t hal_device_add(struct userdata *u, const char *udi,
 #endif
 #ifdef HAVE_OSS
         case CAP_OSS:
-            m = hal_device_load_oss(u, udi, error);
+#ifdef HAVE_ALSA
+            if (u->use_oss)
+#endif                
+                m = hal_device_load_oss(u, udi, error);
             break;
 #endif
         default:
@@ -485,11 +498,11 @@ fail:
 }
 
 int pa__init(pa_core *c, pa_module*m) {
-    int n;
     DBusError error;
     pa_dbus_connection *conn;
     struct userdata *u = NULL;
     LibHalContext *hal_ctx = NULL;
+    int n = 0;
 
     assert(c);
     assert(m);
@@ -516,18 +529,26 @@ int pa__init(pa_core *c, pa_module*m) {
     m->userdata = (void*) u;
 
 #ifdef HAVE_ALSA
-    if ((n = hal_device_add_all(u, CAP_ALSA)) <= 0)
+    n = hal_device_add_all(u, CAP_ALSA);
 #endif
+#if defined(HAVE_ALSA) && defined(HAVE_OSS)
+    u->use_oss = 0;
+    
+    if (n <= 0) {
+#endif    
 #ifdef HAVE_OSS
-    if ((n = hal_device_add_all(u, CAP_OSS)) <= 0)
+        n += hal_device_add_all(u, CAP_OSS);
 #endif
-    {
-        pa_log_warn("failed to detect any sound hardware.");
-        userdata_free(u);
-        return -1;
-    }
+#if defined(HAVE_ALSA) && defined(HAVE_OSS)
 
-    libhal_ctx_set_user_data(hal_ctx, (void*) u);
+        /* We found something with OSS, but didn't find anything with
+         * ALSA. Then let's use only OSS from now on. */
+        if (n > 0)
+            u->use_oss = 1;
+    }
+#endif    
+
+    libhal_ctx_set_user_data(hal_ctx, u);
     libhal_ctx_set_device_added(hal_ctx, device_added_cb);
     libhal_ctx_set_device_removed(hal_ctx, device_removed_cb);
     libhal_ctx_set_device_new_capability(hal_ctx, new_capability_cb);

@@ -1,21 +1,24 @@
 #ifndef foosourcehfoo
 #define foosourcehfoo
 
-/* $Id: source.h 1226 2006-08-12 16:50:58Z lennart $ */
+/* $Id: source.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -49,10 +52,10 @@ struct pa_source {
     uint32_t index;
     pa_core *core;
     pa_source_state_t state;
-    
+
     char *name;
     char *description, *driver;              /* may be NULL */
-    
+
     pa_module *owner;                        /* may be NULL */
 
     pa_sample_spec sample_spec;
@@ -65,14 +68,14 @@ struct pa_source {
     int hw_muted, sw_muted;
 
     int is_hardware;
-    
+
     void (*notify)(pa_source*source);        /* may be NULL */
     pa_usec_t (*get_latency)(pa_source *s);  /* dito */
     int (*set_hw_volume)(pa_source *s);      /* dito */
-    int (*get_hw_volume)(pa_source *s);      /* dito */ 
+    int (*get_hw_volume)(pa_source *s);      /* dito */
     int (*set_hw_mute)(pa_source *s);        /* dito */
     int (*get_hw_mute)(pa_source *s);        /* dito */
-    
+
     void *userdata;
 };
 

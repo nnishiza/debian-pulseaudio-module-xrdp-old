@@ -20,18 +20,18 @@
 
 ### Load audio drivers statically
 #load-module module-alsa-sink
-#load-module module-alsa-source device=plughw:1,0
+#load-module module-alsa-source device=hw:1,0
 #load-module module-oss device="/dev/dsp" sink_name=output source_name=input
 #load-module module-oss-mmap device="/dev/dsp" sink_name=output source_name=input
 #load-module module-null-sink
 #load-module module-pipe-sink
 
 ### Automatically load driver modules depending on the hardware available
-load-module module-hal-detect
+@HAVE_HAL_TRUE@load-module module-hal-detect
 
 ### Alternatively use the static hardware detection module (for systems that
 ### lack HAL support
-#load-module module-detect
+@HAVE_HAL_FALSE@load-module module-detect
 
 ### Load audio drivers automatically on access
 #add-autoload-sink output module-oss device="/dev/dsp" sink_name=output source_name=input

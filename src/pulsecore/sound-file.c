@@ -1,18 +1,20 @@
-/* $Id: sound-file.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: sound-file.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -63,7 +65,7 @@ int pa_sound_file_load(pa_mempool *pool, const char *fname, pa_sample_spec *ss, 
         case SF_FORMAT_ULAW:
             ss->format = PA_SAMPLE_ULAW;
             break;
-            
+
         case SF_FORMAT_ALAW:
             ss->format = PA_SAMPLE_ALAW;
             break;
@@ -86,7 +88,7 @@ int pa_sound_file_load(pa_mempool *pool, const char *fname, pa_sample_spec *ss, 
 
     if (map)
         pa_channel_map_init_auto(map, ss->channels, PA_CHANNEL_MAP_DEFAULT);
-    
+
     if ((l = pa_frame_size(ss)*sfinfo.frames) > PA_SCACHE_ENTRY_SIZE_MAX) {
         pa_log("File too large");
         goto finish;
@@ -102,7 +104,7 @@ int pa_sound_file_load(pa_mempool *pool, const char *fname, pa_sample_spec *ss, 
         pa_log("Premature file end");
         goto finish;
     }
-        
+
     ret = 0;
 
 finish:
@@ -112,9 +114,9 @@ finish:
 
     if (ret != 0 && chunk->memblock)
         pa_memblock_unref(chunk->memblock);
-    
+
     return ret;
-    
+
 }
 
 int pa_sound_file_too_big_to_cache(const char *fname) {
@@ -139,7 +141,7 @@ int pa_sound_file_too_big_to_cache(const char *fname) {
         case SF_FORMAT_ULAW:
             ss.format = PA_SAMPLE_ULAW;
             break;
-            
+
         case SF_FORMAT_ALAW:
             ss.format = PA_SAMPLE_ALAW;
             break;

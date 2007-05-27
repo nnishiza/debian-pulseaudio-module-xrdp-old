@@ -1,21 +1,24 @@
 #ifndef foocoreutilhfoo
 #define foocoreutilhfoo
 
-/* $Id: core-util.h 1109 2006-07-19 21:48:35Z lennart $ */
+/* $Id: core-util.h 1429 2007-02-14 12:13:49Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006-2007 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   Lesser General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -40,6 +43,8 @@ ssize_t pa_read(int fd, void *buf, size_t count, int *type);
 ssize_t pa_write(int fd, const void *buf, size_t count, int *type);
 ssize_t pa_loop_read(int fd, void*data, size_t size, int *type);
 ssize_t pa_loop_write(int fd, const void*data, size_t size, int *type);
+
+int pa_close(int fd);
 
 void pa_check_signal_is_blocked(int sig);
 

@@ -1,18 +1,21 @@
-/* $Id: caps.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: caps.c 1455 2007-05-25 20:35:30Z lennart $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -32,6 +35,9 @@
 #ifdef HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
 #endif
+#ifdef HAVE_SYS_PRCTL_H
+#include <sys/prctl.h>
+#endif
 
 #include <pulsecore/core-error.h>
 
@@ -50,7 +56,7 @@ int setresuid(uid_t r, uid_t e, uid_t s);
 /* Drop root rights when called SUID root */
 void pa_drop_root(void) {
     uid_t uid = getuid();
-    
+
     if (uid == 0 || geteuid() != 0)
         return;
 
@@ -73,36 +79,32 @@ void pa_drop_root(void) {
 
 #endif
 
-#ifdef HAVE_SYS_CAPABILITY_H
+#if defined(HAVE_SYS_CAPABILITY_H) && defined(HAVE_SYS_PRCTL_H)
 
-/* Limit capabilities set to CAPSYS_NICE */
+/* Limit permitted capabilities set to CAPSYS_NICE */
 int pa_limit_caps(void) {
     int r = -1;
     cap_t caps;
     cap_value_t nice_cap = CAP_SYS_NICE;
 
-    /* Only drop caps when called SUID */
-    if (getuid() == 0)
-        return 0;
-
     caps = cap_init();
     assert(caps);
-
     cap_clear(caps);
-
-    cap_set_flag(caps, CAP_EFFECTIVE, 1, &nice_cap, CAP_SET);
     cap_set_flag(caps, CAP_PERMITTED, 1, &nice_cap, CAP_SET);
 
     if (cap_set_proc(caps) < 0)
         goto fail;
 
-    pa_log_info("dropped capabilities successfully."); 
+    if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0)
+        goto fail;
     
-    r = 0;
+    pa_log_info("dropped capabilities successfully.");
+    
+    r = 1;
 
 fail:
-    cap_free (caps);
-    
+    cap_free(caps);
+
     return r;
 }
 
@@ -111,15 +113,13 @@ int pa_drop_caps(void) {
     cap_t caps;
     int r = -1;
 
-    /* Only drop caps when called SUID */
-    if (getuid() == 0)
-        return 0;
-
     caps = cap_init();
     assert(caps);
 
     cap_clear(caps);
 
+    prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0);
+    
     if (cap_set_proc(caps) < 0) {
         pa_log("failed to drop capabilities: %s", pa_cstrerror(errno));
         goto fail;
@@ -128,8 +128,8 @@ int pa_drop_caps(void) {
     r = 0;
 
 fail:
-    cap_free (caps);
-    
+    cap_free(caps);
+
     return r;
 }
 

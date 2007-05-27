@@ -1,7 +1,9 @@
-/* $Id: x11prop.c 1033 2006-06-19 21:53:48Z lennart $ */
+/* $Id: x11prop.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2004-2006 Lennart Poettering
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -48,7 +50,7 @@ char* pa_x11_get_prop(Display *d, const char *name, char *p, size_t l) {
     unsigned long nbytes_after;
     unsigned char *prop = NULL;
     char *ret = NULL;
-    
+
     Atom a = XInternAtom(d, name, False);
     if (XGetWindowProperty(d, RootWindow(d, 0), a, 0, (l+2)/4, False, XA_STRING, &actual_type, &actual_format, &nitems, &nbytes_after, &prop) != Success)
         goto finish;
@@ -65,6 +67,6 @@ finish:
 
     if (prop)
         XFree(prop);
-    
+
     return ret;
 }

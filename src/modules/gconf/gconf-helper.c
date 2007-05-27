@@ -1,7 +1,9 @@
-/* $Id: gconf-helper.c 1156 2006-07-27 16:50:26Z lennart $ */
+/* $Id: gconf-helper.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2006 Lennart Poettering
  
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -96,6 +98,8 @@ int main(int argc, char *argv[]) {
     GMainLoop *g;
     GConfClient *client;
     GSList *modules, *m;
+
+    g_type_init();
 
     if (!(client = gconf_client_get_default()))
         goto fail;

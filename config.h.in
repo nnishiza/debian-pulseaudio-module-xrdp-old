@@ -10,6 +10,9 @@
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
 
+/* Define to 1 if you have the <atomic_ops.h> header file. */
+#undef HAVE_ATOMIC_OPS_H
+
 /* Define to 1 if you have the `chmod' function. */
 #undef HAVE_CHMOD
 
@@ -117,9 +120,6 @@
 
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
-
-/* Define to 1 if you have the 'pthread_yield' function. */
-#undef HAVE_PTHREAD_YIELD
 
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
@@ -310,7 +310,7 @@
 /* User for running the PulseAudio system daemon */
 #undef PA_SYSTEM_USER
 
-/* Define to the necessary symbol if this constant uses a non-standard name on
+/* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
 

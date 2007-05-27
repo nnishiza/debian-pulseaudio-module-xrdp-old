@@ -1,6 +1,10 @@
-# $Id: Makefile.am 1268 2006-08-18 19:56:51Z lennart $
+# $Id: Makefile.am 1454 2007-05-25 20:24:55Z lennart $
 #
 # This file is part of PulseAudio.
+#
+# Copyright 2004-2006 Lennart Poettering
+# Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+# Copyright 2006 Diego Pettenò
 #
 # PulseAudio is free software; you can redistribute it and/or modify
 # it under the terms of the GNU Lesser General Public License as published by
@@ -42,7 +46,7 @@ endif
 #     Compiler/linker flags       #
 ###################################
 
-AM_CFLAGS = -I$(top_srcdir)/src
+AM_CFLAGS = -I$(top_srcdir)/src -I$(top_builddir)/src/modules -I$(top_builddir)/src/modules/rtp -I$(top_builddir)/src/modules/gconf
 AM_CFLAGS += $(PTHREAD_CFLAGS) -D_POSIX_PTHREAD_SEMANTICS
 AM_CFLAGS += $(LTDLINCL)
 AM_CFLAGS += $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS)
@@ -50,6 +54,7 @@ AM_CFLAGS += -DPA_DLSEARCHPATH=\"$(modlibexecdir)\"
 AM_CFLAGS += -DPA_DEFAULT_CONFIG_DIR=\"$(PA_DEFAULT_CONFIG_DIR)\"
 AM_CFLAGS += -DPA_BINARY=\"$(PA_BINARY)\"
 AM_CFLAGS += -DPA_SYSTEM_RUNTIME_PATH=\"$(PA_SYSTEM_RUNTIME_PATH)\"
+AM_CFLAGS += -DAO_REQUIRE_CAS
 
 # This cool debug trap works on i386/gcc only
 AM_CFLAGS += '-DDEBUG_TRAP=__asm__("int $$3")'
@@ -69,12 +74,26 @@ AM_LDFLAGS+=-Wl,--export-all-symbols
 WINSOCK_LIBS=-lwsock32 -lws2_32 -lwininet
 endif
 
+if OS_IS_WIN32
+PA_THREAD_OBJS = \
+		pulsecore/once-win32.c pulsecore/once.h \
+		pulsecore/mutex-win32.c pulsecore/mutex.h \
+		pulsecore/thread-win32.c pulsecore/thread.h
+else
+PA_THREAD_OBJS = \
+		pulsecore/atomic.h \
+		pulsecore/once-posix.c pulsecore/once.h \
+		pulsecore/mutex-posix.c pulsecore/mutex.h \
+		pulsecore/thread-posix.c pulsecore/thread.h
+endif
+
 ###################################
 #          Extra files            #
 ###################################
 
 EXTRA_DIST = \
 		pulse/client.conf.in \
+		pulse/version.h.in \
 		daemon/daemon.conf.in \
 		daemon/default.pa.in \
 		daemon/default.pa.win32 \
@@ -198,7 +217,9 @@ noinst_PROGRAMS = \
 		get-binary-name-test \
 		ipacl-test \
 		hook-list-test \
-		memblock-test
+		memblock-test \
+		thread-test \
+		flist-test
 
 if HAVE_SIGXCPU
 noinst_PROGRAMS += \
@@ -247,6 +268,18 @@ memblock_test_SOURCES = tests/memblock-test.c
 memblock_test_CFLAGS = $(AM_CFLAGS)
 memblock_test_LDADD = $(AM_LDADD) libpulsecore.la
 memblock_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) 
+
+thread_test_SOURCES = tests/thread-test.c
+thread_test_CFLAGS = $(AM_CFLAGS)
+thread_test_LDADD = $(AM_LDADD) libpulsecore.la
+thread_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) 
+
+flist_test_SOURCES = tests/flist-test.c \
+		pulsecore/atomic.h \
+		pulsecore/flist.c pulsecore/flist.h
+flist_test_CFLAGS = $(AM_CFLAGS)
+flist_test_LDADD = $(AM_LDADD) libpulsecore.la
+flist_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) 
 
 mcalign_test_SOURCES = tests/mcalign-test.c
 mcalign_test_CFLAGS = $(AM_CFLAGS)
@@ -421,7 +454,8 @@ libpulse_la_SOURCES += \
 		pulsecore/tagstruct.c pulsecore/tagstruct.h \
 		pulsecore/core-error.c pulsecore/core-error.h \
 		pulsecore/winsock.h pulsecore/creds.h \
-		pulsecore/shm.c pulsecore/shm.h
+		pulsecore/shm.c pulsecore/shm.h \
+		$(PA_THREAD_OBJS)
 
 if OS_IS_WIN32
 libpulse_la_SOURCES += \
@@ -486,6 +520,7 @@ libpulsedsp_la_LDFLAGS = -avoid-version
 
 pulsecoreinclude_HEADERS = \
 		pulsecore/autoload.h \
+		pulsecore/atomic.h \
 		pulsecore/cli-command.h \
 		pulsecore/cli-text.h \
 		pulsecore/client.h \
@@ -527,7 +562,12 @@ pulsecoreinclude_HEADERS = \
 		pulsecore/strbuf.h \
 		pulsecore/tokenizer.h \
 		pulsecore/creds.h \
-		pulsecore/shm.h
+		pulsecore/shm.h \
+		pulsecore/llist.h \
+		pulsecore/refcnt.h \
+		pulsecore/mutex.h \
+		pulsecore/thread.h \
+		pulsecore/once.h
 
 lib_LTLIBRARIES += libpulsecore.la
 
@@ -595,7 +635,8 @@ libpulsecore_la_SOURCES += \
 		pulsecore/winsock.h \
 		pulsecore/core-error.c pulsecore/core-error.h \
 		pulsecore/hook-list.c pulsecore/hook-list.h \
-		pulsecore/shm.c pulsecore/shm.h
+		pulsecore/shm.c pulsecore/shm.h \
+		$(PA_THREAD_OBJS)
 
 if OS_IS_WIN32
 libpulsecore_la_SOURCES += \
@@ -973,6 +1014,9 @@ EXTRA_DIST += $(SYMDEF_FILES)
 BUILT_SOURCES += $(SYMDEF_FILES)
 
 $(SYMDEF_FILES): modules/module-defs.h.m4
+	-mkdir modules
+	-mkdir modules/gconf
+	-mkdir modules/rtp
 	$(M4) -Dfname="$@" $< > $@
 
 # Simple protocol
@@ -1105,7 +1149,7 @@ module_x11_bell_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA
 module_x11_publish_la_SOURCES = modules/module-x11-publish.c
 module_x11_publish_la_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
 module_x11_publish_la_LDFLAGS = -module -avoid-version
-module_x11_publish_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS) libx11wrap.la libauthkey.la libauthkey-prop.la libx11prop.la libstrlist.la
+module_x11_publish_la_LIBADD = $(AM_LIBADD) $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS) libx11wrap.la libauthkey.la libauthkey-prop.la libx11prop.la libstrlist.la libpulsecore.la
 
 # OSS
 
@@ -1239,9 +1283,9 @@ gconf_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 #        Some minor stuff         #
 ###################################
 
-suid: pulse
-	chown root $<
-	chmod u+s $<
+suid: pulseaudio .libs/lt-pulseaudio
+	chown root $^
+	chmod u+s $^
 
 CLEANFILES = esdcompat client.conf default.pa daemon.conf
 
@@ -1249,6 +1293,7 @@ esdcompat: daemon/esdcompat.in Makefile
 	sed -e 's,@PACKAGE_VERSION\@,$(PACKAGE_VERSION),g' \
 		-e 's,@PACKAGE_NAME\@,$(PACKAGE_NAME),g' \
 		-e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
+	chmod +x esdcompat
 
 client.conf: pulse/client.conf.in Makefile
 	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
@@ -1258,7 +1303,9 @@ default.pa: daemon/default.pa.win32
 	cp $< $@
 else
 default.pa: daemon/default.pa.in Makefile
-	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
+	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' \
+	    -e 's,@HAVE_HAL_TRUE\@,@HAVE_HAL_TRUE@,g' \
+	    -e 's,@HAVE_HAL_FALSE\@,@HAVE_HAL_FALSE@,g' < $< > $@
 endif
 
 daemon.conf: daemon/daemon.conf.in Makefile

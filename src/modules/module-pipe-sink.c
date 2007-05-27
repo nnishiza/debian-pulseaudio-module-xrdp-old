@@ -1,18 +1,20 @@
-/* $Id: module-pipe-sink.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: module-pipe-sink.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -63,7 +65,7 @@ struct userdata {
     pa_core *core;
 
     char *filename;
-    
+
     pa_sink *sink;
     pa_iochannel *io;
     pa_defer_event *defer_event;
@@ -87,18 +89,18 @@ static void do_write(struct userdata *u) {
     assert(u);
 
     u->core->mainloop->defer_enable(u->defer_event, 0);
-        
+
     if (!pa_iochannel_is_writable(u->io))
         return;
 
     pa_module_set_used(u->module, pa_sink_used_by(u->sink));
-    
+
     if (!u->memchunk.length)
         if (pa_sink_render(u->sink, PIPE_BUF, &u->memchunk) < 0)
             return;
 
     assert(u->memchunk.memblock && u->memchunk.length);
-    
+
     if ((r = pa_iochannel_write(u->io, (uint8_t*) u->memchunk.memblock->data + u->memchunk.index, u->memchunk.length)) < 0) {
         pa_log("write(): %s", pa_cstrerror(errno));
         return;
@@ -106,7 +108,7 @@ static void do_write(struct userdata *u) {
 
     u->memchunk.index += r;
     u->memchunk.length -= r;
-        
+
     if (u->memchunk.length <= 0) {
         pa_memblock_unref(u->memchunk.memblock);
         u->memchunk.memblock = NULL;
@@ -149,9 +151,9 @@ int pa__init(pa_core *c, pa_module*m) {
     pa_channel_map map;
     pa_modargs *ma = NULL;
     char *t;
-    
+
     assert(c && m);
-    
+
     if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
         pa_log("failed to parse module arguments");
         goto fail;
@@ -162,7 +164,7 @@ int pa__init(pa_core *c, pa_module*m) {
         pa_log("invalid sample format specification");
         goto fail;
     }
-    
+
     mkfifo(p = pa_modargs_get_value(ma, "file", DEFAULT_FIFO_NAME), 0777);
 
     if ((fd = open(p, O_RDWR)) < 0) {
@@ -171,7 +173,7 @@ int pa__init(pa_core *c, pa_module*m) {
     }
 
     pa_fd_set_cloexec(fd, 1);
-    
+
     if (fstat(fd, &st) < 0) {
         pa_log("fstat('%s'): %s", p, pa_cstrerror(errno));
         goto fail;
@@ -187,7 +189,7 @@ int pa__init(pa_core *c, pa_module*m) {
     u->core = c;
     u->module = m;
     m->userdata = u;
-    
+
     if (!(u->sink = pa_sink_new(c, __FILE__, pa_modargs_get_value(ma, "sink_name", DEFAULT_SINK_NAME), 0, &ss, &map))) {
         pa_log("failed to create sink.");
         goto fail;
@@ -211,13 +213,13 @@ int pa__init(pa_core *c, pa_module*m) {
     c->mainloop->defer_enable(u->defer_event, 0);
 
     pa_modargs_free(ma);
-    
+
     return 0;
 
 fail:
     if (ma)
         pa_modargs_free(ma);
-        
+
     if (fd >= 0)
         close(fd);
 
@@ -232,10 +234,10 @@ void pa__done(pa_core *c, pa_module*m) {
 
     if (!(u = m->userdata))
         return;
-    
+
     if (u->memchunk.memblock)
         pa_memblock_unref(u->memchunk.memblock);
-        
+
     pa_sink_disconnect(u->sink);
     pa_sink_unref(u->sink);
     pa_iochannel_free(u->io);
@@ -244,6 +246,6 @@ void pa__done(pa_core *c, pa_module*m) {
     assert(u->filename);
     unlink(u->filename);
     pa_xfree(u->filename);
-    
+
     pa_xfree(u);
 }

@@ -1,18 +1,20 @@
-/* $Id: module-x11-bell.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: module-x11-bell.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -107,19 +109,19 @@ int pa__init(pa_core *c, pa_module*m) {
         pa_log("failed to parse module arguments");
         goto fail;
     }
-    
+
     m->userdata = u = pa_xmalloc(sizeof(struct userdata));
     u->core = c;
     u->scache_item = pa_xstrdup(pa_modargs_get_value(ma, "sample", "x11-bell"));
     u->sink_name = pa_xstrdup(pa_modargs_get_value(ma, "sink", NULL));
     u->x11_client = NULL;
 
-    if (!(u->x11_wrapper = pa_x11_wrapper_get(c, pa_modargs_get_value(ma, "display", NULL)))) 
+    if (!(u->x11_wrapper = pa_x11_wrapper_get(c, pa_modargs_get_value(ma, "display", NULL))))
         goto fail;
 
     major = XkbMajorVersion;
     minor = XkbMinorVersion;
-    
+
     if (!XkbLibraryVersion(&major, &minor)) {
         pa_log("XkbLibraryVersion() failed");
         goto fail;
@@ -140,11 +142,11 @@ int pa__init(pa_core *c, pa_module*m) {
     XkbChangeEnabledControls(pa_x11_wrapper_get_display(u->x11_wrapper), XkbUseCoreKbd, XkbAudibleBellMask, 0);
 
     u->x11_client = pa_x11_client_new(u->x11_wrapper, x11_event_callback, u);
-    
+
     pa_modargs_free(ma);
-    
+
     return 0;
-    
+
 fail:
     if (ma)
         pa_modargs_free(ma);

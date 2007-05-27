@@ -1,18 +1,20 @@
-/* $Id: modargs.c 1033 2006-06-19 21:53:48Z lennart $ */
+/* $Id: modargs.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -60,7 +62,7 @@ static int add_key_value(pa_hashmap *map, char *key, char *value, const char* co
             return -1;
         }
     }
-    
+
     e = pa_xmalloc(sizeof(struct entry));
     e->key = key;
     e->value = value;
@@ -78,7 +80,7 @@ pa_modargs *pa_modargs_new(const char *args, const char* const* valid_keys) {
         enum { WHITESPACE, KEY, VALUE_START, VALUE_SIMPLE, VALUE_DOUBLE_QUOTES, VALUE_TICKS } state;
         const char *p, *key, *value;
         size_t key_len = 0, value_len = 0;
-        
+
         key = value = NULL;
         state = WHITESPACE;
         for (p = args; *p; p++) {
@@ -160,7 +162,7 @@ fail:
 
     if (map)
         pa_modargs_free((pa_modargs*) map);
-                      
+
     return NULL;
 }
 
@@ -210,7 +212,7 @@ int pa_modargs_get_value_s32(pa_modargs *ma, const char *key, int32_t *value) {
 
     if (pa_atoi(v, value) < 0)
         return -1;
-            
+
     return 0;
 }
 
@@ -239,7 +241,7 @@ int pa_modargs_get_sample_spec(pa_modargs *ma, pa_sample_spec *rss) {
     assert(ma && rss);
 
 /*    DEBUG_TRAP;*/
-    
+
     ss = *rss;
     if ((pa_modargs_get_value_u32(ma, "rate", &ss.rate)) < 0)
         return -1;
@@ -257,14 +259,14 @@ int pa_modargs_get_sample_spec(pa_modargs *ma, pa_sample_spec *rss) {
         return -1;
 
     *rss = ss;
-    
+
     return 0;
 }
 
 int pa_modargs_get_channel_map(pa_modargs *ma, pa_channel_map *rmap) {
     pa_channel_map map;
     const char *cm;
-    
+
     assert(ma);
     assert(rmap);
 
@@ -284,7 +286,7 @@ int pa_modargs_get_channel_map(pa_modargs *ma, pa_channel_map *rmap) {
 int pa_modargs_get_sample_spec_and_channel_map(pa_modargs *ma, pa_sample_spec *rss, pa_channel_map *rmap, pa_channel_map_def_t def) {
     pa_sample_spec ss;
     pa_channel_map map;
-    
+
     assert(ma);
     assert(rss);
     assert(rmap);
