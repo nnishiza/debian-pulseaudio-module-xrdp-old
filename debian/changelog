@@ -26,7 +26,6 @@ pulseaudio (0.9.5-8) UNRELEASED; urgency=low
   * debian/patches: Backport fixes for remote DOS vulnerabilities. Upstream
       svn commits r1445-1452. This fixes CVE-2007-1804.
   * debian/rules: Port to CDBS.
-  * debian/control: Generate -dbg packages for detached symbols.
 
  -- CJ van den Berg <cj@vdbonline.com>  Sat, 26 May 2007 23:37:07 +0200
 
