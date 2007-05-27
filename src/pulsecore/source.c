@@ -1,18 +1,21 @@
-/* $Id: source.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: source.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -52,12 +55,12 @@ pa_source* pa_source_new(
         int fail,
         const pa_sample_spec *spec,
         const pa_channel_map *map) {
-    
+
     pa_source *s;
     char st[256];
     int r;
     pa_channel_map tmap;
-    
+
     assert(core);
     assert(name);
     assert(spec);
@@ -86,7 +89,7 @@ pa_source* pa_source_new(
     s->description = NULL;
     s->driver = pa_xstrdup(driver);
     s->owner = NULL;
-    
+
     s->sample_spec = *spec;
     s->channel_map = *map;
 
@@ -112,16 +115,16 @@ pa_source* pa_source_new(
     assert(s->index != PA_IDXSET_INVALID && r >= 0);
 
     pa_sample_spec_snprint(st, sizeof(st), spec);
-    pa_log_info("created %u \"%s\" with sample spec \"%s\"", s->index, s->name, st); 
+    pa_log_info("created %u \"%s\" with sample spec \"%s\"", s->index, s->name, st);
 
     pa_subscription_post(core, PA_SUBSCRIPTION_EVENT_SOURCE | PA_SUBSCRIPTION_EVENT_NEW, s->index);
-    
+
     return s;
 }
 
 void pa_source_disconnect(pa_source *s) {
     pa_source_output *o, *j = NULL;
-    
+
     assert(s);
     assert(s->state == PA_SOURCE_RUNNING);
 
@@ -129,7 +132,7 @@ void pa_source_disconnect(pa_source *s) {
     pa_namereg_unregister(s->core, s->name);
 
     pa_hook_fire(&s->core->hook_source_disconnect, s);
-    
+
     while ((o = pa_idxset_first(s->outputs, NULL))) {
         assert(o != j);
         pa_source_output_kill(o);
@@ -144,18 +147,18 @@ void pa_source_disconnect(pa_source *s) {
     s->set_hw_volume = NULL;
     s->set_hw_mute = NULL;
     s->get_hw_mute = NULL;
-    
+
     pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE | PA_SUBSCRIPTION_EVENT_REMOVE, s->index);
 }
 
 static void source_free(pa_source *s) {
     assert(s);
     assert(!s->ref);
-    
+
     if (s->state != PA_SOURCE_DISCONNECTED)
         pa_source_disconnect(s);
-    
-    pa_log_info("freed %u \"%s\"", s->index, s->name); 
+
+    pa_log_info("freed %u \"%s\"", s->index, s->name);
 
     pa_idxset_free(s->outputs, NULL, NULL);
 
@@ -176,7 +179,7 @@ void pa_source_unref(pa_source *s) {
 pa_source* pa_source_ref(pa_source *s) {
     assert(s);
     assert(s->ref >= 1);
-    
+
     s->ref++;
     return s;
 }
@@ -192,7 +195,7 @@ void pa_source_notify(pa_source*s) {
 static int do_post(void *p, PA_GCC_UNUSED uint32_t idx, PA_GCC_UNUSED int *del, void*userdata) {
     pa_source_output *o = p;
     const pa_memchunk *chunk = userdata;
-    
+
     assert(o);
     assert(chunk);
 
@@ -209,7 +212,7 @@ void pa_source_post(pa_source*s, const pa_memchunk *chunk) {
 
     if (s->sw_muted || !pa_cvolume_is_norm(&s->sw_volume)) {
         pa_memchunk vchunk = *chunk;
-        
+
         pa_memblock_ref(vchunk.memblock);
         pa_memchunk_make_writable(&vchunk, 0);
         if (s->sw_muted)
@@ -230,7 +233,7 @@ void pa_source_set_owner(pa_source *s, pa_module *m) {
 
     if (m == s->owner)
         return;
-    
+
     s->owner = m;
     pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
 }
@@ -247,19 +250,19 @@ pa_usec_t pa_source_get_latency(pa_source *s) {
 
 void pa_source_set_volume(pa_source *s, pa_mixer_t m, const pa_cvolume *volume) {
     pa_cvolume *v;
-    
+
     assert(s);
     assert(s->ref >= 1);
     assert(volume);
 
-    if (m == PA_MIXER_HARDWARE && s->set_hw_volume) 
+    if (m == PA_MIXER_HARDWARE && s->set_hw_volume)
         v = &s->hw_volume;
     else
         v = &s->sw_volume;
 
     if (pa_cvolume_equal(v, volume))
         return;
-        
+
     *v = *volume;
 
     if (v == &s->hw_volume)
@@ -277,7 +280,7 @@ const pa_cvolume *pa_source_get_volume(pa_source *s, pa_mixer_t m) {
 
         if (s->get_hw_volume)
             s->get_hw_volume(s);
-        
+
         return &s->hw_volume;
     } else
         return &s->sw_volume;
@@ -285,18 +288,18 @@ const pa_cvolume *pa_source_get_volume(pa_source *s, pa_mixer_t m) {
 
 void pa_source_set_mute(pa_source *s, pa_mixer_t m, int mute) {
     int *t;
-    
+
     assert(s);
     assert(s->ref >= 1);
 
-    if (m == PA_MIXER_HARDWARE && s->set_hw_mute) 
+    if (m == PA_MIXER_HARDWARE && s->set_hw_mute)
         t = &s->hw_muted;
     else
         t = &s->sw_muted;
 
     if (!!*t == !!mute)
         return;
-        
+
     *t = !!mute;
 
     if (t == &s->hw_muted)
@@ -314,7 +317,7 @@ int pa_source_get_mute(pa_source *s, pa_mixer_t m) {
 
         if (s->get_hw_mute)
             s->get_hw_mute(s);
-        
+
         return s->hw_muted;
     } else
         return s->sw_muted;
@@ -329,7 +332,7 @@ void pa_source_set_description(pa_source *s, const char *description) {
 
     if (description && s->description && !strcmp(description, s->description))
         return;
-    
+
     pa_xfree(s->description);
     s->description = pa_xstrdup(description);
 

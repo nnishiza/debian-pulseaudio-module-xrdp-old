@@ -1,18 +1,20 @@
-/* $Id: tagstruct.c 1147 2006-07-25 20:10:47Z lennart $ */
+/* $Id: tagstruct.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   Lesser General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -53,7 +55,7 @@ pa_tagstruct *pa_tagstruct_new(const uint8_t* data, size_t length) {
     pa_tagstruct*t;
 
     assert(!data || (data && length));
-    
+
     t = pa_xmalloc(sizeof(pa_tagstruct));
     t->data = (uint8_t*) data;
     t->allocated = t->length = data ? length : 0;
@@ -61,7 +63,7 @@ pa_tagstruct *pa_tagstruct_new(const uint8_t* data, size_t length) {
     t->dynamic = !data;
     return t;
 }
-    
+
 void pa_tagstruct_free(pa_tagstruct*t) {
     assert(t);
     if (t->dynamic)
@@ -203,13 +205,13 @@ void pa_tagstruct_puts64(pa_tagstruct*t, int64_t u) {
 
 void pa_tagstruct_put_channel_map(pa_tagstruct *t, const pa_channel_map *map) {
     unsigned i;
-    
+
     assert(t);
     extend(t, 2 + map->channels);
 
     t->data[t->length++] = PA_TAG_CHANNEL_MAP;
     t->data[t->length++] = map->channels;
-    
+
     for (i = 0; i < map->channels; i ++)
         t->data[t->length++] = (uint8_t) map->map[i];
 }
@@ -217,13 +219,13 @@ void pa_tagstruct_put_channel_map(pa_tagstruct *t, const pa_channel_map *map) {
 void pa_tagstruct_put_cvolume(pa_tagstruct *t, const pa_cvolume *cvolume) {
     unsigned i;
     pa_volume_t vol;
-    
+
     assert(t);
     extend(t, 2 + cvolume->channels * sizeof(pa_volume_t));
 
     t->data[t->length++] = PA_TAG_CVOLUME;
     t->data[t->length++] = cvolume->channels;
-    
+
     for (i = 0; i < cvolume->channels; i ++) {
         vol = htonl(cvolume->values[i]);
         memcpy(t->data + t->length, &vol, sizeof(pa_volume_t));
@@ -245,10 +247,10 @@ int pa_tagstruct_gets(pa_tagstruct*t, const char **s) {
         *s = NULL;
         return 0;
     }
-    
+
     if (t->rindex+2 > t->length)
         return -1;
-    
+
     if (t->data[t->rindex] != PA_TAG_STRING)
         return -1;
 
@@ -305,7 +307,7 @@ int pa_tagstruct_get_sample_spec(pa_tagstruct *t, pa_sample_spec *ss) {
 
     if (t->data[t->rindex] != PA_TAG_SAMPLE_SPEC)
         return -1;
-    
+
     ss->format = t->data[t->rindex+1];
     ss->channels = t->data[t->rindex+2];
     memcpy(&ss->rate, t->data+t->rindex+3, 4);
@@ -318,7 +320,7 @@ int pa_tagstruct_get_sample_spec(pa_tagstruct *t, pa_sample_spec *ss) {
 int pa_tagstruct_get_arbitrary(pa_tagstruct *t, const void **p, size_t length) {
     uint32_t len;
     assert(t && p);
-    
+
     if (t->rindex+5+length > t->length)
         return -1;
 
@@ -357,7 +359,7 @@ int pa_tagstruct_get_boolean(pa_tagstruct*t, int *b) {
         *b = 0;
     else
         return -1;
-    
+
     t->rindex +=1;
     return 0;
 }
@@ -434,7 +436,7 @@ int pa_tagstruct_gets64(pa_tagstruct*t, int64_t *u) {
 
 int pa_tagstruct_get_channel_map(pa_tagstruct *t, pa_channel_map *map) {
     unsigned i;
-    
+
     assert(t);
     assert(map);
 
@@ -449,7 +451,7 @@ int pa_tagstruct_get_channel_map(pa_tagstruct *t, pa_channel_map *map) {
 
     if (t->rindex+2+map->channels > t->length)
         return -1;
-    
+
     for (i = 0; i < map->channels; i ++)
         map->map[i] = (int8_t) t->data[t->rindex + 2 + i];
 
@@ -460,7 +462,7 @@ int pa_tagstruct_get_channel_map(pa_tagstruct *t, pa_channel_map *map) {
 int pa_tagstruct_get_cvolume(pa_tagstruct *t, pa_cvolume *cvolume) {
     unsigned i;
     pa_volume_t vol;
-    
+
     assert(t);
     assert(cvolume);
 
@@ -475,7 +477,7 @@ int pa_tagstruct_get_cvolume(pa_tagstruct *t, pa_cvolume *cvolume) {
 
     if (t->rindex+2+cvolume->channels*sizeof(pa_volume_t) > t->length)
         return -1;
-    
+
     for (i = 0; i < cvolume->channels; i ++) {
         memcpy(&vol, t->data + t->rindex + 2 + i * sizeof(pa_volume_t), sizeof(pa_volume_t));
         cvolume->values[i] = (pa_volume_t) ntohl(vol);
@@ -488,7 +490,7 @@ int pa_tagstruct_get_cvolume(pa_tagstruct *t, pa_cvolume *cvolume) {
 void pa_tagstruct_put(pa_tagstruct *t, ...) {
     va_list va;
     assert(t);
-    
+
     va_start(va, t);
 
     for (;;) {
@@ -551,16 +553,16 @@ void pa_tagstruct_put(pa_tagstruct *t, ...) {
                 abort();
         }
     }
-    
+
     va_end(va);
 }
 
 int pa_tagstruct_get(pa_tagstruct *t, ...) {
     va_list va;
     int ret = 0;
-    
+
     assert(t);
-    
+
     va_start(va, t);
     while (ret == 0) {
         int tag = va_arg(va, int);
@@ -618,11 +620,11 @@ int pa_tagstruct_get(pa_tagstruct *t, ...) {
                 ret = pa_tagstruct_get_cvolume(t, va_arg(va, pa_cvolume *));
                 break;
 
-            
+
             default:
                 abort();
         }
-        
+
     }
 
     va_end(va);

@@ -1,18 +1,21 @@
-/* $Id: cli-command.c 1294 2006-08-19 16:25:41Z lennart $ */
+/* $Id: cli-command.c 1459 2007-05-27 20:38:14Z lennart $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -28,6 +31,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <pulse/xmalloc.h>
 
@@ -60,9 +64,18 @@ struct command {
     unsigned args;
 };
 
-#define INCLUDE_META ".include"
-#define FAIL_META ".fail"
-#define NOFAIL_META ".nofail"
+#define META_INCLUDE ".include"
+#define META_FAIL ".fail"
+#define META_NOFAIL ".nofail"
+#define META_IFEXISTS ".ifexists"
+#define META_ELSE ".else"
+#define META_ENDIF ".endif"
+
+enum {
+    IFSTATE_NONE = -1,
+    IFSTATE_FALSE = 0,
+    IFSTATE_TRUE = 1,
+};
 
 /* Prototypes for all available commands */
 static int pa_cli_command_exit(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, int *fail);
@@ -172,7 +185,7 @@ static int pa_cli_command_help(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
     assert(c && t && buf);
 
     pa_strbuf_puts(buf, "Available commands:\n");
-    
+
     for (command = commands; command->name; command++)
         if (command->help)
             pa_strbuf_printf(buf, "    %-25s %s\n", command->name, command->help);
@@ -243,6 +256,7 @@ static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
     char s[256];
     const pa_mempool_stat *stat;
     unsigned k;
+    const char *def_sink, *def_source;
 
     static const char* const type_table[PA_MEMBLOCK_TYPE_MAX] = {
         [PA_MEMBLOCK_POOL] = "POOL",
@@ -252,27 +266,27 @@ static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
         [PA_MEMBLOCK_FIXED] = "FIXED",
         [PA_MEMBLOCK_IMPORTED] = "IMPORTED",
     };
-        
+
     assert(c);
     assert(t);
 
     stat = pa_mempool_get_stat(c->mempool);
-    
+
     pa_strbuf_printf(buf, "Memory blocks currently allocated: %u, size: %s.\n",
-                     stat->n_allocated,
-                     pa_bytes_snprint(s, sizeof(s), stat->allocated_size));
+                     (unsigned) pa_atomic_load(&stat->n_allocated),
+                     pa_bytes_snprint(s, sizeof(s), (size_t) pa_atomic_load(&stat->allocated_size)));
 
     pa_strbuf_printf(buf, "Memory blocks allocated during the whole lifetime: %u, size: %s.\n",
-                     stat->n_accumulated,
-                     pa_bytes_snprint(s, sizeof(s), stat->accumulated_size));
+                     (unsigned) pa_atomic_load(&stat->n_accumulated),
+                     pa_bytes_snprint(s, sizeof(s), (size_t) pa_atomic_load(&stat->accumulated_size)));
 
     pa_strbuf_printf(buf, "Memory blocks imported from other processes: %u, size: %s.\n",
-                     stat->n_imported,
-                     pa_bytes_snprint(s, sizeof(s), stat->imported_size));
+                     (unsigned) pa_atomic_load(&stat->n_imported),
+                     pa_bytes_snprint(s, sizeof(s), (size_t) pa_atomic_load(&stat->imported_size)));
 
     pa_strbuf_printf(buf, "Memory blocks exported to other processes: %u, size: %s.\n",
-                     stat->n_exported,
-                     pa_bytes_snprint(s, sizeof(s), stat->exported_size));
+                     (unsigned) pa_atomic_load(&stat->n_exported),
+                     pa_bytes_snprint(s, sizeof(s), (size_t) pa_atomic_load(&stat->exported_size)));
 
     pa_strbuf_printf(buf, "Total sample cache size: %s.\n",
                      pa_bytes_snprint(s, sizeof(s), pa_scache_total_size(c)));
@@ -280,18 +294,20 @@ static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
     pa_strbuf_printf(buf, "Default sample spec: %s\n",
                      pa_sample_spec_snprint(s, sizeof(s), &c->default_sample_spec));
 
+    def_sink = pa_namereg_get_default_sink_name(c);
+    def_source = pa_namereg_get_default_source_name(c);
     pa_strbuf_printf(buf, "Default sink name: %s\n"
                      "Default source name: %s\n",
-                     pa_namereg_get_default_sink_name(c),
-                     pa_namereg_get_default_source_name(c));
+                     def_sink ? def_sink : "none",
+                     def_source ? def_source : "none");
 
     for (k = 0; k < PA_MEMBLOCK_TYPE_MAX; k++)
         pa_strbuf_printf(buf,
                          "Memory blocks of type %s: %u allocated/%u accumulated.\n",
                          type_table[k],
-                         stat->n_allocated_by_type[k],
-                         stat->n_accumulated_by_type[k]);
-    
+                         (unsigned) pa_atomic_load(&stat->n_allocated_by_type[k]),
+                         (unsigned) pa_atomic_load(&stat->n_accumulated_by_type[k]));
+
     return 0;
 }
 
@@ -318,7 +334,7 @@ static int pa_cli_command_load(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
         pa_strbuf_puts(buf, "You need to specify the module name and optionally arguments.\n");
         return -1;
     }
-    
+
     if (!(m = pa_module_load(c, name,  pa_tokenizer_get(t, 2)))) {
         pa_strbuf_puts(buf, "Module load failed.\n");
         return -1;
@@ -724,14 +740,14 @@ static int pa_cli_command_autoload_add(pa_core *c, pa_tokenizer *t, pa_strbuf *b
     }
 
     pa_autoload_add(c, a, strstr(pa_tokenizer_get(t, 0), "sink") ? PA_NAMEREG_SINK : PA_NAMEREG_SOURCE, b, pa_tokenizer_get(t, 3), NULL);
-    
+
     return 0;
 }
 
 static int pa_cli_command_autoload_remove(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, int *fail) {
     const char *name;
     assert(c && t && buf && fail);
-    
+
     if (!(name = pa_tokenizer_get(t, 1))) {
         pa_strbuf_puts(buf, "You need to specify a device name\n");
         return -1;
@@ -742,7 +758,7 @@ static int pa_cli_command_autoload_remove(pa_core *c, pa_tokenizer *t, pa_strbuf
         return -1;
     }
 
-    return 0;        
+    return 0;
 }
 
 static int pa_cli_command_autoload_list(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_GCC_UNUSED int *fail) {
@@ -766,7 +782,7 @@ static int pa_cli_command_vacuum(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, in
     assert(t);
 
     pa_mempool_vacuum(c->mempool);
-    
+
     return 0;
 }
 
@@ -857,7 +873,7 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
     time_t now;
     void *i;
     pa_autoload_entry *a;
-    
+
     assert(c && t);
 
     time(&now);
@@ -868,7 +884,7 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
     pa_strbuf_printf(buf, "### Configuration dump generated at %s\n", ctime(&now));
 #endif
 
-    
+
     for (m = pa_idxset_first(c->modules, &idx); m; m = pa_idxset_next(c->modules, &idx)) {
         if (m->auto_unload)
             continue;
@@ -912,7 +928,7 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
 
     if (c->autoload_hashmap) {
         nl = 0;
-        
+
         i = NULL;
         while ((a = pa_hashmap_iterate(c->autoload_hashmap, &i, NULL))) {
 
@@ -920,18 +936,18 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
                 pa_strbuf_puts(buf, "\n");
                 nl = 1;
             }
-            
+
             pa_strbuf_printf(buf, "add-autoload-%s %s %s", a->type == PA_NAMEREG_SINK ? "sink" : "source", a->name, a->module);
-            
+
             if (a->argument)
                 pa_strbuf_printf(buf, " %s", a->argument);
-            
+
             pa_strbuf_puts(buf, "\n");
         }
     }
 
     nl = 0;
-    
+
     if ((p = pa_namereg_get_default_sink_name(c))) {
         if (!nl) {
             pa_strbuf_puts(buf, "\n");
@@ -953,27 +969,58 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, PA_G
     return 0;
 }
 
-int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, int *fail) {
+int pa_cli_command_execute_line_stateful(pa_core *c, const char *s, pa_strbuf *buf, int *fail, int *ifstate) {
     const char *cs;
-    
+
     cs = s+strspn(s, whitespace);
 
     if (*cs == '#' || !*cs)
         return 0;
     else if (*cs == '.') {
-        if (!strcmp(cs, FAIL_META))
+        if (!strcmp(cs, META_ELSE)) {
+            if (!ifstate || *ifstate == IFSTATE_NONE) {
+                pa_strbuf_printf(buf, "Meta command %s is not valid in this context\n", cs);
+                return -1;
+            } else if (*ifstate == IFSTATE_TRUE)
+                *ifstate = IFSTATE_FALSE;
+            else
+                *ifstate = IFSTATE_TRUE;
+            return 0;
+        } else if (!strcmp(cs, META_ENDIF)) {
+            if (!ifstate || *ifstate == IFSTATE_NONE) {
+                pa_strbuf_printf(buf, "Meta command %s is not valid in this context\n", cs);
+                return -1;
+            } else
+                *ifstate = IFSTATE_NONE;
+            return 0;
+        }
+        if (ifstate && *ifstate == IFSTATE_FALSE)
+            return 0;
+        if (!strcmp(cs, META_FAIL))
             *fail = 1;
-        else if (!strcmp(cs, NOFAIL_META))
+        else if (!strcmp(cs, META_NOFAIL))
             *fail = 0;
         else {
             size_t l;
             l = strcspn(cs, whitespace);
 
-            if (l == sizeof(INCLUDE_META)-1 && !strncmp(cs, INCLUDE_META, l)) {
+            if (l == sizeof(META_INCLUDE)-1 && !strncmp(cs, META_INCLUDE, l)) {
                 const char *filename = cs+l+strspn(cs+l, whitespace);
 
                 if (pa_cli_command_execute_file(c, filename, buf, fail) < 0)
                     if (*fail) return -1;
+            } else if (l == sizeof(META_IFEXISTS)-1 && !strncmp(cs, META_IFEXISTS, l)) {
+                if (!ifstate) {
+                    pa_strbuf_printf(buf, "Meta command %s is not valid in this context\n", cs);
+                    return -1;
+                } else if (*ifstate != IFSTATE_NONE) {
+                    pa_strbuf_printf(buf, "Nested %s commands not supported\n", cs);
+                    return -1;
+                } else {
+                    const char *filename = cs+l+strspn(cs+l, whitespace);
+
+                    *ifstate = access(filename, F_OK) == 0 ? IFSTATE_TRUE : IFSTATE_FALSE;
+                }
             } else {
                 pa_strbuf_printf(buf, "Invalid meta command: %s\n", cs);
                 if (*fail) return -1;
@@ -983,10 +1030,14 @@ int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, int *
         const struct command*command;
         int unknown = 1;
         size_t l;
-        
-        l = strcspn(cs, whitespace);
 
-        for (command = commands; command->name; command++) 
+        if (ifstate && *ifstate == IFSTATE_FALSE)
+             return 0;
+        
+
+        l = strcspn(cs, whitespace);
+        
+        for (command = commands; command->name; command++)
             if (strlen(command->name) == l && !strncmp(cs, command->name, l)) {
                 int ret;
                 pa_tokenizer *t = pa_tokenizer_new(cs, command->args);
@@ -997,7 +1048,7 @@ int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, int *
 
                 if (ret < 0 && *fail)
                     return -1;
-                
+
                 break;
             }
 
@@ -1011,11 +1062,19 @@ int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, int *
     return 0;
 }
 
+int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, int *fail) {
+    return pa_cli_command_execute_line_stateful(c, s, buf, fail, NULL);
+}
+
 int pa_cli_command_execute_file(pa_core *c, const char *fn, pa_strbuf *buf, int *fail) {
     char line[256];
     FILE *f = NULL;
+    int ifstate = IFSTATE_NONE;
     int ret = -1;
-    assert(c && fn && buf);
+    
+    assert(c);
+    assert(fn);
+    assert(buf);
 
     if (!(f = fopen(fn, "r"))) {
         pa_strbuf_printf(buf, "open('%s') failed: %s\n", fn, pa_cstrerror(errno));
@@ -1028,7 +1087,7 @@ int pa_cli_command_execute_file(pa_core *c, const char *fn, pa_strbuf *buf, int 
         char *e = line + strcspn(line, linebreak);
         *e = 0;
 
-        if (pa_cli_command_execute_line(c, line, buf, fail) < 0 && *fail)
+        if (pa_cli_command_execute_line_stateful(c, line, buf, fail, &ifstate) < 0 && *fail)
             goto fail;
     }
 
@@ -1043,14 +1102,18 @@ fail:
 
 int pa_cli_command_execute(pa_core *c, const char *s, pa_strbuf *buf, int *fail) {
     const char *p;
-    assert(c && s && buf && fail);
+    int ifstate = IFSTATE_NONE;
+    
+    assert(c);
+    assert(s);
+    assert(buf);
 
     p = s;
     while (*p) {
         size_t l = strcspn(p, linebreak);
         char *line = pa_xstrndup(p, l);
-        
-        if (pa_cli_command_execute_line(c, line, buf, fail) < 0&& *fail) {
+
+        if (pa_cli_command_execute_line_stateful(c, line, buf, fail, &ifstate) < 0 && *fail) {
             pa_xfree(line);
             return -1;
         }

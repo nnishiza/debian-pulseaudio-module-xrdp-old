@@ -1,21 +1,24 @@
 #ifndef foointernalhfoo
 #define foointernalhfoo
 
-/* $Id: internal.h 1278 2006-08-18 23:45:23Z lennart $ */
+/* $Id: internal.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -41,11 +44,11 @@
 
 #include "client-conf.h"
 
-#define DEFAULT_TIMEOUT (10)
+#define DEFAULT_TIMEOUT (30)
 
 struct pa_context {
     int ref;
-    
+
     char *name;
     pa_mainloop_api* mainloop;
 
@@ -75,7 +78,7 @@ struct pa_context {
     int do_autospawn;
     int autospawn_lock_fd;
     pa_spawn_api spawn_api;
-    
+
     pa_strlist *server_list;
 
     char *server;
@@ -109,7 +112,7 @@ struct pa_stream {
     uint32_t device_index;
     pa_stream_direction_t direction;
     pa_stream_state_t state;
-    
+
     uint32_t requested_bytes;
 
     pa_memchunk peek_memchunk;
@@ -120,10 +123,10 @@ struct pa_stream {
     /* Store latest latency info */
     pa_timing_info timing_info;
     int timing_info_valid;
-    
+
     /* Use to make sure that time advances monotonically */
     pa_usec_t previous_time;
-    
+
     /* time updates with tags older than these are invalid */
     uint32_t write_index_not_before;
     uint32_t read_index_not_before;
@@ -135,7 +138,7 @@ struct pa_stream {
     /* Latency interpolation stuff */
     pa_time_event *auto_timing_update_event;
     int auto_timing_update_requested;
-    
+
     pa_usec_t cached_time;
     int cached_time_valid;
 
@@ -160,7 +163,7 @@ struct pa_operation {
     int ref;
     pa_context *context;
     pa_stream *stream;
-    
+
     PA_LLIST_FIELDS(pa_operation);
 
     pa_operation_state_t state;

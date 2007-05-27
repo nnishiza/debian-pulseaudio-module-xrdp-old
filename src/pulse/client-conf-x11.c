@@ -1,7 +1,9 @@
-/* $Id: client-conf-x11.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: client-conf-x11.c 1443 2007-05-23 12:32:37Z lennart $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2004-2006 Lennart Poettering
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -42,9 +44,9 @@ int pa_client_conf_from_x11(pa_client_conf *c, const char *dname) {
     int ret = -1;
     char t[1024];
 
-    if (!dname && !getenv("DISPLAY"))
+    if (!dname && (!(dname = getenv("DISPLAY")) || *dname == '\0'))
         goto finish;
-    
+
     if (!(d = XOpenDisplay(dname))) {
         pa_log("XOpenDisplay() failed");
         goto finish;
@@ -89,5 +91,5 @@ finish:
         XCloseDisplay(d);
 
     return ret;
-    
+
 }

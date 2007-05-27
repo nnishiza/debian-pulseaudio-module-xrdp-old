@@ -1,18 +1,20 @@
-/* $Id: strbuf.c 1033 2006-06-19 21:53:48Z lennart $ */
+/* $Id: strbuf.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -84,7 +86,7 @@ char *pa_strbuf_tostring(pa_strbuf *sb) {
     *e = 0;
 
     assert(e == t+sb->length);
-    
+
     return t;
 }
 
@@ -124,10 +126,10 @@ static void append(pa_strbuf *sb, struct chunk *c) {
 void pa_strbuf_putsn(pa_strbuf *sb, const char *t, size_t l) {
     struct chunk *c;
     assert(sb && t);
-    
+
     if (!l)
        return;
-   
+
     c = pa_xmalloc(sizeof(struct chunk)+l);
     c->length = l;
     memcpy(CHUNK_TO_TEXT(c), t, l);
@@ -142,7 +144,7 @@ int pa_strbuf_printf(pa_strbuf *sb, const char *format, ...) {
     struct chunk *c = NULL;
 
     assert(sb);
-    
+
     for(;;) {
         va_list ap;
         int r;
@@ -152,7 +154,7 @@ int pa_strbuf_printf(pa_strbuf *sb, const char *format, ...) {
         va_start(ap, format);
         r = vsnprintf(CHUNK_TO_TEXT(c), size, format, ap);
         va_end(ap);
-        
+
         if (r > -1 && r < size) {
             c->length = r;
             append(sb, c);
@@ -160,7 +162,7 @@ int pa_strbuf_printf(pa_strbuf *sb, const char *format, ...) {
         }
 
         if (r > -1)    /* glibc 2.1 */
-            size = r+1; 
+            size = r+1;
         else           /* glibc 2.0 */
             size *= 2;
     }

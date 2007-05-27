@@ -1,4 +1,4 @@
-/* $Id: hook-list-test.c 1235 2006-08-13 16:13:36Z lennart $ */
+/* $Id: hook-list-test.c 1418 2007-01-04 13:43:45Z ossman $ */
 
 #include <pulsecore/hook-list.h>
 #include <pulsecore/log.h>
@@ -22,7 +22,7 @@ int main(int argc, char *argv[]) {
     pa_hook_connect(&hook, (pa_hook_cb_t) func1, (void*) "slot1");
     slot = pa_hook_connect(&hook, (pa_hook_cb_t) func2, (void*) "slot2");
     pa_hook_connect(&hook, (pa_hook_cb_t) func1, (void*) "slot3");
-    
+
     pa_hook_fire(&hook, (void*) "call1");
 
     pa_hook_slot_free(slot);
@@ -30,6 +30,6 @@ int main(int argc, char *argv[]) {
     pa_hook_fire(&hook, (void*) "call2");
 
     pa_hook_free(&hook);
-    
+
     return 0;
 }

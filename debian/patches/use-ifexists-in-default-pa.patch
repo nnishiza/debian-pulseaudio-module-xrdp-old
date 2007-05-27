@@ -5,11 +5,11 @@ From: CJ van den Berg <cj@vdbonline.com>
 
 ---
 
- src/daemon/default.pa.in |   16 ++++++++++++++--
- 1 files changed, 14 insertions(+), 2 deletions(-)
+ src/daemon/default.pa.in |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
 
 diff --git a/src/daemon/default.pa.in b/src/daemon/default.pa.in
-index 0312266..aa36375 100755
+index af2a678..b769e3f 100755
 --- a/src/daemon/default.pa.in
 +++ b/src/daemon/default.pa.in
 @@ -26,12 +26,18 @@
@@ -19,20 +19,21 @@ index 0312266..aa36375 100755
 +.ifexists /usr/lib/pulse-0.9/modules/module-hal-detect.so
 +
  ### Automatically load driver modules depending on the hardware available
- load-module module-hal-detect
- 
-+.else
+-@HAVE_HAL_TRUE@load-module module-hal-detect
++load-module module-hal-detect
 +
++.else
+ 
  ### Alternatively use the static hardware detection module (for systems that
  ### lack HAL support
--#load-module module-detect
+-@HAVE_HAL_FALSE@load-module module-detect
 +load-module module-detect
 +
 +.endif
  
  ### Load audio drivers automatically on access
  #add-autoload-sink output module-oss device="/dev/dsp" sink_name=output source_name=input
-@@ -41,8 +47,14 @@ load-module module-hal-detect
+@@ -41,8 +47,14 @@
  #add-autoload-sink output module-alsa-sink sink_name=output
  #add-autoload-source input module-alsa-source source_name=input
  

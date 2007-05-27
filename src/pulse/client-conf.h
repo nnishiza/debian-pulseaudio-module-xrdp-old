@@ -1,10 +1,12 @@
 #ifndef fooclientconfhfoo
 #define fooclientconfhfoo
 
-/* $Id: client-conf.h 1284 2006-08-19 01:18:30Z lennart $ */
+/* $Id: client-conf.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2004-2006 Lennart Poettering
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published

@@ -1,18 +1,20 @@
-/* $Id: cmdline.c 1288 2006-08-19 01:21:22Z lennart $ */
+/* $Id: cmdline.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -100,7 +102,7 @@ void pa_cmdline_help(const char *argv0) {
         e++;
     else
         e = argv0;
-    
+
     printf("%s [options]\n\n"
            "COMMANDS:\n"
            "  -h, --help                            Show this help\n"
@@ -124,7 +126,7 @@ void pa_cmdline_help(const char *argv0) {
            "      --scache-idle-time=SECS           Unload autoloaded samples when idle and\n"
            "                                        this time passed\n"
            "      --log-level[=LEVEL]               Increase or set verbosity level\n"
-           "  -v                                    Increase the verbosity level\n" 
+           "  -v                                    Increase the verbosity level\n"
            "      --log-target={auto,syslog,stderr} Specify the log target\n"
            "  -p, --dl-search-path=PATH             Set the search path for dynamic shared\n"
            "                                        objects (plugins)\n"
@@ -143,7 +145,7 @@ void pa_cmdline_help(const char *argv0) {
            "  -F, --file=FILENAME                   Run the specified script\n"
            "  -C                                    Open a command line on the running TTY\n"
            "                                        after startup\n\n"
-           
+
            "  -n                                    Don't load default script file\n", e);
 }
 
@@ -156,7 +158,7 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
 
     if (conf->script_commands)
         pa_strbuf_puts(buf, conf->script_commands);
-    
+
     while ((c = getopt_long(argc, argv, "L:F:ChDnp:kv", long_options, NULL)) != -1) {
         switch (c) {
             case ARG_HELP:
@@ -184,21 +186,21 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
             case ARG_CHECK:
                 conf->cmd = PA_CMD_CHECK;
                 break;
-                
+
             case ARG_LOAD:
             case 'L':
                 pa_strbuf_printf(buf, "load-module %s\n", optarg);
                 break;
-                
+
             case ARG_FILE:
             case 'F':
                 pa_strbuf_printf(buf, ".include %s\n", optarg);
                 break;
-                
+
             case 'C':
                 pa_strbuf_puts(buf, "load-module module-cli exit_on_eof=1\n");
                 break;
-                
+
             case ARG_DAEMONIZE:
             case 'D':
                 if ((conf->daemonize = optarg ? pa_parse_boolean(optarg) : 1) < 0) {
@@ -226,7 +228,7 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
                     if (conf->log_level < PA_LOG_LEVEL_MAX-1)
                         conf->log_level++;
                 }
-                
+
                 break;
 
             case ARG_HIGH_PRIORITY:
@@ -249,13 +251,13 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
                     goto fail;
                 }
                 break;
-                
+
             case 'p':
             case ARG_DL_SEARCH_PATH:
                 pa_xfree(conf->dl_search_path);
                 conf->dl_search_path = *optarg ? pa_xstrdup(optarg) : NULL;
                 break;
-                
+
             case 'n':
                 pa_xfree(conf->default_script_file);
                 conf->default_script_file = NULL;
@@ -307,7 +309,7 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
                     goto fail;
                 }
                 break;
-                
+
             default:
                 goto fail;
         }
@@ -322,12 +324,12 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
     }
 
     *d = optind;
-    
+
     return 0;
-    
+
 fail:
     if (buf)
         pa_strbuf_free(buf);
-    
+
     return -1;
 }

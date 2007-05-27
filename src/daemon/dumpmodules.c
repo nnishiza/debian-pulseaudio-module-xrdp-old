@@ -1,7 +1,10 @@
-/* $Id: dumpmodules.c 1033 2006-06-19 21:53:48Z lennart $ */
+/* $Id: dumpmodules.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -45,14 +48,14 @@ static void short_info(const char *name, PA_GCC_UNUSED const char *path, pa_modi
 static void long_info(const char *name, const char *path, pa_modinfo *i) {
     static int nl = 0;
     assert(name && i);
-    
+
     if (nl)
         printf("\n");
 
     nl = 1;
 
     printf("Name: %s\n", name);
-    
+
     if (!i->description && !i->version && !i->author && !i->usage)
         printf("No module information available\n");
     else {
@@ -65,14 +68,14 @@ static void long_info(const char *name, const char *path, pa_modinfo *i) {
         if (i->usage)
             printf("Usage: %s\n", i->usage);
     }
-    
+
     if (path)
         printf("Path: %s\n", path);
 }
 
 static void show_info(const char *name, const char *path, void (*info)(const char *name, const char *path, pa_modinfo*i)) {
     pa_modinfo *i;
-    
+
     if ((i = pa_modinfo_get_by_name(path ? path : name))) {
         info(name, path, i);
         pa_modinfo_free(i);
@@ -86,10 +89,10 @@ static int is_preloaded(const char *name) {
 
     for (l = lt_preloaded_symbols; l->name; l++) {
         char buf[64], *e;
-            
+
         if (l->address)
             continue;
-        
+
         snprintf(buf, sizeof(buf), "%s", l->name);
         if ((e = strrchr(buf, '.')))
             *e = 0;
@@ -112,7 +115,7 @@ static int callback(const char *path, lt_ptr data) {
 
     if (is_preloaded(e))
         return 0;
-    
+
     show_info(e, path, c->log_level >= PA_LOG_INFO ? long_info : short_info);
     return 0;
 }
@@ -127,20 +130,20 @@ void pa_dump_modules(pa_daemon_conf *c, int argc, char * const argv[]) {
 
         for (l = lt_preloaded_symbols; l->name; l++) {
             char buf[64], *e;
-            
+
             if (l->address)
                 continue;
 
             if (strlen(l->name) <= sizeof(PREFIX)-1 || strncmp(l->name, PREFIX, sizeof(PREFIX)-1))
                 continue;
-            
+
             snprintf(buf, sizeof(buf), "%s", l->name);
             if ((e = strrchr(buf, '.')))
                 *e = 0;
-            
+
             show_info(buf, NULL, c->log_level >= PA_LOG_INFO ? long_info : short_info);
         }
-        
+
         lt_dlforeachfile(NULL, callback, c);
     }
 }

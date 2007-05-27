@@ -1,18 +1,20 @@
-/* $Id: cli.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: cli.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -82,12 +84,12 @@ pa_cli* pa_cli_new(pa_core *core, pa_iochannel *io, pa_module *m) {
     c->client->kill = client_kill;
     c->client->userdata = c;
     c->client->owner = m;
-    
+
     pa_ioline_set_callback(c->line, line_callback, c);
     pa_ioline_puts(c->line, "Welcome to PulseAudio! Use \"help\" for usage information.\n"PROMPT);
 
     c->fail = c->kill_requested = c->defer_kill = 0;
-    
+
     return c;
 }
 
@@ -103,7 +105,7 @@ static void client_kill(pa_client *client) {
     pa_cli *c;
     assert(client && client->userdata);
     c = client->userdata;
-    
+
     pa_log_debug("CLI client killed.");
     if (c->defer_kill)
         c->kill_requested = 1;
@@ -138,7 +140,7 @@ static void line_callback(pa_ioline *line, const char *s, void *userdata) {
     if (c->kill_requested) {
         if (c->eof_callback)
             c->eof_callback(c, c->userdata);
-    } else    
+    } else
         pa_ioline_puts(line, PROMPT);
 }
 

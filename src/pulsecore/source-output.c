@@ -1,18 +1,20 @@
-/* $Id: source-output.c 1302 2006-08-19 23:04:04Z lennart $ */
+/* $Id: source-output.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -45,7 +47,7 @@ if (!(condition)) \
 
 pa_source_output_new_data* pa_source_output_new_data_init(pa_source_output_new_data *data) {
     assert(data);
-    
+
     memset(data, 0, sizeof(*data));
     data->resample_method = PA_RESAMPLER_INVALID;
     return data;
@@ -69,7 +71,7 @@ pa_source_output* pa_source_output_new(
         pa_core *core,
         pa_source_output_new_data *data,
         pa_source_output_flags_t flags) {
-    
+
     pa_source_output *o;
     pa_resampler *resampler = NULL;
     int r;
@@ -90,15 +92,15 @@ pa_source_output* pa_source_output_new(
 
     CHECK_VALIDITY_RETURN_NULL(data->source);
     CHECK_VALIDITY_RETURN_NULL(data->source->state == PA_SOURCE_RUNNING);
-    
+
     if (!data->sample_spec_is_set)
         data->sample_spec = data->source->sample_spec;
-    
+
     CHECK_VALIDITY_RETURN_NULL(pa_sample_spec_valid(&data->sample_spec));
 
     if (!data->channel_map_is_set)
         pa_channel_map_init_auto(&data->channel_map, data->sample_spec.channels, PA_CHANNEL_MAP_DEFAULT);
-    
+
     CHECK_VALIDITY_RETURN_NULL(pa_channel_map_valid(&data->channel_map));
     CHECK_VALIDITY_RETURN_NULL(data->channel_map.channels == data->sample_spec.channels);
 
@@ -106,7 +108,7 @@ pa_source_output* pa_source_output_new(
         data->resample_method = core->resample_method;
 
     CHECK_VALIDITY_RETURN_NULL(data->resample_method < PA_RESAMPLER_MAX);
-    
+
     if (pa_idxset_size(data->source->outputs) >= PA_MAX_OUTPUTS_PER_SOURCE) {
         pa_log("Failed to create source output: too many outputs per source.");
         return NULL;
@@ -122,7 +124,7 @@ pa_source_output* pa_source_output_new(
             pa_log_warn("Unsupported resampling operation.");
             return NULL;
         }
-    
+
     o = pa_xnew(pa_source_output, 1);
     o->ref = 1;
     o->state = PA_SOURCE_OUTPUT_RUNNING;
@@ -131,7 +133,7 @@ pa_source_output* pa_source_output_new(
     o->module = data->module;
     o->source = data->source;
     o->client = data->client;
-    
+
     o->sample_spec = data->sample_spec;
     o->channel_map = data->channel_map;
 
@@ -139,10 +141,10 @@ pa_source_output* pa_source_output_new(
     o->kill = NULL;
     o->get_latency = NULL;
     o->userdata = NULL;
-    
+
     o->resampler = resampler;
     o->resample_method = data->resample_method;
-    
+
     r = pa_idxset_put(core->source_outputs, o, &o->index);
     assert(r == 0);
     r = pa_idxset_put(o->source->outputs, o, NULL);
@@ -153,13 +155,13 @@ pa_source_output* pa_source_output_new(
                 o->name,
                 o->source->name,
                 pa_sample_spec_snprint(st, sizeof(st), &o->sample_spec));
-    
+
     pa_subscription_post(core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_NEW, o->index);
 
     /* We do not call pa_source_notify() here, because the virtual
      * functions have not yet been initialized */
-    
-    return o;    
+
+    return o;
 }
 
 void pa_source_output_disconnect(pa_source_output*o) {
@@ -167,7 +169,7 @@ void pa_source_output_disconnect(pa_source_output*o) {
     assert(o->state != PA_SOURCE_OUTPUT_DISCONNECTED);
     assert(o->source);
     assert(o->source->core);
-    
+
     pa_idxset_remove_by_data(o->source->core->source_outputs, o, NULL);
     pa_idxset_remove_by_data(o->source->outputs, o, NULL);
 
@@ -177,7 +179,7 @@ void pa_source_output_disconnect(pa_source_output*o) {
     o->push = NULL;
     o->kill = NULL;
     o->get_latency = NULL;
-    
+
     o->state = PA_SOURCE_OUTPUT_DISCONNECTED;
 }
 
@@ -187,8 +189,8 @@ static void source_output_free(pa_source_output* o) {
     if (o->state != PA_SOURCE_OUTPUT_DISCONNECTED)
         pa_source_output_disconnect(o);
 
-    pa_log_info("freed %u \"%s\"", o->index, o->name); 
-    
+    pa_log_info("freed %u \"%s\"", o->index, o->name);
+
     if (o->resampler)
         pa_resampler_free(o->resampler);
 
@@ -208,7 +210,7 @@ void pa_source_output_unref(pa_source_output* o) {
 pa_source_output* pa_source_output_ref(pa_source_output *o) {
     assert(o);
     assert(o->ref >= 1);
-    
+
     o->ref++;
     return o;
 }
@@ -223,7 +225,7 @@ void pa_source_output_kill(pa_source_output*o) {
 
 void pa_source_output_push(pa_source_output *o, const pa_memchunk *chunk) {
     pa_memchunk rchunk;
-    
+
     assert(o);
     assert(chunk);
     assert(chunk->length);
@@ -231,7 +233,7 @@ void pa_source_output_push(pa_source_output *o, const pa_memchunk *chunk) {
 
     if (o->state == PA_SOURCE_OUTPUT_CORKED)
         return;
-    
+
     if (!o->resampler) {
         o->push(o, chunk);
         return;
@@ -240,7 +242,7 @@ void pa_source_output_push(pa_source_output *o, const pa_memchunk *chunk) {
     pa_resampler_run(o->resampler, chunk, &rchunk);
     if (!rchunk.length)
         return;
-    
+
     assert(rchunk.memblock);
     o->push(o, &rchunk);
     pa_memblock_unref(rchunk.memblock);
@@ -255,7 +257,7 @@ void pa_source_output_set_name(pa_source_output *o, const char *name) {
 
     if (o->name && name && !strcmp(o->name, name))
         return;
-    
+
     pa_xfree(o->name);
     o->name = pa_xstrdup(name);
 
@@ -265,7 +267,7 @@ void pa_source_output_set_name(pa_source_output *o, const char *name) {
 pa_usec_t pa_source_output_get_latency(pa_source_output *o) {
     assert(o);
     assert(o->ref >= 1);
-    
+
     if (o->get_latency)
         return o->get_latency(o);
 
@@ -274,7 +276,7 @@ pa_usec_t pa_source_output_get_latency(pa_source_output *o) {
 
 void pa_source_output_cork(pa_source_output *o, int b) {
     int n;
-    
+
     assert(o);
     assert(o->ref >= 1);
 
@@ -282,9 +284,9 @@ void pa_source_output_cork(pa_source_output *o, int b) {
         return;
 
     n = o->state == PA_SOURCE_OUTPUT_CORKED && !b;
-    
+
     o->state = b ? PA_SOURCE_OUTPUT_CORKED : PA_SOURCE_OUTPUT_RUNNING;
-    
+
     if (n)
         pa_source_notify(o->source);
 }
@@ -292,7 +294,7 @@ void pa_source_output_cork(pa_source_output *o, int b) {
 pa_resample_method_t pa_source_output_get_resample_method(pa_source_output *o) {
     assert(o);
     assert(o->ref >= 1);
-    
+
     if (!o->resampler)
         return o->resample_method;
 
@@ -323,12 +325,12 @@ int pa_source_output_move_to(pa_source_output *o, pa_source *dest) {
 
         /* Try to reuse the old resampler if possible */
         new_resampler = o->resampler;
-    
+
     else if (!pa_sample_spec_equal(&o->sample_spec, &dest->sample_spec) ||
         !pa_channel_map_equal(&o->channel_map, &dest->channel_map)) {
 
         /* Okey, we need a new resampler for the new sink */
-        
+
         if (!(new_resampler = pa_resampler_new(
                       dest->core->mempool,
                       &dest->sample_spec, &dest->channel_map,

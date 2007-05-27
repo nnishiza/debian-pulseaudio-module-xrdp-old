@@ -1,18 +1,22 @@
-/* $Id: socket-util.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: socket-util.c 1429 2007-02-14 12:13:49Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2004 Joe Marcus Clarke
+  Copyright 2006-2007 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -78,7 +82,7 @@ void pa_socket_peer_to_string(int fd, char *c, size_t l) {
     struct stat st;
 
     assert(c && l && fd >= 0);
-    
+
 #ifndef OS_IS_WIN32
     if (fstat(fd, &st) < 0) {
         snprintf(c, l, "Invalid client fd");
@@ -88,7 +92,7 @@ void pa_socket_peer_to_string(int fd, char *c, size_t l) {
 
 #ifndef OS_IS_WIN32
     if (S_ISSOCK(st.st_mode)) {
-#endif    
+#endif
         union {
             struct sockaddr sa;
             struct sockaddr_in in;
@@ -98,12 +102,12 @@ void pa_socket_peer_to_string(int fd, char *c, size_t l) {
 #endif
         } sa;
         socklen_t sa_len = sizeof(sa);
-        
+
         if (getpeername(fd, &sa.sa, &sa_len) >= 0) {
 
             if (sa.sa.sa_family == AF_INET) {
                 uint32_t ip = ntohl(sa.in.sin_addr.s_addr);
-                
+
                 snprintf(c, l, "TCP/IP client from %i.%i.%i.%i:%u",
                          ip >> 24,
                          (ip >> 16) & 0xFF,
@@ -159,7 +163,7 @@ int pa_socket_tcp_low_delay(int fd) {
     assert(fd >= 0);
 
     ret = pa_socket_low_delay(fd);
-    
+
     on = 1;
     tos = 0;
 
@@ -232,20 +236,20 @@ int pa_unix_socket_is_stale(const char *fn) {
 
 finish:
     if (fd >= 0)
-        close(fd);
+        pa_close(fd);
 
     return ret;
 }
 
 int pa_unix_socket_remove_stale(const char *fn) {
     int r;
-    
+
     if ((r = pa_unix_socket_is_stale(fn)) < 0)
         return errno != ENOENT ? -1 : 0;
 
     if (!r)
         return 0;
-        
+
     /* Yes, here is a race condition. But who cares? */
     if (unlink(fn) < 0)
         return -1;

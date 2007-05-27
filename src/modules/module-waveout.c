@@ -1,18 +1,21 @@
-/* $Id: module-waveout.c 1325 2006-08-22 16:15:47Z ossman $ */
+/* $Id: module-waveout.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2006 Lennart Poettering
+  Copyright 2006-2007 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -47,7 +50,8 @@ PA_MODULE_DESCRIPTION("Windows waveOut Sink/Source")
 PA_MODULE_VERSION(PACKAGE_VERSION)
 PA_MODULE_USAGE(
     "sink_name=<name for the sink> "
-    "source_name=<name for the source>"
+    "source_name=<name for the source> "
+    "device=<device number> "
     "record=<enable source?> "
     "playback=<enable sink?> "
     "format=<sample format> "
@@ -90,6 +94,7 @@ struct userdata {
 static const char* const valid_modargs[] = {
     "sink_name",
     "source_name",
+    "device",
     "record",
     "playback",
     "fragments",
@@ -172,7 +177,7 @@ static void do_write(struct userdata *u)
             pa_log_error(__FILE__ ": ERROR: Unable to write waveOut block: %d",
                 res);
         }
-        
+
         u->written_bytes += hdr->dwBufferLength;
 
         EnterCriticalSection(&u->crit);
@@ -233,7 +238,7 @@ static void do_read(struct userdata *u)
             pa_log_error(__FILE__ ": ERROR: Unable to add waveIn block: %d",
                 res);
         }
-        
+
         free_frags--;
         u->cur_ihdr++;
         u->cur_ihdr %= u->fragments;
@@ -432,6 +437,7 @@ int pa__init(pa_core *c, pa_module*m) {
     WAVEFORMATEX wf;
     int nfrags, frag_size;
     int record = 1, playback = 1;
+    unsigned int device;
     pa_sample_spec ss;
     pa_channel_map map;
     pa_modargs *ma = NULL;
@@ -455,6 +461,12 @@ int pa__init(pa_core *c, pa_module*m) {
         goto fail;
     }
 
+    device = WAVE_MAPPER;
+    if (pa_modargs_get_value_u32(ma, "device", &device) < 0) {
+        pa_log("failed to parse device argument");
+        goto fail;
+    }
+
     nfrags = 5;
     frag_size = 8192;
     if (pa_modargs_get_value_s32(ma, "fragments", &nfrags) < 0 || pa_modargs_get_value_s32(ma, "fragment_size", &frag_size) < 0) {
@@ -474,7 +486,7 @@ int pa__init(pa_core *c, pa_module*m) {
     u = pa_xmalloc(sizeof(struct userdata));
 
     if (record) {
-        if (waveInOpen(&hwi, WAVE_MAPPER, &wf, (DWORD_PTR)chunk_ready_cb, (DWORD_PTR)u, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) {
+        if (waveInOpen(&hwi, device, &wf, (DWORD_PTR)chunk_ready_cb, (DWORD_PTR)u, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) {
             pa_log("failed to open waveIn");
             goto fail;
         }
@@ -486,7 +498,7 @@ int pa__init(pa_core *c, pa_module*m) {
     }
 
     if (playback) {
-        if (waveOutOpen(&hwo, WAVE_MAPPER, &wf, (DWORD_PTR)chunk_done_cb, (DWORD_PTR)u, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) {
+        if (waveOutOpen(&hwo, device, &wf, (DWORD_PTR)chunk_done_cb, (DWORD_PTR)u, CALLBACK_FUNCTION) != MMSYSERR_NOERROR) {
             pa_log("failed to open waveOut");
             goto fail;
         }
@@ -561,7 +573,7 @@ int pa__init(pa_core *c, pa_module*m) {
         u->ohdrs[i].lpData = pa_xmalloc(u->fragment_size);
         assert(u->ohdrs);
     }
-    
+
     u->module = m;
     m->userdata = u;
 
@@ -585,7 +597,7 @@ fail:
 
     if (ma)
         pa_modargs_free(ma);
-    
+
     return -1;
 }
 
@@ -597,7 +609,7 @@ void pa__done(pa_core *c, pa_module*m) {
 
     if (!(u = m->userdata))
         return;
-    
+
     if (u->event)
         c->mainloop->time_free(u->event);
 
@@ -608,12 +620,12 @@ void pa__done(pa_core *c, pa_module*m) {
         pa_sink_disconnect(u->sink);
         pa_sink_unref(u->sink);
     }
-    
+
     if (u->source) {
         pa_source_disconnect(u->source);
         pa_source_unref(u->source);
     }
-    
+
     if (u->hwi != INVALID_HANDLE_VALUE) {
         waveInReset(u->hwi);
         waveInClose(u->hwi);
@@ -633,6 +645,6 @@ void pa__done(pa_core *c, pa_module*m) {
     pa_xfree(u->ohdrs);
 
     DeleteCriticalSection(&u->crit);
-    
+
     pa_xfree(u);
 }

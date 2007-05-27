@@ -1,18 +1,21 @@
-/* $Id: sconv.c 1033 2006-06-19 21:53:48Z lennart $ */
+/* $Id: sconv.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -41,12 +44,12 @@
 static void u8_to_float32ne(unsigned n, const void *a, float *b) {
     const uint8_t *ca = a;
     static const double add = -128.0/127.0, factor = 1.0/127.0;
-    
+
     assert(a);
     assert(b);
 
     oil_scaleconv_f32_u8(b, ca, n, &add, &factor);
-}    
+}
 
 static void u8_from_float32ne(unsigned n, const float *a, void *b) {
     uint8_t *cb = b;
@@ -72,12 +75,28 @@ static void float32ne_from_float32ne(unsigned n, const float *a, void *b) {
     oil_memcpy(b, a, sizeof(float) * n);
 }
 
+static void float32re_to_float32ne(unsigned n, const void *a, float *b) {
+    assert(a);
+    assert(b);
+
+    while (n-- > 0)
+        ((uint32_t *)b)[n] = UINT32_SWAP (((uint32_t *)a)[n]);
+}
+
+static void float32re_from_float32ne(unsigned n, const float *a, void *b) {
+    assert(a);
+    assert(b);
+
+    while (n-- > 0)
+        ((uint32_t *)b)[n] = UINT32_SWAP (((uint32_t *)a)[n]);
+}
+
 static void ulaw_to_float32ne(unsigned n, const void *a, float *b) {
     const uint8_t *ca = a;
 
     assert(a);
     assert(b);
-    
+
     for (; n > 0; n--)
         *(b++) = st_ulaw2linear16(*(ca++)) * 1.0F / 0x7FFF;
 }
@@ -87,7 +106,7 @@ static void ulaw_from_float32ne(unsigned n, const float *a, void *b) {
 
     assert(a);
     assert(b);
-    
+
     for (; n > 0; n--) {
         float v = *(a++);
 
@@ -116,7 +135,7 @@ static void alaw_from_float32ne(unsigned n, const float *a, void *b) {
 
     assert(a);
     assert(b);
-    
+
     for (; n > 0; n--) {
         float v = *(a++);
 
@@ -140,6 +159,8 @@ pa_convert_to_float32ne_func_t pa_get_convert_to_float32ne_function(pa_sample_fo
             return pa_sconv_s16be_to_float32ne;
         case PA_SAMPLE_FLOAT32NE:
             return float32ne_to_float32ne;
+        case PA_SAMPLE_FLOAT32RE:
+            return float32re_to_float32ne;
         case PA_SAMPLE_ALAW:
             return alaw_to_float32ne;
         case PA_SAMPLE_ULAW:
@@ -159,6 +180,8 @@ pa_convert_from_float32ne_func_t pa_get_convert_from_float32ne_function(pa_sampl
             return pa_sconv_s16be_from_float32ne;
         case PA_SAMPLE_FLOAT32NE:
             return float32ne_from_float32ne;
+        case PA_SAMPLE_FLOAT32RE:
+            return float32re_from_float32ne;
         case PA_SAMPLE_ALAW:
             return alaw_from_float32ne;
         case PA_SAMPLE_ULAW:

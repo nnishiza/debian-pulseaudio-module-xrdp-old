@@ -1,21 +1,24 @@
 #ifndef foopulsememblockhfoo
 #define foopulsememblockhfoo
 
-/* $Id: memblock.h 1293 2006-08-19 16:25:15Z lennart $ */
+/* $Id: memblock.h 1459 2007-05-27 20:38:14Z lennart $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   Lesser General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -26,6 +29,8 @@
 #include <inttypes.h>
 
 #include <pulsecore/llist.h>
+#include <pulsecore/refcnt.h>
+#include <pulsecore/atomic.h>
 
 /* A pa_memblock is a reference counted memory block. PulseAudio
  * passed references to pa_memblocks around instead of copying
@@ -36,7 +41,7 @@
 typedef enum pa_memblock_type {
     PA_MEMBLOCK_POOL,             /* Memory is part of the memory pool */
     PA_MEMBLOCK_POOL_EXTERNAL,    /* Data memory is part of the memory pool but the pa_memblock structure itself not */
-    PA_MEMBLOCK_APPENDED,         /* the data is appended to the memory block */ 
+    PA_MEMBLOCK_APPENDED,         /* the data is appended to the memory block */
     PA_MEMBLOCK_USER,             /* User supplied memory, to be freed with free_cb */
     PA_MEMBLOCK_FIXED,            /* data is a pointer to fixed memory that needs not to be freed */
     PA_MEMBLOCK_IMPORTED,         /* Memory is imported from another process via shm */
@@ -56,7 +61,7 @@ typedef void (*pa_memexport_revoke_cb_t)(pa_memexport *e, uint32_t block_id, voi
 struct pa_memblock {
     pa_memblock_type_t type;
     int read_only; /* boolean */
-    unsigned ref;  /* the reference counter */
+    PA_REFCNT_DECLARE; /* the reference counter */
     size_t length;
     void *data;
     pa_mempool *pool;
@@ -65,7 +70,7 @@ struct pa_memblock {
         struct {
             void (*free_cb)(void *p);  /* If type == PA_MEMBLOCK_USER this points to a function for freeing this memory block */
         } user;
-            
+
         struct  {
             uint32_t id;
             pa_memimport_segment *segment;
@@ -73,21 +78,25 @@ struct pa_memblock {
     } per_type;
 };
 
+/* Please note that updates to this structure are not locked,
+ * i.e. n_allocated might be updated at a point in time where
+ * n_accumulated is not yet. Take these values with a grain of salt,
+ * threy are here for purely statistical reasons.*/
 struct pa_mempool_stat {
-    unsigned n_allocated;
-    unsigned n_accumulated;
-    unsigned n_imported;
-    unsigned n_exported;
-    size_t allocated_size;
-    size_t accumulated_size;
-    size_t imported_size;
-    size_t exported_size;
+    pa_atomic_int_t n_allocated;
+    pa_atomic_int_t n_accumulated;
+    pa_atomic_int_t n_imported;
+    pa_atomic_int_t n_exported;
+    pa_atomic_int_t allocated_size;
+    pa_atomic_int_t accumulated_size;
+    pa_atomic_int_t imported_size;
+    pa_atomic_int_t exported_size;
 
-    unsigned n_too_large_for_pool;
-    unsigned n_pool_full;
+    pa_atomic_int_t n_too_large_for_pool;
+    pa_atomic_int_t n_pool_full;
 
-    unsigned n_allocated_by_type[PA_MEMBLOCK_TYPE_MAX];
-    unsigned n_accumulated_by_type[PA_MEMBLOCK_TYPE_MAX];
+    pa_atomic_int_t n_allocated_by_type[PA_MEMBLOCK_TYPE_MAX];
+    pa_atomic_int_t n_accumulated_by_type[PA_MEMBLOCK_TYPE_MAX];
 };
 
 /* Allocate a new memory block of type PA_MEMBLOCK_MEMPOOL or PA_MEMBLOCK_APPENDED, depending on the size */

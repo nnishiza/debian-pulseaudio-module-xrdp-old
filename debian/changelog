@@ -1,33 +1,23 @@
-pulseaudio (0.9.5-8) UNRELEASED; urgency=low
+pulseaudio (0.9.6-1) UNRELEASED; urgency=low
 
-  * debian/patches: Rework patch series for quilt.
-  * debian/patches: r1433-handle-suspended-alsa-devices
-    + Refreshed. Updated to the version commited upstream. This adds support
-      for suspended alsa sources.
-  * debian/patches: r1412-support-reversed-endian-floats
-    + Refreshed. Updated to the version commited upstream.
-  * debian/patches: r1361-fix-esdcompat-for-non-bash-shells
-    + Added. Corrects parameter handling in esdcompat. (Closes: #414355)
-  * debian/patches:
-    Backport multiple minor bug fixes from upstream trunk.
-    + Added r1336-increase-operation-timeout
-    + Added r1355-fix-a-race-condition
-    + Added r1377-fix-alsa-sink-example
-    + Added r1378-add-missing-channel-names-fix
-    + Added r1411-check-correct-variable-for-return-value
-    + Added r1416-r1417-fix-incorrect-assert
-    + Added r1422-make-sure-we-report-success-for-SNDCTL_DSP_SETDUPLEX
-    + Added r1423-dont-abort-config-loading-when-user-config-cannot-be-loaded
-  * debian/patch: r1431-handle-when-alsa-tweaks-our-sample-spec
-    + Added. Handle frame size changes. (Closes: #423887)
-  * debian/patch: r1434-dont-fail-if-hal-doesn-t-contain-any-devices
-    + Added. Don't unload module-hal-detect if HAL doesn't report any devices.
+  * New Upstream Version.
+    + Fix remote DOS vulnerabilities. (CVE-2007-1804)
+    + Add support for suspended alsa sinks and sources.
+    + Correct parameter handling in esdcompat. (Closes: #414355)
+    + Handle ALSA frame size changes. (Closes: #423887)
+    + Don't unload module-hal-detect if HAL doesn't report any devices.
              (Closes: #395893)
-  * debian/patches: Backport fixes for remote DOS vulnerabilities. Upstream
-      svn commits r1445-1452. This fixes CVE-2007-1804.
+  * debian/patches: Remove all patches merged upstream.
+    - 02_ifexists_else_endif.dpatch
+    - 03_r1352_firefox_workaround.dpatch
+    - 04_r1373_JavaSound_support.dpatch
+    - 05_t28_wrong-endian-convert.dpatch
+    - 06_pulseaudio-0.9.5-suspend.dpatch
   * debian/rules: Port to CDBS.
+  * debian/patches: Rework patch series for quilt.
+  * debian/control: Add libatomic-ops-dev to Build-Depends.
 
- -- CJ van den Berg <cj@vdbonline.com>  Sat, 26 May 2007 23:37:07 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Mon, 28 May 2007 00:53:28 +0200
 
 pulseaudio (0.9.5-7) unstable; urgency=low
 

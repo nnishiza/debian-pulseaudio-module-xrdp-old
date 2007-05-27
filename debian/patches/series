@@ -1,27 +1,2 @@
-# This series applies on GIT commit 2cf3c9da45ac80ba341eb9319b9a8f764ab0bba5
+# This series applies on GIT commit 2dc3546dc1ed3d6229684ea12695c384a4900a8e
 use-ifexists-in-default-pa.patch
-ifexists-else-endif.patch
-r1336-increase-operation-timeout.patch
-r1352-work-around-bug-in-firefox-in-padsp.patch
-r1355-fix-a-race-condition.patch
-r1361-fix-esdcompat-for-non-bash-shells.patch
-r1373-implement-a-few-more-ioctls-in-padsp.patch
-r1377-fix-alsa-sink-example.patch
-r1378-add-missing-channel-names-fix.patch
-r1411-check-correct-variable-for-return-value.patch
-r1412-support-reversed-endian-floats.patch
-r1416-r1417-fix-incorrect-assert.patch
-r1422-make-sure-we-report-success-for-SNDCTL_DSP_SETDUPLEX.patch
-r1423-dont-abort-config-loading-when-user-config-cannot-be-loaded.patch
-r1431-handle-when-alsa-tweaks-our-sample-spec.patch
-r1433-handle-suspended-alsa-devices.patch
-r1434-dont-fail-if-hal-doesn-t-contain-any-devices.patch
-r1437-add-support-for-SNDCTL_DSP_SETTRIGGER.patch
-r1443-treat-empty-DISPLAY-identically-to-unset-DISPLAY.patch
-r1445-fix-a-dos-vulnerability.patch
-r1446-fix-another-dos-vulnerability.patch
-r1448-fix-yet-another-dos-vulnerability.patch
-r1449-dont-allow-excessively-high-sample-rates.patch
-r1450-fix-a-dos-with-allocating-overly-large-silence-buffers.patch
-r1451-add-a-missing-initialization.patch
-r1452-fix-another-dos-vulnerability.patch

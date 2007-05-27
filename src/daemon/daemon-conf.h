@@ -1,10 +1,13 @@
 #ifndef foodaemonconfhfoo
 #define foodaemonconfhfoo
 
-/* $Id: daemon-conf.h 1286 2006-08-19 01:20:13Z lennart $ */
+/* $Id: daemon-conf.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -66,7 +69,7 @@ typedef struct pa_daemon_conf {
     pa_log_level_t log_level;
     int resample_method;
     char *config_file;
-    
+
 #ifdef HAVE_SYS_RESOURCE_H
     pa_rlimit rlimit_as, rlimit_core, rlimit_data, rlimit_fsize, rlimit_nofile, rlimit_stack;
 #ifdef RLIMIT_NPROC
@@ -76,7 +79,7 @@ typedef struct pa_daemon_conf {
     pa_rlimit rlimit_memlock;
 #endif
 #endif
-    
+
 } pa_daemon_conf;
 
 /* Allocate a new structure and fill it with sane defaults */

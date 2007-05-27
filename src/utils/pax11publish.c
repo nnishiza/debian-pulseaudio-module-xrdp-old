@@ -1,18 +1,20 @@
-/* $Id: pax11publish.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: pax11publish.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -99,7 +101,7 @@ int main(int argc, char *argv[]) {
     switch (mode) {
         case DUMP: {
             char t[1024];
-            if (pa_x11_get_prop(d, "PULSE_SERVER", t, sizeof(t))) 
+            if (pa_x11_get_prop(d, "PULSE_SERVER", t, sizeof(t)))
                 printf("Server: %s\n", t);
             if (pa_x11_get_prop(d, "PULSE_SOURCE", t, sizeof(t)))
                 printf("Source: %s\n", t);
@@ -110,10 +112,10 @@ int main(int argc, char *argv[]) {
 
             break;
         }
-            
+
         case IMPORT: {
             char t[1024];
-            if (pa_x11_get_prop(d, "PULSE_SERVER", t, sizeof(t))) 
+            if (pa_x11_get_prop(d, "PULSE_SERVER", t, sizeof(t)))
                 printf("PULSE_SERVER='%s'\nexport PULSE_SERVER\n", t);
             if (pa_x11_get_prop(d, "PULSE_SOURCE", t, sizeof(t)))
                 printf("PULSE_SOURCE='%s'\nexport PULSE_SOURCE\n", t);
@@ -158,7 +160,7 @@ int main(int argc, char *argv[]) {
             pa_x11_del_prop(d, "PULSE_SOURCE");
             pa_x11_del_prop(d, "PULSE_ID");
             pa_x11_del_prop(d, "PULSE_COOKIE");
-            
+
             if (server)
                 pa_x11_set_prop(d, "PULSE_SERVER", server);
             else if (conf->default_server)
@@ -169,7 +171,7 @@ int main(int argc, char *argv[]) {
                     fprintf(stderr, "Failed to get FQDN.\n");
                     goto finish;
                 }
-                    
+
                 pa_x11_set_prop(d, "PULSE_SERVER", hn);
             }
 
@@ -184,7 +186,7 @@ int main(int argc, char *argv[]) {
                 pa_x11_set_prop(d, "PULSE_SOURCE", conf->default_source);
 
             pa_client_conf_free(conf);
-            
+
             if (pa_authkey_load_auto(cookie_file, cookie, sizeof(cookie)) < 0) {
                 fprintf(stderr, "Failed to load cookie data\n");
                 goto finish;
@@ -201,20 +203,20 @@ int main(int argc, char *argv[]) {
             pa_x11_del_prop(d, "PULSE_ID");
             pa_x11_del_prop(d, "PULSE_COOKIE");
             break;
-            
+
         default:
             fprintf(stderr, "No yet implemented.\n");
             goto finish;
     }
 
     ret = 0;
-    
+
 finish:
 
     if (d) {
         XSync(d, False);
         XCloseDisplay(d);
     }
-    
+
     return ret;
 }

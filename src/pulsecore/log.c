@@ -1,18 +1,21 @@
-/* $Id: log.c 1280 2006-08-19 01:14:59Z lennart $ */
+/* $Id: log.c 1457 2007-05-27 16:37:05Z lennart $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -59,6 +62,14 @@ static const int level_to_syslog[] = {
 };
 #endif
 
+static const char level_to_char[] = {
+    [PA_LOG_ERROR] = 'E',
+    [PA_LOG_WARN] = 'W',
+    [PA_LOG_NOTICE] = 'N',
+    [PA_LOG_INFO] = 'I',
+    [PA_LOG_DEBUG] = 'D'
+};
+
 void pa_log_set_ident(const char *p) {
     if (log_ident)
         pa_xfree(log_ident);
@@ -89,16 +100,16 @@ void pa_log_levelv_meta(
         const char *func,
         const char *format,
         va_list ap) {
-    
+
     const char *e;
     char *text, *t, *n, *location;
-    
+
     assert(level < PA_LOG_LEVEL_MAX);
     assert(format);
 
     if ((e = getenv(ENV_LOGLEVEL)))
         maximal_level = atoi(e);
-    
+
     if (level > maximal_level)
         return;
 
@@ -122,13 +133,13 @@ void pa_log_levelv_meta(
 
         if (!*t)
             continue;
-    
+
         switch (log_target) {
             case PA_LOG_STDERR: {
                 const char *prefix = "", *suffix = "";
                 char *local_t;
 
-#ifndef OS_IS_WIN32                
+#ifndef OS_IS_WIN32
                 /* Yes indeed. Useless, but fun! */
                 if (isatty(STDERR_FILENO)) {
                     if (level <= PA_LOG_ERROR) {
@@ -143,16 +154,16 @@ void pa_log_levelv_meta(
 
                 local_t = pa_utf8_to_locale(t);
                 if (!local_t)
-                    fprintf(stderr, "%s%s%s%s\n", location, prefix, t, suffix);
+                    fprintf(stderr, "%c: %s%s%s%s\n", level_to_char[level], location, prefix, t, suffix);
                 else {
-                    fprintf(stderr, "%s%s%s%s\n", location, prefix, local_t, suffix);
+                    fprintf(stderr, "%c: %s%s%s%s\n", level_to_char[level], location, prefix, local_t, suffix);
                     pa_xfree(local_t);
                 }
 
                 break;
             }
-                
-#ifdef HAVE_SYSLOG_H            
+
+#ifdef HAVE_SYSLOG_H
             case PA_LOG_SYSLOG: {
                 char *local_t;
 
@@ -167,20 +178,20 @@ void pa_log_levelv_meta(
                 }
 
                 closelog();
-                break;            
+                break;
             }
 #endif
-                
+
             case PA_LOG_USER: {
                 char *x;
 
                 x = pa_sprintf_malloc("%s%s", location, t);
                 user_log_func(level, x);
                 pa_xfree(x);
-                
+
                 break;
             }
-                
+
             case PA_LOG_NULL:
             default:
                 break;
@@ -197,7 +208,7 @@ void pa_log_level_meta(
         int line,
         const char *func,
         const char *format, ...) {
-    
+
     va_list ap;
     va_start(ap, format);
     pa_log_levelv_meta(level, file, line, func, format, ap);

@@ -1,10 +1,13 @@
 #ifndef fooversionhfoo /*-*-C-*-*/
 #define fooversionhfoo
 
-/* $Id: version.h.in 1036 2006-06-19 22:11:49Z lennart $ */
+/* $Id: version.h.in 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
  
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -34,7 +37,7 @@ PA_C_DECL_BEGIN
 /** Return the version of the header files. Keep in mind that this is
 a macro and not a function, so it is impossible to get the pointer of
 it. */
-#define pa_get_headers_version() ("0.9.5")
+#define pa_get_headers_version() ("0.9.6")
 
 /** Return the version of the library the current application is linked to. */
 const char* pa_get_library_version(void);

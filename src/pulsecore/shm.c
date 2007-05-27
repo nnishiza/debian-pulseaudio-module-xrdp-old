@@ -1,18 +1,21 @@
-/* $Id: shm.c 1319 2006-08-22 12:45:43Z ossman $ */
+/* $Id: shm.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
   published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   Lesser General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public
   License along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -45,7 +48,7 @@
 
 #if defined(__linux__) && !defined(MADV_REMOVE)
 #define MADV_REMOVE 9
-#endif    
+#endif
 
 #define MAX_SHM_SIZE (1024*1024*20)
 
@@ -57,7 +60,7 @@ static char *segment_name(char *fn, size_t l, unsigned id) {
 int pa_shm_create_rw(pa_shm *m, size_t size, int shared, mode_t mode) {
     char fn[32];
     int fd = -1;
-    
+
     assert(m);
     assert(size > 0);
     assert(size < MAX_SHM_SIZE);
@@ -75,7 +78,7 @@ int pa_shm_create_rw(pa_shm *m, size_t size, int shared, mode_t mode) {
 #elif defined(HAVE_POSIX_MEMALIGN)
         {
             int r;
-            
+
             if ((r = posix_memalign(&m->ptr, sysconf(_SC_PAGESIZE), size)) < 0) {
                 pa_log("posix_memalign() failed: %s", pa_cstrerror(r));
                 goto fail;
@@ -84,9 +87,9 @@ int pa_shm_create_rw(pa_shm *m, size_t size, int shared, mode_t mode) {
 #else
         m->ptr = pa_xmalloc(m->size);
 #endif
-        
+
         m->do_unlink = 0;
-        
+
     } else {
 #ifdef HAVE_SHM_OPEN
         pa_random(&m->id, sizeof(m->id));
@@ -96,12 +99,12 @@ int pa_shm_create_rw(pa_shm *m, size_t size, int shared, mode_t mode) {
             pa_log("shm_open() failed: %s", pa_cstrerror(errno));
             goto fail;
         }
-        
+
         if (ftruncate(fd, m->size = size) < 0) {
             pa_log("ftruncate() failed: %s", pa_cstrerror(errno));
             goto fail;
         }
-        
+
         if ((m->ptr = mmap(NULL, m->size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED) {
             pa_log("mmap() failed: %s", pa_cstrerror(errno));
             goto fail;
@@ -115,9 +118,9 @@ int pa_shm_create_rw(pa_shm *m, size_t size, int shared, mode_t mode) {
     }
 
     m->shared = shared;
-    
+
     return 0;
-    
+
 fail:
 
 #ifdef HAVE_SHM_OPEN
@@ -156,10 +159,10 @@ void pa_shm_free(pa_shm *m) {
 	    if (m->do_unlink) {
 		    char fn[32];
 
-    	    segment_name(fn, sizeof(fn), m->id);
+                    segment_name(fn, sizeof(fn), m->id);
 
-	        if (shm_unlink(fn) < 0)
-    	        pa_log(__FILE__":shm_unlink(%s) failed: %s", fn, pa_cstrerror(errno));
+                    if (shm_unlink(fn) < 0)
+                        pa_log(" shm_unlink(%s) failed: %s", fn, pa_cstrerror(errno));
 	    }
 #else
 		/* We shouldn't be here without shm support */
@@ -172,12 +175,11 @@ void pa_shm_free(pa_shm *m) {
 
 void pa_shm_punch(pa_shm *m, size_t offset, size_t size) {
     void *ptr;
-    
+
     assert(m);
     assert(m->ptr);
     assert(m->size > 0);
-    assert(offset < m->size);
-    assert(offset+size < m->size);
+    assert(offset+size <= m->size);
 
 #ifdef MAP_FAILED
 	assert(m->ptr != MAP_FAILED);
@@ -187,7 +189,7 @@ void pa_shm_punch(pa_shm *m, size_t offset, size_t size) {
      * support it */
 
     ptr = (uint8_t*) m->ptr + offset;
-    
+
 #ifdef __linux__
 {
     /* On Linux ptr must be page aligned */
@@ -195,14 +197,14 @@ void pa_shm_punch(pa_shm *m, size_t offset, size_t size) {
     unsigned o;
 
     o = ((unsigned long) ptr) - ((((unsigned long) ptr)/psz) * psz);
-    
+
     if (o > 0) {
         ptr = (uint8_t*) ptr + (psz - o);
         size -= psz - o;
     }
 }
 #endif
-    
+
 #ifdef MADV_REMOVE
     if (madvise(ptr, size, MADV_REMOVE) >= 0)
         return;
@@ -211,8 +213,8 @@ void pa_shm_punch(pa_shm *m, size_t offset, size_t size) {
 #ifdef MADV_FREE
     if (madvise(ptr, size, MADV_FREE) >= 0)
         return;
-#endif    
-    
+#endif
+
 #ifdef MADV_DONTNEED
     madvise(ptr, size, MADV_DONTNEED);
 #endif
@@ -245,7 +247,7 @@ int pa_shm_attach_ro(pa_shm *m, unsigned id) {
     }
 
     m->size = st.st_size;
-        
+
     if ((m->ptr = mmap(NULL, m->size, PROT_READ, MAP_SHARED, fd, 0)) == MAP_FAILED) {
         pa_log("mmap() failed: %s", pa_cstrerror(errno));
         goto fail;
@@ -253,11 +255,11 @@ int pa_shm_attach_ro(pa_shm *m, unsigned id) {
 
     m->do_unlink = 0;
     m->shared = 1;
-    
+
     close(fd);
-    
+
     return 0;
-    
+
 fail:
     if (fd >= 0)
         close(fd);

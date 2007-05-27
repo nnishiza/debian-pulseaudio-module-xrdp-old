@@ -1,7 +1,9 @@
-/* $Id: sap.c 1272 2006-08-18 21:38:40Z lennart $ */
+/* $Id: sap.c 1452 2007-05-23 17:24:06Z lennart $ */
 
 /***
   This file is part of PulseAudio.
+
+  Copyright 2006 Lennart Poettering
  
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -141,9 +143,6 @@ int pa_sap_recv(pa_sap_context *c, int *goodbye) {
         pa_log("FIONREAD failed: %s", pa_cstrerror(errno));
         goto fail;
     }
-
-    if (!size)
-        return 0;
 
     buf = pa_xnew(char, size+1);
     buf[size] = 0;

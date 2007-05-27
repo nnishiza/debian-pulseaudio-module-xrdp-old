@@ -1,21 +1,24 @@
 #ifndef foosinkhfoo
 #define foosinkhfoo
 
-/* $Id: sink.h 1226 2006-08-12 16:50:58Z lennart $ */
+/* $Id: sink.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -59,7 +62,7 @@ struct pa_sink {
 
     pa_idxset *inputs;
     pa_source *monitor_source;             /* may be NULL */
-    
+
     pa_cvolume hw_volume, sw_volume;
     int hw_muted, sw_muted;
 
@@ -69,7 +72,7 @@ struct pa_sink {
     int (*get_hw_volume)(pa_sink *s);      /* dito */
     int (*set_hw_mute)(pa_sink *s);        /* dito */
     int (*get_hw_mute)(pa_sink *s);        /* dito */
-    
+
     void *userdata;
 };
 
@@ -89,7 +92,7 @@ int pa_sink_render(pa_sink*s, size_t length, pa_memchunk *result);
 void pa_sink_render_full(pa_sink *s, size_t length, pa_memchunk *result);
 int pa_sink_render_into(pa_sink*s, pa_memchunk *target);
 void pa_sink_render_into_full(pa_sink *s, pa_memchunk *target);
-    
+
 pa_usec_t pa_sink_get_latency(pa_sink *s);
 
 void pa_sink_notify(pa_sink*s);

@@ -1,21 +1,24 @@
 #ifndef foocontexthfoo
 #define foocontexthfoo
 
-/* $Id: context.h 1039 2006-06-19 23:51:58Z lennart $ */
+/* $Id: context.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -50,7 +53,7 @@
  * The abstraction is represented as a number of function pointers in the
  * pa_mainloop_api structure.
  *
- * To actually be able to use these functions, an implementation needs to 
+ * To actually be able to use these functions, an implementation needs to
  * be coupled to the abstraction. There are three of these shipped with
  * PulseAudio, but any other can be used with a minimal ammount of work,
  * provided it supports the three basic events listed above.
@@ -76,7 +79,7 @@
  * and decrease their reference counts. Whenever an object's reference
  * count reaches zero, that object gets destroy and any resources it uses
  * get freed.
- * 
+ *
  * The benefit of this design is that an application need not worry about
  * whether or not it needs to keep an object around in case the library is
  * using it internally. If it is, then it has made sure it has its own

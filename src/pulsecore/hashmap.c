@@ -1,18 +1,20 @@
-/* $Id: hashmap.c 1263 2006-08-18 19:43:46Z lennart $ */
+/* $Id: hashmap.c 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
- 
+
+  Copyright 2004-2006 Lennart Poettering
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -47,7 +49,7 @@ struct pa_hashmap {
     unsigned size;
     struct hashmap_entry **data;
     struct hashmap_entry *first_entry;
-    
+
     unsigned n_entries;
     pa_hash_func_t hash_func;
     pa_compare_func_t compare_func;
@@ -55,14 +57,14 @@ struct pa_hashmap {
 
 pa_hashmap *pa_hashmap_new(pa_hash_func_t hash_func, pa_compare_func_t compare_func) {
     pa_hashmap *h;
-    
+
     h = pa_xnew(pa_hashmap, 1);
     h->data = pa_xnew0(struct hashmap_entry*, h->size = BUCKETS);
     h->first_entry = NULL;
     h->n_entries = 0;
     h->hash_func = hash_func ? hash_func : pa_idxset_trivial_hash_func;
     h->compare_func = compare_func ? compare_func : pa_idxset_trivial_compare_func;
-    
+
     return h;
 }
 
@@ -98,7 +100,7 @@ void pa_hashmap_free(pa_hashmap*h, void (*free_func)(void *p, void *userdata), v
             free_func(h->first_entry->value, userdata);
         remove(h, h->first_entry);
     }
-    
+
     pa_xfree(h->data);
     pa_xfree(h);
 }
@@ -124,24 +126,24 @@ int pa_hashmap_put(pa_hashmap *h, const void *key, void *value) {
 
     if ((e = get(h, hash, key)))
         return -1;
-    
+
     e = pa_xnew(struct hashmap_entry, 1);
     e->hash = hash;
     e->key = key;
     e->value = value;
-    
+
     e->previous = NULL;
     e->next = h->first_entry;
     if (h->first_entry)
         h->first_entry->previous = e;
     h->first_entry = e;
-    
+
     e->bucket_previous = NULL;
     e->bucket_next = h->data[hash];
     if (h->data[hash])
         h->data[hash]->bucket_previous = e;
     h->data[hash] = e;
-    
+
     h->n_entries ++;
     return 0;
 }
@@ -164,7 +166,7 @@ void* pa_hashmap_remove(pa_hashmap *h, const void *key) {
     struct hashmap_entry *e;
     unsigned hash;
     void *data;
-    
+
     assert(h);
 
     hash = h->hash_func(key) % h->size;
@@ -185,7 +187,7 @@ void *pa_hashmap_iterate(pa_hashmap *h, void **state, const void **key) {
     assert(h);
     assert(state);
 
-    if (!*state) 
+    if (!*state)
         *state = h->first_entry;
     else
         *state = ((struct hashmap_entry*) *state)->next;
@@ -198,13 +200,13 @@ void *pa_hashmap_iterate(pa_hashmap *h, void **state, const void **key) {
 
     if (key)
         *key = ((struct hashmap_entry*) *state)->key;
-    
+
     return ((struct hashmap_entry*) *state)->value;
 }
 
 void* pa_hashmap_steal_first(pa_hashmap *h) {
     void *data;
-    
+
     assert(h);
 
     if (!h->first_entry)
