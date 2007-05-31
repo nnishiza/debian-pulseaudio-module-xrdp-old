@@ -15,10 +15,10 @@ Standards-Version: 3.7.2
 Package: pulseaudio
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
-Recommends: pulseaudio-module-hal, pulseaudio-module-x11, libasound2-plugins
-Suggests: pulseaudio-utils, paprefs, pavumeter, pavucontrol, padevchooser,
-    paman, libgstreamer-plugins-pulse0.10-0, libao-pulse,
-    pulseaudio-esound-compat
+Recommends: pulseaudio-module-hal, pulseaudio-module-x11,
+    libasound2-plugins, libgstreamer-plugins-pulse0.10-0, libao-pulse,
+    pulseaudio-esound-compat, paprefs, padevchooser
+Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman
 Description: PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
