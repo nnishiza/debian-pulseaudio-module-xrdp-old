@@ -1,8 +1,10 @@
 pulseaudio (0.9.6-2) UNRELEASED; urgency=low
 
   * debian/control: Add -dbg packages.
+  * debian/overrides/pulseaudio: Update libpulsecore override to new
+      soversion.
 
- -- CJ van den Berg <cj@vdbonline.com>  Tue, 29 May 2007 19:03:49 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 06 Jun 2007 12:13:43 +0200
 
 pulseaudio (0.9.6-1) unstable; urgency=low
 
