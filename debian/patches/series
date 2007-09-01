@@ -1,2 +1,2 @@
-# This series applies on GIT commit 2dc3546dc1ed3d6229684ea12695c384a4900a8e
 use-ifexists-in-default-pa.patch
+fix-build-on-newer-gcc.patch
