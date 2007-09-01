@@ -6,8 +6,6 @@ pulseaudio (0.9.6-2) UNRELEASED; urgency=low
         daemon is running. (Closes: #440333)
     - Make libcap-dev and libasound-dev arch specific build deps.
     - Add recommends gnome-audio to pulseaudio-module-x11. (Closes: #437393)
-    - Add minimum requirement of libatomic-ops-dev 1.2-2 to avoid FTBFS on
-        powerpc.
   * debian/rules:
     - Generate arch specific install files. (Closes: #430366)
     - Install init script to start at 25 and stop at 15. (Closes: #428046)

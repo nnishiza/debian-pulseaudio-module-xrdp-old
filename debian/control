@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 5), cdbs, quilt, autotools-dev, m4,
     libasound-dev [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
     libavahi-client-dev, libjack0.100.0-dev, libwrap0-dev,
     liblircclient-dev, libgconf2-dev, libhal-dev, libasyncns-dev,
-    libatomic-ops-dev (>= 1.2-2)
+    libatomic-ops-dev
 Standards-Version: 3.7.2
 
 Package: pulseaudio
