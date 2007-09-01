@@ -6,12 +6,14 @@ pulseaudio (0.9.6-2) UNRELEASED; urgency=low
         daemon is running. (Closes: #440333)
     - Make libcap-dev and libasound-dev arch specific build deps.
     - Add recommends gnome-audio to pulseaudio-module-x11. (Closes: #437393)
+    - Add minimum requirement of libatomic-ops-dev 1.2-2 to avoid FTBFS on
+        powerpc.
   * debian/rules: Generate arch specific install files. (Closes: #430366)
   * debian/overrides/pulseaudio: Update libpulsecore override to new
       soversion.
   * debian/copyright: Update e-mail address for Lennart Poettering.
 
- -- CJ van den Berg <cj@vdbonline.com>  Sat, 01 Sep 2007 01:33:13 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Sat, 01 Sep 2007 01:41:29 +0200
 
 pulseaudio (0.9.6-1) unstable; urgency=low
 
