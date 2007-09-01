@@ -5,12 +5,13 @@ pulseaudio (0.9.6-2) UNRELEASED; urgency=low
     - Make libpulse-browse0 depend on avahi-daemon to ensure that the avahi
         daemon is running. (Closes: #440333)
     - Make libcap-dev and libasound-dev arch specific build deps.
+    - Add recommends gnome-audio to pulseaudio-module-x11. (Closes: #437393)
   * debian/rules: Generate arch specific install files. (Closes: #430366)
   * debian/overrides/pulseaudio: Update libpulsecore override to new
       soversion.
   * debian/copyright: Update e-mail address for Lennart Poettering.
 
- -- CJ van den Berg <cj@vdbonline.com>  Sat, 01 Sep 2007 01:28:12 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Sat, 01 Sep 2007 01:33:13 +0200
 
 pulseaudio (0.9.6-1) unstable; urgency=low
 
