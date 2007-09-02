@@ -1,10 +1,9 @@
-Use .ifexists meta command to load optional modules only if available
-
+From a6ab599eeecedbf7dfc3e28c6e275cee7d69e8ec Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
-
+Date: Tue, 29 May 2007 15:29:28 +0200
+Subject: [PATCH] Use .ifexists meta command to load optional modules only if available
 
 ---
-
  src/daemon/default.pa.in |   18 +++++++++++++++---
  1 files changed, 15 insertions(+), 3 deletions(-)
 
@@ -49,3 +48,6 @@ index af2a678..b769e3f 100755
  load-module module-native-protocol-unix
  
  ### Network access (may be configured with paprefs, so leave this commented
+-- 
+1.5.3.rc7.36.g8feb9-dirty
+

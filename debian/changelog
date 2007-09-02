@@ -12,8 +12,11 @@ pulseaudio (0.9.6-2) UNRELEASED; urgency=low
   * debian/overrides/pulseaudio: Update libpulsecore override to new
       soversion.
   * debian/copyright: Update e-mail address for Lennart Poettering.
+  * debian/patches: Reformat patch series. Add two new patches.
+    + 0003-Backported-padsp-improvements-from-upstream-trunk.patch
+    + 0004-New-realtime-safe-and-transport-free-JACK-module.patch
 
- -- CJ van den Berg <cj@vdbonline.com>  Sat, 01 Sep 2007 02:03:49 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 02 Sep 2007 00:43:19 +0200
 
 pulseaudio (0.9.6-1) unstable; urgency=low
 
