@@ -62,6 +62,7 @@ Description: PulseAudio sound server detached debugging symbols
 Package: pulseaudio-utils
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Suggests: avahi-daemon
 Description: Command line tools for the PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
@@ -117,6 +118,7 @@ Description: PulseAudio ESD compatibility layer debugging symbols
 Package: pulseaudio-module-zeroconf
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Recommends: avahi-daemon
 Description: Zeroconf module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with

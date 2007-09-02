@@ -4,6 +4,8 @@ pulseaudio (0.9.6-2) UNRELEASED; urgency=low
     - Add -dbg packages.
     - Make libcap-dev and libasound-dev arch specific build deps.
     - Add recommends gnome-audio to pulseaudio-module-x11. (Closes: #437393)
+    - Make pulseaudio-module-zeroconf recommend avahi-daemon.
+    - Make pulseaudio-utils suggest avahi-daemon. (for pabrowse)
   * debian/rules:
     - Generate arch specific install files. (Closes: #430366)
     - Install init script to start at 25 and stop at 15. (Closes: #428046)
@@ -14,7 +16,7 @@ pulseaudio (0.9.6-2) UNRELEASED; urgency=low
     + 0003-Backported-padsp-improvements-from-upstream-trunk.patch
     + 0004-New-realtime-safe-and-transport-free-JACK-module.patch
 
- -- CJ van den Berg <cj@vdbonline.com>  Sun, 02 Sep 2007 00:43:19 +0200
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 02 Sep 2007 20:22:19 +0200
 
 pulseaudio (0.9.6-1) unstable; urgency=low
 
