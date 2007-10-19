@@ -2,14 +2,12 @@
 
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk
-include /usr/share/cdbs/1/rules/patchsys-quilt.mk
 
 common-build-arch::
 	grep -v -e alsa -e evdev debian/pulseaudio.install > \
 	    debian/pulseaudio.install.kfreebsd-i386
 	grep -v -e alsa -e evdev debian/pulseaudio.install > \
 	    debian/pulseaudio.install.kfreebsd-amd64
-
 
 common-install-arch::
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian

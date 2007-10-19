@@ -1,4 +1,0 @@
-0001-Use-.ifexists-meta-command-to-load-optional-modules.patch
-0002-Fix-build-on-newer-gcc-versions.patch
-0003-Backported-padsp-improvements-from-upstream-trunk.patch
-0004-New-realtime-safe-and-transport-free-JACK-module.patch
