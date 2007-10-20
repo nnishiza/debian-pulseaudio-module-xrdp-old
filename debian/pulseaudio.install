@@ -55,4 +55,5 @@ usr/lib/pulse-*/modules/module-simple-protocol-unix.so
 usr/lib/pulse-*/modules/module-sine.so
 usr/lib/pulse-*/modules/module-tunnel-sink.so
 usr/lib/pulse-*/modules/module-tunnel-source.so
+usr/lib/pulse-*/modules/module-suspend-on-idle.so
 usr/lib/pulse-*/modules/module-volume-restore.so
