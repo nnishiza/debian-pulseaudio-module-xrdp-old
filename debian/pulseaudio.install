@@ -47,6 +47,7 @@ usr/lib/pulse-*/modules/module-oss-mmap.so
 usr/lib/pulse-*/modules/module-oss.so
 usr/lib/pulse-*/modules/module-pipe-sink.so
 usr/lib/pulse-*/modules/module-pipe-source.so
+usr/lib/pulse-*/modules/module-remap-sink.so
 usr/lib/pulse-*/modules/module-rescue-streams.so
 usr/lib/pulse-*/modules/module-rtp-recv.so
 usr/lib/pulse-*/modules/module-rtp-send.so
