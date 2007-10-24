@@ -36,6 +36,7 @@ usr/lib/pulse-*/modules/module-detect.so
 usr/lib/pulse-*/modules/module-esound-sink.so
 usr/lib/pulse-*/modules/module-http-protocol-tcp.so
 usr/lib/pulse-*/modules/module-http-protocol-unix.so
+usr/lib/pulse-*/modules/module-ladspa-sink.so
 usr/lib/pulse-*/modules/module-match.so
 usr/lib/pulse-*/modules/module-mmkbd-evdev.so
 usr/lib/pulse-*/modules/module-native-protocol-fd.so
