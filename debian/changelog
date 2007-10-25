@@ -1,3 +1,31 @@
+pulseaudio (0.9.7~svn1991-1) UNRELEASED; urgency=low
+
+  * New upstream release.
+  * Drop all patches. All patches are merged upstream.
+  * debian/control:
+    + Replace ${Source-Version} with ${binary:Version}.
+    + Add XS-Vcs-* tags.
+  * debian/rules:
+    + Add list-missing to catch new modules
+    + Remove all .la files.
+  * debian/overrides/pulseaudio: Update libpulsecore so version.
+  * debian/pulseaudio.install:
+    + Add new module-default-device-restore.so.
+    + Add new module-suspend-on-idle.so.
+    + Add new module-remap-sink.so.
+    + Add new module-ladspa-sink.so.
+    - Remove module-oss-mmap.so, removed upstream.
+  * debian/pulseaudio-module-x11.install: Add new module-x11-xsmp.so.
+  * debian/pulseaudio-module-zeroconf.install: Add new module-zeroconf-
+      discover.so.
+  * debian/pulseaudio-utils.install: Add pasuspender utility.
+  * debian/pulseaudio-esound-compat.links: Move esd link to pulseaudio-
+      esound-compat.
+  * debian/pulseaudio-esound-compat.manpages: Move esdcompat manpage to
+      pulseaudio-esound-compat.
+
+ -- CJ van den Berg <cj@vdbonline.com>  Tue, 30 Oct 2007 01:20:00 +0100
+
 pulseaudio (0.9.6-2) unstable; urgency=low
 
   * debian/control:
