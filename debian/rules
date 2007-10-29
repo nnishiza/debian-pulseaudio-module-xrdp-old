@@ -11,6 +11,7 @@ common-build-arch::
 	    debian/pulseaudio.install.kfreebsd-amd64
 
 common-install-arch::
+	find $(DEB_DESTDIR) -name "*.la" -delete
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian
 	cp -a $(CURDIR)/debian/overrides $(CURDIR)/debian/tmp/usr/share/lintian
 
