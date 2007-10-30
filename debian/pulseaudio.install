@@ -1,7 +1,6 @@
 etc/pulse/default.pa
 etc/pulse/daemon.conf
 usr/bin/pulseaudio
-usr/lib/libpulsecore.so.*
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libauthkey-prop.so
 usr/lib/pulse-*/modules/libauthkey.so
