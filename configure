@@ -809,7 +809,6 @@ target_alias
 INSTALL_PROGRAM
 INSTALL_SCRIPT
 INSTALL_DATA
-am__isrc
 CYGPATH_W
 PACKAGE
 VERSION
@@ -2157,8 +2156,7 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 ac_config_headers="$ac_config_headers config.h"
 
-am__api_version='1.10'
-
+am__api_version="1.9"
 ac_aux_dir=
 for ac_dir in "$srcdir" "$srcdir/.." "$srcdir/../.."; do
   if test -f "$ac_dir/install-sh"; then
@@ -2341,53 +2339,38 @@ else
 echo "$as_me: WARNING: \`missing' script is too old or missing" >&2;}
 fi
 
-{ echo "$as_me:$LINENO: checking for a thread-safe mkdir -p" >&5
-echo $ECHO_N "checking for a thread-safe mkdir -p... $ECHO_C" >&6; }
-if test -z "$MKDIR_P"; then
-  if test "${ac_cv_path_mkdir+set}" = set; then
-  echo $ECHO_N "(cached) $ECHO_C" >&6
+if mkdir -p --version . >/dev/null 2>&1 && test ! -d ./--version; then
+  # We used to keeping the `.' as first argument, in order to
+  # allow $(mkdir_p) to be used without argument.  As in
+  #   $(mkdir_p) $(somedir)
+  # where $(somedir) is conditionally defined.  However this is wrong
+  # for two reasons:
+  #  1. if the package is installed by a user who cannot write `.'
+  #     make install will fail,
+  #  2. the above comment should most certainly read
+  #     $(mkdir_p) $(DESTDIR)$(somedir)
+  #     so it does not work when $(somedir) is undefined and
+  #     $(DESTDIR) is not.
+  #  To support the latter case, we have to write
+  #     test -z "$(somedir)" || $(mkdir_p) $(DESTDIR)$(somedir),
+  #  so the `.' trick is pointless.
+  mkdir_p='mkdir -p --'
 else
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH$PATH_SEPARATOR/opt/sfw/bin
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-  for ac_prog in mkdir gmkdir; do
-	 for ac_exec_ext in '' $ac_executable_extensions; do
-	   { test -f "$as_dir/$ac_prog$ac_exec_ext" && $as_test_x "$as_dir/$ac_prog$ac_exec_ext"; } || continue
-	   case `"$as_dir/$ac_prog$ac_exec_ext" --version 2>&1` in #(
-	     'mkdir (GNU coreutils) '* | \
-	     'mkdir (coreutils) '* | \
-	     'mkdir (fileutils) '4.1*)
-	       ac_cv_path_mkdir=$as_dir/$ac_prog$ac_exec_ext
-	       break 3;;
-	   esac
-	 done
-       done
-done
-IFS=$as_save_IFS
-
-fi
-
-  if test "${ac_cv_path_mkdir+set}" = set; then
-    MKDIR_P="$ac_cv_path_mkdir -p"
+  # On NextStep and OpenStep, the `mkdir' command does not
+  # recognize any option.  It will interpret all options as
+  # directories to create, and then abort because `.' already
+  # exists.
+  for d in ./-p ./--version;
+  do
+    test -d $d && rmdir $d
+  done
+  # $(mkinstalldirs) is defined by Automake if mkinstalldirs exists.
+  if test -f "$ac_aux_dir/mkinstalldirs"; then
+    mkdir_p='$(mkinstalldirs)'
   else
-    # As a last resort, use the slow shell script.  Don't cache a
-    # value for MKDIR_P within a source directory, because that will
-    # break other packages using the cache if that directory is
-    # removed, or if the value is a relative name.
-    test -d ./--version && rmdir ./--version
-    MKDIR_P="$ac_install_sh -d"
+    mkdir_p='$(install_sh) -d'
   fi
 fi
-{ echo "$as_me:$LINENO: result: $MKDIR_P" >&5
-echo "${ECHO_T}$MKDIR_P" >&6; }
-
-mkdir_p="$MKDIR_P"
-case $mkdir_p in
-  [\\/$]* | ?:[\\/]*) ;;
-  */*) mkdir_p="\$(top_builddir)/$mkdir_p" ;;
-esac
 
 for ac_prog in gawk mawk nawk awk
 do
@@ -2470,16 +2453,12 @@ else
 fi
 rmdir .tst 2>/dev/null
 
-if test "`cd $srcdir && pwd`" != "`pwd`"; then
-  # Use -I$(srcdir) only when $(srcdir) != ., so that make's output
-  # is not polluted with repeated "-I."
-  am__isrc=' -I$(srcdir)'
-  # test to see if srcdir already configured
-  if test -f $srcdir/config.status; then
-    { { echo "$as_me:$LINENO: error: source directory already configured; run \"make distclean\" there first" >&5
+# test to see if srcdir already configured
+if test "`cd $srcdir && pwd`" != "`pwd`" &&
+   test -f $srcdir/config.status; then
+  { { echo "$as_me:$LINENO: error: source directory already configured; run \"make distclean\" there first" >&5
 echo "$as_me: error: source directory already configured; run \"make distclean\" there first" >&2;}
    { (exit 1); exit 1; }; }
-  fi
 fi
 
 # test whether we have cygpath
@@ -2522,7 +2501,7 @@ AUTOHEADER=${AUTOHEADER-"${am_missing_run}autoheader"}
 
 MAKEINFO=${MAKEINFO-"${am_missing_run}makeinfo"}
 
-install_sh=${install_sh-"\$(SHELL) $am_aux_dir/install-sh"}
+install_sh=${install_sh-"$am_aux_dir/install-sh"}
 
 # Installed binaries are usually stripped using `strip' when the user
 # run `make install-strip'.  However `strip' might not be the right
@@ -2626,7 +2605,7 @@ else
 fi
 
 fi
-INSTALL_STRIP_PROGRAM="\$(install_sh) -c -s"
+INSTALL_STRIP_PROGRAM="\${SHELL} \$(install_sh) -c -s"
 
 # We need awk for the "check" target.  The system "awk" is bad on
 # some platforms.
@@ -2655,11 +2634,11 @@ LIBPULSE_VERSION_INFO=3:0:3
 
 LIBPULSECORE_VERSION_INFO=4:0:0
 
-LIBPULSE_SIMPLE_VERSION_INFO=0:0:0
+LIBPULSE_SIMPLE_VERSION_INFO=0:1:0
 
-LIBPULSE_BROWSE_VERSION_INFO=1:0:1
+LIBPULSE_BROWSE_VERSION_INFO=1:1:1
 
-LIBPULSE_MAINLOOP_GLIB_VERSION_INFO=0:2:0
+LIBPULSE_MAINLOOP_GLIB_VERSION_INFO=0:3:0
 
 
 # Make sure we can run config.sub.
@@ -3749,13 +3728,16 @@ if test "x$enable_dependency_tracking" != xno; then
   am_depcomp="$ac_aux_dir/depcomp"
   AMDEPBACKSLASH='\'
 fi
- if test "x$enable_dependency_tracking" != xno; then
+
+
+if test "x$enable_dependency_tracking" != xno; then
   AMDEP_TRUE=
   AMDEP_FALSE='#'
 else
   AMDEP_TRUE='#'
   AMDEP_FALSE=
 fi
+
 
 
 
@@ -3826,7 +3808,6 @@ else
        depfile=sub/conftest.Po tmpdepfile=sub/conftest.TPo \
        $SHELL ./depcomp $depcc -c -o sub/conftest.${OBJEXT-o} sub/conftest.c \
          >/dev/null 2>conftest.err &&
-       grep sub/conftst1.h sub/conftest.Po > /dev/null 2>&1 &&
        grep sub/conftst6.h sub/conftest.Po > /dev/null 2>&1 &&
        grep sub/conftest.${OBJEXT-o} sub/conftest.Po > /dev/null 2>&1 &&
        ${MAKE-make} -s -f confmf > /dev/null 2>&1; then
@@ -3856,7 +3837,9 @@ fi
 echo "${ECHO_T}$am_cv_CC_dependencies_compiler_type" >&6; }
 CCDEPMODE=depmode=$am_cv_CC_dependencies_compiler_type
 
- if
+
+
+if
   test "x$enable_dependency_tracking" != xno \
   && test "$am_cv_CC_dependencies_compiler_type" = gcc3; then
   am__fastdepCC_TRUE=
@@ -3991,7 +3974,6 @@ if eval "test \"`echo '$ac_cv_prog_cc_'${ac_cc}_c_o`\" != yes"; then
    # and then we could set am__CC="\$(top_srcdir)/compile \$(CC)"
    CC="$am_aux_dir/compile $CC"
 fi
-
 
 
 ac_ext=c
@@ -4597,7 +4579,9 @@ if test "${enable_ltdl_install+set}" = set; then
 fi
 
 
- if test x"${enable_ltdl_install-no}" != xno; then
+
+
+if test x"${enable_ltdl_install-no}" != xno; then
   INSTALL_LTDL_TRUE=
   INSTALL_LTDL_FALSE='#'
 else
@@ -4605,7 +4589,9 @@ else
   INSTALL_LTDL_FALSE=
 fi
 
- if test x"${enable_ltdl_convenience-no}" != xno; then
+
+
+if test x"${enable_ltdl_convenience-no}" != xno; then
   CONVENIENCE_LTDL_TRUE=
   CONVENIENCE_LTDL_FALSE='#'
 else
@@ -5265,7 +5251,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 5268 "configure"' > conftest.$ac_ext
+  echo '#line 5254 "configure"' > conftest.$ac_ext
   if { (eval echo "$as_me:$LINENO: \"$ac_compile\"") >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -6560,7 +6546,6 @@ else
        depfile=sub/conftest.Po tmpdepfile=sub/conftest.TPo \
        $SHELL ./depcomp $depcc -c -o sub/conftest.${OBJEXT-o} sub/conftest.c \
          >/dev/null 2>conftest.err &&
-       grep sub/conftst1.h sub/conftest.Po > /dev/null 2>&1 &&
        grep sub/conftst6.h sub/conftest.Po > /dev/null 2>&1 &&
        grep sub/conftest.${OBJEXT-o} sub/conftest.Po > /dev/null 2>&1 &&
        ${MAKE-make} -s -f confmf > /dev/null 2>&1; then
@@ -6590,7 +6575,9 @@ fi
 echo "${ECHO_T}$am_cv_CXX_dependencies_compiler_type" >&6; }
 CXXDEPMODE=depmode=$am_cv_CXX_dependencies_compiler_type
 
- if
+
+
+if
   test "x$enable_dependency_tracking" != xno \
   && test "$am_cv_CXX_dependencies_compiler_type" = gcc3; then
   am__fastdepCXX_TRUE=
@@ -8066,11 +8053,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8069: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8056: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8073: \$? = $ac_status" >&5
+   echo "$as_me:8060: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8356,11 +8343,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8359: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8346: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:8363: \$? = $ac_status" >&5
+   echo "$as_me:8350: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -8460,11 +8447,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:8463: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:8450: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:8467: \$? = $ac_status" >&5
+   echo "$as_me:8454: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -10822,7 +10809,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10825 "configure"
+#line 10812 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -10922,7 +10909,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 10925 "configure"
+#line 10912 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -13342,11 +13329,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13345: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13332: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:13349: \$? = $ac_status" >&5
+   echo "$as_me:13336: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -13446,11 +13433,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:13449: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:13436: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:13453: \$? = $ac_status" >&5
+   echo "$as_me:13440: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -15023,11 +15010,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15026: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15013: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:15030: \$? = $ac_status" >&5
+   echo "$as_me:15017: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -15127,11 +15114,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:15130: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:15117: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:15134: \$? = $ac_status" >&5
+   echo "$as_me:15121: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -17327,11 +17314,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17330: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17317: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17334: \$? = $ac_status" >&5
+   echo "$as_me:17321: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17617,11 +17604,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17620: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17607: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "$as_me:17624: \$? = $ac_status" >&5
+   echo "$as_me:17611: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -17721,11 +17708,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"\$as_me:17724: $lt_compile\"" >&5)
+   (eval echo "\"\$as_me:17711: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "$as_me:17728: \$? = $ac_status" >&5
+   echo "$as_me:17715: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -20420,7 +20407,9 @@ _ACEOF
 		;;
 	esac
 
- if test "x$os_is_win32" = "x1"; then
+
+
+if test "x$os_is_win32" = "x1"; then
   OS_IS_WIN32_TRUE=
   OS_IS_WIN32_FALSE='#'
 else
@@ -21138,7 +21127,9 @@ fi
 done
 
 
- if test "x$HAVE_REGEX" = "x1"; then
+
+
+if test "x$HAVE_REGEX" = "x1"; then
   HAVE_REGEX_TRUE=
   HAVE_REGEX_FALSE='#'
 else
@@ -21146,7 +21137,9 @@ else
   HAVE_REGEX_FALSE=
 fi
 
- if test "x$HAVE_AF_UNIX" = "x1"; then
+
+
+if test "x$HAVE_AF_UNIX" = "x1"; then
   HAVE_AF_UNIX_TRUE=
   HAVE_AF_UNIX_FALSE='#'
 else
@@ -21304,7 +21297,9 @@ fi
 done
 
 
- if test "x$HAVE_EVDEV" = "x1"; then
+
+
+if test "x$HAVE_EVDEV" = "x1"; then
   HAVE_EVDEV_TRUE=
   HAVE_EVDEV_FALSE='#'
 else
@@ -22958,7 +22953,9 @@ else
   HAVE_SIGXCPU=0
 fi
 
- if test "x$HAVE_SIGXCPU" = "x1"; then
+
+
+if test "x$HAVE_SIGXCPU" = "x1"; then
   HAVE_SIGXCPU_TRUE=
   HAVE_SIGXCPU_FALSE='#'
 else
@@ -25807,7 +25804,9 @@ fi
 done
 
 
- if test "x$HAVE_MKFIFO" = "x1"; then
+
+
+if test "x$HAVE_MKFIFO" = "x1"; then
   HAVE_MKFIFO_TRUE=
   HAVE_MKFIFO_FALSE='#'
 else
@@ -28931,7 +28930,9 @@ fi
 fi
 
 
- if test "x$HAVE_X11" = "x1"; then
+
+
+if test "x$HAVE_X11" = "x1"; then
   HAVE_X11_TRUE=
   HAVE_X11_FALSE='#'
 else
@@ -29767,7 +29768,9 @@ fi
 
 
 
- if test "x$HAVE_LIBSAMPLERATE" = x1; then
+
+
+if test "x$HAVE_LIBSAMPLERATE" = x1; then
   HAVE_LIBSAMPLERATE_TRUE=
   HAVE_LIBSAMPLERATE_FALSE='#'
 else
@@ -29961,7 +29964,9 @@ else
 fi
 
 
- if test "x$HAVE_OSS" = x1; then
+
+
+if test "x$HAVE_OSS" = x1; then
   HAVE_OSS_TRUE=
   HAVE_OSS_FALSE='#'
 else
@@ -30089,7 +30094,9 @@ fi
 
 
 
- if test "x$HAVE_ALSA" = x1; then
+
+
+if test "x$HAVE_ALSA" = x1; then
   HAVE_ALSA_TRUE=
   HAVE_ALSA_FALSE='#'
 else
@@ -30283,7 +30290,9 @@ else
 fi
 
 
- if test "x$HAVE_SOLARIS" = x1; then
+
+
+if test "x$HAVE_SOLARIS" = x1; then
   HAVE_SOLARIS_TRUE=
   HAVE_SOLARIS_FALSE='#'
 else
@@ -30403,7 +30412,9 @@ fi
 
 
 
- if test "x$HAVE_GLIB20" = x1; then
+
+
+if test "x$HAVE_GLIB20" = x1; then
   HAVE_GLIB20_TRUE=
   HAVE_GLIB20_FALSE='#'
 else
@@ -30523,7 +30534,9 @@ fi
 
 
 
- if test "x$HAVE_GCONF" = x1; then
+
+
+if test "x$HAVE_GCONF" = x1; then
   HAVE_GCONF_TRUE=
   HAVE_GCONF_FALSE='#'
 else
@@ -30643,7 +30656,9 @@ fi
 
 
 
- if test "x$HAVE_AVAHI" = x1; then
+
+
+if test "x$HAVE_AVAHI" = x1; then
   HAVE_AVAHI_TRUE=
   HAVE_AVAHI_FALSE='#'
 else
@@ -30879,7 +30894,9 @@ fi
 
 
 
- if test "x$HAVE_JACK" = x1; then
+
+
+if test "x$HAVE_JACK" = x1; then
   HAVE_JACK_TRUE=
   HAVE_JACK_FALSE='#'
 else
@@ -30999,7 +31016,9 @@ fi
 
 
 
- if test "x$HAVE_LIBASYNCNS" = x1; then
+
+
+if test "x$HAVE_LIBASYNCNS" = x1; then
   HAVE_LIBASYNCNS_TRUE=
   HAVE_LIBASYNCNS_FALSE='#'
 else
@@ -31347,7 +31366,9 @@ fi
 
 
 
- if test "x$HAVE_LIRC" = x1; then
+
+
+if test "x$HAVE_LIRC" = x1; then
   HAVE_LIRC_TRUE=
   HAVE_LIRC_FALSE='#'
 else
@@ -31466,7 +31487,9 @@ fi
 
 
 
- if test "x$HAVE_HAL" = x1; then
+
+
+if test "x$HAVE_HAL" = x1; then
   HAVE_HAL_TRUE=
   HAVE_HAL_FALSE='#'
 else
@@ -31695,7 +31718,9 @@ fi
 
 
 
- if test "x$HAVE_DBUS" = x1; then
+
+
+if test "x$HAVE_DBUS" = x1; then
   HAVE_DBUS_TRUE=
   HAVE_DBUS_FALSE='#'
 else
@@ -31793,7 +31818,9 @@ else
   STATIC_BINS=0
 fi
 
- if test "x$STATIC_BINS" = "x1"; then
+
+
+if test "x$STATIC_BINS" = "x1"; then
   STATIC_BINS_TRUE=
   STATIC_BINS_FALSE='#'
 else
@@ -31810,7 +31837,9 @@ else
   PREOPEN_MODS="all"
 fi
 
- if test "x$PREOPEN_MODS" != "xall"; then
+
+
+if test "x$PREOPEN_MODS" != "xall"; then
   PREOPEN_MODS_TRUE=
   PREOPEN_MODS_FALSE='#'
 else
@@ -31845,7 +31874,9 @@ else
   FORCE_PREOPEN=0
 fi
 
- if test "x$FORCE_PREOPEN" = "x1"; then
+
+
+if test "x$FORCE_PREOPEN" = "x1"; then
   FORCE_PREOPEN_TRUE=
   FORCE_PREOPEN_FALSE='#'
 else
@@ -32505,7 +32536,6 @@ gives unlimited permission to copy, distribute and modify it."
 ac_pwd='$ac_pwd'
 srcdir='$srcdir'
 INSTALL='$INSTALL'
-MKDIR_P='$MKDIR_P'
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF
@@ -32721,7 +32751,6 @@ target_alias!$target_alias$ac_delim
 INSTALL_PROGRAM!$INSTALL_PROGRAM$ac_delim
 INSTALL_SCRIPT!$INSTALL_SCRIPT$ac_delim
 INSTALL_DATA!$INSTALL_DATA$ac_delim
-am__isrc!$am__isrc$ac_delim
 CYGPATH_W!$CYGPATH_W$ac_delim
 PACKAGE!$PACKAGE$ac_delim
 VERSION!$VERSION$ac_delim
@@ -32778,6 +32807,7 @@ GREP!$GREP$ac_delim
 EGREP!$EGREP$ac_delim
 M4!$M4$ac_delim
 INSTALL_LTDL_TRUE!$INSTALL_LTDL_TRUE$ac_delim
+INSTALL_LTDL_FALSE!$INSTALL_LTDL_FALSE$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -32819,7 +32849,6 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
-INSTALL_LTDL_FALSE!$INSTALL_LTDL_FALSE$ac_delim
 CONVENIENCE_LTDL_TRUE!$CONVENIENCE_LTDL_TRUE$ac_delim
 CONVENIENCE_LTDL_FALSE!$CONVENIENCE_LTDL_FALSE$ac_delim
 SED!$SED$ac_delim
@@ -32916,6 +32945,7 @@ LIBASYNCNS_CFLAGS!$LIBASYNCNS_CFLAGS$ac_delim
 LIBASYNCNS_LIBS!$LIBASYNCNS_LIBS$ac_delim
 HAVE_LIBASYNCNS!$HAVE_LIBASYNCNS$ac_delim
 HAVE_LIBASYNCNS_TRUE!$HAVE_LIBASYNCNS_TRUE$ac_delim
+HAVE_LIBASYNCNS_FALSE!$HAVE_LIBASYNCNS_FALSE$ac_delim
 _ACEOF
 
   if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 97; then
@@ -32957,7 +32987,6 @@ _ACEOF
 ac_delim='%!_!# '
 for ac_last_try in false false false false false :; do
   cat >conf$$subs.sed <<_ACEOF
-HAVE_LIBASYNCNS_FALSE!$HAVE_LIBASYNCNS_FALSE$ac_delim
 LIBWRAP_LIBS!$LIBWRAP_LIBS$ac_delim
 LIRC_CFLAGS!$LIRC_CFLAGS$ac_delim
 LIRC_LIBS!$LIRC_LIBS$ac_delim
@@ -32990,7 +33019,7 @@ LIBOBJS!$LIBOBJS$ac_delim
 LTLIBOBJS!$LTLIBOBJS$ac_delim
 _ACEOF
 
-  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 31; then
+  if test `sed -n "s/.*$ac_delim\$/X/p" conf$$subs.sed | grep -c X` = 30; then
     break
   elif $ac_last_try; then
     { { echo "$as_me:$LINENO: error: could not make $CONFIG_STATUS" >&5
@@ -33217,11 +33246,6 @@ ac_abs_srcdir=$ac_abs_top_srcdir$ac_dir_suffix
   [\\/$]* | ?:[\\/]* ) ac_INSTALL=$INSTALL ;;
   *) ac_INSTALL=$ac_top_build_prefix$INSTALL ;;
   esac
-  ac_MKDIR_P=$MKDIR_P
-  case $MKDIR_P in
-  [\\/$]* | ?:[\\/]* ) ;;
-  */*) ac_MKDIR_P=$ac_top_build_prefix$MKDIR_P ;;
-  esac
 _ACEOF
 
 cat >>$CONFIG_STATUS <<\_ACEOF
@@ -33275,7 +33299,6 @@ s&@builddir@&$ac_builddir&;t t
 s&@abs_builddir@&$ac_abs_builddir&;t t
 s&@abs_top_builddir@&$ac_abs_top_builddir&;t t
 s&@INSTALL@&$ac_INSTALL&;t t
-s&@MKDIR_P@&$ac_MKDIR_P&;t t
 $ac_datarootdir_hack
 " $ac_file_inputs | sed -f "$tmp/subs-1.sed" | sed -f "$tmp/subs-2.sed" | sed -f "$tmp/subs-3.sed" >$tmp/out
 
@@ -33440,9 +33463,8 @@ echo "$as_me: executing $ac_file commands" >&6;}
   # some people rename them; so instead we look at the file content.
   # Grep'ing the first line is not enough: some people post-process
   # each Makefile.in and add a new line on top of each file to say so.
-  # Grep'ing the whole file is not good either: AIX grep has a line
-  # limit of 2048, but all sed's we know have understand at least 4000.
-  if sed 10q "$mf" | grep '^#.*generated by automake' > /dev/null 2>&1; then
+  # So let's grep whole file.
+  if grep '^#.*generated by automake' $mf > /dev/null 2>&1; then
     dirpart=`$as_dirname -- "$mf" ||
 $as_expr X"$mf" : 'X\(.*[^/]\)//*[^/][^/]*/*$' \| \
 	 X"$mf" : 'X\(//\)[^/]' \| \

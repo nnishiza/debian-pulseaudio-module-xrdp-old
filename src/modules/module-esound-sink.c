@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: module-esound-sink.c 1988 2007-10-29 21:23:08Z lennart $ */
 
 /***
   This file is part of PulseAudio.

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: module-x11-publish.c 1985 2007-10-29 20:30:53Z lennart $ */
 
 /***
   This file is part of PulseAudio.

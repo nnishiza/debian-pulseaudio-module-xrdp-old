@@ -1,4 +1,4 @@
-# $Id$
+# $Id: Makefile.am 2001 2007-10-30 15:23:56Z lennart $
 #
 # This file is part of PulseAudio.
 #
@@ -18,7 +18,7 @@
 # USA.
 
 EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
-SUBDIRS=libltdl src doxygen
+SUBDIRS=src doxygen
 
 MAINTAINERCLEANFILES =
 noinst_DATA =
@@ -53,5 +53,12 @@ untabify:
 
 fedora-snapshot: dist
 	cp $(distdir).tar.gz $$HOME/cvs.fedora/pulseaudio/devel/$(distdir).svn`date +%Y%m%d`.tar.gz
+
+dist-hook:
+	if test -d .svn ; then \
+		svn update ; \
+		chmod u+w ${distdir}/ChangeLog || true ; \
+		svn2cl -o ${distdir}/ChangeLog ; \
+	fi
 
 .PHONY: homepage distcleancheck doxygen

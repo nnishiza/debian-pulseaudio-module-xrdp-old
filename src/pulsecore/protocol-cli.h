@@ -1,7 +1,7 @@
 #ifndef fooprotocolclihfoo
 #define fooprotocolclihfoo
 
-/* $Id$ */
+/* $Id: protocol-cli.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.
