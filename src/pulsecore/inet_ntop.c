@@ -1,4 +1,4 @@
-/* $Id: inet_ntop.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -27,7 +27,6 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include <assert.h>
 
 #ifndef HAVE_INET_NTOP
 
@@ -47,7 +46,7 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt) {
 
     switch (af) {
     case AF_INET:
-        snprintf(dst, cnt, "%d.%d.%d.%d",
+        pa_snprintf(dst, cnt, "%d.%d.%d.%d",
 #ifdef WORDS_BIGENDIAN
             (int)(in->s_addr >> 24) & 0xff,
             (int)(in->s_addr >> 16) & 0xff,
@@ -61,7 +60,7 @@ const char *inet_ntop(int af, const void *src, char *dst, socklen_t cnt) {
 #endif
         break;
     case AF_INET6:
-        snprintf(dst, cnt, "%x:%x:%x:%x:%x:%x:%x:%x",
+        pa_snprintf(dst, cnt, "%x:%x:%x:%x:%x:%x:%x:%x",
             in6->s6_addr[ 0] << 8 | in6->s6_addr[ 1],
             in6->s6_addr[ 2] << 8 | in6->s6_addr[ 3],
             in6->s6_addr[ 4] << 8 | in6->s6_addr[ 5],

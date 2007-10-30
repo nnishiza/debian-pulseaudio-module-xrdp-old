@@ -1,7 +1,7 @@
 #ifndef foothreadmainloophfoo
 #define foothreadmainloophfoo
 
-/* $Id: thread-mainloop.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -296,6 +296,9 @@ int pa_threaded_mainloop_get_retval(pa_threaded_mainloop *m);
 
 /** Return the abstract main loop abstraction layer vtable for this main loop. */
 pa_mainloop_api* pa_threaded_mainloop_get_api(pa_threaded_mainloop*m);
+
+/** Returns non-zero when called from withing the event loop thread. \since 0.9.7 */
+int pa_threaded_mainloop_in_thread(pa_threaded_mainloop *m);
 
 PA_C_DECL_END
 

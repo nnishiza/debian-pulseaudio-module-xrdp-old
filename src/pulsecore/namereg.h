@@ -1,7 +1,7 @@
 #ifndef foonamereghfoo
 #define foonamereghfoo
 
-/* $Id: namereg.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -25,6 +25,7 @@
 ***/
 
 #include <pulsecore/core.h>
+#include <pulsecore/macro.h>
 
 #define PA_NAME_MAX 128
 
@@ -43,5 +44,7 @@ int pa_namereg_set_default(pa_core*c, const char *name, pa_namereg_type_t type);
 
 const char *pa_namereg_get_default_sink_name(pa_core *c);
 const char *pa_namereg_get_default_source_name(pa_core *c);
+
+pa_bool_t pa_namereg_is_valid_name(const char *name);
 
 #endif

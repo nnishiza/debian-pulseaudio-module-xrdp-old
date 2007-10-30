@@ -1,7 +1,7 @@
 #ifndef foocredshfoo
 #define foocredshfoo
 
-/* $Id: creds.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -26,7 +26,9 @@
 
 #include <sys/types.h>
 
-/* config.h must be included before this file */
+#ifndef PACKAGE
+#error "Please include config.h before including this file!"
+#endif
 
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>

@@ -1,4 +1,4 @@
-/* $Id: inet_pton.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -27,7 +27,6 @@
 
 #include <stdio.h>
 #include <errno.h>
-#include <assert.h>
 
 #ifndef HAVE_INET_PTON
 

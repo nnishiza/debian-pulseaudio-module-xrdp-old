@@ -1,20 +1,20 @@
-/* $Id: module-gconf.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
 
   Copyright 2006 Lennart Poettering
- 
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -25,7 +25,6 @@
 #include <config.h>
 #endif
 
-#include <assert.h>
 #include <string.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -34,6 +33,7 @@
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <dirent.h>
 
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
@@ -80,7 +80,7 @@ struct module_info {
 struct userdata {
     pa_core *core;
     pa_module *module;
-    
+
     pa_hashmap *module_infos;
 
     pid_t pid;
@@ -95,7 +95,7 @@ struct userdata {
 
 static int fill_buf(struct userdata *u) {
     ssize_t r;
-    assert(u);
+    pa_assert(u);
 
     if (u->buf_fill >= BUF_MAX) {
         pa_log("read buffer overflow");
@@ -111,25 +111,25 @@ static int fill_buf(struct userdata *u) {
 
 static int read_byte(struct userdata *u) {
     int ret;
-    assert(u);
+    pa_assert(u);
 
     if (u->buf_fill < 1)
         if (fill_buf(u) < 0)
             return -1;
 
     ret = u->buf[0];
-    assert(u->buf_fill > 0);
+    pa_assert(u->buf_fill > 0);
     u->buf_fill--;
     memmove(u->buf, u->buf+1, u->buf_fill);
     return ret;
 }
 
 static char *read_string(struct userdata *u) {
-    assert(u);
+    pa_assert(u);
 
     for (;;) {
         char *e;
-        
+
         if ((e = memchr(u->buf, 0, u->buf_fill))) {
             char *ret = pa_xstrdup(u->buf);
             u->buf_fill -= e - u->buf +1;
@@ -143,13 +143,13 @@ static char *read_string(struct userdata *u) {
 }
 
 static void unload_one_module(struct userdata *u, struct module_info*m, unsigned i) {
-    assert(u);
-    assert(m);
-    assert(i < m->n_items);
+    pa_assert(u);
+    pa_assert(m);
+    pa_assert(i < m->n_items);
 
     if (m->items[i].index == PA_INVALID_INDEX)
         return;
-            
+
     pa_log_debug("Unloading module #%i", m->items[i].index);
     pa_module_unload_by_index(u->core, m->items[i].index);
     m->items[i].index = PA_INVALID_INDEX;
@@ -160,9 +160,9 @@ static void unload_one_module(struct userdata *u, struct module_info*m, unsigned
 
 static void unload_all_modules(struct userdata *u, struct module_info*m) {
     unsigned i;
-    
-    assert(u);
-    assert(m);
+
+    pa_assert(u);
+    pa_assert(m);
 
     for (i = 0; i < m->n_items; i++)
         unload_one_module(u, m, i);
@@ -179,11 +179,11 @@ static void load_module(
         int is_new) {
 
     pa_module *mod;
-    
-    assert(u);
-    assert(m);
-    assert(name);
-    assert(args);
+
+    pa_assert(u);
+    pa_assert(m);
+    pa_assert(name);
+    pa_assert(args);
 
     if (!is_new) {
         if (m->items[i].index != PA_INVALID_INDEX &&
@@ -193,18 +193,18 @@ static void load_module(
 
         unload_one_module(u, m, i);
     }
-    
+
     pa_log_debug("Loading module '%s' with args '%s' due to GConf configuration.", name, args);
 
     m->items[i].name = pa_xstrdup(name);
     m->items[i].args = pa_xstrdup(args);
     m->items[i].index = PA_INVALID_INDEX;
-    
+
     if (!(mod = pa_module_load(u->core, name, args))) {
         pa_log("pa_module_load() failed");
         return;
     }
-    
+
     m->items[i].index = mod->index;
 }
 
@@ -212,8 +212,8 @@ static void module_info_free(void *p, void *userdata) {
     struct module_info *m = p;
     struct userdata *u = userdata;
 
-    assert(m);
-    assert(u);
+    pa_assert(m);
+    pa_assert(u);
 
     unload_all_modules(u, m);
     pa_xfree(m->name);
@@ -227,18 +227,18 @@ static int handle_event(struct userdata *u) {
     do {
         if ((opcode = read_byte(u)) < 0)
             goto fail;
-        
+
         switch (opcode) {
             case '!':
                 /* The helper tool is now initialized */
                 ret = 1;
                 break;
-                
+
             case '+': {
                 char *name;
                 struct module_info *m;
                 unsigned i, j;
-                
+
                 if (!(name = read_string(u)))
                     goto fail;
 
@@ -282,16 +282,16 @@ static int handle_event(struct userdata *u) {
                 /* Unload all removed modules */
                 for (j = i; j < m->n_items; j++)
                     unload_one_module(u, m, j);
-                    
+
                 m->n_items = i;
-                
+
                 break;
             }
-                
+
             case '-': {
                 char *name;
                 struct module_info *m;
-                
+
                 if (!(name = read_string(u)))
                     goto fail;
 
@@ -301,7 +301,7 @@ static int handle_event(struct userdata *u) {
                 }
 
                 pa_xfree(name);
-                
+
                 break;
             }
         }
@@ -324,12 +324,12 @@ static void io_event_cb(
     struct userdata *u = userdata;
 
     if (handle_event(u) < 0) {
-        
+
         if (u->io_event) {
             u->core->mainloop->io_free(u->io_event);
             u->io_event = NULL;
         }
-            
+
         pa_module_unload_request(u->module);
     }
 }
@@ -342,7 +342,7 @@ static int start_client(const char *n, pid_t *pid) {
         pa_log("pipe() failed: %s", pa_cstrerror(errno));
         goto fail;
     }
-    
+
     if ((child = fork()) == (pid_t) -1) {
         pa_log("fork() failed: %s", pa_cstrerror(errno));
         goto fail;
@@ -356,8 +356,10 @@ static int start_client(const char *n, pid_t *pid) {
 
         return pipe_fds[0];
     } else {
+#ifdef __linux__
+        DIR* d;
+#endif
         int max_fd, i;
-        
         /* child */
 
         close(pipe_fds[0]);
@@ -372,18 +374,48 @@ static int start_client(const char *n, pid_t *pid) {
         close(2);
         open("/dev/null", O_WRONLY);
 
-        max_fd = 1024;
-        
+#ifdef __linux__
+
+        if ((d = opendir("/proc/self/fd/"))) {
+
+            struct dirent *de;
+
+            while ((de = readdir(d))) {
+                char *e = NULL;
+                int fd;
+
+                if (de->d_name[0] == '.')
+                    continue;
+
+                errno = 0;
+                fd = strtol(de->d_name, &e, 10);
+                pa_assert(errno == 0 && e && *e == 0);
+
+                if (fd >= 3 && dirfd(d) != fd)
+                    close(fd);
+            }
+
+            closedir(d);
+        } else {
+
+#endif
+
+            max_fd = 1024;
+
 #ifdef HAVE_SYS_RESOURCE_H
-        {
-            struct rlimit r;
-            if (getrlimit(RLIMIT_NOFILE, &r) == 0)
-                max_fd = r.rlim_max;
+            {
+                struct rlimit r;
+                if (getrlimit(RLIMIT_NOFILE, &r) == 0)
+                    max_fd = r.rlim_max;
+            }
+#endif
+
+            for (i = 3; i < max_fd; i++)
+                close(i);
+#
+#ifdef __linux__
         }
 #endif
-                
-        for (i = 3; i < max_fd; i++)
-            close(i);
 
 #ifdef PR_SET_PDEATHSIG
         /* On Linux we can use PR_SET_PDEATHSIG to have the helper
@@ -402,23 +434,23 @@ static int start_client(const char *n, pid_t *pid) {
         execl(n, n, NULL);
         _exit(1);
     }
-    
+
 fail:
     if (pipe_fds[0] >= 0)
         close(pipe_fds[0]);
 
     if (pipe_fds[1] >= 0)
         close(pipe_fds[1]);
-    
+
     return -1;
 }
 
-int pa__init(pa_core *c, pa_module*m) {
+int pa__init(pa_module*m) {
     struct userdata *u;
     int r;
 
     u = pa_xnew(struct userdata, 1);
-    u->core = c;
+    u->core = m->core;
     u->module = m;
     m->userdata = u;
     u->module_infos = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
@@ -427,17 +459,17 @@ int pa__init(pa_core *c, pa_module*m) {
     u->fd_type = 0;
     u->io_event = NULL;
     u->buf_fill = 0;
-    
+
     if ((u->fd = start_client(PA_GCONF_HELPER, &u->pid)) < 0)
         goto fail;
-    
-    u->io_event = c->mainloop->io_new(
-            c->mainloop,
+
+    u->io_event = m->core->mainloop->io_new(
+            m->core->mainloop,
             u->fd,
             PA_IO_EVENT_INPUT,
             io_event_cb,
             u);
-    
+
     do {
         if ((r = handle_event(u)) < 0)
             goto fail;
@@ -445,25 +477,24 @@ int pa__init(pa_core *c, pa_module*m) {
         /* Read until the client signalled us that it is ready with
          * initialization */
     } while (r != 1);
-        
+
     return 0;
 
 fail:
-    pa__done(c, m);
+    pa__done(m);
     return -1;
 }
 
-void pa__done(pa_core *c, pa_module*m) {
+void pa__done(pa_module*m) {
     struct userdata *u;
 
-    assert(c);
-    assert(m);
+    pa_assert(m);
 
     if (!(u = m->userdata))
         return;
 
     if (u->io_event)
-        c->mainloop->io_free(u->io_event);
+        m->core->mainloop->io_free(u->io_event);
 
     if (u->fd >= 0)
         close(u->fd);

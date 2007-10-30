@@ -1,4 +1,4 @@
-/* $Id: utf8-test.c 1418 2007-01-04 13:43:45Z ossman $ */
+/* $Id$ */
 
 #include <stdio.h>
 #include <assert.h>

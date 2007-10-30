@@ -1,7 +1,7 @@
 #ifndef foox11wraphfoo
 #define foox11wraphfoo
 
-/* $Id: x11wrap.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

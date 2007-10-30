@@ -1,4 +1,4 @@
-/* $Id: paplay.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -123,7 +123,7 @@ static void stream_write_callback(pa_stream *s, size_t length, void *userdata) {
     else
         pa_xfree(data);
 
-    if (bytes < length) {
+    if (bytes < (sf_count_t) length) {
         sf_close(sndfile);
         sndfile = NULL;
         pa_operation_unref(pa_stream_drain(s, stream_drain_complete, NULL));

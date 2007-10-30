@@ -1,4 +1,4 @@
-/* $Id: sconv-s16be.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -27,11 +27,14 @@
 
 #include "endianmacros.h"
 
-#define INT16_FROM INT16_FROM_BE
-#define INT16_TO INT16_TO_BE
+#define INT16_FROM PA_INT16_FROM_BE
+#define INT16_TO PA_INT16_TO_BE
 
 #define pa_sconv_s16le_to_float32ne pa_sconv_s16be_to_float32ne
 #define pa_sconv_s16le_from_float32ne pa_sconv_s16be_from_float32ne
+
+#define pa_sconv_s16le_to_float32re pa_sconv_s16be_to_float32re
+#define pa_sconv_s16le_from_float32re pa_sconv_s16be_from_float32re
 
 #ifdef WORDS_BIGENDIAN
 #define SWAP_WORDS 0

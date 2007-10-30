@@ -1,7 +1,7 @@
 #ifndef foopulserefcnthfoo
 #define foopulserefcnthfoo
 
-/* $Id: refcnt.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -27,18 +27,18 @@
 #include <pulsecore/atomic.h>
 
 #define PA_REFCNT_DECLARE \
-  pa_atomic_int_t _ref
+    pa_atomic_t _ref
 
 #define PA_REFCNT_INIT(p) \
-  pa_atomic_store(&p->_ref, 1)
+    pa_atomic_store(&(p)->_ref, 1)
 
 #define PA_REFCNT_INC(p) \
-  pa_atomic_inc(&p->_ref)
+    pa_atomic_inc(&(p)->_ref)
 
 #define PA_REFCNT_DEC(p) \
-  (pa_atomic_dec(&p->_ref)-1)
+    (pa_atomic_dec(&(p)->_ref)-1)
 
 #define PA_REFCNT_VALUE(p) \
-  pa_atomic_load(&p->_ref)
+    pa_atomic_load(&(p)->_ref)
 
 #endif

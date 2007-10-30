@@ -1,4 +1,4 @@
-/* $Id: pacat-simple.c 1418 2007-01-04 13:43:45Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

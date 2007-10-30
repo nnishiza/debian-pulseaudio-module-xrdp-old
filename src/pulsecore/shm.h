@@ -1,7 +1,7 @@
 #ifndef foopulseshmhfoo
 #define foopulseshmhfoo
 
-/* $Id: shm.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -40,5 +40,7 @@ int pa_shm_attach_ro(pa_shm *m, unsigned id);
 void pa_shm_punch(pa_shm *m, size_t offset, size_t size);
 
 void pa_shm_free(pa_shm *m);
+
+int pa_shm_cleanup(void);
 
 #endif
