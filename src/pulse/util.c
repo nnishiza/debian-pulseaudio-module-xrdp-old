@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: util.c 1975 2007-10-29 15:32:22Z lennart $ */
 
 /***
   This file is part of PulseAudio.

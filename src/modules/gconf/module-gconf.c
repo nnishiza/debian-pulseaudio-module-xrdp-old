@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: module-gconf.c 1992 2007-10-30 00:17:21Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -225,8 +225,11 @@ static int handle_event(struct userdata *u) {
     int ret = 0;
 
     do {
-        if ((opcode = read_byte(u)) < 0)
+        if ((opcode = read_byte(u)) < 0){
+            if (errno == EINTR || errno == EAGAIN)
+                break;
             goto fail;
+        }
 
         switch (opcode) {
             case '!':
@@ -509,4 +512,3 @@ void pa__done(pa_module*m) {
 
     pa_xfree(u);
 }
-

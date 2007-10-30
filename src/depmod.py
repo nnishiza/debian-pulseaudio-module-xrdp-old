@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# $Id$
+# $Id: depmod.py 1033 2006-06-19 21:53:48Z lennart $
 #
 # This file is part of PulseAudio.
 #

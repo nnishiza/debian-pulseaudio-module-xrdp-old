@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: module-zeroconf-discover.c 1991 2007-10-29 23:55:23Z lennart $ */
 
 /***
   This file is part of PulseAudio.

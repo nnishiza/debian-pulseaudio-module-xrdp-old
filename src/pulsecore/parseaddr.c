@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: parseaddr.c 1998 2007-10-30 14:05:18Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -103,9 +103,12 @@ int pa_parse_address(const char *name, pa_parsed_address *ret_p) {
     else if (pa_startswith(p, "unix:")) {
         ret_p->type = PA_PARSED_ADDRESS_UNIX;
         p += sizeof("unix:")-1;
-    } else if (pa_startswith(p, "tcp:") || pa_startswith(p, "tcp4:")) {
+    } else if (pa_startswith(p, "tcp:")) {
         ret_p->type = PA_PARSED_ADDRESS_TCP4;
         p += sizeof("tcp:")-1;
+    } else if (pa_startswith(p, "tcp4:")) {
+        ret_p->type = PA_PARSED_ADDRESS_TCP4;
+        p += sizeof("tcp4:")-1;
     } else if (pa_startswith(p, "tcp6:")) {
         ret_p->type = PA_PARSED_ADDRESS_TCP6;
         p += sizeof("tcp6:")-1;
