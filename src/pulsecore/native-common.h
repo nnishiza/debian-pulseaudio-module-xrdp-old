@@ -1,7 +1,7 @@
 #ifndef foonativecommonhfoo
 #define foonativecommonhfoo
 
-/* $Id: native-common.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -114,6 +114,11 @@ enum {
     /* A few more client->server commands */
     PA_COMMAND_MOVE_SINK_INPUT,
     PA_COMMAND_MOVE_SOURCE_OUTPUT,
+
+    PA_COMMAND_SET_SINK_INPUT_MUTE,
+
+    PA_COMMAND_SUSPEND_SINK,
+    PA_COMMAND_SUSPEND_SOURCE,
 
     PA_COMMAND_MAX
 };

@@ -1,4 +1,4 @@
-/* $Id: padsp.c 1444 2007-05-23 15:30:34Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -61,6 +61,10 @@
 # define SIOCINQ FIONREAD
 #endif
 
+/* make sure gcc doesn't redefine open and friends as macros */
+#undef open
+#undef open64
+
 typedef enum {
     FD_INFO_MIXER,
     FD_INFO_STREAM,
@@ -116,9 +120,17 @@ static int (*_ioctl)(int, int, void*) = NULL;
 static int (*_close)(int) = NULL;
 static int (*_open)(const char *, int, mode_t) = NULL;
 static FILE* (*_fopen)(const char *path, const char *mode) = NULL;
+static int (*_stat)(const char *, struct stat *) = NULL;
+#ifdef _STAT_VER
+static int (*___xstat)(int, const char *, struct stat *) = NULL;
+#endif
 #ifdef HAVE_OPEN64
 static int (*_open64)(const char *, int, mode_t) = NULL;
 static FILE* (*_fopen64)(const char *path, const char *mode) = NULL;
+static int (*_stat64)(const char *, struct stat64 *) = NULL;
+#ifdef _STAT_VER
+static int (*___xstat64)(int, const char *, struct stat64 *) = NULL;
+#endif
 #endif
 static int (*_fclose)(FILE *f) = NULL;
 static int (*_access)(const char *, int) = NULL;
@@ -167,6 +179,38 @@ do { \
     pthread_mutex_lock(&func_mutex); \
     if (!_access) \
         _access = (int (*)(const char*, int)) dlsym_fn(RTLD_NEXT, "access"); \
+    pthread_mutex_unlock(&func_mutex); \
+} while(0)
+
+#define LOAD_STAT_FUNC() \
+do { \
+    pthread_mutex_lock(&func_mutex); \
+    if (!_stat) \
+        _stat = (int (*)(const char *, struct stat *)) dlsym_fn(RTLD_NEXT, "stat"); \
+    pthread_mutex_unlock(&func_mutex); \
+} while(0)
+
+#define LOAD_STAT64_FUNC() \
+do { \
+    pthread_mutex_lock(&func_mutex); \
+    if (!_stat64) \
+        _stat64 = (int (*)(const char *, struct stat64 *)) dlsym_fn(RTLD_NEXT, "stat64"); \
+    pthread_mutex_unlock(&func_mutex); \
+} while(0)
+
+#define LOAD_XSTAT_FUNC() \
+do { \
+    pthread_mutex_lock(&func_mutex); \
+    if (!___xstat) \
+        ___xstat = (int (*)(int, const char *, struct stat *)) dlsym_fn(RTLD_NEXT, "__xstat"); \
+    pthread_mutex_unlock(&func_mutex); \
+} while(0)
+
+#define LOAD_XSTAT64_FUNC() \
+do { \
+    pthread_mutex_lock(&func_mutex); \
+    if (!___xstat64) \
+        ___xstat64 = (int (*)(int, const char *, struct stat64 *)) dlsym_fn(RTLD_NEXT, "__xstat64"); \
     pthread_mutex_unlock(&func_mutex); \
 } while(0)
 
@@ -219,9 +263,9 @@ if (!(i)->context || pa_context_get_state((i)->context) != PA_CONTEXT_READY || \
 
 static void debug(int level, const char *format, ...) PA_GCC_PRINTF_ATTR(2,3);
 
-#define DEBUG_LEVEL_ALWAYS		0
-#define DEBUG_LEVEL_NORMAL		1
-#define DEBUG_LEVEL_VERBOSE		2
+#define DEBUG_LEVEL_ALWAYS                0
+#define DEBUG_LEVEL_NORMAL                1
+#define DEBUG_LEVEL_VERBOSE                2
 
 static void debug(int level, const char *format, ...) {
     va_list ap;
@@ -381,7 +425,7 @@ static void fd_info_unref(fd_info *i) {
     pthread_mutex_lock(&i->mutex);
     assert(i->ref >= 1);
     r = --i->ref;
-	debug(DEBUG_LEVEL_VERBOSE, __FILE__": ref--, now %i\n", i->ref);
+        debug(DEBUG_LEVEL_VERBOSE, __FILE__": ref--, now %i\n", i->ref);
     pthread_mutex_unlock(&i->mutex);
 
     if (r <= 0)
@@ -1355,7 +1399,7 @@ static int sndstat_open(int flags, int *_errno) {
 
     if (flags != O_RDONLY
 #ifdef O_LARGEFILE
-	&& flags != (O_RDONLY|O_LARGEFILE)
+        && flags != (O_RDONLY|O_LARGEFILE)
 #endif
        ) {
         *_errno = EACCES;
@@ -1396,34 +1440,23 @@ fail:
     return -1;
 }
 
-int open(const char *filename, int flags, ...) {
-    va_list args;
-    mode_t mode = 0;
+static int real_open(const char *filename, int flags, mode_t mode) {
     int r, _errno = 0;
 
     debug(DEBUG_LEVEL_VERBOSE, __FILE__": open(%s)\n", filename);
-
-    va_start(args, flags);
-    if (flags & O_CREAT) {
-      if (sizeof(mode_t) < sizeof(int))
-	mode = va_arg(args, int);
-      else
-        mode = va_arg(args, mode_t);
-    }
-    va_end(args);
 
     if (!function_enter()) {
         LOAD_OPEN_FUNC();
         return _open(filename, flags, mode);
     }
 
-    if (dsp_cloak_enable() && (strcmp(filename, "/dev/dsp") == 0 || strcmp(filename, "/dev/adsp") == 0)) {
+    if (dsp_cloak_enable() && (strcmp(filename, "/dev/dsp") == 0 || strcmp(filename, "/dev/adsp") == 0))
         r = dsp_open(flags, &_errno);
-    } else if (mixer_cloak_enable() && strcmp(filename, "/dev/mixer") == 0) {
+    else if (mixer_cloak_enable() && strcmp(filename, "/dev/mixer") == 0)
         r = mixer_open(flags, &_errno);
-    } else if (sndstat_cloak_enable() && strcmp(filename, "/dev/sndstat") == 0) {
+    else if (sndstat_cloak_enable() && strcmp(filename, "/dev/sndstat") == 0)
         r = sndstat_open(flags, &_errno);
-    } else {
+    else {
         function_exit();
         LOAD_OPEN_FUNC();
         return _open(filename, flags, mode);
@@ -1435,6 +1468,22 @@ int open(const char *filename, int flags, ...) {
         errno = _errno;
 
     return r;
+}
+
+int open(const char *filename, int flags, ...) {
+    va_list args;
+    mode_t mode = 0;
+
+    if (flags & O_CREAT) {
+        va_start(args, flags);
+        if (sizeof(mode_t) < sizeof(int))
+            mode = va_arg(args, int);
+        else
+            mode = va_arg(args, mode_t);
+        va_end(args);
+    }
+
+    return real_open(filename, flags, mode);
 }
 
 static int mixer_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno) {
@@ -1983,9 +2032,9 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno) 
 
             *(int*)  argp = DSP_CAP_DUPLEX | DSP_CAP_TRIGGER
 #ifdef DSP_CAP_MULTI
-	      | DSP_CAP_MULTI
+              | DSP_CAP_MULTI
 #endif
-	      ;
+              ;
             break;
 
         case SNDCTL_DSP_GETODELAY: {
@@ -2059,6 +2108,17 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno) 
 
             if (dsp_trigger(i) < 0)
                 *_errno = EIO;
+            break;
+
+        case SNDCTL_DSP_GETTRIGGER:
+            debug(DEBUG_LEVEL_NORMAL, __FILE__": SNDCTL_DSP_GETTRIGGER\n");
+
+            *(int*) argp = 0;
+            if (!i->play_precork)
+                *(int*) argp |= PCM_ENABLE_OUTPUT;
+            if (!i->rec_precork)
+                *(int*) argp |= PCM_ENABLE_INPUT;
+
             break;
 
         case SNDCTL_DSP_SETTRIGGER:
@@ -2228,11 +2288,12 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno) 
 
         case SNDCTL_DSP_SETDUPLEX:
             debug(DEBUG_LEVEL_NORMAL, __FILE__": SNDCTL_DSP_SETDUPLEX\n");
-	    /* this is a no-op */
-	    break;
-	
+            /* this is a no-op */
+            break;
+
         default:
-            debug(DEBUG_LEVEL_NORMAL, __FILE__": unknown ioctl 0x%08lx\n", request);
+            /* Mixer ioctls are valid on /dev/dsp aswell */
+            return mixer_ioctl(i, request, argp, _errno);
 
 inval:
             *_errno = EINVAL;
@@ -2337,7 +2398,107 @@ int access(const char *pathname, int mode) {
     return 0;
 }
 
+int stat(const char *pathname, struct stat *buf) {
 #ifdef HAVE_OPEN64
+    struct stat64 parent;
+#else
+    struct stat parent;
+#endif
+    int ret;
+
+    if (!pathname || !buf) {
+        errno = EFAULT;
+        return -1;
+    }
+
+    if (strcmp(pathname, "/dev/dsp") != 0 &&
+        strcmp(pathname, "/dev/adsp") != 0 &&
+        strcmp(pathname, "/dev/sndstat") != 0 &&
+        strcmp(pathname, "/dev/mixer") != 0) {
+        debug(DEBUG_LEVEL_VERBOSE, __FILE__": stat(%s)\n", pathname);
+        LOAD_STAT_FUNC();
+        return _stat(pathname, buf);
+    }
+
+    debug(DEBUG_LEVEL_NORMAL, __FILE__": stat(%s)\n", pathname);
+
+#ifdef _STAT_VER
+#ifdef HAVE_OPEN64
+    ret = __xstat64(_STAT_VER, "/dev", &parent);
+#else
+    ret = __xstat(_STAT_VER, "/dev", &parent);
+#endif
+#else
+#ifdef HAVE_OPEN64
+    ret = stat64("/dev", &parent);
+#else
+    ret = stat("/dev", &parent);
+#endif
+#endif
+
+    if (ret) {
+        debug(DEBUG_LEVEL_NORMAL, __FILE__": unable to stat \"/dev\"\n");
+        return -1;
+    }
+
+    buf->st_dev = parent.st_dev;
+    buf->st_ino = 0xDEADBEEF;   /* FIXME: Can we do this in a safe way? */
+    buf->st_mode = S_IFCHR | S_IRUSR | S_IWUSR;
+    buf->st_nlink = 1;
+    buf->st_uid = getuid();
+    buf->st_gid = getgid();
+    buf->st_rdev = 0x0E03;      /* FIXME: Linux specific */
+    buf->st_size = 0;
+    buf->st_atime = 1181557705;
+    buf->st_mtime = 1181557705;
+    buf->st_ctime = 1181557705;
+    buf->st_blksize = 1;
+    buf->st_blocks = 0;
+
+    return 0;
+}
+
+#ifdef HAVE_OPEN64
+
+int stat64(const char *pathname, struct stat64 *buf) {
+    struct stat oldbuf;
+    int ret;
+
+    if (!pathname || !buf) {
+        errno = EFAULT;
+        return -1;
+    }
+
+    debug(DEBUG_LEVEL_VERBOSE, __FILE__": stat64(%s)\n", pathname);
+
+    if (strcmp(pathname, "/dev/dsp") != 0 &&
+        strcmp(pathname, "/dev/adsp") != 0 &&
+        strcmp(pathname, "/dev/sndstat") != 0 &&
+        strcmp(pathname, "/dev/mixer") != 0) {
+        LOAD_STAT64_FUNC();
+        return _stat64(pathname, buf);
+    }
+
+    ret = stat(pathname, &oldbuf);
+    if (ret)
+        return ret;
+
+    buf->st_dev = oldbuf.st_dev;
+    buf->st_ino = oldbuf.st_ino;
+    buf->st_mode = oldbuf.st_mode;
+    buf->st_nlink = oldbuf.st_nlink;
+    buf->st_uid = oldbuf.st_uid;
+    buf->st_gid = oldbuf.st_gid;
+    buf->st_rdev = oldbuf.st_rdev;
+    buf->st_size = oldbuf.st_size;
+    buf->st_atime = oldbuf.st_atime;
+    buf->st_mtime = oldbuf.st_mtime;
+    buf->st_ctime = oldbuf.st_ctime;
+    buf->st_blksize = oldbuf.st_blksize;
+    buf->st_blocks = oldbuf.st_blocks;
+
+    return 0;
+}
 
 int open64(const char *filename, int flags, ...) {
     va_list args;
@@ -2345,10 +2506,14 @@ int open64(const char *filename, int flags, ...) {
 
     debug(DEBUG_LEVEL_VERBOSE, __FILE__": open64(%s)\n", filename);
 
-    va_start(args, flags);
-    if (flags & O_CREAT)
-        mode = va_arg(args, mode_t);
-    va_end(args);
+    if (flags & O_CREAT) {
+        va_start(args, flags);
+        if (sizeof(mode_t) < sizeof(int))
+            mode = va_arg(args, int);
+        else
+            mode = va_arg(args, mode_t);
+        va_end(args);
+    }
 
     if (strcmp(filename, "/dev/dsp") != 0 &&
         strcmp(filename, "/dev/adsp") != 0 &&
@@ -2358,8 +2523,64 @@ int open64(const char *filename, int flags, ...) {
         return _open64(filename, flags, mode);
     }
 
-    return open(filename, flags, mode);
+    return real_open(filename, flags, mode);
 }
+
+#endif
+
+#ifdef _STAT_VER
+
+int __xstat(int ver, const char *pathname, struct stat *buf) {
+    if (!pathname || !buf) {
+        errno = EFAULT;
+        return -1;
+    }
+
+    debug(DEBUG_LEVEL_VERBOSE, __FILE__": __xstat(%s)\n", pathname);
+
+    if (strcmp(pathname, "/dev/dsp") != 0 &&
+        strcmp(pathname, "/dev/adsp") != 0 &&
+        strcmp(pathname, "/dev/sndstat") != 0 &&
+        strcmp(pathname, "/dev/mixer") != 0) {
+        LOAD_XSTAT_FUNC();
+        return ___xstat(ver, pathname, buf);
+    }
+
+    if (ver != _STAT_VER) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return stat(pathname, buf);
+}
+
+#ifdef HAVE_OPEN64
+
+int __xstat64(int ver, const char *pathname, struct stat64 *buf) {
+    if (!pathname || !buf) {
+        errno = EFAULT;
+        return -1;
+    }
+
+    debug(DEBUG_LEVEL_VERBOSE, __FILE__": __xstat64(%s)\n", pathname);
+
+    if (strcmp(pathname, "/dev/dsp") != 0 &&
+        strcmp(pathname, "/dev/adsp") != 0 &&
+        strcmp(pathname, "/dev/sndstat") != 0 &&
+        strcmp(pathname, "/dev/mixer") != 0) {
+        LOAD_XSTAT64_FUNC();
+        return ___xstat64(ver, pathname, buf);
+    }
+
+    if (ver != _STAT_VER) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    return stat64(pathname, buf);
+}
+
+#endif
 
 #endif
 
@@ -2394,7 +2615,7 @@ FILE* fopen(const char *filename, const char *mode) {
     if ((((mode[1] == 'b') || (mode[1] == 't')) && (mode[2] == '+')) || (mode[1] == '+'))
         m = O_RDWR;
 
-    if ((fd = open(filename, m)) < 0)
+    if ((fd = real_open(filename, m, 0)) < 0)
         return NULL;
 
     if (!(f = fdopen(fd, mode))) {

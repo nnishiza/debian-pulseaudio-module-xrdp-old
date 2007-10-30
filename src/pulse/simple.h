@@ -1,7 +1,7 @@
 #ifndef foosimplehfoo
 #define foosimplehfoo
 
-/* $Id: simple.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -51,7 +51,7 @@
  * pa_simple *s;
  * pa_sample_spec ss;
  *
- * ss.format = PA_SAMPLE_S16_NE;
+ * ss.format = PA_SAMPLE_S16NE;
  * ss.channels = 2;
  * ss.rate = 44100;
  *

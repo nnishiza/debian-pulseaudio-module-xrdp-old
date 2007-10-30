@@ -1,4 +1,4 @@
-dnl $Id: module-defs.h.m4 1033 2006-06-19 21:53:48Z lennart $
+dnl $Id$
 changecom(`/*', `*/')dnl
 define(`module_name', patsubst(patsubst(patsubst(fname, `-symdef.h$'), `^.*/'), `[^0-9a-zA-Z]', `_'))dnl
 define(`c_symbol', patsubst(module_name, `[^0-9a-zA-Z]', `_'))dnl
@@ -18,8 +18,8 @@ gen_symbol(pa__get_description)
 gen_symbol(pa__get_usage)
 gen_symbol(pa__get_version)
 
-int pa__init(struct pa_core *c, struct pa_module*m);
-void pa__done(struct pa_core *c, struct pa_module*m);
+int pa__init(pa_module*m);
+void pa__done(pa_module*m);
 
 const char* pa__get_author(void);
 const char* pa__get_description(void);

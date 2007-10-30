@@ -1,4 +1,4 @@
-/* $Id: poll.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 
 /***
@@ -45,7 +45,7 @@
 
 #include "winsock.h"
 
-#ifndef HAVE_SYS_POLL_H
+#ifndef HAVE_POLL_H
 
 #include <pulsecore/core-util.h>
 

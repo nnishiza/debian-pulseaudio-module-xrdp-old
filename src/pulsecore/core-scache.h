@@ -1,7 +1,7 @@
 #ifndef foocorescachehfoo
 #define foocorescachehfoo
 
-/* $Id: core-scache.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -55,6 +55,7 @@ int pa_scache_add_directory_lazy(pa_core *c, const char *pathname);
 
 int pa_scache_remove_item(pa_core *c, const char *name);
 int pa_scache_play_item(pa_core *c, const char *name, pa_sink *sink, pa_volume_t volume);
+int pa_scache_play_item_by_name(pa_core *c, const char *name, const char*sink_name, pa_volume_t volume, int autoload);
 void pa_scache_free(pa_core *c);
 
 const char *pa_scache_get_name_by_id(pa_core *c, uint32_t id);

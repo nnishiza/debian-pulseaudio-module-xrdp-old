@@ -1,7 +1,7 @@
 #ifndef foomemoryhfoo
 #define foomemoryhfoo
 
-/* $Id: xmalloc.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -74,6 +74,15 @@ static inline void* pa_xnew0_internal(unsigned n, size_t k) {
 
 /** Same as pa_xnew() but set the memory to zero */
 #define pa_xnew0(type, n) ((type*) pa_xnew0_internal((n), sizeof(type)))
+
+/** Internal helper for pa_xnew0() */
+static inline void* pa_xnewdup_internal(const void *p, unsigned n, size_t k) {
+    assert(n < INT_MAX/k);
+    return pa_xmemdup(p, n*k);
+}
+
+/** Same as pa_xnew() but set the memory to zero */
+#define pa_xnewdup(type, p, n) ((type*) pa_xnewdup_internal((p), (n), sizeof(type)))
 
 PA_C_DECL_END
 

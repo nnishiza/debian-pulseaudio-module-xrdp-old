@@ -1,4 +1,4 @@
-/* $Id: x11prop.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -31,7 +31,6 @@
 #include <X11/Xatom.h>
 
 #include "x11prop.h"
-
 
 void pa_x11_set_prop(Display *d, const char *name, const char *data) {
     Atom a = XInternAtom(d, name, False);

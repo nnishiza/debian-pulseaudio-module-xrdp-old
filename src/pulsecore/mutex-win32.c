@@ -1,4 +1,4 @@
-/* $Id: mutex-win32.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -40,7 +40,7 @@ struct pa_cond {
     pa_hashmap *wait_events;
 };
 
-pa_mutex* pa_mutex_new(int recursive) {
+pa_mutex* pa_mutex_new(pa_bool_t recursive, pa_bool_t inherit_priority) {
     pa_mutex *m;
 
     m = pa_xnew(pa_mutex, 1);

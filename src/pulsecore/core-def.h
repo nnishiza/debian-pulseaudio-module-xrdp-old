@@ -1,7 +1,7 @@
 #ifndef foocoredefhfoo
 #define foocoredefhfoo
 
-/* $Id: core-def.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -24,9 +24,6 @@
   USA.
 ***/
 
-typedef enum pa_mixer {
-    PA_MIXER_SOFTWARE,
-    PA_MIXER_HARDWARE
-} pa_mixer_t;
+/* FIXME: Remove this shit */
 
 #endif

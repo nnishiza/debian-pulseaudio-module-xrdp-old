@@ -1,20 +1,20 @@
-/* $Id: sap.c 1452 2007-05-23 17:24:06Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
 
   Copyright 2006 Lennart Poettering
- 
+
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
   by the Free Software Foundation; either version 2 of the License,
   or (at your option) any later version.
- 
+
   PulseAudio is distributed in the hope that it will be useful, but
   WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
   General Public License for more details.
- 
+
   You should have received a copy of the GNU Lesser General Public License
   along with PulseAudio; if not, write to the Free Software
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
@@ -25,7 +25,6 @@
 #include <config.h>
 #endif
 
-#include <assert.h>
 #include <time.h>
 #include <stdlib.h>
 #include <sys/types.h>
@@ -46,6 +45,7 @@
 #include <pulsecore/core-error.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
+#include <pulsecore/macro.h>
 
 #include "sap.h"
 #include "sdp.h"
@@ -53,21 +53,21 @@
 #define MIME_TYPE "application/sdp"
 
 pa_sap_context* pa_sap_context_init_send(pa_sap_context *c, int fd, char *sdp_data) {
-    assert(c);
-    assert(fd >= 0);
-    assert(sdp_data);
+    pa_assert(c);
+    pa_assert(fd >= 0);
+    pa_assert(sdp_data);
 
     c->fd = fd;
     c->sdp_data = sdp_data;
     c->msg_id_hash = (uint16_t) (rand()*rand());
-    
-    return c;    
+
+    return c;
 }
 
 void pa_sap_context_destroy(pa_sap_context *c) {
-    assert(c);
+    pa_assert(c);
 
-    close(c->fd);
+    pa_close(c->fd);
     pa_xfree(c->sdp_data);
 }
 
@@ -85,8 +85,8 @@ int pa_sap_send(pa_sap_context *c, int goodbye) {
         return -1;
     }
 
-    assert(sa->sa_family == AF_INET || sa->sa_family == AF_INET6);
-    
+    pa_assert(sa->sa_family == AF_INET || sa->sa_family == AF_INET6);
+
     header = htonl(((uint32_t) 1 << 29) |
                    (sa->sa_family == AF_INET6 ? (uint32_t) 1 << 28 : 0) |
                    (goodbye ? (uint32_t) 1 << 26 : 0) |
@@ -103,7 +103,7 @@ int pa_sap_send(pa_sap_context *c, int goodbye) {
 
     iov[3].iov_base = c->sdp_data;
     iov[3].iov_len = strlen(c->sdp_data);
-                   
+
     m.msg_name = NULL;
     m.msg_namelen = 0;
     m.msg_iov = iov;
@@ -111,16 +111,16 @@ int pa_sap_send(pa_sap_context *c, int goodbye) {
     m.msg_control = NULL;
     m.msg_controllen = 0;
     m.msg_flags = 0;
-    
+
     if ((k = sendmsg(c->fd, &m, MSG_DONTWAIT)) < 0)
-        pa_log("sendmsg() failed: %s\n", pa_cstrerror(errno));
+        pa_log_warn("sendmsg() failed: %s\n", pa_cstrerror(errno));
 
     return k;
 }
 
 pa_sap_context* pa_sap_context_init_recv(pa_sap_context *c, int fd) {
-    assert(c);
-    assert(fd >= 0);
+    pa_assert(c);
+    pa_assert(fd >= 0);
 
     c->fd = fd;
     c->sdp_data = NULL;
@@ -135,18 +135,18 @@ int pa_sap_recv(pa_sap_context *c, int *goodbye) {
     uint32_t header;
     int six, ac;
     ssize_t r;
-    
-    assert(c);
-    assert(goodbye);
+
+    pa_assert(c);
+    pa_assert(goodbye);
 
     if (ioctl(c->fd, FIONREAD, &size) < 0) {
-        pa_log("FIONREAD failed: %s", pa_cstrerror(errno));
+        pa_log_warn("FIONREAD failed: %s", pa_cstrerror(errno));
         goto fail;
     }
 
     buf = pa_xnew(char, size+1);
     buf[size] = 0;
-    
+
     iov.iov_base = buf;
     iov.iov_len = size;
 
@@ -157,14 +157,14 @@ int pa_sap_recv(pa_sap_context *c, int *goodbye) {
     m.msg_control = NULL;
     m.msg_controllen = 0;
     m.msg_flags = 0;
-    
+
     if ((r = recvmsg(c->fd, &m, 0)) != size) {
-        pa_log("recvmsg() failed: %s", r < 0 ? pa_cstrerror(errno) : "size mismatch");
+        pa_log_warn("recvmsg() failed: %s", r < 0 ? pa_cstrerror(errno) : "size mismatch");
         goto fail;
     }
 
     if (size < 4) {
-        pa_log("SAP packet too short.");
+        pa_log_warn("SAP packet too short.");
         goto fail;
     }
 
@@ -172,17 +172,17 @@ int pa_sap_recv(pa_sap_context *c, int *goodbye) {
     header = ntohl(header);
 
     if (header >> 29 != 1) {
-        pa_log("Unsupported SAP version.");
+        pa_log_warn("Unsupported SAP version.");
         goto fail;
     }
 
     if ((header >> 25) & 1) {
-        pa_log("Encrypted SAP not supported.");
+        pa_log_warn("Encrypted SAP not supported.");
         goto fail;
     }
 
     if ((header >> 24) & 1) {
-        pa_log("Compressed SAP not supported.");
+        pa_log_warn("Compressed SAP not supported.");
         goto fail;
     }
 
@@ -191,7 +191,7 @@ int pa_sap_recv(pa_sap_context *c, int *goodbye) {
 
     k = 4 + (six ? 16 : 4) + ac*4;
     if (size < k) {
-        pa_log("SAP packet too short (AD).");
+        pa_log_warn("SAP packet too short (AD).");
         goto fail;
     }
 
@@ -202,18 +202,18 @@ int pa_sap_recv(pa_sap_context *c, int *goodbye) {
         e += sizeof(MIME_TYPE);
         size -= sizeof(MIME_TYPE);
     } else if ((unsigned) size < sizeof(PA_SDP_HEADER)-1 || strncmp(e, PA_SDP_HEADER, sizeof(PA_SDP_HEADER)-1)) {
-        pa_log("Invalid SDP header.");
+        pa_log_warn("Invalid SDP header.");
         goto fail;
     }
 
     if (c->sdp_data)
         pa_xfree(c->sdp_data);
-    
+
     c->sdp_data = pa_xstrndup(e, size);
     pa_xfree(buf);
-    
+
     *goodbye = !!((header >> 26) & 1);
-    
+
     return 0;
 
 fail:

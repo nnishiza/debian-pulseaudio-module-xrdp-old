@@ -1,7 +1,7 @@
 #ifndef foopulsecdeclhfoo
 #define foopulsecdeclhfoo
 
-/* $Id: cdecl.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -39,6 +39,24 @@
 /** If using C++ this macros switches back to C++ mode, otherwise does nothing */
 #define PA_C_DECL_END
 
+#endif
+
+#ifndef PA_GCC_PURE
+#ifdef __GNUCC__
+#define PA_GCC_PURE __attribute__ ((pure))
+#else
+/** This function's return value depends only the arguments list and global state **/
+#define PA_GCC_PURE
+#endif
+#endif
+
+#ifndef PA_GCC_CONST
+#ifdef __GNUCC__
+#define PA_GCC_CONST __attribute__ ((pure))
+#else
+/** This function's return value depends only the arguments list (stricter version of PA_GCC_CONST) **/
+#define PA_GCC_CONST
+#endif
 #endif
 
 #endif
