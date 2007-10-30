@@ -1,6 +1,6 @@
-pulseaudio (0.9.7~svn1991-1) UNRELEASED; urgency=low
+pulseaudio (0.9.7-1) UNRELEASED; urgency=low
 
-  * New upstream release.
+  * New Upstream Version
   * Drop all patches. All patches are merged upstream.
   * debian/control:
     + Replace ${Source-Version} with ${binary:Version}.
@@ -24,7 +24,7 @@ pulseaudio (0.9.7~svn1991-1) UNRELEASED; urgency=low
   * debian/pulseaudio-esound-compat.manpages: Move esdcompat manpage to
       pulseaudio-esound-compat.
 
- -- CJ van den Berg <cj@vdbonline.com>  Tue, 30 Oct 2007 01:20:00 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Tue, 30 Oct 2007 18:35:38 +0100
 
 pulseaudio (0.9.6-2) unstable; urgency=low
 
