@@ -3,7 +3,7 @@ Section: sound
 Priority: optional
 Maintainer: CJ van den Berg <cj@vdbonline.com>
 Uploaders: Sjoerd Simons <sjoerd@debian.org>
-Build-Depends: debhelper (>= 5), cdbs, autotools-dev, m4, libltdl3-dev,
+Build-Depends: debhelper (>= 5), cdbs, m4, libltdl3-dev,
     liboil0.3-dev (>= 0.3.0) | liboil-dev, libsamplerate0-dev,
     libsndfile1-dev (>= 1.0.10) | libsndfile-dev, libx11-dev,
     x11proto-core-dev, libxt-dev, libglib2.0-dev,
