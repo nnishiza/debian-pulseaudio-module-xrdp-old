@@ -1,4 +1,4 @@
-pulseaudio (0.9.7-1) UNRELEASED; urgency=low
+pulseaudio (0.9.7-1) unstable; urgency=low
 
   * New Upstream Version. (Closes: #446026, #436409)
   * Drop all patches. All patches are merged upstream.
