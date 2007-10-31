@@ -23,8 +23,11 @@ pulseaudio (0.9.7-1) UNRELEASED; urgency=low
       esound-compat.
   * debian/pulseaudio-esound-compat.manpages: Move esdcompat manpage to
       pulseaudio-esound-compat.
+  * debian/libpulse0.shlibs: Add minimum version of 0.9.7 to libpulse0 shlibs.
+  * debian/patches:
+    + Added 0001-Set-ESD-socket-to-tmp-.esd-socket-to- match-up-with.patch
 
- -- CJ van den Berg <cj@vdbonline.com>  Tue, 30 Oct 2007 18:35:38 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 31 Oct 2007 14:26:14 +0100
 
 pulseaudio (0.9.6-2) unstable; urgency=low
 
