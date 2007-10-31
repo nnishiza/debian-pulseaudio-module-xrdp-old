@@ -96,7 +96,7 @@ Description: PulseAudio command line tools detached debugging symbols
 Package: pulseaudio-esound-compat
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: esound
+Conflicts: esound, pulseaudio (< 0.9.7)
 Replaces: esound
 Provides: esound
 Description: PulseAudio ESD compatibility layer

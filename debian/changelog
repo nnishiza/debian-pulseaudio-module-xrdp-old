@@ -5,6 +5,7 @@ pulseaudio (0.9.7-1) UNRELEASED; urgency=low
   * debian/control:
     + Replace ${Source-Version} with ${binary:Version}.
     + Add XS-Vcs-* tags.
+    + Conflict pulseaudio < 0.9.7 in -esound-compat due to moved manpage.
   * debian/rules:
     + Add list-missing to catch new modules
     + Remove all .la files.
@@ -27,7 +28,7 @@ pulseaudio (0.9.7-1) UNRELEASED; urgency=low
   * debian/patches:
     + Added 0001-Set-ESD-socket-to-tmp-.esd-socket-to- match-up-with.patch
 
- -- CJ van den Berg <cj@vdbonline.com>  Wed, 31 Oct 2007 14:26:14 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 31 Oct 2007 15:31:44 +0100
 
 pulseaudio (0.9.6-2) unstable; urgency=low
 
