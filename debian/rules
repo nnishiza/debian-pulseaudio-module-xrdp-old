@@ -22,6 +22,12 @@ clean::
 	rm -f debian/pulseaudio.install.kfreebsd-i386
 	rm -f debian/pulseaudio.install.kfreebsd-amd64
 
+update-patch-series:
+	mkdir -p $(CURDIR)/debian/patches
+	rm -f $(CURDIR)/debian/patches/*.patch
+	git-format-patch -o $(CURDIR)/debian/patches patches ^upstream | \
+		xargs -n 1 basename > $(CURDIR)/debian/patches/series
+
 DEB_CONFIGURE_EXTRA_FLAGS = --with-realtime-group=pulse-rt
 DEB_FIXPERMS_EXCLUDE = usr/bin/pulseaudio
 DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9/modules
