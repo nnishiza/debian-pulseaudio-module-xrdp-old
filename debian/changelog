@@ -1,3 +1,10 @@
+pulseaudio (0.9.7-2) UNRELEASED; urgency=low
+
+  * Use pulseaudio (<< 0.9.7) instead of pulseaudio (< 0.9.7) in
+    -esound-compat
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Wed, 31 Oct 2007 17:17:14 +0100
+
 pulseaudio (0.9.7-1) unstable; urgency=low
 
   * New Upstream Version. (Closes: #446026, #436409)
