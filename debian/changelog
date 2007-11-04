@@ -1,4 +1,4 @@
-pulseaudio (0.9.7-2) UNRELEASED; urgency=low
+pulseaudio (0.9.7-2) unstable; urgency=low
 
   * Use pulseaudio (<< 0.9.7) instead of pulseaudio (< 0.9.7) in
     -esound-compat
@@ -10,7 +10,7 @@ pulseaudio (0.9.7-2) UNRELEASED; urgency=low
     define SYS_eventfd but older versions of linux-libc-dev don't define
     __NR_eventfd yet.
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 04 Nov 2007 13:33:02 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 04 Nov 2007 13:53:09 +0100
 
 pulseaudio (0.9.7-1) unstable; urgency=low
 
