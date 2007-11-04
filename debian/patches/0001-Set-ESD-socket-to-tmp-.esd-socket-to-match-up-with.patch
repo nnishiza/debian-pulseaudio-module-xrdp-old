@@ -20,6 +20,3 @@ index 597993c..b09d0f2 100755
  load-module module-native-protocol-unix
  
  ### Network access (may be configured with paprefs, so leave this commented
--- 
-1.5.3.5
-

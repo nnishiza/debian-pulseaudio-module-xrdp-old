@@ -22,6 +22,3 @@ index 927bf00..59eec18 100644
  #if !defined(SYS_eventfd) && defined(__NR_eventfd)
  #define SYS_eventfd __NR_eventfd
  #endif
--- 
-1.5.3.5
-
