@@ -1,2 +1,3 @@
 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
 0002-Fix-pa_readlink-to-put-a-0-in-the-right-location.patch
+0003-Define-__NR_eventfd-on-arm-if-it-wasn-t-defined-yet.patch
