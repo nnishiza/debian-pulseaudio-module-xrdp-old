@@ -233,7 +233,7 @@ Description: gconf module for PulseAudio sound server debugging symbols
 
 Package: pulseaudio-module-x11
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, pulseaudio-utils
 Recommends: gnome-audio
 Description: X11 module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
