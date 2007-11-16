@@ -14,6 +14,8 @@ set -e
 # for details, see http://www.debian.org/doc/debian-policy/ or
 # the debian-policy package
 
+PULSEAUDIO=pulseaudio
+
 case "$1" in
   configure)
     if ! getent passwd pulse >/dev/null; then
@@ -27,6 +29,10 @@ case "$1" in
     fi
     if ! getent group pulse-rt >/dev/null; then
       addgroup --quiet --system pulse-rt
+    fi
+
+    if ! dpkg-statoverride --list "$PULSEAUDIO" > /dev/null 2>&1; then
+       chmod 4754 "$PULSEAUDIO"
     fi
   ;;
   abort-upgrade|abort-remove|abort-deconfigure)
