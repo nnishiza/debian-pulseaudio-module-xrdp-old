@@ -1,6 +1,13 @@
+pulseaudio (0.9.7-3) UNRELEASED; urgency=low
+
+  [ CJ van den Berg ]
+  * debian/control: Add depends on -utils to -module-x11. (Closes: #450840)
+
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2007 18:17:14 +0100
+
 pulseaudio (0.9.7-2) unstable; urgency=low
 
-  [ Sjoerd Simons ]
   * Use pulseaudio (<< 0.9.7) instead of pulseaudio (< 0.9.7) in
     -esound-compat
   * debian/patches/0002-Fix-pa_readlink-to-put-a-0-in-the-right-location.patch:
@@ -11,10 +18,7 @@ pulseaudio (0.9.7-2) unstable; urgency=low
     define SYS_eventfd but older versions of linux-libc-dev don't define
     __NR_eventfd yet.
 
-  [ CJ van den Berg ]
-  * debian/control: Add depends on -utils to -module-x11. (Closes: #450840)
-
- -- CJ van den Berg <cj@vdbonline.com>  Mon, 12 Nov 2007 14:14:55 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 04 Nov 2007 13:53:09 +0100
 
 pulseaudio (0.9.7-1) unstable; urgency=low
 
