@@ -32,7 +32,7 @@ case "$1" in
     fi
 
     if ! dpkg-statoverride --list "$PULSEAUDIO" > /dev/null 2>&1; then
-       chmod 4754 "$PULSEAUDIO"
+       chmod 4755 "$PULSEAUDIO"
     fi
   ;;
   abort-upgrade|abort-remove|abort-deconfigure)
