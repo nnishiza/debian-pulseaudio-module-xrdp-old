@@ -1,3 +1,9 @@
+pulseaudio (0.9.7-4) UNRELEASED; urgency=low
+
+  * debian/overrides/pulseaudio: Remove override for setuid-binary.
+
+ -- CJ van den Berg <cj@vdbonline.com>  Sat, 17 Nov 2007 22:03:47 +0100
+
 pulseaudio (0.9.7-3) unstable; urgency=low
 
   [ CJ van den Berg ]
