@@ -52,6 +52,7 @@ Description: PulseAudio sound server
 
 Package: pulseaudio-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio (= ${binary:Version})
 Description: PulseAudio sound server detached debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -85,6 +86,7 @@ Description: Command line tools for the PulseAudio sound server
 
 Package: pulseaudio-utils-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-utils (= ${binary:Version})
 Description: PulseAudio command line tools detached debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -109,6 +111,7 @@ Description: PulseAudio ESD compatibility layer
 
 Package: pulseaudio-esound-compat-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-esound-compat (= ${binary:Version})
 Description: PulseAudio ESD compatibility layer debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -133,6 +136,7 @@ Description: Zeroconf module for PulseAudio sound server
 
 Package: pulseaudio-module-zeroconf-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-zeroconf (= ${binary:Version})
 Description: Zeroconf module for PulseAudio sound server debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -156,6 +160,7 @@ Description: HAL device detection module for PulseAudio sound server
 
 Package: pulseaudio-module-hal-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-hal (= ${binary:Version})
 Description: HAL module for PulseAudio sound server debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -178,6 +183,7 @@ Description: jackd modules for PulseAudio sound server
 
 Package: pulseaudio-module-jack-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-jack (= ${binary:Version})
 Description: jackd modules for PulseAudio sound server debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -201,6 +207,7 @@ Description: lirc module for PulseAudio sound server
 
 Package: pulseaudio-module-lirc-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-lirc (= ${binary:Version})
 Description: lirc module for PulseAudio sound server debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -223,6 +230,7 @@ Description: gconf module for PulseAudio sound server
 
 Package: pulseaudio-module-gconf-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-gconf (= ${binary:Version})
 Description: gconf module for PulseAudio sound server debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -248,6 +256,7 @@ Description: X11 module for PulseAudio sound server
 
 Package: pulseaudio-module-x11-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-x11 (= ${binary:Version})
 Description: X11 module for PulseAudio sound server debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -285,6 +294,7 @@ Description: PulseAudio client libraries
 Package: libpulse0-dbg
 Section: libs
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, libpulse0 (= ${binary:Version})
 Description: PulseAudio client libraries detached debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -309,6 +319,7 @@ Description: PulseAudio client libraries (glib support)
 
 Package: libpulse-mainloop-glib0-dbg
 Architecture: any
+Priority: extra
 Depends: ${misc:Depends}, libpulse-mainloop-glib0 (= ${binary:Version})
 Description: PulseAudio client libraries (glib support) debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -334,6 +345,7 @@ Description: PulseAudio client libraries (zeroconf support)
 
 Package: libpulse-browse0-dbg
 Architecture: any
+Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: PulseAudio client libraries (zeroconf support) debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
