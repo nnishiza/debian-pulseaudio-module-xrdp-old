@@ -18,13 +18,15 @@ PATH=/sbin:/bin:/usr/sbin:/usr/bin
 
 test -x $DAEMON || exit 0
 
+. /lib/lsb/init-functions
+
 PULSEAUDIO_SYSTEM_START=0
 DISALLOW_MODULE_LOADING=1
 test -f /etc/default/pulseaudio && . /etc/default/pulseaudio
 test "$PULSEAUDIO_SYSTEM_START" != "1" && exit 0
 
 pulseaudio_start () {
-	echo -n "Starting PulseAudio Daemon: pulseaudio"
+	log_begin_msg "Starting PulseAudio Daemon"
 	start-stop-daemon -x $DAEMON -p $PIDFILE --start -- --system --daemonize --high-priority --log-target=syslog --disallow-module-loading=$DISALLOW_MODULE_LOADING
 	if [ -e /var/run/pulse/.esd_auth ]; then
 		chown pulse:pulse-access /var/run/pulse/.esd_auth
@@ -34,13 +36,13 @@ pulseaudio_start () {
 		chown pulse:pulse-access /var/run/pulse/.pulse-cookie
 		chmod 640 /var/run/pulse/.pulse-cookie
 	fi
-	echo "."
+	log_end_msg $?
 }
 
 pulseaudio_stop () {
-	echo -n "Stopping PulseAudio Daemon: pulseaudio"
+	log_begin_msg "Stopping PulseAudio Daemon"
 	start-stop-daemon -p $PIDFILE --stop || echo -n "... pulseaudio is not running"
-	echo "."
+	log_end_msg $?
 }
 
 case "$1" in
