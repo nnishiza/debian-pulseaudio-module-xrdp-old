@@ -20,7 +20,7 @@ Package: pulseaudio
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
 Recommends: pulseaudio-module-hal, pulseaudio-module-x11,
-    libasound2-plugins, libgstreamer-plugins-pulse0.10-0, libao-pulse,
+    libasound2-plugins, libgstreamer-plugins-pulse0.10-0,
     pulseaudio-esound-compat, paprefs, padevchooser
 Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman
 Description: PulseAudio sound server
