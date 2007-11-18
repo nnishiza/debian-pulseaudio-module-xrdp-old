@@ -1,0 +1,24 @@
+From 4834d66f60e6e57a69d4f3873ef9760e1bbb05fc Mon Sep 17 00:00:00 2001
+From: Oliver Grawert <ogra@ubuntu.com>
+Date: Sun, 18 Nov 2007 20:36:17 +0100
+Subject: [PATCH] Double esound maximum sample size
+
+To make sure the login and logout gnome sounds can be processed on remote
+connections.
+---
+ src/pulsecore/protocol-esound.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/pulsecore/protocol-esound.c b/src/pulsecore/protocol-esound.c
+index 8b6b33a..b70ef88 100644
+--- a/src/pulsecore/protocol-esound.c
++++ b/src/pulsecore/protocol-esound.c
+@@ -72,7 +72,7 @@
+ #define RECORD_BUFFER_SECONDS (5)
+ #define RECORD_BUFFER_FRAGMENTS (100)
+ 
+-#define MAX_CACHE_SAMPLE_SIZE (1024000)
++#define MAX_CACHE_SAMPLE_SIZE (2048000)
+ 
+ #define SCACHE_PREFIX "esound."
+ 

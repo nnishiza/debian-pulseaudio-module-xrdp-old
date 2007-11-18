@@ -5,8 +5,10 @@ pulseaudio (0.9.7-4) UNRELEASED; urgency=low
     + Change the priority of all -dbg packages to extra.
     + Stop recommending libao-pulse. libao2 has built-in pulseaudio support.
     + Force pulseaudio to depend on libltdl3 >= 1.5.24-1 (Closes: #451638)
+  * debian/patches:
+    + Added 0004-Double-esound-maximum-sample-size.patch from Ubuntu.
 
- -- CJ van den Berg <cj@vdbonline.com>  Sun, 18 Nov 2007 15:43:35 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 18 Nov 2007 20:37:43 +0100
 
 pulseaudio (0.9.7-3) unstable; urgency=low
 
