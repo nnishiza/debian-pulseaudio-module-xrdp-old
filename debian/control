@@ -18,7 +18,7 @@ XS-Vcs-Browser: http://git.debian.org/?p=pkg-pulseaudio/pulseaudio.git
 
 Package: pulseaudio
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, adduser
+Depends: ${shlibs:Depends}, ${misc:Depends}, adduser, libltdl3 (>= 1.5.24-1)
 Recommends: pulseaudio-module-hal, pulseaudio-module-x11,
     libasound2-plugins, libgstreamer-plugins-pulse0.10-0,
     pulseaudio-esound-compat, paprefs, padevchooser
