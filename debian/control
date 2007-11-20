@@ -279,6 +279,18 @@ Description: PulseAudio sound server core
  This library provides core services to the PulseAudio daemon and modules
  the run inside the daemon.
 
+Package: libpulsecore4-dbg
+Architecture: any
+Priority: extra
+Depends: ${misc:Depends}, pulseaudio (= ${binary:Version})
+Description: PulseAudio sound server core detached debugging symbols
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This package contains the detached debugging symbols for the daemon
+ core.
+
 Package: libpulse0
 Section: libs
 Architecture: any
