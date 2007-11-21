@@ -8,6 +8,7 @@ pulseaudio (0.9.7-4) UNRELEASED; urgency=low
     + Make pulseaudio conflict libltdl3 < 1.5.24-1 (Closes: #451638)
     + Change XS-Vcs-* tags to Vcs-*.
     + Add libpulsecore4-dbg package.
+    + Rename gstreamer plugin package in recommends.
   * debian/patches:
     + Added 0004-Double-esound-maximum-sample-size.patch from Ubuntu.
 
@@ -15,7 +16,7 @@ pulseaudio (0.9.7-4) UNRELEASED; urgency=low
   * debian/control: Add lsb-base (>= 3) to pulseaudio's dependencies.
   * debian/pulseaudio.init: LSB-ify.
 
- -- CJ van den Berg <cj@vdbonline.com>  Tue, 20 Nov 2007 00:19:16 +0000
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 21 Nov 2007 12:42:44 +0100
 
 pulseaudio (0.9.7-3) unstable; urgency=low
 
