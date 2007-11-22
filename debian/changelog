@@ -8,9 +8,10 @@ pulseaudio (0.9.8-1) UNRELEASED; urgency=low
     + Stop recommending libao-pulse. libao2 has built-in pulseaudio support.
     + Make pulseaudio conflict libltdl3 < 1.5.24-1 (Closes: #451638)
     + Change XS-Vcs-* tags to Vcs-*.
-    + Add libpulsecore4-dbg package.
+    + Add libpulsecore5-dbg package.
     + Rename gstreamer plugin package in recommends.
     + Add Homepage field.
+    + Bump libpulsecore so version number to 5.
   * debian/patches/0002-Fix-pa_readlink-to-put-a-0-in-the-right-location.patch:
     - Dropped, merged upstream.
   * debian/p..s/0003-Define-__NR_eventfd-on-arm-if-it-wasn-t-defined-yet.patch:

@@ -267,7 +267,7 @@ Description: X11 module for PulseAudio sound server debugging symbols
  .
  This package contains debugging symbols for the PulseAudio X11 modules.
 
-Package: libpulsecore4
+Package: libpulsecore5
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
@@ -280,7 +280,7 @@ Description: PulseAudio sound server core
  This library provides core services to the PulseAudio daemon and modules
  the run inside the daemon.
 
-Package: libpulsecore4-dbg
+Package: libpulsecore5-dbg
 Architecture: any
 Priority: extra
 Depends: ${misc:Depends}, pulseaudio (= ${binary:Version})
