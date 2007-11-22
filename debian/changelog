@@ -1,6 +1,7 @@
-pulseaudio (0.9.7-4) UNRELEASED; urgency=low
+pulseaudio (0.9.8-1) UNRELEASED; urgency=low
 
   [ CJ van den Berg ]
+  * New upstream version.
   * debian/overrides/pulseaudio: Remove override for setuid-binary.
   * debian/control:
     + Change the priority of all -dbg packages to extra.
@@ -17,7 +18,7 @@ pulseaudio (0.9.7-4) UNRELEASED; urgency=low
   * debian/control: Add lsb-base (>= 3) to pulseaudio's dependencies.
   * debian/pulseaudio.init: LSB-ify.
 
- -- CJ van den Berg <cj@vdbonline.com>  Wed, 21 Nov 2007 13:52:42 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Thu, 22 Nov 2007 02:33:51 +0100
 
 pulseaudio (0.9.7-3) unstable; urgency=low
 
