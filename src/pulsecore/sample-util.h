@@ -1,7 +1,7 @@
 #ifndef foosampleutilhfoo
 #define foosampleutilhfoo
 
-/* $Id: sample-util.h 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: sample-util.h 2041 2007-11-09 17:11:45Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -39,7 +39,14 @@ typedef struct pa_mix_info {
     pa_memchunk chunk;
     pa_cvolume volume;
     void *userdata;
-    void *internal; /* Used internally by pa_mix(), should not be initialised when calling pa_mix() */
+
+    /* The following fields are used internally by pa_mix(), should
+     * not be initialised by the caller of pa_mix(). */
+    void *ptr;
+    union {
+        int32_t i;
+        float f;
+    } linear[PA_CHANNELS_MAX];
 } pa_mix_info;
 
 size_t pa_mix(
@@ -49,7 +56,7 @@ size_t pa_mix(
     size_t length,
     const pa_sample_spec *spec,
     const pa_cvolume *volume,
-    int mute);
+    pa_bool_t mute);
 
 void pa_volume_memchunk(
     pa_memchunk*c,

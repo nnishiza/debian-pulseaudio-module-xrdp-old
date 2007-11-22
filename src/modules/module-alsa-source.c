@@ -1,4 +1,4 @@
-/* $Id: module-alsa-source.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-alsa-source.c 2055 2007-11-13 23:42:15Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -51,19 +51,21 @@
 #include "alsa-util.h"
 #include "module-alsa-source-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("ALSA Source")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("ALSA Source");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "source_name=<name for the source> "
         "device=<ALSA device> "
+        "device_id=<ALSA device id> "
         "format=<sample format> "
         "channels=<number of channels> "
         "rate=<sample rate> "
         "fragments=<number of fragments> "
         "fragment_size=<fragment size> "
         "channel_map=<channel map> "
-        "mmap=<enable memory mapping?>")
+        "mmap=<enable memory mapping?>");
 
 #define DEFAULT_DEVICE "default"
 
@@ -88,13 +90,16 @@ struct userdata {
 
     char *device_name;
 
-    int use_mmap;
+    pa_bool_t use_mmap;
 
     pa_rtpoll_item *alsa_rtpoll_item;
+
+    snd_mixer_selem_channel_id_t mixer_map[SND_MIXER_SCHN_LAST];
 };
 
 static const char* const valid_modargs[] = {
     "device",
+    "device_id",
     "source_name",
     "channels",
     "rate",
@@ -341,7 +346,8 @@ static int suspend(struct userdata *u) {
 
 static int unsuspend(struct userdata *u) {
     pa_sample_spec ss;
-    int err, b;
+    int err;
+    pa_bool_t b;
     unsigned nfrags;
     snd_pcm_uframes_t period_size;
 
@@ -361,7 +367,7 @@ static int unsuspend(struct userdata *u) {
     period_size = u->fragment_size / u->frame_size;
     b = u->use_mmap;
 
-    if ((err = pa_alsa_set_hw_params(u->pcm_handle, &ss, &nfrags, &period_size, &b)) < 0) {
+    if ((err = pa_alsa_set_hw_params(u->pcm_handle, &ss, &nfrags, &period_size, &b, TRUE)) < 0) {
         pa_log("Failed to set hardware parameters: %s", snd_strerror(err));
         goto fail;
     }
@@ -490,9 +496,9 @@ static int source_get_volume_cb(pa_source *s) {
     for (i = 0; i < s->sample_spec.channels; i++) {
         long set_vol, vol;
 
-        pa_assert(snd_mixer_selem_has_capture_channel(u->mixer_elem, i));
+        pa_assert(snd_mixer_selem_has_capture_channel(u->mixer_elem, u->mixer_map[i]));
 
-        if ((err = snd_mixer_selem_get_capture_volume(u->mixer_elem, i, &vol)) < 0)
+        if ((err = snd_mixer_selem_get_capture_volume(u->mixer_elem, u->mixer_map[i], &vol)) < 0)
             goto fail;
 
         set_vol = (long) roundf(((float) s->volume.values[i] * (u->hw_volume_max - u->hw_volume_min)) / PA_VOLUME_NORM) + u->hw_volume_min;
@@ -524,7 +530,7 @@ static int source_set_volume_cb(pa_source *s) {
         long alsa_vol;
         pa_volume_t vol;
 
-        pa_assert(snd_mixer_selem_has_capture_channel(u->mixer_elem, i));
+        pa_assert(snd_mixer_selem_has_capture_channel(u->mixer_elem, u->mixer_map[i]));
 
         vol = s->volume.values[i];
 
@@ -533,7 +539,7 @@ static int source_set_volume_cb(pa_source *s) {
 
         alsa_vol = (long) roundf(((float) vol * (u->hw_volume_max - u->hw_volume_min)) / PA_VOLUME_NORM) + u->hw_volume_min;
 
-        if ((err = snd_mixer_selem_set_capture_volume(u->mixer_elem, i, alsa_vol)) < 0)
+        if ((err = snd_mixer_selem_set_capture_volume(u->mixer_elem, u->mixer_map[i], alsa_vol)) < 0)
             goto fail;
     }
 
@@ -592,8 +598,8 @@ static void thread_func(void *userdata) {
 
     pa_log_debug("Thread starting up");
 
-    if (u->core->high_priority)
-        pa_make_realtime();
+    if (u->core->realtime_scheduling)
+        pa_make_realtime(u->core->realtime_priority);
 
     pa_thread_mq_install(&u->thread_mq);
     pa_rtpoll_install(u->rtpoll);
@@ -690,10 +696,10 @@ int pa__init(pa_module*m) {
 
     pa_modargs *ma = NULL;
     struct userdata *u = NULL;
-    char *dev;
+    const char *dev_id;
     pa_sample_spec ss;
     pa_channel_map map;
-    unsigned nfrags, frag_size;
+    uint32_t nfrags, frag_size;
     snd_pcm_uframes_t period_size;
     size_t frame_size;
     snd_pcm_info_t *pcm_info = NULL;
@@ -702,7 +708,7 @@ int pa__init(pa_module*m) {
     const char *name;
     char *name_buf = NULL;
     int namereg_fail;
-    int use_mmap = 1, b;
+    pa_bool_t use_mmap = TRUE, b;
 
     snd_pcm_info_alloca(&pcm_info);
 
@@ -749,43 +755,33 @@ int pa__init(pa_module*m) {
 
     snd_config_update_free_global();
 
-    dev = pa_xstrdup(pa_modargs_get_value(ma, "device", DEFAULT_DEVICE));
+    b = use_mmap;
 
-    for (;;) {
+    if ((dev_id = pa_modargs_get_value(ma, "device_id", NULL))) {
 
-        if ((err = snd_pcm_open(&u->pcm_handle, dev, SND_PCM_STREAM_CAPTURE, SND_PCM_NONBLOCK)) < 0) {
-            pa_log("Error opening PCM device %s: %s", dev, snd_strerror(err));
-            pa_xfree(dev);
+        if (!(u->pcm_handle = pa_alsa_open_by_device_id(
+                      dev_id,
+                      &u->device_name,
+                      &ss, &map,
+                      SND_PCM_STREAM_CAPTURE,
+                      &nfrags, &period_size,
+                      &b)))
             goto fail;
-        }
 
-        b = use_mmap;
-        if ((err = pa_alsa_set_hw_params(u->pcm_handle, &ss, &nfrags, &period_size, &b)) < 0) {
+    } else {
 
-            if (err == -EPERM) {
-                /* Hmm, some hw is very exotic, so we retry with plughw, if hw didn't work */
-
-                if (pa_startswith(dev, "hw:")) {
-                    char *d = pa_sprintf_malloc("plughw:%s", dev+3);
-                    pa_log_debug("Opening the device as '%s' didn't work, retrying with '%s'.", dev, d);
-                    pa_xfree(dev);
-                    dev = d;
-
-                    snd_pcm_close(u->pcm_handle);
-                    u->pcm_handle = NULL;
-                    continue;
-                }
-            }
-
-            pa_log("Failed to set hardware parameters: %s", snd_strerror(err));
-            pa_xfree(dev);
+        if (!(u->pcm_handle = pa_alsa_open_by_device_string(
+                      pa_modargs_get_value(ma, "device", DEFAULT_DEVICE),
+                      &u->device_name,
+                      &ss, &map,
+                      SND_PCM_STREAM_CAPTURE,
+                      &nfrags, &period_size,
+                      &b)))
             goto fail;
-        }
-
-        break;
     }
 
-    u->device_name = dev;
+    pa_assert(u->device_name);
+    pa_log_info("Successfully opened device %s.", u->device_name);
 
     if (use_mmap && !b) {
         pa_log_info("Device doesn't support mmap(), falling back to UNIX read/write mode.");
@@ -808,16 +804,28 @@ int pa__init(pa_module*m) {
     /* ALSA might tweak the sample spec, so recalculate the frame size */
     frame_size = pa_frame_size(&ss);
 
-    if (ss.channels != map.channels)
-        /* Seems ALSA didn't like the channel number, so let's fix the channel map */
-        pa_channel_map_init_auto(&map, ss.channels, PA_CHANNEL_MAP_ALSA);
-
     if ((err = snd_mixer_open(&u->mixer_handle, 0)) < 0)
         pa_log("Error opening mixer: %s", snd_strerror(err));
     else {
+        pa_bool_t found = FALSE;
 
-        if ((pa_alsa_prepare_mixer(u->mixer_handle, dev) < 0) ||
-            !(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, "Capture", NULL))) {
+        if (pa_alsa_prepare_mixer(u->mixer_handle, u->device_name) >= 0)
+            found = TRUE;
+        else {
+            char *md = pa_sprintf_malloc("hw:%s", dev_id);
+
+            if (strcmp(u->device_name, md))
+                if (pa_alsa_prepare_mixer(u->mixer_handle, md) >= 0)
+                    found = TRUE;
+
+            pa_xfree(md);
+        }
+
+        if (found)
+            if (!(u->mixer_elem = pa_alsa_find_elem(u->mixer_handle, "Capture", "Mic")))
+                found = FALSE;
+
+        if (!found) {
             snd_mixer_close(u->mixer_handle);
             u->mixer_handle = NULL;
         }
@@ -826,7 +834,7 @@ int pa__init(pa_module*m) {
     if ((name = pa_modargs_get_value(ma, "source_name", NULL)))
         namereg_fail = 1;
     else {
-        name = name_buf = pa_sprintf_malloc("alsa_input.%s", dev);
+        name = name_buf = pa_sprintf_malloc("alsa_input.%s", u->device_name);
         namereg_fail = 0;
     }
 
@@ -846,12 +854,12 @@ int pa__init(pa_module*m) {
     pa_source_set_rtpoll(u->source, u->rtpoll);
     pa_source_set_description(u->source, t = pa_sprintf_malloc(
                                       "ALSA PCM on %s (%s)%s",
-                                      dev,
+                                      u->device_name,
                                       snd_pcm_info_get_name(pcm_info),
                                       use_mmap ? " via DMA" : ""));
     pa_xfree(t);
 
-    u->source->flags = PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY|PA_SOURCE_HW_VOLUME_CTRL;
+    u->source->flags = PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY;
 
     u->frame_size = frame_size;
     u->fragment_size = frag_size = period_size * frame_size;
@@ -863,30 +871,24 @@ int pa__init(pa_module*m) {
     if (u->mixer_handle) {
         pa_assert(u->mixer_elem);
 
-        if (snd_mixer_selem_has_capture_volume(u->mixer_elem)) {
-            int i;
-
-            for (i = 0;i < ss.channels;i++) {
-                if (!snd_mixer_selem_has_capture_channel(u->mixer_elem, i))
-                    break;
-            }
-
-            if (i == ss.channels) {
+        if (snd_mixer_selem_has_capture_volume(u->mixer_elem))
+            if (pa_alsa_calc_mixer_map(u->mixer_elem, &map, u->mixer_map, FALSE) >= 0) {
                 u->source->get_volume = source_get_volume_cb;
                 u->source->set_volume = source_set_volume_cb;
                 snd_mixer_selem_get_capture_volume_range(u->mixer_elem, &u->hw_volume_min, &u->hw_volume_max);
+                u->source->flags |= PA_SOURCE_HW_VOLUME_CTRL;
             }
-        }
 
         if (snd_mixer_selem_has_capture_switch(u->mixer_elem)) {
             u->source->get_mute = source_get_mute_cb;
             u->source->set_mute = source_set_mute_cb;
+            u->source->flags |= PA_SOURCE_HW_VOLUME_CTRL;
         }
 
         u->mixer_fdl = pa_alsa_fdlist_new();
 
         if (pa_alsa_fdlist_set_mixer(u->mixer_fdl, u->mixer_handle, m->core->mainloop) < 0) {
-            pa_log("failed to initialise file descriptor monitoring");
+            pa_log("Failed to initialize file descriptor monitoring");
             goto fail;
         }
 

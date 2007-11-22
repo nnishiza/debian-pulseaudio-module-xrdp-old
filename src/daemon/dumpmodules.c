@@ -1,4 +1,4 @@
-/* $Id: dumpmodules.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: dumpmodules.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -71,6 +71,7 @@ static void long_info(const char *name, const char *path, pa_modinfo *i) {
             printf("Author: %s\n", i->author);
         if (i->usage)
             printf("Usage: %s\n", i->usage);
+        printf("Load Once: %s\n", pa_yes_no(i->load_once));
     }
 
     if (path)

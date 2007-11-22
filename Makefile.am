@@ -1,4 +1,4 @@
-# $Id: Makefile.am 2001 2007-10-30 15:23:56Z lennart $
+# $Id: Makefile.am 2023 2007-11-05 15:10:13Z lennart $
 #
 # This file is part of PulseAudio.
 #
@@ -18,7 +18,7 @@
 # USA.
 
 EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
-SUBDIRS=src doxygen
+SUBDIRS=src doxygen man
 
 MAINTAINERCLEANFILES =
 noinst_DATA =

@@ -1,7 +1,7 @@
 #ifndef foomodinfohfoo
 #define foomodinfohfoo
 
-/* $Id: modinfo.h 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: modinfo.h 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -25,12 +25,14 @@
 ***/
 
 /* Some functions for reading module meta data from PulseAudio modules */
+#include <pulsecore/macro.h>
 
 typedef struct pa_modinfo {
     char *author;
     char *description;
     char *usage;
     char *version;
+    pa_bool_t load_once;
 } pa_modinfo;
 
 /* Read meta data from an libtool handle */

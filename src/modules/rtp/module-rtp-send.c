@@ -1,4 +1,4 @@
-/* $Id: module-rtp-send.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-rtp-send.c 2050 2007-11-13 17:37:44Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -57,9 +57,10 @@
 #include "sdp.h"
 #include "sap.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Read data from source and send it to the network via RTP/SAP/SDP")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Read data from source and send it to the network via RTP/SAP/SDP");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "source=<name of the source> "
         "format=<sample format> "
@@ -69,7 +70,7 @@ PA_MODULE_USAGE(
         "port=<port number> "
         "mtu=<maximum transfer unit> "
         "loop=<loopback to local host?>"
-)
+);
 
 #define DEFAULT_PORT 46000
 #define SAP_PORT 9875
@@ -178,11 +179,11 @@ int pa__init(pa_module*m) {
     pa_source_output *o = NULL;
     uint8_t payload;
     char *p;
-    int r;
+    int r, j;
     socklen_t k;
     struct timeval tv;
     char hn[128], *n;
-    int loop = 0;
+    pa_bool_t loop = FALSE;
     pa_source_output_new_data data;
 
     pa_assert(m);
@@ -273,8 +274,9 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) < 0 ||
-        setsockopt(sap_fd, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop)) < 0) {
+    j = !!loop;
+    if (setsockopt(fd, IPPROTO_IP, IP_MULTICAST_LOOP, &j, sizeof(j)) < 0 ||
+        setsockopt(sap_fd, IPPROTO_IP, IP_MULTICAST_LOOP, &j, sizeof(j)) < 0) {
         pa_log("IP_MULTICAST_LOOP failed: %s", pa_cstrerror(errno));
         goto fail;
     }

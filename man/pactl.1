@@ -1,0 +1,92 @@
+.TH pactl 1 User Manuals
+.SH NAME
+pactl \- Control a running PulseAudio sound server
+.SH SYNOPSIS
+\fBpactl [\fIoptions\fB] stat
+
+pactl [\fIoptions\fB] list
+
+pactl [\fIoptions\fB] exit
+
+pactl [\fIoptions\fB] upload-sample \fIFILENAME\fB [\fINAME\fB]
+
+pactl [\fIoptions\fB] play-sample \fINAME\fB [\fISINK\fB]
+
+pactl [\fIoptions\fB] remove-sample \fINAME\fB
+
+pactl [\fIoptions\fB] move-sink-input \fIID\fB \fISINK\fB
+
+pactl [\fIoptions\fB] move-source-input \fIID\fB \fISOURCE\fB
+
+pactl [\fIoptions\fB] load-module \fINAME\fB [\fIARGUMENTS ...\fB]
+
+pactl [\fIoptions\fB] unload-module \fIID\fB
+
+pactl [\fIoptions\fB] suspend-sink [\fISINK\fB] \fI1|0\fB
+
+pactl [\fIoptions\fB] suspend-source [\fISOURCE\fB] \fI1|0\fB
+
+pactl --help\fB
+
+pactl --version\fB
+\f1
+.SH DESCRIPTION
+\fIpactl\f1 can be used to issue control commands to the PulseAudio sound server.
+
+\fIpactl\f1 only exposes a subset of the available operations. For the full set use the \fBpacmd(1)\f1.
+.SH OPTIONS
+.TP
+\fB-h | --help\f1
+Show help.
+.TP
+\fB--version\f1
+Show version information.
+.TP
+\fB-s | --server\f1\fI=SERVER\f1
+Choose the server to connect to.
+.TP
+\fB-n | --client-name\f1\fI=NAME\f1
+Specify the client name \fIpactl\f1 shall pass to the server when connecting.
+.TP
+\fBstat\f1
+Dump a few statistics about the PulseAudio daemon.
+.TP
+\fBlist\f1
+Dump all currently loaded modules, available sinks, sources, streams and clients.
+.TP
+\fBexit\f1
+Asks the PulseAudio server to terminate.
+.TP
+\fBupload-sample\f1 \fIFILENAME\f1 [\fINAME\f1]
+Upload a sound from the specified audio file into the sample cache. The file types supported are those understood by \fIlibsndfile\f1. The sample in the cache is named after the audio file, unless the name is explicitly specified.
+.TP
+\fBplay-sample\f1 \fINAME\f1 [\fISINK\f1]
+Play the specified sample from the sample cache. It is played on the default sink, unless the symbolic name or the numerical index of the sink to play it on is specified.
+.TP
+\fBremove-sample\f1 \fINAME\f1
+Remove the specified sample from the sample cache.
+.TP
+\fBmove-sink-input\f1 \fIID\f1 \fISINK\f1
+Move the specified playback stream (identified by its numerical index) to the specified sink (identified by its symbolic name or numerical index).
+.TP
+\fBmove-source-output\f1 \fIID\f1 \fISOURCE\f1
+Move the specified recording stream (identified by its numerical index) to the specified source (identified by its symbolic name or numerical index).
+.TP
+\fBload-module\f1 \fINAME\f1 [\fIARGUMENTS ...\f1]
+Load the specified module with the specified arguments into the running sound server. Prints the numeric index of the module just loaded to STDOUT. You can use it to unload the module later.
+.TP
+\fBunload-module\f1 \fIID\f1
+Unload the module instance identified by the specified numeric index.
+.TP
+\fBunload-module\f1 \fIID\f1
+Unload the module instance identified by the specified numeric index.
+.TP
+\fBsuspend-sink\f1 \fISINK\f1 \fI1|0\f1
+Suspend or resume the specified sink (which my be specified either by its symbolic name, or by its numeric index), depending whether 1 (suspend) or 0 (resume) is passed as last argument. Suspending a sink will pause all playback. Depending on the module implementing the sink this might have the effect that the underlying device is closed, making it available for other applications to use. The exact behaviour depends on the module.
+.TP
+\fBsuspend-source\f1 \fISOURCE\f1 \fI1|0\f1
+Suspend or resume the specified source (which my be specified either by its symbolic name, or by its numeric index), depending whether 1 (suspend) or 0 (resume) is passed as last argument. Suspending a source will pause all capturing. Depending on the module implementing the source this might have the effect that the underlying device is closed, making it available for other applications to use. The exact behaviour depends on the module.
+.SH AUTHORS
+The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
+.SH SEE ALSO
+\fBpulseaudio(1)\f1, \fBpacmd(1)\f1

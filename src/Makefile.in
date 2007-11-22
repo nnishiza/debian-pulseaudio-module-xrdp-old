@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 1983 2007-10-29 20:03:49Z lennart $
+# $Id: Makefile.am 2061 2007-11-16 23:47:28Z lennart $
 #
 # This file is part of PulseAudio.
 #
@@ -71,9 +71,12 @@ host_triplet = @host@
 bin_PROGRAMS = pulseaudio$(EXEEXT) pacat$(EXEEXT) pactl$(EXEEXT) \
 	paplay$(EXEEXT) pasuspender$(EXEEXT) $(am__EXEEXT_1) \
 	$(am__EXEEXT_2) $(am__EXEEXT_3)
-@HAVE_AF_UNIX_TRUE@am__append_2 = pacmd
-@HAVE_X11_TRUE@am__append_3 = pax11publish
-@HAVE_AVAHI_TRUE@am__append_4 = pabrowse
+@HAVE_POLKIT_TRUE@am__append_2 = daemon/polkit.c daemon/polkit.h
+@HAVE_POLKIT_TRUE@am__append_3 = $(POLKIT_CFLAGS)
+@HAVE_POLKIT_TRUE@am__append_4 = $(POLKIT_LIBS)
+@HAVE_AF_UNIX_TRUE@am__append_5 = pacmd
+@HAVE_X11_TRUE@am__append_6 = pax11publish
+@HAVE_AVAHI_TRUE@am__append_7 = pabrowse
 noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	pacat-simple$(EXEEXT) parec-simple$(EXEEXT) \
 	strlist-test$(EXEEXT) voltest$(EXEEXT) memblockq-test$(EXEEXT) \
@@ -85,137 +88,147 @@ noinst_PROGRAMS = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	flist-test$(EXEEXT) asyncq-test$(EXEEXT) \
 	asyncmsgq-test$(EXEEXT) queue-test$(EXEEXT) \
 	rtpoll-test$(EXEEXT) sig2str-test$(EXEEXT) \
-	resampler-test$(EXEEXT) smoother-test$(EXEEXT) $(am__EXEEXT_4) \
+	resampler-test$(EXEEXT) smoother-test$(EXEEXT) \
+	mix-test$(EXEEXT) remix-test$(EXEEXT) $(am__EXEEXT_4) \
 	$(am__EXEEXT_5)
-@HAVE_SIGXCPU_TRUE@am__append_5 = \
+@HAVE_SIGXCPU_TRUE@am__append_8 = \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test \
 @HAVE_SIGXCPU_TRUE@		cpulimit-test2
 
-@HAVE_GLIB20_TRUE@am__append_6 = \
+@HAVE_GLIB20_TRUE@am__append_9 = \
 @HAVE_GLIB20_TRUE@		mainloop-test-glib
 
-@HAVE_AVAHI_TRUE@am__append_7 = \
+@HAVE_AVAHI_TRUE@am__append_10 = \
 @HAVE_AVAHI_TRUE@		pulse/browser.h
 
-@HAVE_GLIB20_TRUE@am__append_8 = \
+@HAVE_GLIB20_TRUE@am__append_11 = \
 @HAVE_GLIB20_TRUE@		pulse/glib-mainloop.h
 
-@HAVE_AVAHI_TRUE@am__append_9 = \
+@HAVE_AVAHI_TRUE@am__append_12 = \
 @HAVE_AVAHI_TRUE@		libpulse-browse.la
 
-@HAVE_GLIB20_TRUE@am__append_10 = \
+@HAVE_GLIB20_TRUE@am__append_13 = \
 @HAVE_GLIB20_TRUE@		libpulse-mainloop-glib.la
 
-@OS_IS_WIN32_TRUE@am__append_11 = \
+@OS_IS_WIN32_TRUE@am__append_14 = \
 @OS_IS_WIN32_TRUE@		pulsecore/dllmain.c
 
-@HAVE_X11_TRUE@am__append_12 = \
+@HAVE_X11_TRUE@am__append_15 = \
 @HAVE_X11_TRUE@		pulse/client-conf-x11.c pulse/client-conf-x11.h \
 @HAVE_X11_TRUE@		pulsecore/x11prop.c pulsecore/x11prop.h
 
-@HAVE_X11_TRUE@am__append_13 = $(X_CFLAGS)
-@HAVE_X11_TRUE@am__append_14 = $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
-@HAVE_LIBASYNCNS_TRUE@am__append_15 = $(LIBASYNCNS_CFLAGS)
-@HAVE_LIBASYNCNS_TRUE@am__append_16 = $(LIBASYNCNS_LIBS)
+@HAVE_X11_TRUE@am__append_16 = $(X_CFLAGS)
+@HAVE_X11_TRUE@am__append_17 = $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
+@HAVE_LIBASYNCNS_TRUE@am__append_18 = $(LIBASYNCNS_CFLAGS)
+@HAVE_LIBASYNCNS_TRUE@am__append_19 = $(LIBASYNCNS_LIBS)
 
 ###################################
 #         OSS emulation           #
 ###################################
-@HAVE_OSS_TRUE@am__append_17 = libpulsedsp.la
-@HAVE_OSS_TRUE@am__append_18 = utils/padsp
-@OS_IS_WIN32_TRUE@am__append_19 = \
+@HAVE_OSS_TRUE@am__append_20 = libpulsedsp.la
+@HAVE_OSS_TRUE@am__append_21 = utils/padsp
+@OS_IS_WIN32_TRUE@am__append_22 = \
 @OS_IS_WIN32_TRUE@		pulsecore/dllmain.c
 
 
 # We need to emulate sendmsg/recvmsg to support this on Win32
-@OS_IS_WIN32_FALSE@am__append_20 = \
+@OS_IS_WIN32_FALSE@am__append_23 = \
 @OS_IS_WIN32_FALSE@		librtp.la
 
 
 #pulsecoreinclude_HEADERS +=
-@HAVE_X11_TRUE@am__append_21 = \
+@HAVE_X11_TRUE@am__append_24 = \
 @HAVE_X11_TRUE@		pulsecore/x11wrap.h \
 @HAVE_X11_TRUE@		pulsecore/x11prop.h
 
-@HAVE_X11_TRUE@am__append_22 = \
+@HAVE_X11_TRUE@am__append_25 = \
 @HAVE_X11_TRUE@		libx11wrap.la \
 @HAVE_X11_TRUE@		libx11prop.la
 
 
 #pulsecoreinclude_HEADERS +=
-@HAVE_AVAHI_TRUE@am__append_23 = \
+@HAVE_AVAHI_TRUE@am__append_26 = \
 @HAVE_AVAHI_TRUE@		pulsecore/avahi-wrap.h
 
-@HAVE_AVAHI_TRUE@am__append_24 = \
+@HAVE_AVAHI_TRUE@am__append_27 = \
 @HAVE_AVAHI_TRUE@		libavahi-wrap.la
 
 
 # See comment at librtp.la above
-@OS_IS_WIN32_FALSE@am__append_25 = \
+@OS_IS_WIN32_FALSE@am__append_28 = \
 @OS_IS_WIN32_FALSE@		module-rtp-send.la \
 @OS_IS_WIN32_FALSE@		module-rtp-recv.la
 
-@HAVE_AF_UNIX_TRUE@am__append_26 = \
+@HAVE_AF_UNIX_TRUE@am__append_29 = \
 @HAVE_AF_UNIX_TRUE@		module-cli-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-simple-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-http-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-native-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-esound-protocol-unix.la
 
-@HAVE_MKFIFO_TRUE@am__append_27 = \
+@HAVE_MKFIFO_TRUE@am__append_30 = \
 @HAVE_MKFIFO_TRUE@		module-pipe-sink.la \
 @HAVE_MKFIFO_TRUE@		module-pipe-source.la
 
-@OS_IS_WIN32_FALSE@am__append_28 = \
+@OS_IS_WIN32_FALSE@am__append_31 = \
 @OS_IS_WIN32_FALSE@		module-esound-compat-spawnfd.la \
 @OS_IS_WIN32_FALSE@		module-esound-compat-spawnpid.la
 
-@HAVE_REGEX_TRUE@am__append_29 = \
+@HAVE_REGEX_TRUE@am__append_32 = \
 @HAVE_REGEX_TRUE@		module-match.la
 
-@HAVE_X11_TRUE@am__append_30 = \
+@HAVE_X11_TRUE@am__append_33 = \
 @HAVE_X11_TRUE@		module-x11-bell.la \
 @HAVE_X11_TRUE@		module-x11-publish.la \
 @HAVE_X11_TRUE@		module-x11-xsmp.la
 
-@HAVE_OSS_TRUE@am__append_31 = \
+@HAVE_OSS_TRUE@am__append_34 = \
 @HAVE_OSS_TRUE@		liboss-util.la \
 @HAVE_OSS_TRUE@		module-oss.la
 
-@HAVE_ALSA_TRUE@am__append_32 = \
+@HAVE_ALSA_TRUE@am__append_35 = \
 @HAVE_ALSA_TRUE@		libalsa-util.la \
 @HAVE_ALSA_TRUE@		module-alsa-sink.la \
 @HAVE_ALSA_TRUE@		module-alsa-source.la
 
-@HAVE_SOLARIS_TRUE@am__append_33 = \
+@HAVE_SOLARIS_TRUE@am__append_36 = \
 @HAVE_SOLARIS_TRUE@		module-solaris.la
 
-@HAVE_AVAHI_TRUE@am__append_34 = \
+@HAVE_AVAHI_TRUE@am__append_37 = \
 @HAVE_AVAHI_TRUE@		module-zeroconf-publish.la \
 @HAVE_AVAHI_TRUE@		module-zeroconf-discover.la
 
-@HAVE_LIRC_TRUE@am__append_35 = \
+@HAVE_LIRC_TRUE@am__append_38 = \
 @HAVE_LIRC_TRUE@		module-lirc.la
 
-@HAVE_EVDEV_TRUE@am__append_36 = \
+@HAVE_EVDEV_TRUE@am__append_39 = \
 @HAVE_EVDEV_TRUE@		module-mmkbd-evdev.la
 
-@HAVE_JACK_TRUE@am__append_37 = \
+@HAVE_JACK_TRUE@am__append_40 = \
 @HAVE_JACK_TRUE@		module-jack-sink.la \
 @HAVE_JACK_TRUE@		module-jack-source.la
 
-@HAVE_GCONF_TRUE@am__append_38 = \
+pulselibexec_PROGRAMS = $(am__EXEEXT_6) $(am__EXEEXT_7)
+@HAVE_GCONF_TRUE@am__append_41 = \
 @HAVE_GCONF_TRUE@		module-gconf.la
 
-@HAVE_GCONF_TRUE@pulselibexec_PROGRAMS = gconf-helper$(EXEEXT)
+@HAVE_GCONF_TRUE@am__append_42 = \
+@HAVE_GCONF_TRUE@		gconf-helper
+
 
 #if OS_IS_WIN32
 #modlibexec_LTLIBRARIES += \
 #		module-waveout.la
 #endif
-@HAVE_HAL_TRUE@am__append_39 = \
+@HAVE_HAL_TRUE@am__append_43 = \
 @HAVE_HAL_TRUE@		libdbus-util.la \
 @HAVE_HAL_TRUE@		module-hal-detect.la
+
+@HAVE_BLUEZ_TRUE@am__append_44 = \
+@HAVE_BLUEZ_TRUE@		module-bt-proximity.la
+
+@HAVE_BLUEZ_TRUE@am__append_45 = \
+@HAVE_BLUEZ_TRUE@		bt-proximity-helper
 
 subdir = src
 DIST_COMMON = $(am__noinst_HEADERS_DIST) \
@@ -237,8 +250,9 @@ am__vpath_adj = case $$p in \
 am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
 am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" \
 	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" \
-	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulseconfdir)" \
-	"$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"
+	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(policydir)" \
+	"$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(xdgautostartdir)" \
+	"$(DESTDIR)$(pulseincludedir)"
 libLTLIBRARIES_INSTALL = $(INSTALL)
 modlibexecLTLIBRARIES_INSTALL = $(INSTALL)
 LTLIBRARIES = $(lib_LTLIBRARIES) $(modlibexec_LTLIBRARIES) \
@@ -336,8 +350,27 @@ am_libpstream_la_OBJECTS = pstream.lo
 libpstream_la_OBJECTS = $(am_libpstream_la_OBJECTS)
 libpulse_browse_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 	$(am__DEPENDENCIES_1)
+am__libpulse_browse_la_SOURCES_DIST = pulse/browser.c pulse/browser.h \
+	pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h \
+	pulsecore/core-util.c pulsecore/core-util.h \
+	pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c \
+	pulsecore/log.h pulsecore/once.c pulsecore/once.h \
+	pulsecore/mutex-posix.c pulsecore/mutex.h \
+	pulsecore/thread-posix.c pulsecore/thread.h \
+	pulsecore/semaphore-posix.c pulsecore/semaphore.h \
+	pulsecore/mutex-win32.c pulsecore/thread-win32.c \
+	pulsecore/semaphore-win32.c
+@OS_IS_WIN32_FALSE@am__objects_1 = libpulse_browse_la-mutex-posix.lo \
+@OS_IS_WIN32_FALSE@	libpulse_browse_la-thread-posix.lo \
+@OS_IS_WIN32_FALSE@	libpulse_browse_la-semaphore-posix.lo
+@OS_IS_WIN32_TRUE@am__objects_1 = libpulse_browse_la-mutex-win32.lo \
+@OS_IS_WIN32_TRUE@	libpulse_browse_la-thread-win32.lo \
+@OS_IS_WIN32_TRUE@	libpulse_browse_la-semaphore-win32.lo
 am_libpulse_browse_la_OBJECTS = libpulse_browse_la-browser.lo \
-	libpulse_browse_la-avahi-wrap.lo
+	libpulse_browse_la-avahi-wrap.lo \
+	libpulse_browse_la-core-util.lo \
+	libpulse_browse_la-core-error.lo libpulse_browse_la-log.lo \
+	libpulse_browse_la-once.lo $(am__objects_1)
 libpulse_browse_la_OBJECTS = $(am_libpulse_browse_la_OBJECTS)
 @HAVE_AVAHI_TRUE@am_libpulse_browse_la_rpath = -rpath $(libdir)
 libpulse_mainloop_glib_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
@@ -402,14 +435,14 @@ am__libpulse_la_SOURCES_DIST = pulse/cdecl.h pulse/channelmap.c \
 	pulsecore/semaphore-win32.c pulsecore/dllmain.c \
 	pulse/client-conf-x11.c pulse/client-conf-x11.h \
 	pulsecore/x11prop.c pulsecore/x11prop.h
-@OS_IS_WIN32_FALSE@am__objects_1 = libpulse_la-mutex-posix.lo \
+@OS_IS_WIN32_FALSE@am__objects_2 = libpulse_la-mutex-posix.lo \
 @OS_IS_WIN32_FALSE@	libpulse_la-thread-posix.lo \
 @OS_IS_WIN32_FALSE@	libpulse_la-semaphore-posix.lo
-@OS_IS_WIN32_TRUE@am__objects_1 = libpulse_la-mutex-win32.lo \
+@OS_IS_WIN32_TRUE@am__objects_2 = libpulse_la-mutex-win32.lo \
 @OS_IS_WIN32_TRUE@	libpulse_la-thread-win32.lo \
 @OS_IS_WIN32_TRUE@	libpulse_la-semaphore-win32.lo
-@OS_IS_WIN32_TRUE@am__objects_2 = libpulse_la-dllmain.lo
-@HAVE_X11_TRUE@am__objects_3 = libpulse_la-client-conf-x11.lo \
+@OS_IS_WIN32_TRUE@am__objects_3 = libpulse_la-dllmain.lo
+@HAVE_X11_TRUE@am__objects_4 = libpulse_la-client-conf-x11.lo \
 @HAVE_X11_TRUE@	libpulse_la-x11prop.lo
 am_libpulse_la_OBJECTS = libpulse_la-channelmap.lo \
 	libpulse_la-client-conf.lo libpulse_la-context.lo \
@@ -436,8 +469,8 @@ am_libpulse_la_OBJECTS = libpulse_la-channelmap.lo \
 	libpulse_la-strlist.lo libpulse_la-tagstruct.lo \
 	libpulse_la-core-error.lo libpulse_la-shm.lo \
 	libpulse_la-flist.lo libpulse_la-object.lo \
-	libpulse_la-msgobject.lo libpulse_la-once.lo $(am__objects_1) \
-	$(am__objects_2) $(am__objects_3)
+	libpulse_la-msgobject.lo libpulse_la-once.lo $(am__objects_2) \
+	$(am__objects_3) $(am__objects_4)
 libpulse_la_OBJECTS = $(am_libpulse_la_OBJECTS)
 libpulsecore_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
@@ -500,18 +533,19 @@ am__libpulsecore_la_SOURCES_DIST = pulse/channelmap.c \
 	pulsecore/rtsig.h pulsecore/rtpoll.c pulsecore/rtpoll.h \
 	pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/macro.h \
 	pulsecore/once.c pulsecore/once.h pulsecore/time-smoother.c \
-	pulsecore/time-smoother.h pulsecore/mutex-posix.c \
+	pulsecore/time-smoother.h pulsecore/start-child.c \
+	pulsecore/start-child.h pulsecore/mutex-posix.c \
 	pulsecore/mutex.h pulsecore/thread-posix.c pulsecore/thread.h \
 	pulsecore/semaphore-posix.c pulsecore/semaphore.h \
 	pulsecore/mutex-win32.c pulsecore/thread-win32.c \
 	pulsecore/semaphore-win32.c pulsecore/dllmain.c
-@OS_IS_WIN32_FALSE@am__objects_4 = libpulsecore_la-mutex-posix.lo \
+@OS_IS_WIN32_FALSE@am__objects_5 = libpulsecore_la-mutex-posix.lo \
 @OS_IS_WIN32_FALSE@	libpulsecore_la-thread-posix.lo \
 @OS_IS_WIN32_FALSE@	libpulsecore_la-semaphore-posix.lo
-@OS_IS_WIN32_TRUE@am__objects_4 = libpulsecore_la-mutex-win32.lo \
+@OS_IS_WIN32_TRUE@am__objects_5 = libpulsecore_la-mutex-win32.lo \
 @OS_IS_WIN32_TRUE@	libpulsecore_la-thread-win32.lo \
 @OS_IS_WIN32_TRUE@	libpulsecore_la-semaphore-win32.lo
-@OS_IS_WIN32_TRUE@am__objects_5 = libpulsecore_la-dllmain.lo
+@OS_IS_WIN32_TRUE@am__objects_6 = libpulsecore_la-dllmain.lo
 am_libpulsecore_la_OBJECTS = libpulsecore_la-channelmap.lo \
 	libpulsecore_la-error.lo libpulsecore_la-mainloop.lo \
 	libpulsecore_la-mainloop-api.lo \
@@ -549,7 +583,8 @@ am_libpulsecore_la_OBJECTS = libpulsecore_la-channelmap.lo \
 	libpulsecore_la-msgobject.lo libpulsecore_la-rtsig.lo \
 	libpulsecore_la-rtpoll.lo libpulsecore_la-rtclock.lo \
 	libpulsecore_la-once.lo libpulsecore_la-time-smoother.lo \
-	$(am__objects_4) $(am__objects_5)
+	libpulsecore_la-start-child.lo $(am__objects_5) \
+	$(am__objects_6)
 libpulsecore_la_OBJECTS = $(am_libpulsecore_la_OBJECTS)
 libpulsedsp_la_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la
 am_libpulsedsp_la_OBJECTS = libpulsedsp_la-padsp.lo
@@ -616,6 +651,13 @@ am_module_alsa_source_la_OBJECTS =  \
 module_alsa_source_la_OBJECTS = $(am_module_alsa_source_la_OBJECTS)
 @HAVE_ALSA_TRUE@am_module_alsa_source_la_rpath = -rpath \
 @HAVE_ALSA_TRUE@	$(modlibexecdir)
+module_bt_proximity_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) libpulsecore.la libdbus-util.la
+am_module_bt_proximity_la_OBJECTS =  \
+	module_bt_proximity_la-module-bt-proximity.lo
+module_bt_proximity_la_OBJECTS = $(am_module_bt_proximity_la_OBJECTS)
+@HAVE_BLUEZ_TRUE@am_module_bt_proximity_la_rpath = -rpath \
+@HAVE_BLUEZ_TRUE@	$(modlibexecdir)
 module_cli_protocol_tcp_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	libpulsecore.la libprotocol-cli.la libsocket-server.la
 am_module_cli_protocol_tcp_la_OBJECTS =  \
@@ -902,6 +944,8 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 @HAVE_SIGXCPU_TRUE@am__EXEEXT_4 = cpulimit-test$(EXEEXT) \
 @HAVE_SIGXCPU_TRUE@	cpulimit-test2$(EXEEXT)
 @HAVE_GLIB20_TRUE@am__EXEEXT_5 = mainloop-test-glib$(EXEEXT)
+@HAVE_GCONF_TRUE@am__EXEEXT_6 = gconf-helper$(EXEEXT)
+@HAVE_BLUEZ_TRUE@am__EXEEXT_7 = bt-proximity-helper$(EXEEXT)
 pulselibexecPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS) $(pulselibexec_PROGRAMS)
 am_asyncmsgq_test_OBJECTS = asyncmsgq_test-asyncmsgq-test.$(OBJEXT)
@@ -910,6 +954,11 @@ asyncmsgq_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
 am_asyncq_test_OBJECTS = asyncq_test-asyncq-test.$(OBJEXT)
 asyncq_test_OBJECTS = $(am_asyncq_test_OBJECTS)
 asyncq_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
+am_bt_proximity_helper_OBJECTS =  \
+	bt_proximity_helper-bt-proximity-helper.$(OBJEXT)
+bt_proximity_helper_OBJECTS = $(am_bt_proximity_helper_OBJECTS)
+bt_proximity_helper_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1)
 am_channelmap_test_OBJECTS =  \
 	channelmap_test-channelmap-test.$(OBJEXT)
 channelmap_test_OBJECTS = $(am_channelmap_test_OBJECTS)
@@ -938,7 +987,8 @@ hook_list_test_OBJECTS = $(am_hook_list_test_OBJECTS)
 hook_list_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
 am_interpol_test_OBJECTS = interpol_test-interpol-test.$(OBJEXT)
 interpol_test_OBJECTS = $(am_interpol_test_OBJECTS)
-interpol_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la
+interpol_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
+	libpulsecore.la
 am_ipacl_test_OBJECTS = ipacl_test-ipacl-test.$(OBJEXT) \
 	ipacl_test-ipacl.$(OBJEXT) ipacl_test-inet_pton.$(OBJEXT)
 ipacl_test_OBJECTS = $(am_ipacl_test_OBJECTS)
@@ -946,8 +996,8 @@ ipacl_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
 am_mainloop_test_OBJECTS = mainloop_test-mainloop-test.$(OBJEXT)
 mainloop_test_OBJECTS = $(am_mainloop_test_OBJECTS)
 mainloop_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la
-am__objects_6 = mainloop_test_glib-mainloop-test.$(OBJEXT)
-am_mainloop_test_glib_OBJECTS = $(am__objects_6)
+am__objects_7 = mainloop_test_glib-mainloop-test.$(OBJEXT)
+am_mainloop_test_glib_OBJECTS = $(am__objects_7)
 mainloop_test_glib_OBJECTS = $(am_mainloop_test_glib_OBJECTS)
 am__DEPENDENCIES_4 = $(am__DEPENDENCIES_2) libpulse.la
 mainloop_test_glib_DEPENDENCIES = $(am__DEPENDENCIES_4) \
@@ -963,6 +1013,9 @@ am_memblockq_test_OBJECTS = memblockq_test-memblockq-test.$(OBJEXT)
 memblockq_test_OBJECTS = $(am_memblockq_test_OBJECTS)
 memblockq_test_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1) libpulsecore.la
+am_mix_test_OBJECTS = mix_test-mix-test.$(OBJEXT)
+mix_test_OBJECTS = $(am_mix_test_OBJECTS)
+mix_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
 am_pabrowse_OBJECTS = pabrowse-pabrowse.$(OBJEXT)
 pabrowse_OBJECTS = $(am_pabrowse_OBJECTS)
 pabrowse_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
@@ -974,10 +1027,43 @@ am_pacat_simple_OBJECTS = pacat_simple-pacat-simple.$(OBJEXT)
 pacat_simple_OBJECTS = $(am_pacat_simple_OBJECTS)
 pacat_simple_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 	libpulse-simple.la
-am_pacmd_OBJECTS = pacmd-pacmd.$(OBJEXT) pacmd-pid.$(OBJEXT)
+am__pacmd_SOURCES_DIST = utils/pacmd.c pulsecore/pid.c pulsecore/pid.h \
+	pulsecore/core-util.c pulsecore/core-util.h \
+	pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c \
+	pulsecore/log.h pulsecore/once.c pulsecore/once.h \
+	pulsecore/mutex-posix.c pulsecore/mutex.h \
+	pulsecore/thread-posix.c pulsecore/thread.h \
+	pulsecore/semaphore-posix.c pulsecore/semaphore.h \
+	pulsecore/mutex-win32.c pulsecore/thread-win32.c \
+	pulsecore/semaphore-win32.c
+@OS_IS_WIN32_FALSE@am__objects_8 = pacmd-mutex-posix.$(OBJEXT) \
+@OS_IS_WIN32_FALSE@	pacmd-thread-posix.$(OBJEXT) \
+@OS_IS_WIN32_FALSE@	pacmd-semaphore-posix.$(OBJEXT)
+@OS_IS_WIN32_TRUE@am__objects_8 = pacmd-mutex-win32.$(OBJEXT) \
+@OS_IS_WIN32_TRUE@	pacmd-thread-win32.$(OBJEXT) \
+@OS_IS_WIN32_TRUE@	pacmd-semaphore-win32.$(OBJEXT)
+am_pacmd_OBJECTS = pacmd-pacmd.$(OBJEXT) pacmd-pid.$(OBJEXT) \
+	pacmd-core-util.$(OBJEXT) pacmd-core-error.$(OBJEXT) \
+	pacmd-log.$(OBJEXT) pacmd-once.$(OBJEXT) $(am__objects_8)
 pacmd_OBJECTS = $(am_pacmd_OBJECTS)
 pacmd_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la
-am_pactl_OBJECTS = pactl-pactl.$(OBJEXT)
+am__pactl_SOURCES_DIST = utils/pactl.c pulsecore/core-util.c \
+	pulsecore/core-util.h pulsecore/core-error.c \
+	pulsecore/core-error.h pulsecore/log.c pulsecore/log.h \
+	pulsecore/once.c pulsecore/once.h pulsecore/mutex-posix.c \
+	pulsecore/mutex.h pulsecore/thread-posix.c pulsecore/thread.h \
+	pulsecore/semaphore-posix.c pulsecore/semaphore.h \
+	pulsecore/mutex-win32.c pulsecore/thread-win32.c \
+	pulsecore/semaphore-win32.c
+@OS_IS_WIN32_FALSE@am__objects_9 = pactl-mutex-posix.$(OBJEXT) \
+@OS_IS_WIN32_FALSE@	pactl-thread-posix.$(OBJEXT) \
+@OS_IS_WIN32_FALSE@	pactl-semaphore-posix.$(OBJEXT)
+@OS_IS_WIN32_TRUE@am__objects_9 = pactl-mutex-win32.$(OBJEXT) \
+@OS_IS_WIN32_TRUE@	pactl-thread-win32.$(OBJEXT) \
+@OS_IS_WIN32_TRUE@	pactl-semaphore-win32.$(OBJEXT)
+am_pactl_OBJECTS = pactl-pactl.$(OBJEXT) pactl-core-util.$(OBJEXT) \
+	pactl-core-error.$(OBJEXT) pactl-log.$(OBJEXT) \
+	pactl-once.$(OBJEXT) $(am__objects_9)
 pactl_OBJECTS = $(am_pactl_OBJECTS)
 pactl_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 	$(am__DEPENDENCIES_1)
@@ -993,20 +1079,58 @@ am_pasuspender_OBJECTS = pasuspender-pasuspender.$(OBJEXT)
 pasuspender_OBJECTS = $(am_pasuspender_OBJECTS)
 pasuspender_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 	$(am__DEPENDENCIES_1)
-am_pax11publish_OBJECTS = pax11publish-pax11publish.$(OBJEXT)
+am__pax11publish_SOURCES_DIST = utils/pax11publish.c \
+	pulsecore/x11prop.c pulsecore/x11prop.h pulse/client-conf.c \
+	pulse/client-conf.h pulsecore/authkey.h pulsecore/authkey.c \
+	pulsecore/random.h pulsecore/random.c pulsecore/conf-parser.c \
+	pulsecore/conf-parser.h pulsecore/core-util.c \
+	pulsecore/core-util.h pulsecore/core-error.c \
+	pulsecore/core-error.h pulsecore/log.c pulsecore/log.h \
+	pulsecore/once.c pulsecore/once.h pulsecore/mutex-posix.c \
+	pulsecore/mutex.h pulsecore/thread-posix.c pulsecore/thread.h \
+	pulsecore/semaphore-posix.c pulsecore/semaphore.h \
+	pulsecore/mutex-win32.c pulsecore/thread-win32.c \
+	pulsecore/semaphore-win32.c
+@OS_IS_WIN32_FALSE@am__objects_10 =  \
+@OS_IS_WIN32_FALSE@	pax11publish-mutex-posix.$(OBJEXT) \
+@OS_IS_WIN32_FALSE@	pax11publish-thread-posix.$(OBJEXT) \
+@OS_IS_WIN32_FALSE@	pax11publish-semaphore-posix.$(OBJEXT)
+@OS_IS_WIN32_TRUE@am__objects_10 = pax11publish-mutex-win32.$(OBJEXT) \
+@OS_IS_WIN32_TRUE@	pax11publish-thread-win32.$(OBJEXT) \
+@OS_IS_WIN32_TRUE@	pax11publish-semaphore-win32.$(OBJEXT)
+am_pax11publish_OBJECTS = pax11publish-pax11publish.$(OBJEXT) \
+	pax11publish-x11prop.$(OBJEXT) \
+	pax11publish-client-conf.$(OBJEXT) \
+	pax11publish-authkey.$(OBJEXT) pax11publish-random.$(OBJEXT) \
+	pax11publish-conf-parser.$(OBJEXT) \
+	pax11publish-core-util.$(OBJEXT) \
+	pax11publish-core-error.$(OBJEXT) pax11publish-log.$(OBJEXT) \
+	pax11publish-once.$(OBJEXT) $(am__objects_10)
 pax11publish_OBJECTS = $(am_pax11publish_OBJECTS)
 pax11publish_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
+am__pulseaudio_SOURCES_DIST = daemon/caps.h daemon/caps.c \
+	daemon/cmdline.c daemon/cmdline.h daemon/cpulimit.c \
+	daemon/cpulimit.h daemon/daemon-conf.c daemon/daemon-conf.h \
+	daemon/dumpmodules.c daemon/dumpmodules.h \
+	daemon/ltdl-bind-now.c daemon/ltdl-bind-now.h daemon/main.c \
+	pulsecore/gccmacro.h daemon/polkit.c daemon/polkit.h
+@HAVE_POLKIT_TRUE@am__objects_11 = pulseaudio-polkit.$(OBJEXT)
 am_pulseaudio_OBJECTS = pulseaudio-caps.$(OBJEXT) \
 	pulseaudio-cmdline.$(OBJEXT) pulseaudio-cpulimit.$(OBJEXT) \
 	pulseaudio-daemon-conf.$(OBJEXT) \
 	pulseaudio-dumpmodules.$(OBJEXT) \
-	pulseaudio-ltdl-bind-now.$(OBJEXT) pulseaudio-main.$(OBJEXT)
+	pulseaudio-ltdl-bind-now.$(OBJEXT) pulseaudio-main.$(OBJEXT) \
+	$(am__objects_11)
 pulseaudio_OBJECTS = $(am_pulseaudio_OBJECTS)
+@HAVE_POLKIT_TRUE@am__DEPENDENCIES_5 = $(am__DEPENDENCIES_1)
 am_queue_test_OBJECTS = queue_test-queue-test.$(OBJEXT)
 queue_test_OBJECTS = $(am_queue_test_OBJECTS)
 queue_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
+am_remix_test_OBJECTS = remix_test-remix-test.$(OBJEXT)
+remix_test_OBJECTS = $(am_remix_test_OBJECTS)
+remix_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
 am_resampler_test_OBJECTS = resampler_test-resampler-test.$(OBJEXT)
 resampler_test_OBJECTS = $(am_resampler_test_OBJECTS)
 resampler_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulsecore.la
@@ -1075,6 +1199,7 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauthkey_prop_la_SOURCES) \
 	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
 	$(module_alsa_sink_la_SOURCES) \
 	$(module_alsa_source_la_SOURCES) \
+	$(module_bt_proximity_la_SOURCES) \
 	$(module_cli_protocol_tcp_la_SOURCES) \
 	$(module_cli_protocol_unix_la_SOURCES) \
 	$(module_cli_la_SOURCES) $(module_combine_la_SOURCES) \
@@ -1113,22 +1238,24 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libauthkey_prop_la_SOURCES) \
 	$(module_zeroconf_discover_la_SOURCES) \
 	$(module_zeroconf_publish_la_SOURCES) \
 	$(asyncmsgq_test_SOURCES) $(asyncq_test_SOURCES) \
-	$(channelmap_test_SOURCES) $(cpulimit_test_SOURCES) \
-	$(cpulimit_test2_SOURCES) $(flist_test_SOURCES) \
-	$(gconf_helper_SOURCES) $(get_binary_name_test_SOURCES) \
-	$(hook_list_test_SOURCES) $(interpol_test_SOURCES) \
-	$(ipacl_test_SOURCES) $(mainloop_test_SOURCES) \
-	$(mainloop_test_glib_SOURCES) $(mcalign_test_SOURCES) \
-	$(memblock_test_SOURCES) $(memblockq_test_SOURCES) \
+	$(bt_proximity_helper_SOURCES) $(channelmap_test_SOURCES) \
+	$(cpulimit_test_SOURCES) $(cpulimit_test2_SOURCES) \
+	$(flist_test_SOURCES) $(gconf_helper_SOURCES) \
+	$(get_binary_name_test_SOURCES) $(hook_list_test_SOURCES) \
+	$(interpol_test_SOURCES) $(ipacl_test_SOURCES) \
+	$(mainloop_test_SOURCES) $(mainloop_test_glib_SOURCES) \
+	$(mcalign_test_SOURCES) $(memblock_test_SOURCES) \
+	$(memblockq_test_SOURCES) $(mix_test_SOURCES) \
 	$(pabrowse_SOURCES) $(pacat_SOURCES) $(pacat_simple_SOURCES) \
 	$(pacmd_SOURCES) $(pactl_SOURCES) $(paplay_SOURCES) \
 	$(parec_simple_SOURCES) $(pasuspender_SOURCES) \
 	$(pax11publish_SOURCES) $(pulseaudio_SOURCES) \
-	$(queue_test_SOURCES) $(resampler_test_SOURCES) \
-	$(rtpoll_test_SOURCES) $(sig2str_test_SOURCES) \
-	$(smoother_test_SOURCES) $(strlist_test_SOURCES) \
-	$(sync_playback_SOURCES) $(thread_mainloop_test_SOURCES) \
-	$(thread_test_SOURCES) $(utf8_test_SOURCES) $(voltest_SOURCES)
+	$(queue_test_SOURCES) $(remix_test_SOURCES) \
+	$(resampler_test_SOURCES) $(rtpoll_test_SOURCES) \
+	$(sig2str_test_SOURCES) $(smoother_test_SOURCES) \
+	$(strlist_test_SOURCES) $(sync_playback_SOURCES) \
+	$(thread_mainloop_test_SOURCES) $(thread_test_SOURCES) \
+	$(utf8_test_SOURCES) $(voltest_SOURCES)
 DIST_SOURCES = $(libalsa_util_la_SOURCES) \
 	$(libauthkey_prop_la_SOURCES) $(libauthkey_la_SOURCES) \
 	$(libavahi_wrap_la_SOURCES) $(libcli_la_SOURCES) \
@@ -1141,7 +1268,8 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) \
 	$(libprotocol_http_la_SOURCES) \
 	$(libprotocol_native_la_SOURCES) \
 	$(libprotocol_simple_la_SOURCES) $(libpstream_util_la_SOURCES) \
-	$(libpstream_la_SOURCES) $(libpulse_browse_la_SOURCES) \
+	$(libpstream_la_SOURCES) \
+	$(am__libpulse_browse_la_SOURCES_DIST) \
 	$(libpulse_mainloop_glib_la_SOURCES) \
 	$(libpulse_simple_la_SOURCES) $(am__libpulse_la_SOURCES_DIST) \
 	$(am__libpulsecore_la_SOURCES_DIST) $(libpulsedsp_la_SOURCES) \
@@ -1153,6 +1281,7 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) \
 	$(libx11prop_la_SOURCES) $(libx11wrap_la_SOURCES) \
 	$(module_alsa_sink_la_SOURCES) \
 	$(module_alsa_source_la_SOURCES) \
+	$(module_bt_proximity_la_SOURCES) \
 	$(module_cli_protocol_tcp_la_SOURCES) \
 	$(module_cli_protocol_unix_la_SOURCES) \
 	$(module_cli_la_SOURCES) $(module_combine_la_SOURCES) \
@@ -1191,25 +1320,28 @@ DIST_SOURCES = $(libalsa_util_la_SOURCES) \
 	$(module_zeroconf_discover_la_SOURCES) \
 	$(module_zeroconf_publish_la_SOURCES) \
 	$(asyncmsgq_test_SOURCES) $(asyncq_test_SOURCES) \
-	$(channelmap_test_SOURCES) $(cpulimit_test_SOURCES) \
-	$(cpulimit_test2_SOURCES) $(flist_test_SOURCES) \
-	$(gconf_helper_SOURCES) $(get_binary_name_test_SOURCES) \
-	$(hook_list_test_SOURCES) $(interpol_test_SOURCES) \
-	$(ipacl_test_SOURCES) $(mainloop_test_SOURCES) \
-	$(mainloop_test_glib_SOURCES) $(mcalign_test_SOURCES) \
-	$(memblock_test_SOURCES) $(memblockq_test_SOURCES) \
+	$(bt_proximity_helper_SOURCES) $(channelmap_test_SOURCES) \
+	$(cpulimit_test_SOURCES) $(cpulimit_test2_SOURCES) \
+	$(flist_test_SOURCES) $(gconf_helper_SOURCES) \
+	$(get_binary_name_test_SOURCES) $(hook_list_test_SOURCES) \
+	$(interpol_test_SOURCES) $(ipacl_test_SOURCES) \
+	$(mainloop_test_SOURCES) $(mainloop_test_glib_SOURCES) \
+	$(mcalign_test_SOURCES) $(memblock_test_SOURCES) \
+	$(memblockq_test_SOURCES) $(mix_test_SOURCES) \
 	$(pabrowse_SOURCES) $(pacat_SOURCES) $(pacat_simple_SOURCES) \
-	$(pacmd_SOURCES) $(pactl_SOURCES) $(paplay_SOURCES) \
-	$(parec_simple_SOURCES) $(pasuspender_SOURCES) \
-	$(pax11publish_SOURCES) $(pulseaudio_SOURCES) \
-	$(queue_test_SOURCES) $(resampler_test_SOURCES) \
+	$(am__pacmd_SOURCES_DIST) $(am__pactl_SOURCES_DIST) \
+	$(paplay_SOURCES) $(parec_simple_SOURCES) \
+	$(pasuspender_SOURCES) $(am__pax11publish_SOURCES_DIST) \
+	$(am__pulseaudio_SOURCES_DIST) $(queue_test_SOURCES) \
+	$(remix_test_SOURCES) $(resampler_test_SOURCES) \
 	$(rtpoll_test_SOURCES) $(sig2str_test_SOURCES) \
 	$(smoother_test_SOURCES) $(strlist_test_SOURCES) \
 	$(sync_playback_SOURCES) $(thread_mainloop_test_SOURCES) \
 	$(thread_test_SOURCES) $(utf8_test_SOURCES) $(voltest_SOURCES)
+policyDATA_INSTALL = $(INSTALL_DATA)
 pulseconfDATA_INSTALL = $(INSTALL_DATA)
 xdgautostartDATA_INSTALL = $(INSTALL_DATA)
-DATA = $(pulseconf_DATA) $(xdgautostart_DATA)
+DATA = $(policy_DATA) $(pulseconf_DATA) $(xdgautostart_DATA)
 am__noinst_HEADERS_DIST = pulsecore/autoload.h pulsecore/atomic.h \
 	pulsecore/cli-command.h pulsecore/cli-text.h \
 	pulsecore/client.h pulsecore/core.h pulsecore/core-def.h \
@@ -1269,6 +1401,10 @@ AUTOMAKE = @AUTOMAKE@
 AVAHI_CFLAGS = @AVAHI_CFLAGS@
 AVAHI_LIBS = @AVAHI_LIBS@
 AWK = @AWK@
+BLUEZ_CFLAGS = @BLUEZ_CFLAGS@
+BLUEZ_LIBS = @BLUEZ_LIBS@
+BUILD_MANPAGES_FALSE = @BUILD_MANPAGES_FALSE@
+BUILD_MANPAGES_TRUE = @BUILD_MANPAGES_TRUE@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -1311,6 +1447,9 @@ HAVE_ALSA_TRUE = @HAVE_ALSA_TRUE@
 HAVE_AVAHI = @HAVE_AVAHI@
 HAVE_AVAHI_FALSE = @HAVE_AVAHI_FALSE@
 HAVE_AVAHI_TRUE = @HAVE_AVAHI_TRUE@
+HAVE_BLUEZ = @HAVE_BLUEZ@
+HAVE_BLUEZ_FALSE = @HAVE_BLUEZ_FALSE@
+HAVE_BLUEZ_TRUE = @HAVE_BLUEZ_TRUE@
 HAVE_DBUS = @HAVE_DBUS@
 HAVE_DBUS_FALSE = @HAVE_DBUS_FALSE@
 HAVE_DBUS_TRUE = @HAVE_DBUS_TRUE@
@@ -1341,6 +1480,9 @@ HAVE_MKFIFO_TRUE = @HAVE_MKFIFO_TRUE@
 HAVE_OSS = @HAVE_OSS@
 HAVE_OSS_FALSE = @HAVE_OSS_FALSE@
 HAVE_OSS_TRUE = @HAVE_OSS_TRUE@
+HAVE_POLKIT = @HAVE_POLKIT@
+HAVE_POLKIT_FALSE = @HAVE_POLKIT_FALSE@
+HAVE_POLKIT_TRUE = @HAVE_POLKIT_TRUE@
 HAVE_REGEX_FALSE = @HAVE_REGEX_FALSE@
 HAVE_REGEX_TRUE = @HAVE_REGEX_TRUE@
 HAVE_SIGXCPU_FALSE = @HAVE_SIGXCPU_FALSE@
@@ -1408,6 +1550,8 @@ PA_SYSTEM_GROUP = @PA_SYSTEM_GROUP@
 PA_SYSTEM_RUNTIME_PATH = @PA_SYSTEM_RUNTIME_PATH@
 PA_SYSTEM_USER = @PA_SYSTEM_USER@
 PKG_CONFIG = @PKG_CONFIG@
+POLKIT_CFLAGS = @POLKIT_CFLAGS@
+POLKIT_LIBS = @POLKIT_LIBS@
 PREOPEN_MODS = @PREOPEN_MODS@
 PREOPEN_MODS_FALSE = @PREOPEN_MODS_FALSE@
 PREOPEN_MODS_TRUE = @PREOPEN_MODS_TRUE@
@@ -1421,6 +1565,8 @@ SHELL = @SHELL@
 STATIC_BINS_FALSE = @STATIC_BINS_FALSE@
 STATIC_BINS_TRUE = @STATIC_BINS_TRUE@
 STRIP = @STRIP@
+USE_XMLTOMAN_FALSE = @USE_XMLTOMAN_FALSE@
+USE_XMLTOMAN_TRUE = @USE_XMLTOMAN_TRUE@
 VERSION = @VERSION@
 XMKMF = @XMKMF@
 X_CFLAGS = @X_CFLAGS@
@@ -1452,6 +1598,7 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 have_pkg_config = @have_pkg_config@
+have_xmltoman = @have_xmltoman@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -1470,6 +1617,7 @@ mkdir_p = @mkdir_p@
 modlibexecdir = @modlibexecdir@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
+policydir = @policydir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -1509,7 +1657,8 @@ AM_LIBADD = $(PTHREAD_LIBS)
 AM_LDADD = $(PTHREAD_LIBS)
 
 # Only required on some platforms but defined for all to avoid errors
-AM_LDFLAGS = -Wl,-no-undefined $(am__append_1)
+AM_LDFLAGS = -Wl,-no-undefined -ffunction-sections -fdata-sections \
+	-Wl,--gc-sections $(am__append_1)
 @STATIC_BINS_TRUE@BINLDFLAGS = -static
 @OS_IS_WIN32_TRUE@WINSOCK_LIBS = -lwsock32 -lws2_32 -lwininet
 @OS_IS_WIN32_FALSE@PA_THREAD_OBJS = \
@@ -1530,7 +1679,8 @@ EXTRA_DIST = pulse/client.conf.in pulse/version.h.in \
 	daemon/daemon.conf.in daemon/default.pa.in \
 	daemon/default.pa.win32 depmod.py daemon/esdcompat.in \
 	utils/padsp modules/module-defs.h.m4 \
-	daemon/pulseaudio-module-xsmp.desktop $(SYMDEF_FILES)
+	daemon/pulseaudio-module-xsmp.desktop map-file \
+	daemon/PulseAudio.policy $(SYMDEF_FILES)
 pulseconf_DATA = \
 		default.pa \
 		daemon.conf \
@@ -1540,26 +1690,27 @@ pulseconf_DATA = \
 @HAVE_X11_TRUE@		daemon/pulseaudio-module-xsmp.desktop
 
 BUILT_SOURCES = pulse/version.h $(SYMDEF_FILES)
-pulseaudio_SOURCES = \
-		daemon/caps.h daemon/caps.c \
-		daemon/cmdline.c daemon/cmdline.h \
-		daemon/cpulimit.c daemon/cpulimit.h \
-		daemon/daemon-conf.c daemon/daemon-conf.h \
-		daemon/dumpmodules.c daemon/dumpmodules.h \
-		daemon/ltdl-bind-now.c daemon/ltdl-bind-now.h \
-		daemon/main.c \
-		pulsecore/gccmacro.h
-
-pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) $(LIBOIL_CFLAGS) $(DBUS_CFLAGS)
+pulseaudio_SOURCES = daemon/caps.h daemon/caps.c daemon/cmdline.c \
+	daemon/cmdline.h daemon/cpulimit.c daemon/cpulimit.h \
+	daemon/daemon-conf.c daemon/daemon-conf.h daemon/dumpmodules.c \
+	daemon/dumpmodules.h daemon/ltdl-bind-now.c \
+	daemon/ltdl-bind-now.h daemon/main.c pulsecore/gccmacro.h \
+	$(am__append_2)
+pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS) \
+	$(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) \
+	$(LIBOIL_CFLAGS) $(DBUS_CFLAGS) $(am__append_3)
 pulseaudio_CPPFLAGS = $(AM_CPPFLAGS)
-pulseaudio_LDADD = $(AM_LDADD) libpulsecore.la $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(CAP_LIBS) $(LIBOIL_LIBS) $(DBUS_LIBS)
+pulseaudio_LDADD = $(AM_LDADD) libpulsecore.la $(LIBLTDL) \
+	$(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(CAP_LIBS) \
+	$(LIBOIL_LIBS) $(DBUS_LIBS) $(am__append_4)
 # This is needed because automake doesn't properly expand the foreach below
 pulseaudio_DEPENDENCIES = libpulsecore.la $(PREOPEN_LIBS)
 @PREOPEN_MODS_FALSE@PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)
 @PREOPEN_MODS_TRUE@PREOPEN_LIBS = $(PREOPEN_MODS)
 @FORCE_PREOPEN_FALSE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
 @FORCE_PREOPEN_TRUE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f))
-bin_SCRIPTS = esdcompat $(am__append_18)
+@HAVE_POLKIT_TRUE@policy_DATA = daemon/PulseAudio.policy
+bin_SCRIPTS = esdcompat $(am__append_21)
 pacat_SOURCES = utils/pacat.c
 pacat_LDADD = $(AM_LDADD) libpulse.la
 pacat_CFLAGS = $(AM_CFLAGS)
@@ -1568,7 +1719,7 @@ paplay_SOURCES = utils/paplay.c
 paplay_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 paplay_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 paplay_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
-pactl_SOURCES = utils/pactl.c
+pactl_SOURCES = utils/pactl.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pactl_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 pactl_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 pactl_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
@@ -1576,11 +1727,11 @@ pasuspender_SOURCES = utils/pasuspender.c
 pasuspender_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 pasuspender_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 pasuspender_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
-pacmd_SOURCES = utils/pacmd.c pulsecore/pid.c pulsecore/pid.h
+pacmd_SOURCES = utils/pacmd.c pulsecore/pid.c pulsecore/pid.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pacmd_CFLAGS = $(AM_CFLAGS)
 pacmd_LDADD = $(AM_LDADD) libpulse.la
 pacmd_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
-pax11publish_SOURCES = utils/pax11publish.c
+pax11publish_SOURCES = utils/pax11publish.c pulsecore/x11prop.c pulsecore/x11prop.h pulse/client-conf.c pulse/client-conf.h pulsecore/authkey.h pulsecore/authkey.c pulsecore/random.h pulsecore/random.c pulsecore/conf-parser.c pulsecore/conf-parser.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pax11publish_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
 pax11publish_LDADD = $(AM_LDADD) libpulse.la $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
 pax11publish_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
@@ -1688,7 +1839,7 @@ sync_playback_LDADD = $(AM_LDADD) libpulse.la
 sync_playback_CFLAGS = $(AM_CFLAGS)
 sync_playback_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 interpol_test_SOURCES = tests/interpol-test.c
-interpol_test_LDADD = $(AM_LDADD) libpulse.la
+interpol_test_LDADD = $(AM_LDADD) libpulse.la libpulsecore.la
 interpol_test_CFLAGS = $(AM_CFLAGS)
 interpol_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 sig2str_test_SOURCES = tests/sig2str-test.c
@@ -1699,6 +1850,14 @@ resampler_test_SOURCES = tests/resampler-test.c
 resampler_test_LDADD = $(AM_LDADD) libpulsecore.la
 resampler_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
 resampler_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+mix_test_SOURCES = tests/mix-test.c
+mix_test_LDADD = $(AM_LDADD) libpulsecore.la
+mix_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
+mix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+remix_test_SOURCES = tests/remix-test.c
+remix_test_LDADD = $(AM_LDADD) libpulsecore.la
+remix_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
+remix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
 smoother_test_SOURCES = tests/smoother-test.c
 smoother_test_LDADD = $(AM_LDADD) libpulsecore.la
 smoother_test_CFLAGS = $(AM_CFLAGS)
@@ -1714,9 +1873,9 @@ pulseinclude_HEADERS = pulse/cdecl.h pulse/channelmap.h \
 	pulse/scache.h pulse/simple.h pulse/stream.h pulse/subscribe.h \
 	pulse/thread-mainloop.h pulse/timeval.h pulse/utf8.h \
 	pulse/util.h pulse/version.h pulse/volume.h pulse/xmalloc.h \
-	$(am__append_7) $(am__append_8)
-lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_9) \
-	$(am__append_10) $(am__append_17) libpulsecore.la
+	$(am__append_10) $(am__append_11)
+lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_12) \
+	$(am__append_13) $(am__append_20) libpulsecore.la
 
 # Public interface
 
@@ -1762,25 +1921,25 @@ libpulse_la_SOURCES = pulse/cdecl.h pulse/channelmap.c \
 	pulsecore/shm.c pulsecore/shm.h pulsecore/flist.c \
 	pulsecore/flist.h pulsecore/object.c pulsecore/object.h \
 	pulsecore/msgobject.c pulsecore/msgobject.h pulsecore/once.c \
-	pulsecore/once.h $(PA_THREAD_OBJS) $(am__append_11) \
-	$(am__append_12)
-libpulse_la_CFLAGS = $(AM_CFLAGS) $(am__append_13) $(am__append_15)
+	pulsecore/once.h $(PA_THREAD_OBJS) $(am__append_14) \
+	$(am__append_15)
+libpulse_la_CFLAGS = $(AM_CFLAGS) $(am__append_16) $(am__append_18)
 libpulse_la_LDFLAGS = -version-info $(LIBPULSE_VERSION_INFO) \
-	$(am__append_14)
+	-Wl,-version-script=$(srcdir)/map-file $(am__append_17)
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LIBICONV) \
-	$(am__append_16)
+	$(am__append_19)
 libpulse_simple_la_SOURCES = pulse/simple.c pulse/simple.h
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
 libpulse_simple_la_LIBADD = $(AM_LIBADD) libpulse.la
-libpulse_simple_la_LDFLAGS = -version-info $(LIBPULSE_SIMPLE_VERSION_INFO)
-libpulse_browse_la_SOURCES = pulse/browser.c pulse/browser.h pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h
+libpulse_simple_la_LDFLAGS = -version-info $(LIBPULSE_SIMPLE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
+libpulse_browse_la_SOURCES = pulse/browser.c pulse/browser.h pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 libpulse_browse_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 libpulse_browse_la_LIBADD = $(AM_LIBADD) libpulse.la $(AVAHI_LIBS)
-libpulse_browse_la_LDFLAGS = -version-info $(LIBPULSE_BROWSE_VERSION_INFO)
+libpulse_browse_la_LDFLAGS = -version-info $(LIBPULSE_BROWSE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 libpulse_mainloop_glib_la_SOURCES = pulse/glib-mainloop.h pulse/glib-mainloop.c
 libpulse_mainloop_glib_la_CFLAGS = $(AM_CFLAGS) $(GLIB20_CFLAGS)
 libpulse_mainloop_glib_la_LIBADD = $(AM_LIBADD) libpulse.la $(GLIB20_LIBS)
-libpulse_mainloop_glib_la_LDFLAGS = -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO)
+libpulse_mainloop_glib_la_LDFLAGS = -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 libpulsedsp_la_SOURCES = utils/padsp.c
 libpulsedsp_la_CFLAGS = $(AM_CFLAGS)
 libpulsedsp_la_LIBADD = $(AM_LIBADD) libpulse.la
@@ -1838,7 +1997,7 @@ noinst_HEADERS = pulsecore/autoload.h pulsecore/atomic.h \
 	pulsecore/strlist.h pulsecore/protocol-simple.h \
 	pulsecore/esound.h pulsecore/protocol-esound.h \
 	pulsecore/native-common.h pulsecore/protocol-native.h \
-	pulsecore/protocol-http.h $(am__append_21) $(am__append_23)
+	pulsecore/protocol-http.h $(am__append_24) $(am__append_26)
 
 # Some public stuff is used even in the core
 
@@ -1898,7 +2057,8 @@ libpulsecore_la_SOURCES = pulse/channelmap.c pulse/channelmap.h \
 	pulsecore/rtsig.h pulsecore/rtpoll.c pulsecore/rtpoll.h \
 	pulsecore/rtclock.c pulsecore/rtclock.h pulsecore/macro.h \
 	pulsecore/once.c pulsecore/once.h pulsecore/time-smoother.c \
-	pulsecore/time-smoother.h $(PA_THREAD_OBJS) $(am__append_19)
+	pulsecore/time-smoother.h pulsecore/start-child.c \
+	pulsecore/start-child.h $(PA_THREAD_OBJS) $(am__append_22)
 libpulsecore_la_CPPFLAGS = $(AM_CPPFLAGS) $(LIBOIL_CFLAGS)
 libpulsecore_la_LDFLAGS = -version-info $(LIBPULSECORE_VERSION_INFO)
 libpulsecore_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LIBOIL_LIBS) $(LIBICONV) libspeex-resampler-fixed.la libspeex-resampler-float.la libffmpeg-resampler.la
@@ -1918,8 +2078,8 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
 	libpstream-util.la libpdispatch.la libauthkey.la \
 	libauthkey-prop.la libstrlist.la libprotocol-simple.la \
 	libprotocol-http.la libprotocol-native.la \
-	libprotocol-esound.la $(am__append_20) $(am__append_22) \
-	$(am__append_24) module-cli.la module-cli-protocol-tcp.la \
+	libprotocol-esound.la $(am__append_23) $(am__append_25) \
+	$(am__append_27) module-cli.la module-cli-protocol-tcp.la \
 	module-simple-protocol-tcp.la module-null-sink.la \
 	module-detect.la module-volume-restore.la \
 	module-default-device-restore.la module-rescue-streams.la \
@@ -1928,12 +2088,12 @@ modlibexec_LTLIBRARIES = libsocket-util.la libiochannel.la \
 	module-native-protocol-fd.la module-esound-protocol-tcp.la \
 	module-combine.la module-remap-sink.la module-ladspa-sink.la \
 	module-esound-sink.la module-tunnel-sink.la \
-	module-tunnel-source.la $(am__append_25) $(am__append_26) \
-	$(am__append_27) $(am__append_28) $(am__append_29) \
+	module-tunnel-source.la $(am__append_28) $(am__append_29) \
 	$(am__append_30) $(am__append_31) $(am__append_32) \
 	$(am__append_33) $(am__append_34) $(am__append_35) \
 	$(am__append_36) $(am__append_37) $(am__append_38) \
-	$(am__append_39)
+	$(am__append_39) $(am__append_40) $(am__append_41) \
+	$(am__append_43) $(am__append_44)
 libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
 libprotocol_simple_la_LDFLAGS = -avoid-version
 libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore.la libsocket-server.la libiochannel.la
@@ -2077,6 +2237,7 @@ SYMDEF_FILES = \
 		modules/module-rescue-streams-symdef.h \
 		modules/module-suspend-on-idle-symdef.h \
 		modules/module-hal-detect-symdef.h \
+		modules/module-bt-proximity-symdef.h \
 		modules/gconf/module-gconf-symdef.h
 
 
@@ -2323,6 +2484,16 @@ gconf_helper_SOURCES = modules/gconf/gconf-helper.c
 gconf_helper_LDADD = $(AM_LDADD) $(GCONF_LIBS) libpulsecore.la
 gconf_helper_CFLAGS = $(AM_CFLAGS) $(GCONF_CFLAGS)
 gconf_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+
+# Bluetooth proximity
+module_bt_proximity_la_SOURCES = modules/module-bt-proximity.c
+module_bt_proximity_la_LDFLAGS = -module -avoid-version
+module_bt_proximity_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
+module_bt_proximity_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) -DPA_BT_PROXIMITY_HELPER=\"$(pulselibexecdir)/bt-proximity-helper\"
+bt_proximity_helper_SOURCES = modules/bt-proximity-helper.c
+bt_proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
+bt_proximity_helper_CFLAGS = $(AM_CFLAGS) $(BLUEZ_CFLAGS)
+bt_proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 CLEANFILES = esdcompat client.conf default.pa daemon.conf
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
@@ -2499,6 +2670,8 @@ module-alsa-sink.la: $(module_alsa_sink_la_OBJECTS) $(module_alsa_sink_la_DEPEND
 	$(LINK) $(am_module_alsa_sink_la_rpath) $(module_alsa_sink_la_LDFLAGS) $(module_alsa_sink_la_OBJECTS) $(module_alsa_sink_la_LIBADD) $(LIBS)
 module-alsa-source.la: $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_DEPENDENCIES) 
 	$(LINK) $(am_module_alsa_source_la_rpath) $(module_alsa_source_la_LDFLAGS) $(module_alsa_source_la_OBJECTS) $(module_alsa_source_la_LIBADD) $(LIBS)
+module-bt-proximity.la: $(module_bt_proximity_la_OBJECTS) $(module_bt_proximity_la_DEPENDENCIES) 
+	$(LINK) $(am_module_bt_proximity_la_rpath) $(module_bt_proximity_la_LDFLAGS) $(module_bt_proximity_la_OBJECTS) $(module_bt_proximity_la_LIBADD) $(LIBS)
 module-cli-protocol-tcp.la: $(module_cli_protocol_tcp_la_OBJECTS) $(module_cli_protocol_tcp_la_DEPENDENCIES) 
 	$(LINK) -rpath $(modlibexecdir) $(module_cli_protocol_tcp_la_LDFLAGS) $(module_cli_protocol_tcp_la_OBJECTS) $(module_cli_protocol_tcp_la_LIBADD) $(LIBS)
 module-cli-protocol-unix.la: $(module_cli_protocol_unix_la_OBJECTS) $(module_cli_protocol_unix_la_DEPENDENCIES) 
@@ -2658,6 +2831,9 @@ asyncmsgq-test$(EXEEXT): $(asyncmsgq_test_OBJECTS) $(asyncmsgq_test_DEPENDENCIES
 asyncq-test$(EXEEXT): $(asyncq_test_OBJECTS) $(asyncq_test_DEPENDENCIES) 
 	@rm -f asyncq-test$(EXEEXT)
 	$(LINK) $(asyncq_test_LDFLAGS) $(asyncq_test_OBJECTS) $(asyncq_test_LDADD) $(LIBS)
+bt-proximity-helper$(EXEEXT): $(bt_proximity_helper_OBJECTS) $(bt_proximity_helper_DEPENDENCIES) 
+	@rm -f bt-proximity-helper$(EXEEXT)
+	$(LINK) $(bt_proximity_helper_LDFLAGS) $(bt_proximity_helper_OBJECTS) $(bt_proximity_helper_LDADD) $(LIBS)
 channelmap-test$(EXEEXT): $(channelmap_test_OBJECTS) $(channelmap_test_DEPENDENCIES) 
 	@rm -f channelmap-test$(EXEEXT)
 	$(LINK) $(channelmap_test_LDFLAGS) $(channelmap_test_OBJECTS) $(channelmap_test_LDADD) $(LIBS)
@@ -2700,6 +2876,9 @@ memblock-test$(EXEEXT): $(memblock_test_OBJECTS) $(memblock_test_DEPENDENCIES)
 memblockq-test$(EXEEXT): $(memblockq_test_OBJECTS) $(memblockq_test_DEPENDENCIES) 
 	@rm -f memblockq-test$(EXEEXT)
 	$(LINK) $(memblockq_test_LDFLAGS) $(memblockq_test_OBJECTS) $(memblockq_test_LDADD) $(LIBS)
+mix-test$(EXEEXT): $(mix_test_OBJECTS) $(mix_test_DEPENDENCIES) 
+	@rm -f mix-test$(EXEEXT)
+	$(LINK) $(mix_test_LDFLAGS) $(mix_test_OBJECTS) $(mix_test_LDADD) $(LIBS)
 pabrowse$(EXEEXT): $(pabrowse_OBJECTS) $(pabrowse_DEPENDENCIES) 
 	@rm -f pabrowse$(EXEEXT)
 	$(LINK) $(pabrowse_LDFLAGS) $(pabrowse_OBJECTS) $(pabrowse_LDADD) $(LIBS)
@@ -2733,6 +2912,9 @@ pulseaudio$(EXEEXT): $(pulseaudio_OBJECTS) $(pulseaudio_DEPENDENCIES)
 queue-test$(EXEEXT): $(queue_test_OBJECTS) $(queue_test_DEPENDENCIES) 
 	@rm -f queue-test$(EXEEXT)
 	$(LINK) $(queue_test_LDFLAGS) $(queue_test_OBJECTS) $(queue_test_LDADD) $(LIBS)
+remix-test$(EXEEXT): $(remix_test_OBJECTS) $(remix_test_DEPENDENCIES) 
+	@rm -f remix-test$(EXEEXT)
+	$(LINK) $(remix_test_LDFLAGS) $(remix_test_OBJECTS) $(remix_test_LDADD) $(LIBS)
 resampler-test$(EXEEXT): $(resampler_test_OBJECTS) $(resampler_test_DEPENDENCIES) 
 	@rm -f resampler-test$(EXEEXT)
 	$(LINK) $(resampler_test_LDFLAGS) $(resampler_test_OBJECTS) $(resampler_test_LDADD) $(LIBS)
@@ -2793,6 +2975,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/asyncq_test-asyncq-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/authkey-prop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/authkey.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/channelmap_test-channelmap-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpulimit_test-cpulimit-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/cpulimit_test-cpulimit.Po@am__quote@
@@ -2818,6 +3001,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libffmpeg_resampler_la-resample2.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-avahi-wrap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-browser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-core-error.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-core-util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-log.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-mutex-posix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-mutex-win32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-once.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-semaphore-posix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-semaphore-win32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-thread-posix.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_browse_la-thread-win32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-authkey.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-channelmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-client-conf-x11.Plo@am__quote@
@@ -2948,6 +3141,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-sound-file.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-source-output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-source.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-start-child.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-strbuf.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-thread-mq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_la-thread-posix.Plo@am__quote@
@@ -2970,6 +3164,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mcalign_test-mcalign-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memblock_test-memblock-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/memblockq_test-memblockq-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mix_test-mix-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-cli.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-combine.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-compat-spawnfd.Plo@am__quote@
@@ -2986,6 +3181,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-tunnel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_source_la-module-alsa-source.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_cli_protocol_tcp_la-module-protocol-stub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_cli_protocol_unix_la-module-protocol-stub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_default_device_restore_la-module-default-device-restore.Plo@am__quote@
@@ -3022,14 +3218,49 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacat-pacat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacat_simple-pacat-simple.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/packet.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-core-error.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-core-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-mutex-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-mutex-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-once.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-pacmd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-pid.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-semaphore-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-semaphore-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-thread-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pacmd-thread-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-core-error.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-core-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-mutex-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-mutex-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-once.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-pactl.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-semaphore-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-semaphore-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-thread-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pactl-thread-win32.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/paplay-paplay.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parec_simple-parec-simple.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/parseaddr.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pasuspender-pasuspender.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-authkey.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-client-conf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-conf-parser.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-core-error.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-core-util.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-log.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-mutex-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-mutex-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-once.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-pax11publish.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-random.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-semaphore-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-semaphore-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-thread-posix.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-thread-win32.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pax11publish-x11prop.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pdispatch.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocol-cli.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/protocol-esound.Plo@am__quote@
@@ -3045,7 +3276,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pulseaudio-dumpmodules.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pulseaudio-ltdl-bind-now.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pulseaudio-main.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pulseaudio-polkit.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/queue_test-queue-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/remix_test-remix-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/resampler_test-resampler-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/rtpoll_test-rtpoll-test.Po@am__quote@
@@ -3252,6 +3485,76 @@ libpulse_browse_la-avahi-wrap.lo: pulsecore/avahi-wrap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/avahi-wrap.c' object='libpulse_browse_la-avahi-wrap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-avahi-wrap.lo `test -f 'pulsecore/avahi-wrap.c' || echo '$(srcdir)/'`pulsecore/avahi-wrap.c
+
+libpulse_browse_la-core-util.lo: pulsecore/core-util.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-core-util.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-core-util.Tpo" -c -o libpulse_browse_la-core-util.lo `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-core-util.Tpo" "$(DEPDIR)/libpulse_browse_la-core-util.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-core-util.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-util.c' object='libpulse_browse_la-core-util.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-core-util.lo `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c
+
+libpulse_browse_la-core-error.lo: pulsecore/core-error.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-core-error.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-core-error.Tpo" -c -o libpulse_browse_la-core-error.lo `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-core-error.Tpo" "$(DEPDIR)/libpulse_browse_la-core-error.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-core-error.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-error.c' object='libpulse_browse_la-core-error.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-core-error.lo `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c
+
+libpulse_browse_la-log.lo: pulsecore/log.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-log.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-log.Tpo" -c -o libpulse_browse_la-log.lo `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-log.Tpo" "$(DEPDIR)/libpulse_browse_la-log.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-log.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='libpulse_browse_la-log.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-log.lo `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c
+
+libpulse_browse_la-once.lo: pulsecore/once.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-once.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-once.Tpo" -c -o libpulse_browse_la-once.lo `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-once.Tpo" "$(DEPDIR)/libpulse_browse_la-once.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-once.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/once.c' object='libpulse_browse_la-once.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-once.lo `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c
+
+libpulse_browse_la-mutex-posix.lo: pulsecore/mutex-posix.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-mutex-posix.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-mutex-posix.Tpo" -c -o libpulse_browse_la-mutex-posix.lo `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-mutex-posix.Tpo" "$(DEPDIR)/libpulse_browse_la-mutex-posix.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-mutex-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-posix.c' object='libpulse_browse_la-mutex-posix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-mutex-posix.lo `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c
+
+libpulse_browse_la-thread-posix.lo: pulsecore/thread-posix.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-thread-posix.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-thread-posix.Tpo" -c -o libpulse_browse_la-thread-posix.lo `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-thread-posix.Tpo" "$(DEPDIR)/libpulse_browse_la-thread-posix.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-thread-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-posix.c' object='libpulse_browse_la-thread-posix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-thread-posix.lo `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c
+
+libpulse_browse_la-semaphore-posix.lo: pulsecore/semaphore-posix.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-semaphore-posix.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-semaphore-posix.Tpo" -c -o libpulse_browse_la-semaphore-posix.lo `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-semaphore-posix.Tpo" "$(DEPDIR)/libpulse_browse_la-semaphore-posix.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-semaphore-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-posix.c' object='libpulse_browse_la-semaphore-posix.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-semaphore-posix.lo `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c
+
+libpulse_browse_la-mutex-win32.lo: pulsecore/mutex-win32.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-mutex-win32.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-mutex-win32.Tpo" -c -o libpulse_browse_la-mutex-win32.lo `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-mutex-win32.Tpo" "$(DEPDIR)/libpulse_browse_la-mutex-win32.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-mutex-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-win32.c' object='libpulse_browse_la-mutex-win32.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-mutex-win32.lo `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c
+
+libpulse_browse_la-thread-win32.lo: pulsecore/thread-win32.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-thread-win32.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-thread-win32.Tpo" -c -o libpulse_browse_la-thread-win32.lo `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-thread-win32.Tpo" "$(DEPDIR)/libpulse_browse_la-thread-win32.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-thread-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-win32.c' object='libpulse_browse_la-thread-win32.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-thread-win32.lo `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c
+
+libpulse_browse_la-semaphore-win32.lo: pulsecore/semaphore-win32.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -MT libpulse_browse_la-semaphore-win32.lo -MD -MP -MF "$(DEPDIR)/libpulse_browse_la-semaphore-win32.Tpo" -c -o libpulse_browse_la-semaphore-win32.lo `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulse_browse_la-semaphore-win32.Tpo" "$(DEPDIR)/libpulse_browse_la-semaphore-win32.Plo"; else rm -f "$(DEPDIR)/libpulse_browse_la-semaphore-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='libpulse_browse_la-semaphore-win32.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_browse_la_CFLAGS) $(CFLAGS) -c -o libpulse_browse_la-semaphore-win32.lo `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c
 
 libpulse_mainloop_glib_la-glib-mainloop.lo: pulse/glib-mainloop.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_mainloop_glib_la_CFLAGS) $(CFLAGS) -MT libpulse_mainloop_glib_la-glib-mainloop.lo -MD -MP -MF "$(DEPDIR)/libpulse_mainloop_glib_la-glib-mainloop.Tpo" -c -o libpulse_mainloop_glib_la-glib-mainloop.lo `test -f 'pulse/glib-mainloop.c' || echo '$(srcdir)/'`pulse/glib-mainloop.c; \
@@ -4191,6 +4494,13 @@ libpulsecore_la-time-smoother.lo: pulsecore/time-smoother.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpulsecore_la-time-smoother.lo `test -f 'pulsecore/time-smoother.c' || echo '$(srcdir)/'`pulsecore/time-smoother.c
 
+libpulsecore_la-start-child.lo: pulsecore/start-child.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpulsecore_la-start-child.lo -MD -MP -MF "$(DEPDIR)/libpulsecore_la-start-child.Tpo" -c -o libpulsecore_la-start-child.lo `test -f 'pulsecore/start-child.c' || echo '$(srcdir)/'`pulsecore/start-child.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulsecore_la-start-child.Tpo" "$(DEPDIR)/libpulsecore_la-start-child.Plo"; else rm -f "$(DEPDIR)/libpulsecore_la-start-child.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/start-child.c' object='libpulsecore_la-start-child.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpulsecore_la-start-child.lo `test -f 'pulsecore/start-child.c' || echo '$(srcdir)/'`pulsecore/start-child.c
+
 libpulsecore_la-mutex-posix.lo: pulsecore/mutex-posix.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpulsecore_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpulsecore_la-mutex-posix.lo -MD -MP -MF "$(DEPDIR)/libpulsecore_la-mutex-posix.Tpo" -c -o libpulsecore_la-mutex-posix.lo `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/libpulsecore_la-mutex-posix.Tpo" "$(DEPDIR)/libpulsecore_la-mutex-posix.Plo"; else rm -f "$(DEPDIR)/libpulsecore_la-mutex-posix.Tpo"; exit 1; fi
@@ -4351,6 +4661,13 @@ module_alsa_source_la-module-alsa-source.lo: modules/module-alsa-source.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-alsa-source.c' object='module_alsa_source_la-module-alsa-source.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_alsa_source_la_CFLAGS) $(CFLAGS) -c -o module_alsa_source_la-module-alsa-source.lo `test -f 'modules/module-alsa-source.c' || echo '$(srcdir)/'`modules/module-alsa-source.c
+
+module_bt_proximity_la-module-bt-proximity.lo: modules/module-bt-proximity.c
+@am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_bt_proximity_la_CFLAGS) $(CFLAGS) -MT module_bt_proximity_la-module-bt-proximity.lo -MD -MP -MF "$(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Tpo" -c -o module_bt_proximity_la-module-bt-proximity.lo `test -f 'modules/module-bt-proximity.c' || echo '$(srcdir)/'`modules/module-bt-proximity.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Tpo" "$(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Plo"; else rm -f "$(DEPDIR)/module_bt_proximity_la-module-bt-proximity.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-bt-proximity.c' object='module_bt_proximity_la-module-bt-proximity.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_bt_proximity_la_CFLAGS) $(CFLAGS) -c -o module_bt_proximity_la-module-bt-proximity.lo `test -f 'modules/module-bt-proximity.c' || echo '$(srcdir)/'`modules/module-bt-proximity.c
 
 module_cli_protocol_tcp_la-module-protocol-stub.lo: modules/module-protocol-stub.c
 @am__fastdepCC_TRUE@	if $(LIBTOOL) --tag=CC --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_cli_protocol_tcp_la_CFLAGS) $(CFLAGS) -MT module_cli_protocol_tcp_la-module-protocol-stub.lo -MD -MP -MF "$(DEPDIR)/module_cli_protocol_tcp_la-module-protocol-stub.Tpo" -c -o module_cli_protocol_tcp_la-module-protocol-stub.lo `test -f 'modules/module-protocol-stub.c' || echo '$(srcdir)/'`modules/module-protocol-stub.c; \
@@ -4695,6 +5012,20 @@ asyncq_test-asyncq-test.obj: tests/asyncq-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(asyncq_test_CFLAGS) $(CFLAGS) -c -o asyncq_test-asyncq-test.obj `if test -f 'tests/asyncq-test.c'; then $(CYGPATH_W) 'tests/asyncq-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/asyncq-test.c'; fi`
 
+bt_proximity_helper-bt-proximity-helper.o: modules/bt-proximity-helper.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bt_proximity_helper_CFLAGS) $(CFLAGS) -MT bt_proximity_helper-bt-proximity-helper.o -MD -MP -MF "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Tpo" -c -o bt_proximity_helper-bt-proximity-helper.o `test -f 'modules/bt-proximity-helper.c' || echo '$(srcdir)/'`modules/bt-proximity-helper.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Tpo" "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Po"; else rm -f "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/bt-proximity-helper.c' object='bt_proximity_helper-bt-proximity-helper.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bt_proximity_helper_CFLAGS) $(CFLAGS) -c -o bt_proximity_helper-bt-proximity-helper.o `test -f 'modules/bt-proximity-helper.c' || echo '$(srcdir)/'`modules/bt-proximity-helper.c
+
+bt_proximity_helper-bt-proximity-helper.obj: modules/bt-proximity-helper.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bt_proximity_helper_CFLAGS) $(CFLAGS) -MT bt_proximity_helper-bt-proximity-helper.obj -MD -MP -MF "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Tpo" -c -o bt_proximity_helper-bt-proximity-helper.obj `if test -f 'modules/bt-proximity-helper.c'; then $(CYGPATH_W) 'modules/bt-proximity-helper.c'; else $(CYGPATH_W) '$(srcdir)/modules/bt-proximity-helper.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Tpo" "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Po"; else rm -f "$(DEPDIR)/bt_proximity_helper-bt-proximity-helper.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/bt-proximity-helper.c' object='bt_proximity_helper-bt-proximity-helper.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(bt_proximity_helper_CFLAGS) $(CFLAGS) -c -o bt_proximity_helper-bt-proximity-helper.obj `if test -f 'modules/bt-proximity-helper.c'; then $(CYGPATH_W) 'modules/bt-proximity-helper.c'; else $(CYGPATH_W) '$(srcdir)/modules/bt-proximity-helper.c'; fi`
+
 channelmap_test-channelmap-test.o: tests/channelmap-test.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(channelmap_test_CFLAGS) $(CFLAGS) -MT channelmap_test-channelmap-test.o -MD -MP -MF "$(DEPDIR)/channelmap_test-channelmap-test.Tpo" -c -o channelmap_test-channelmap-test.o `test -f 'tests/channelmap-test.c' || echo '$(srcdir)/'`tests/channelmap-test.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/channelmap_test-channelmap-test.Tpo" "$(DEPDIR)/channelmap_test-channelmap-test.Po"; else rm -f "$(DEPDIR)/channelmap_test-channelmap-test.Tpo"; exit 1; fi
@@ -4947,6 +5278,20 @@ memblockq_test-memblockq-test.obj: tests/memblockq-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(memblockq_test_CFLAGS) $(CFLAGS) -c -o memblockq_test-memblockq-test.obj `if test -f 'tests/memblockq-test.c'; then $(CYGPATH_W) 'tests/memblockq-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/memblockq-test.c'; fi`
 
+mix_test-mix-test.o: tests/mix-test.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(mix_test_CFLAGS) $(CFLAGS) -MT mix_test-mix-test.o -MD -MP -MF "$(DEPDIR)/mix_test-mix-test.Tpo" -c -o mix_test-mix-test.o `test -f 'tests/mix-test.c' || echo '$(srcdir)/'`tests/mix-test.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/mix_test-mix-test.Tpo" "$(DEPDIR)/mix_test-mix-test.Po"; else rm -f "$(DEPDIR)/mix_test-mix-test.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/mix-test.c' object='mix_test-mix-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(mix_test_CFLAGS) $(CFLAGS) -c -o mix_test-mix-test.o `test -f 'tests/mix-test.c' || echo '$(srcdir)/'`tests/mix-test.c
+
+mix_test-mix-test.obj: tests/mix-test.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(mix_test_CFLAGS) $(CFLAGS) -MT mix_test-mix-test.obj -MD -MP -MF "$(DEPDIR)/mix_test-mix-test.Tpo" -c -o mix_test-mix-test.obj `if test -f 'tests/mix-test.c'; then $(CYGPATH_W) 'tests/mix-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/mix-test.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/mix_test-mix-test.Tpo" "$(DEPDIR)/mix_test-mix-test.Po"; else rm -f "$(DEPDIR)/mix_test-mix-test.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/mix-test.c' object='mix_test-mix-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(mix_test_CFLAGS) $(CFLAGS) -c -o mix_test-mix-test.obj `if test -f 'tests/mix-test.c'; then $(CYGPATH_W) 'tests/mix-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/mix-test.c'; fi`
+
 pabrowse-pabrowse.o: utils/pabrowse.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pabrowse_CFLAGS) $(CFLAGS) -MT pabrowse-pabrowse.o -MD -MP -MF "$(DEPDIR)/pabrowse-pabrowse.Tpo" -c -o pabrowse-pabrowse.o `test -f 'utils/pabrowse.c' || echo '$(srcdir)/'`utils/pabrowse.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pabrowse-pabrowse.Tpo" "$(DEPDIR)/pabrowse-pabrowse.Po"; else rm -f "$(DEPDIR)/pabrowse-pabrowse.Tpo"; exit 1; fi
@@ -5017,6 +5362,146 @@ pacmd-pid.obj: pulsecore/pid.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-pid.obj `if test -f 'pulsecore/pid.c'; then $(CYGPATH_W) 'pulsecore/pid.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/pid.c'; fi`
 
+pacmd-core-util.o: pulsecore/core-util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-core-util.o -MD -MP -MF "$(DEPDIR)/pacmd-core-util.Tpo" -c -o pacmd-core-util.o `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-core-util.Tpo" "$(DEPDIR)/pacmd-core-util.Po"; else rm -f "$(DEPDIR)/pacmd-core-util.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-util.c' object='pacmd-core-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-core-util.o `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c
+
+pacmd-core-util.obj: pulsecore/core-util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-core-util.obj -MD -MP -MF "$(DEPDIR)/pacmd-core-util.Tpo" -c -o pacmd-core-util.obj `if test -f 'pulsecore/core-util.c'; then $(CYGPATH_W) 'pulsecore/core-util.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-util.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-core-util.Tpo" "$(DEPDIR)/pacmd-core-util.Po"; else rm -f "$(DEPDIR)/pacmd-core-util.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-util.c' object='pacmd-core-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-core-util.obj `if test -f 'pulsecore/core-util.c'; then $(CYGPATH_W) 'pulsecore/core-util.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-util.c'; fi`
+
+pacmd-core-error.o: pulsecore/core-error.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-core-error.o -MD -MP -MF "$(DEPDIR)/pacmd-core-error.Tpo" -c -o pacmd-core-error.o `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-core-error.Tpo" "$(DEPDIR)/pacmd-core-error.Po"; else rm -f "$(DEPDIR)/pacmd-core-error.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-error.c' object='pacmd-core-error.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-core-error.o `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c
+
+pacmd-core-error.obj: pulsecore/core-error.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-core-error.obj -MD -MP -MF "$(DEPDIR)/pacmd-core-error.Tpo" -c -o pacmd-core-error.obj `if test -f 'pulsecore/core-error.c'; then $(CYGPATH_W) 'pulsecore/core-error.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-error.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-core-error.Tpo" "$(DEPDIR)/pacmd-core-error.Po"; else rm -f "$(DEPDIR)/pacmd-core-error.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-error.c' object='pacmd-core-error.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-core-error.obj `if test -f 'pulsecore/core-error.c'; then $(CYGPATH_W) 'pulsecore/core-error.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-error.c'; fi`
+
+pacmd-log.o: pulsecore/log.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-log.o -MD -MP -MF "$(DEPDIR)/pacmd-log.Tpo" -c -o pacmd-log.o `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-log.Tpo" "$(DEPDIR)/pacmd-log.Po"; else rm -f "$(DEPDIR)/pacmd-log.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='pacmd-log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-log.o `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c
+
+pacmd-log.obj: pulsecore/log.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-log.obj -MD -MP -MF "$(DEPDIR)/pacmd-log.Tpo" -c -o pacmd-log.obj `if test -f 'pulsecore/log.c'; then $(CYGPATH_W) 'pulsecore/log.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/log.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-log.Tpo" "$(DEPDIR)/pacmd-log.Po"; else rm -f "$(DEPDIR)/pacmd-log.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='pacmd-log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-log.obj `if test -f 'pulsecore/log.c'; then $(CYGPATH_W) 'pulsecore/log.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/log.c'; fi`
+
+pacmd-once.o: pulsecore/once.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-once.o -MD -MP -MF "$(DEPDIR)/pacmd-once.Tpo" -c -o pacmd-once.o `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-once.Tpo" "$(DEPDIR)/pacmd-once.Po"; else rm -f "$(DEPDIR)/pacmd-once.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/once.c' object='pacmd-once.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-once.o `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c
+
+pacmd-once.obj: pulsecore/once.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-once.obj -MD -MP -MF "$(DEPDIR)/pacmd-once.Tpo" -c -o pacmd-once.obj `if test -f 'pulsecore/once.c'; then $(CYGPATH_W) 'pulsecore/once.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/once.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-once.Tpo" "$(DEPDIR)/pacmd-once.Po"; else rm -f "$(DEPDIR)/pacmd-once.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/once.c' object='pacmd-once.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-once.obj `if test -f 'pulsecore/once.c'; then $(CYGPATH_W) 'pulsecore/once.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/once.c'; fi`
+
+pacmd-mutex-posix.o: pulsecore/mutex-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-mutex-posix.o -MD -MP -MF "$(DEPDIR)/pacmd-mutex-posix.Tpo" -c -o pacmd-mutex-posix.o `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-mutex-posix.Tpo" "$(DEPDIR)/pacmd-mutex-posix.Po"; else rm -f "$(DEPDIR)/pacmd-mutex-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-posix.c' object='pacmd-mutex-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-mutex-posix.o `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c
+
+pacmd-mutex-posix.obj: pulsecore/mutex-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-mutex-posix.obj -MD -MP -MF "$(DEPDIR)/pacmd-mutex-posix.Tpo" -c -o pacmd-mutex-posix.obj `if test -f 'pulsecore/mutex-posix.c'; then $(CYGPATH_W) 'pulsecore/mutex-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-mutex-posix.Tpo" "$(DEPDIR)/pacmd-mutex-posix.Po"; else rm -f "$(DEPDIR)/pacmd-mutex-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-posix.c' object='pacmd-mutex-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-mutex-posix.obj `if test -f 'pulsecore/mutex-posix.c'; then $(CYGPATH_W) 'pulsecore/mutex-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-posix.c'; fi`
+
+pacmd-thread-posix.o: pulsecore/thread-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-thread-posix.o -MD -MP -MF "$(DEPDIR)/pacmd-thread-posix.Tpo" -c -o pacmd-thread-posix.o `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-thread-posix.Tpo" "$(DEPDIR)/pacmd-thread-posix.Po"; else rm -f "$(DEPDIR)/pacmd-thread-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-posix.c' object='pacmd-thread-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-thread-posix.o `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c
+
+pacmd-thread-posix.obj: pulsecore/thread-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-thread-posix.obj -MD -MP -MF "$(DEPDIR)/pacmd-thread-posix.Tpo" -c -o pacmd-thread-posix.obj `if test -f 'pulsecore/thread-posix.c'; then $(CYGPATH_W) 'pulsecore/thread-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-thread-posix.Tpo" "$(DEPDIR)/pacmd-thread-posix.Po"; else rm -f "$(DEPDIR)/pacmd-thread-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-posix.c' object='pacmd-thread-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-thread-posix.obj `if test -f 'pulsecore/thread-posix.c'; then $(CYGPATH_W) 'pulsecore/thread-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-posix.c'; fi`
+
+pacmd-semaphore-posix.o: pulsecore/semaphore-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-semaphore-posix.o -MD -MP -MF "$(DEPDIR)/pacmd-semaphore-posix.Tpo" -c -o pacmd-semaphore-posix.o `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-semaphore-posix.Tpo" "$(DEPDIR)/pacmd-semaphore-posix.Po"; else rm -f "$(DEPDIR)/pacmd-semaphore-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-posix.c' object='pacmd-semaphore-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-semaphore-posix.o `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c
+
+pacmd-semaphore-posix.obj: pulsecore/semaphore-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-semaphore-posix.obj -MD -MP -MF "$(DEPDIR)/pacmd-semaphore-posix.Tpo" -c -o pacmd-semaphore-posix.obj `if test -f 'pulsecore/semaphore-posix.c'; then $(CYGPATH_W) 'pulsecore/semaphore-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-semaphore-posix.Tpo" "$(DEPDIR)/pacmd-semaphore-posix.Po"; else rm -f "$(DEPDIR)/pacmd-semaphore-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-posix.c' object='pacmd-semaphore-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-semaphore-posix.obj `if test -f 'pulsecore/semaphore-posix.c'; then $(CYGPATH_W) 'pulsecore/semaphore-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-posix.c'; fi`
+
+pacmd-mutex-win32.o: pulsecore/mutex-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-mutex-win32.o -MD -MP -MF "$(DEPDIR)/pacmd-mutex-win32.Tpo" -c -o pacmd-mutex-win32.o `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-mutex-win32.Tpo" "$(DEPDIR)/pacmd-mutex-win32.Po"; else rm -f "$(DEPDIR)/pacmd-mutex-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-win32.c' object='pacmd-mutex-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-mutex-win32.o `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c
+
+pacmd-mutex-win32.obj: pulsecore/mutex-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-mutex-win32.obj -MD -MP -MF "$(DEPDIR)/pacmd-mutex-win32.Tpo" -c -o pacmd-mutex-win32.obj `if test -f 'pulsecore/mutex-win32.c'; then $(CYGPATH_W) 'pulsecore/mutex-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-mutex-win32.Tpo" "$(DEPDIR)/pacmd-mutex-win32.Po"; else rm -f "$(DEPDIR)/pacmd-mutex-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-win32.c' object='pacmd-mutex-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-mutex-win32.obj `if test -f 'pulsecore/mutex-win32.c'; then $(CYGPATH_W) 'pulsecore/mutex-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-win32.c'; fi`
+
+pacmd-thread-win32.o: pulsecore/thread-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-thread-win32.o -MD -MP -MF "$(DEPDIR)/pacmd-thread-win32.Tpo" -c -o pacmd-thread-win32.o `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-thread-win32.Tpo" "$(DEPDIR)/pacmd-thread-win32.Po"; else rm -f "$(DEPDIR)/pacmd-thread-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-win32.c' object='pacmd-thread-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-thread-win32.o `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c
+
+pacmd-thread-win32.obj: pulsecore/thread-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-thread-win32.obj -MD -MP -MF "$(DEPDIR)/pacmd-thread-win32.Tpo" -c -o pacmd-thread-win32.obj `if test -f 'pulsecore/thread-win32.c'; then $(CYGPATH_W) 'pulsecore/thread-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-thread-win32.Tpo" "$(DEPDIR)/pacmd-thread-win32.Po"; else rm -f "$(DEPDIR)/pacmd-thread-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-win32.c' object='pacmd-thread-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-thread-win32.obj `if test -f 'pulsecore/thread-win32.c'; then $(CYGPATH_W) 'pulsecore/thread-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-win32.c'; fi`
+
+pacmd-semaphore-win32.o: pulsecore/semaphore-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-semaphore-win32.o -MD -MP -MF "$(DEPDIR)/pacmd-semaphore-win32.Tpo" -c -o pacmd-semaphore-win32.o `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-semaphore-win32.Tpo" "$(DEPDIR)/pacmd-semaphore-win32.Po"; else rm -f "$(DEPDIR)/pacmd-semaphore-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='pacmd-semaphore-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-semaphore-win32.o `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c
+
+pacmd-semaphore-win32.obj: pulsecore/semaphore-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -MT pacmd-semaphore-win32.obj -MD -MP -MF "$(DEPDIR)/pacmd-semaphore-win32.Tpo" -c -o pacmd-semaphore-win32.obj `if test -f 'pulsecore/semaphore-win32.c'; then $(CYGPATH_W) 'pulsecore/semaphore-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pacmd-semaphore-win32.Tpo" "$(DEPDIR)/pacmd-semaphore-win32.Po"; else rm -f "$(DEPDIR)/pacmd-semaphore-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='pacmd-semaphore-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pacmd_CFLAGS) $(CFLAGS) -c -o pacmd-semaphore-win32.obj `if test -f 'pulsecore/semaphore-win32.c'; then $(CYGPATH_W) 'pulsecore/semaphore-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-win32.c'; fi`
+
 pactl-pactl.o: utils/pactl.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-pactl.o -MD -MP -MF "$(DEPDIR)/pactl-pactl.Tpo" -c -o pactl-pactl.o `test -f 'utils/pactl.c' || echo '$(srcdir)/'`utils/pactl.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-pactl.Tpo" "$(DEPDIR)/pactl-pactl.Po"; else rm -f "$(DEPDIR)/pactl-pactl.Tpo"; exit 1; fi
@@ -5030,6 +5515,146 @@ pactl-pactl.obj: utils/pactl.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils/pactl.c' object='pactl-pactl.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-pactl.obj `if test -f 'utils/pactl.c'; then $(CYGPATH_W) 'utils/pactl.c'; else $(CYGPATH_W) '$(srcdir)/utils/pactl.c'; fi`
+
+pactl-core-util.o: pulsecore/core-util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-core-util.o -MD -MP -MF "$(DEPDIR)/pactl-core-util.Tpo" -c -o pactl-core-util.o `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-core-util.Tpo" "$(DEPDIR)/pactl-core-util.Po"; else rm -f "$(DEPDIR)/pactl-core-util.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-util.c' object='pactl-core-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-core-util.o `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c
+
+pactl-core-util.obj: pulsecore/core-util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-core-util.obj -MD -MP -MF "$(DEPDIR)/pactl-core-util.Tpo" -c -o pactl-core-util.obj `if test -f 'pulsecore/core-util.c'; then $(CYGPATH_W) 'pulsecore/core-util.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-util.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-core-util.Tpo" "$(DEPDIR)/pactl-core-util.Po"; else rm -f "$(DEPDIR)/pactl-core-util.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-util.c' object='pactl-core-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-core-util.obj `if test -f 'pulsecore/core-util.c'; then $(CYGPATH_W) 'pulsecore/core-util.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-util.c'; fi`
+
+pactl-core-error.o: pulsecore/core-error.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-core-error.o -MD -MP -MF "$(DEPDIR)/pactl-core-error.Tpo" -c -o pactl-core-error.o `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-core-error.Tpo" "$(DEPDIR)/pactl-core-error.Po"; else rm -f "$(DEPDIR)/pactl-core-error.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-error.c' object='pactl-core-error.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-core-error.o `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c
+
+pactl-core-error.obj: pulsecore/core-error.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-core-error.obj -MD -MP -MF "$(DEPDIR)/pactl-core-error.Tpo" -c -o pactl-core-error.obj `if test -f 'pulsecore/core-error.c'; then $(CYGPATH_W) 'pulsecore/core-error.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-error.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-core-error.Tpo" "$(DEPDIR)/pactl-core-error.Po"; else rm -f "$(DEPDIR)/pactl-core-error.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-error.c' object='pactl-core-error.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-core-error.obj `if test -f 'pulsecore/core-error.c'; then $(CYGPATH_W) 'pulsecore/core-error.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-error.c'; fi`
+
+pactl-log.o: pulsecore/log.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-log.o -MD -MP -MF "$(DEPDIR)/pactl-log.Tpo" -c -o pactl-log.o `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-log.Tpo" "$(DEPDIR)/pactl-log.Po"; else rm -f "$(DEPDIR)/pactl-log.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='pactl-log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-log.o `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c
+
+pactl-log.obj: pulsecore/log.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-log.obj -MD -MP -MF "$(DEPDIR)/pactl-log.Tpo" -c -o pactl-log.obj `if test -f 'pulsecore/log.c'; then $(CYGPATH_W) 'pulsecore/log.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/log.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-log.Tpo" "$(DEPDIR)/pactl-log.Po"; else rm -f "$(DEPDIR)/pactl-log.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='pactl-log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-log.obj `if test -f 'pulsecore/log.c'; then $(CYGPATH_W) 'pulsecore/log.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/log.c'; fi`
+
+pactl-once.o: pulsecore/once.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-once.o -MD -MP -MF "$(DEPDIR)/pactl-once.Tpo" -c -o pactl-once.o `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-once.Tpo" "$(DEPDIR)/pactl-once.Po"; else rm -f "$(DEPDIR)/pactl-once.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/once.c' object='pactl-once.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-once.o `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c
+
+pactl-once.obj: pulsecore/once.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-once.obj -MD -MP -MF "$(DEPDIR)/pactl-once.Tpo" -c -o pactl-once.obj `if test -f 'pulsecore/once.c'; then $(CYGPATH_W) 'pulsecore/once.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/once.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-once.Tpo" "$(DEPDIR)/pactl-once.Po"; else rm -f "$(DEPDIR)/pactl-once.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/once.c' object='pactl-once.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-once.obj `if test -f 'pulsecore/once.c'; then $(CYGPATH_W) 'pulsecore/once.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/once.c'; fi`
+
+pactl-mutex-posix.o: pulsecore/mutex-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-mutex-posix.o -MD -MP -MF "$(DEPDIR)/pactl-mutex-posix.Tpo" -c -o pactl-mutex-posix.o `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-mutex-posix.Tpo" "$(DEPDIR)/pactl-mutex-posix.Po"; else rm -f "$(DEPDIR)/pactl-mutex-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-posix.c' object='pactl-mutex-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-mutex-posix.o `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c
+
+pactl-mutex-posix.obj: pulsecore/mutex-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-mutex-posix.obj -MD -MP -MF "$(DEPDIR)/pactl-mutex-posix.Tpo" -c -o pactl-mutex-posix.obj `if test -f 'pulsecore/mutex-posix.c'; then $(CYGPATH_W) 'pulsecore/mutex-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-mutex-posix.Tpo" "$(DEPDIR)/pactl-mutex-posix.Po"; else rm -f "$(DEPDIR)/pactl-mutex-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-posix.c' object='pactl-mutex-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-mutex-posix.obj `if test -f 'pulsecore/mutex-posix.c'; then $(CYGPATH_W) 'pulsecore/mutex-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-posix.c'; fi`
+
+pactl-thread-posix.o: pulsecore/thread-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-thread-posix.o -MD -MP -MF "$(DEPDIR)/pactl-thread-posix.Tpo" -c -o pactl-thread-posix.o `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-thread-posix.Tpo" "$(DEPDIR)/pactl-thread-posix.Po"; else rm -f "$(DEPDIR)/pactl-thread-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-posix.c' object='pactl-thread-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-thread-posix.o `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c
+
+pactl-thread-posix.obj: pulsecore/thread-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-thread-posix.obj -MD -MP -MF "$(DEPDIR)/pactl-thread-posix.Tpo" -c -o pactl-thread-posix.obj `if test -f 'pulsecore/thread-posix.c'; then $(CYGPATH_W) 'pulsecore/thread-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-thread-posix.Tpo" "$(DEPDIR)/pactl-thread-posix.Po"; else rm -f "$(DEPDIR)/pactl-thread-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-posix.c' object='pactl-thread-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-thread-posix.obj `if test -f 'pulsecore/thread-posix.c'; then $(CYGPATH_W) 'pulsecore/thread-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-posix.c'; fi`
+
+pactl-semaphore-posix.o: pulsecore/semaphore-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-semaphore-posix.o -MD -MP -MF "$(DEPDIR)/pactl-semaphore-posix.Tpo" -c -o pactl-semaphore-posix.o `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-semaphore-posix.Tpo" "$(DEPDIR)/pactl-semaphore-posix.Po"; else rm -f "$(DEPDIR)/pactl-semaphore-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-posix.c' object='pactl-semaphore-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-semaphore-posix.o `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c
+
+pactl-semaphore-posix.obj: pulsecore/semaphore-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-semaphore-posix.obj -MD -MP -MF "$(DEPDIR)/pactl-semaphore-posix.Tpo" -c -o pactl-semaphore-posix.obj `if test -f 'pulsecore/semaphore-posix.c'; then $(CYGPATH_W) 'pulsecore/semaphore-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-semaphore-posix.Tpo" "$(DEPDIR)/pactl-semaphore-posix.Po"; else rm -f "$(DEPDIR)/pactl-semaphore-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-posix.c' object='pactl-semaphore-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-semaphore-posix.obj `if test -f 'pulsecore/semaphore-posix.c'; then $(CYGPATH_W) 'pulsecore/semaphore-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-posix.c'; fi`
+
+pactl-mutex-win32.o: pulsecore/mutex-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-mutex-win32.o -MD -MP -MF "$(DEPDIR)/pactl-mutex-win32.Tpo" -c -o pactl-mutex-win32.o `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-mutex-win32.Tpo" "$(DEPDIR)/pactl-mutex-win32.Po"; else rm -f "$(DEPDIR)/pactl-mutex-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-win32.c' object='pactl-mutex-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-mutex-win32.o `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c
+
+pactl-mutex-win32.obj: pulsecore/mutex-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-mutex-win32.obj -MD -MP -MF "$(DEPDIR)/pactl-mutex-win32.Tpo" -c -o pactl-mutex-win32.obj `if test -f 'pulsecore/mutex-win32.c'; then $(CYGPATH_W) 'pulsecore/mutex-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-mutex-win32.Tpo" "$(DEPDIR)/pactl-mutex-win32.Po"; else rm -f "$(DEPDIR)/pactl-mutex-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-win32.c' object='pactl-mutex-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-mutex-win32.obj `if test -f 'pulsecore/mutex-win32.c'; then $(CYGPATH_W) 'pulsecore/mutex-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-win32.c'; fi`
+
+pactl-thread-win32.o: pulsecore/thread-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-thread-win32.o -MD -MP -MF "$(DEPDIR)/pactl-thread-win32.Tpo" -c -o pactl-thread-win32.o `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-thread-win32.Tpo" "$(DEPDIR)/pactl-thread-win32.Po"; else rm -f "$(DEPDIR)/pactl-thread-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-win32.c' object='pactl-thread-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-thread-win32.o `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c
+
+pactl-thread-win32.obj: pulsecore/thread-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-thread-win32.obj -MD -MP -MF "$(DEPDIR)/pactl-thread-win32.Tpo" -c -o pactl-thread-win32.obj `if test -f 'pulsecore/thread-win32.c'; then $(CYGPATH_W) 'pulsecore/thread-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-thread-win32.Tpo" "$(DEPDIR)/pactl-thread-win32.Po"; else rm -f "$(DEPDIR)/pactl-thread-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-win32.c' object='pactl-thread-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-thread-win32.obj `if test -f 'pulsecore/thread-win32.c'; then $(CYGPATH_W) 'pulsecore/thread-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-win32.c'; fi`
+
+pactl-semaphore-win32.o: pulsecore/semaphore-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-semaphore-win32.o -MD -MP -MF "$(DEPDIR)/pactl-semaphore-win32.Tpo" -c -o pactl-semaphore-win32.o `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-semaphore-win32.Tpo" "$(DEPDIR)/pactl-semaphore-win32.Po"; else rm -f "$(DEPDIR)/pactl-semaphore-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='pactl-semaphore-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-semaphore-win32.o `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c
+
+pactl-semaphore-win32.obj: pulsecore/semaphore-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -MT pactl-semaphore-win32.obj -MD -MP -MF "$(DEPDIR)/pactl-semaphore-win32.Tpo" -c -o pactl-semaphore-win32.obj `if test -f 'pulsecore/semaphore-win32.c'; then $(CYGPATH_W) 'pulsecore/semaphore-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pactl-semaphore-win32.Tpo" "$(DEPDIR)/pactl-semaphore-win32.Po"; else rm -f "$(DEPDIR)/pactl-semaphore-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='pactl-semaphore-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pactl_CFLAGS) $(CFLAGS) -c -o pactl-semaphore-win32.obj `if test -f 'pulsecore/semaphore-win32.c'; then $(CYGPATH_W) 'pulsecore/semaphore-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-win32.c'; fi`
 
 paplay-paplay.o: utils/paplay.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(paplay_CFLAGS) $(CFLAGS) -MT paplay-paplay.o -MD -MP -MF "$(DEPDIR)/paplay-paplay.Tpo" -c -o paplay-paplay.o `test -f 'utils/paplay.c' || echo '$(srcdir)/'`utils/paplay.c; \
@@ -5086,6 +5711,216 @@ pax11publish-pax11publish.obj: utils/pax11publish.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='utils/pax11publish.c' object='pax11publish-pax11publish.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-pax11publish.obj `if test -f 'utils/pax11publish.c'; then $(CYGPATH_W) 'utils/pax11publish.c'; else $(CYGPATH_W) '$(srcdir)/utils/pax11publish.c'; fi`
+
+pax11publish-x11prop.o: pulsecore/x11prop.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-x11prop.o -MD -MP -MF "$(DEPDIR)/pax11publish-x11prop.Tpo" -c -o pax11publish-x11prop.o `test -f 'pulsecore/x11prop.c' || echo '$(srcdir)/'`pulsecore/x11prop.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-x11prop.Tpo" "$(DEPDIR)/pax11publish-x11prop.Po"; else rm -f "$(DEPDIR)/pax11publish-x11prop.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/x11prop.c' object='pax11publish-x11prop.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-x11prop.o `test -f 'pulsecore/x11prop.c' || echo '$(srcdir)/'`pulsecore/x11prop.c
+
+pax11publish-x11prop.obj: pulsecore/x11prop.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-x11prop.obj -MD -MP -MF "$(DEPDIR)/pax11publish-x11prop.Tpo" -c -o pax11publish-x11prop.obj `if test -f 'pulsecore/x11prop.c'; then $(CYGPATH_W) 'pulsecore/x11prop.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/x11prop.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-x11prop.Tpo" "$(DEPDIR)/pax11publish-x11prop.Po"; else rm -f "$(DEPDIR)/pax11publish-x11prop.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/x11prop.c' object='pax11publish-x11prop.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-x11prop.obj `if test -f 'pulsecore/x11prop.c'; then $(CYGPATH_W) 'pulsecore/x11prop.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/x11prop.c'; fi`
+
+pax11publish-client-conf.o: pulse/client-conf.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-client-conf.o -MD -MP -MF "$(DEPDIR)/pax11publish-client-conf.Tpo" -c -o pax11publish-client-conf.o `test -f 'pulse/client-conf.c' || echo '$(srcdir)/'`pulse/client-conf.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-client-conf.Tpo" "$(DEPDIR)/pax11publish-client-conf.Po"; else rm -f "$(DEPDIR)/pax11publish-client-conf.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/client-conf.c' object='pax11publish-client-conf.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-client-conf.o `test -f 'pulse/client-conf.c' || echo '$(srcdir)/'`pulse/client-conf.c
+
+pax11publish-client-conf.obj: pulse/client-conf.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-client-conf.obj -MD -MP -MF "$(DEPDIR)/pax11publish-client-conf.Tpo" -c -o pax11publish-client-conf.obj `if test -f 'pulse/client-conf.c'; then $(CYGPATH_W) 'pulse/client-conf.c'; else $(CYGPATH_W) '$(srcdir)/pulse/client-conf.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-client-conf.Tpo" "$(DEPDIR)/pax11publish-client-conf.Po"; else rm -f "$(DEPDIR)/pax11publish-client-conf.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/client-conf.c' object='pax11publish-client-conf.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-client-conf.obj `if test -f 'pulse/client-conf.c'; then $(CYGPATH_W) 'pulse/client-conf.c'; else $(CYGPATH_W) '$(srcdir)/pulse/client-conf.c'; fi`
+
+pax11publish-authkey.o: pulsecore/authkey.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-authkey.o -MD -MP -MF "$(DEPDIR)/pax11publish-authkey.Tpo" -c -o pax11publish-authkey.o `test -f 'pulsecore/authkey.c' || echo '$(srcdir)/'`pulsecore/authkey.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-authkey.Tpo" "$(DEPDIR)/pax11publish-authkey.Po"; else rm -f "$(DEPDIR)/pax11publish-authkey.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/authkey.c' object='pax11publish-authkey.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-authkey.o `test -f 'pulsecore/authkey.c' || echo '$(srcdir)/'`pulsecore/authkey.c
+
+pax11publish-authkey.obj: pulsecore/authkey.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-authkey.obj -MD -MP -MF "$(DEPDIR)/pax11publish-authkey.Tpo" -c -o pax11publish-authkey.obj `if test -f 'pulsecore/authkey.c'; then $(CYGPATH_W) 'pulsecore/authkey.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/authkey.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-authkey.Tpo" "$(DEPDIR)/pax11publish-authkey.Po"; else rm -f "$(DEPDIR)/pax11publish-authkey.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/authkey.c' object='pax11publish-authkey.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-authkey.obj `if test -f 'pulsecore/authkey.c'; then $(CYGPATH_W) 'pulsecore/authkey.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/authkey.c'; fi`
+
+pax11publish-random.o: pulsecore/random.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-random.o -MD -MP -MF "$(DEPDIR)/pax11publish-random.Tpo" -c -o pax11publish-random.o `test -f 'pulsecore/random.c' || echo '$(srcdir)/'`pulsecore/random.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-random.Tpo" "$(DEPDIR)/pax11publish-random.Po"; else rm -f "$(DEPDIR)/pax11publish-random.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/random.c' object='pax11publish-random.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-random.o `test -f 'pulsecore/random.c' || echo '$(srcdir)/'`pulsecore/random.c
+
+pax11publish-random.obj: pulsecore/random.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-random.obj -MD -MP -MF "$(DEPDIR)/pax11publish-random.Tpo" -c -o pax11publish-random.obj `if test -f 'pulsecore/random.c'; then $(CYGPATH_W) 'pulsecore/random.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/random.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-random.Tpo" "$(DEPDIR)/pax11publish-random.Po"; else rm -f "$(DEPDIR)/pax11publish-random.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/random.c' object='pax11publish-random.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-random.obj `if test -f 'pulsecore/random.c'; then $(CYGPATH_W) 'pulsecore/random.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/random.c'; fi`
+
+pax11publish-conf-parser.o: pulsecore/conf-parser.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-conf-parser.o -MD -MP -MF "$(DEPDIR)/pax11publish-conf-parser.Tpo" -c -o pax11publish-conf-parser.o `test -f 'pulsecore/conf-parser.c' || echo '$(srcdir)/'`pulsecore/conf-parser.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-conf-parser.Tpo" "$(DEPDIR)/pax11publish-conf-parser.Po"; else rm -f "$(DEPDIR)/pax11publish-conf-parser.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/conf-parser.c' object='pax11publish-conf-parser.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-conf-parser.o `test -f 'pulsecore/conf-parser.c' || echo '$(srcdir)/'`pulsecore/conf-parser.c
+
+pax11publish-conf-parser.obj: pulsecore/conf-parser.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-conf-parser.obj -MD -MP -MF "$(DEPDIR)/pax11publish-conf-parser.Tpo" -c -o pax11publish-conf-parser.obj `if test -f 'pulsecore/conf-parser.c'; then $(CYGPATH_W) 'pulsecore/conf-parser.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/conf-parser.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-conf-parser.Tpo" "$(DEPDIR)/pax11publish-conf-parser.Po"; else rm -f "$(DEPDIR)/pax11publish-conf-parser.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/conf-parser.c' object='pax11publish-conf-parser.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-conf-parser.obj `if test -f 'pulsecore/conf-parser.c'; then $(CYGPATH_W) 'pulsecore/conf-parser.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/conf-parser.c'; fi`
+
+pax11publish-core-util.o: pulsecore/core-util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-core-util.o -MD -MP -MF "$(DEPDIR)/pax11publish-core-util.Tpo" -c -o pax11publish-core-util.o `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-core-util.Tpo" "$(DEPDIR)/pax11publish-core-util.Po"; else rm -f "$(DEPDIR)/pax11publish-core-util.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-util.c' object='pax11publish-core-util.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-core-util.o `test -f 'pulsecore/core-util.c' || echo '$(srcdir)/'`pulsecore/core-util.c
+
+pax11publish-core-util.obj: pulsecore/core-util.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-core-util.obj -MD -MP -MF "$(DEPDIR)/pax11publish-core-util.Tpo" -c -o pax11publish-core-util.obj `if test -f 'pulsecore/core-util.c'; then $(CYGPATH_W) 'pulsecore/core-util.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-util.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-core-util.Tpo" "$(DEPDIR)/pax11publish-core-util.Po"; else rm -f "$(DEPDIR)/pax11publish-core-util.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-util.c' object='pax11publish-core-util.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-core-util.obj `if test -f 'pulsecore/core-util.c'; then $(CYGPATH_W) 'pulsecore/core-util.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-util.c'; fi`
+
+pax11publish-core-error.o: pulsecore/core-error.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-core-error.o -MD -MP -MF "$(DEPDIR)/pax11publish-core-error.Tpo" -c -o pax11publish-core-error.o `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-core-error.Tpo" "$(DEPDIR)/pax11publish-core-error.Po"; else rm -f "$(DEPDIR)/pax11publish-core-error.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-error.c' object='pax11publish-core-error.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-core-error.o `test -f 'pulsecore/core-error.c' || echo '$(srcdir)/'`pulsecore/core-error.c
+
+pax11publish-core-error.obj: pulsecore/core-error.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-core-error.obj -MD -MP -MF "$(DEPDIR)/pax11publish-core-error.Tpo" -c -o pax11publish-core-error.obj `if test -f 'pulsecore/core-error.c'; then $(CYGPATH_W) 'pulsecore/core-error.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-error.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-core-error.Tpo" "$(DEPDIR)/pax11publish-core-error.Po"; else rm -f "$(DEPDIR)/pax11publish-core-error.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/core-error.c' object='pax11publish-core-error.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-core-error.obj `if test -f 'pulsecore/core-error.c'; then $(CYGPATH_W) 'pulsecore/core-error.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/core-error.c'; fi`
+
+pax11publish-log.o: pulsecore/log.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-log.o -MD -MP -MF "$(DEPDIR)/pax11publish-log.Tpo" -c -o pax11publish-log.o `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-log.Tpo" "$(DEPDIR)/pax11publish-log.Po"; else rm -f "$(DEPDIR)/pax11publish-log.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='pax11publish-log.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-log.o `test -f 'pulsecore/log.c' || echo '$(srcdir)/'`pulsecore/log.c
+
+pax11publish-log.obj: pulsecore/log.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-log.obj -MD -MP -MF "$(DEPDIR)/pax11publish-log.Tpo" -c -o pax11publish-log.obj `if test -f 'pulsecore/log.c'; then $(CYGPATH_W) 'pulsecore/log.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/log.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-log.Tpo" "$(DEPDIR)/pax11publish-log.Po"; else rm -f "$(DEPDIR)/pax11publish-log.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/log.c' object='pax11publish-log.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-log.obj `if test -f 'pulsecore/log.c'; then $(CYGPATH_W) 'pulsecore/log.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/log.c'; fi`
+
+pax11publish-once.o: pulsecore/once.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-once.o -MD -MP -MF "$(DEPDIR)/pax11publish-once.Tpo" -c -o pax11publish-once.o `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-once.Tpo" "$(DEPDIR)/pax11publish-once.Po"; else rm -f "$(DEPDIR)/pax11publish-once.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/once.c' object='pax11publish-once.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-once.o `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c
+
+pax11publish-once.obj: pulsecore/once.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-once.obj -MD -MP -MF "$(DEPDIR)/pax11publish-once.Tpo" -c -o pax11publish-once.obj `if test -f 'pulsecore/once.c'; then $(CYGPATH_W) 'pulsecore/once.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/once.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-once.Tpo" "$(DEPDIR)/pax11publish-once.Po"; else rm -f "$(DEPDIR)/pax11publish-once.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/once.c' object='pax11publish-once.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-once.obj `if test -f 'pulsecore/once.c'; then $(CYGPATH_W) 'pulsecore/once.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/once.c'; fi`
+
+pax11publish-mutex-posix.o: pulsecore/mutex-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-mutex-posix.o -MD -MP -MF "$(DEPDIR)/pax11publish-mutex-posix.Tpo" -c -o pax11publish-mutex-posix.o `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-mutex-posix.Tpo" "$(DEPDIR)/pax11publish-mutex-posix.Po"; else rm -f "$(DEPDIR)/pax11publish-mutex-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-posix.c' object='pax11publish-mutex-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-mutex-posix.o `test -f 'pulsecore/mutex-posix.c' || echo '$(srcdir)/'`pulsecore/mutex-posix.c
+
+pax11publish-mutex-posix.obj: pulsecore/mutex-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-mutex-posix.obj -MD -MP -MF "$(DEPDIR)/pax11publish-mutex-posix.Tpo" -c -o pax11publish-mutex-posix.obj `if test -f 'pulsecore/mutex-posix.c'; then $(CYGPATH_W) 'pulsecore/mutex-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-mutex-posix.Tpo" "$(DEPDIR)/pax11publish-mutex-posix.Po"; else rm -f "$(DEPDIR)/pax11publish-mutex-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-posix.c' object='pax11publish-mutex-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-mutex-posix.obj `if test -f 'pulsecore/mutex-posix.c'; then $(CYGPATH_W) 'pulsecore/mutex-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-posix.c'; fi`
+
+pax11publish-thread-posix.o: pulsecore/thread-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-thread-posix.o -MD -MP -MF "$(DEPDIR)/pax11publish-thread-posix.Tpo" -c -o pax11publish-thread-posix.o `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-thread-posix.Tpo" "$(DEPDIR)/pax11publish-thread-posix.Po"; else rm -f "$(DEPDIR)/pax11publish-thread-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-posix.c' object='pax11publish-thread-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-thread-posix.o `test -f 'pulsecore/thread-posix.c' || echo '$(srcdir)/'`pulsecore/thread-posix.c
+
+pax11publish-thread-posix.obj: pulsecore/thread-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-thread-posix.obj -MD -MP -MF "$(DEPDIR)/pax11publish-thread-posix.Tpo" -c -o pax11publish-thread-posix.obj `if test -f 'pulsecore/thread-posix.c'; then $(CYGPATH_W) 'pulsecore/thread-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-thread-posix.Tpo" "$(DEPDIR)/pax11publish-thread-posix.Po"; else rm -f "$(DEPDIR)/pax11publish-thread-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-posix.c' object='pax11publish-thread-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-thread-posix.obj `if test -f 'pulsecore/thread-posix.c'; then $(CYGPATH_W) 'pulsecore/thread-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-posix.c'; fi`
+
+pax11publish-semaphore-posix.o: pulsecore/semaphore-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-semaphore-posix.o -MD -MP -MF "$(DEPDIR)/pax11publish-semaphore-posix.Tpo" -c -o pax11publish-semaphore-posix.o `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-semaphore-posix.Tpo" "$(DEPDIR)/pax11publish-semaphore-posix.Po"; else rm -f "$(DEPDIR)/pax11publish-semaphore-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-posix.c' object='pax11publish-semaphore-posix.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-semaphore-posix.o `test -f 'pulsecore/semaphore-posix.c' || echo '$(srcdir)/'`pulsecore/semaphore-posix.c
+
+pax11publish-semaphore-posix.obj: pulsecore/semaphore-posix.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-semaphore-posix.obj -MD -MP -MF "$(DEPDIR)/pax11publish-semaphore-posix.Tpo" -c -o pax11publish-semaphore-posix.obj `if test -f 'pulsecore/semaphore-posix.c'; then $(CYGPATH_W) 'pulsecore/semaphore-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-posix.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-semaphore-posix.Tpo" "$(DEPDIR)/pax11publish-semaphore-posix.Po"; else rm -f "$(DEPDIR)/pax11publish-semaphore-posix.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-posix.c' object='pax11publish-semaphore-posix.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-semaphore-posix.obj `if test -f 'pulsecore/semaphore-posix.c'; then $(CYGPATH_W) 'pulsecore/semaphore-posix.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-posix.c'; fi`
+
+pax11publish-mutex-win32.o: pulsecore/mutex-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-mutex-win32.o -MD -MP -MF "$(DEPDIR)/pax11publish-mutex-win32.Tpo" -c -o pax11publish-mutex-win32.o `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-mutex-win32.Tpo" "$(DEPDIR)/pax11publish-mutex-win32.Po"; else rm -f "$(DEPDIR)/pax11publish-mutex-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-win32.c' object='pax11publish-mutex-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-mutex-win32.o `test -f 'pulsecore/mutex-win32.c' || echo '$(srcdir)/'`pulsecore/mutex-win32.c
+
+pax11publish-mutex-win32.obj: pulsecore/mutex-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-mutex-win32.obj -MD -MP -MF "$(DEPDIR)/pax11publish-mutex-win32.Tpo" -c -o pax11publish-mutex-win32.obj `if test -f 'pulsecore/mutex-win32.c'; then $(CYGPATH_W) 'pulsecore/mutex-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-mutex-win32.Tpo" "$(DEPDIR)/pax11publish-mutex-win32.Po"; else rm -f "$(DEPDIR)/pax11publish-mutex-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/mutex-win32.c' object='pax11publish-mutex-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-mutex-win32.obj `if test -f 'pulsecore/mutex-win32.c'; then $(CYGPATH_W) 'pulsecore/mutex-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/mutex-win32.c'; fi`
+
+pax11publish-thread-win32.o: pulsecore/thread-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-thread-win32.o -MD -MP -MF "$(DEPDIR)/pax11publish-thread-win32.Tpo" -c -o pax11publish-thread-win32.o `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-thread-win32.Tpo" "$(DEPDIR)/pax11publish-thread-win32.Po"; else rm -f "$(DEPDIR)/pax11publish-thread-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-win32.c' object='pax11publish-thread-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-thread-win32.o `test -f 'pulsecore/thread-win32.c' || echo '$(srcdir)/'`pulsecore/thread-win32.c
+
+pax11publish-thread-win32.obj: pulsecore/thread-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-thread-win32.obj -MD -MP -MF "$(DEPDIR)/pax11publish-thread-win32.Tpo" -c -o pax11publish-thread-win32.obj `if test -f 'pulsecore/thread-win32.c'; then $(CYGPATH_W) 'pulsecore/thread-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-thread-win32.Tpo" "$(DEPDIR)/pax11publish-thread-win32.Po"; else rm -f "$(DEPDIR)/pax11publish-thread-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/thread-win32.c' object='pax11publish-thread-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-thread-win32.obj `if test -f 'pulsecore/thread-win32.c'; then $(CYGPATH_W) 'pulsecore/thread-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/thread-win32.c'; fi`
+
+pax11publish-semaphore-win32.o: pulsecore/semaphore-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-semaphore-win32.o -MD -MP -MF "$(DEPDIR)/pax11publish-semaphore-win32.Tpo" -c -o pax11publish-semaphore-win32.o `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-semaphore-win32.Tpo" "$(DEPDIR)/pax11publish-semaphore-win32.Po"; else rm -f "$(DEPDIR)/pax11publish-semaphore-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='pax11publish-semaphore-win32.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-semaphore-win32.o `test -f 'pulsecore/semaphore-win32.c' || echo '$(srcdir)/'`pulsecore/semaphore-win32.c
+
+pax11publish-semaphore-win32.obj: pulsecore/semaphore-win32.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -MT pax11publish-semaphore-win32.obj -MD -MP -MF "$(DEPDIR)/pax11publish-semaphore-win32.Tpo" -c -o pax11publish-semaphore-win32.obj `if test -f 'pulsecore/semaphore-win32.c'; then $(CYGPATH_W) 'pulsecore/semaphore-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-win32.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pax11publish-semaphore-win32.Tpo" "$(DEPDIR)/pax11publish-semaphore-win32.Po"; else rm -f "$(DEPDIR)/pax11publish-semaphore-win32.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/semaphore-win32.c' object='pax11publish-semaphore-win32.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(pax11publish_CFLAGS) $(CFLAGS) -c -o pax11publish-semaphore-win32.obj `if test -f 'pulsecore/semaphore-win32.c'; then $(CYGPATH_W) 'pulsecore/semaphore-win32.c'; else $(CYGPATH_W) '$(srcdir)/pulsecore/semaphore-win32.c'; fi`
 
 pulseaudio-caps.o: daemon/caps.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pulseaudio_CPPFLAGS) $(CPPFLAGS) $(pulseaudio_CFLAGS) $(CFLAGS) -MT pulseaudio-caps.o -MD -MP -MF "$(DEPDIR)/pulseaudio-caps.Tpo" -c -o pulseaudio-caps.o `test -f 'daemon/caps.c' || echo '$(srcdir)/'`daemon/caps.c; \
@@ -5185,6 +6020,20 @@ pulseaudio-main.obj: daemon/main.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pulseaudio_CPPFLAGS) $(CPPFLAGS) $(pulseaudio_CFLAGS) $(CFLAGS) -c -o pulseaudio-main.obj `if test -f 'daemon/main.c'; then $(CYGPATH_W) 'daemon/main.c'; else $(CYGPATH_W) '$(srcdir)/daemon/main.c'; fi`
 
+pulseaudio-polkit.o: daemon/polkit.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pulseaudio_CPPFLAGS) $(CPPFLAGS) $(pulseaudio_CFLAGS) $(CFLAGS) -MT pulseaudio-polkit.o -MD -MP -MF "$(DEPDIR)/pulseaudio-polkit.Tpo" -c -o pulseaudio-polkit.o `test -f 'daemon/polkit.c' || echo '$(srcdir)/'`daemon/polkit.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pulseaudio-polkit.Tpo" "$(DEPDIR)/pulseaudio-polkit.Po"; else rm -f "$(DEPDIR)/pulseaudio-polkit.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='daemon/polkit.c' object='pulseaudio-polkit.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pulseaudio_CPPFLAGS) $(CPPFLAGS) $(pulseaudio_CFLAGS) $(CFLAGS) -c -o pulseaudio-polkit.o `test -f 'daemon/polkit.c' || echo '$(srcdir)/'`daemon/polkit.c
+
+pulseaudio-polkit.obj: daemon/polkit.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pulseaudio_CPPFLAGS) $(CPPFLAGS) $(pulseaudio_CFLAGS) $(CFLAGS) -MT pulseaudio-polkit.obj -MD -MP -MF "$(DEPDIR)/pulseaudio-polkit.Tpo" -c -o pulseaudio-polkit.obj `if test -f 'daemon/polkit.c'; then $(CYGPATH_W) 'daemon/polkit.c'; else $(CYGPATH_W) '$(srcdir)/daemon/polkit.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/pulseaudio-polkit.Tpo" "$(DEPDIR)/pulseaudio-polkit.Po"; else rm -f "$(DEPDIR)/pulseaudio-polkit.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='daemon/polkit.c' object='pulseaudio-polkit.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pulseaudio_CPPFLAGS) $(CPPFLAGS) $(pulseaudio_CFLAGS) $(CFLAGS) -c -o pulseaudio-polkit.obj `if test -f 'daemon/polkit.c'; then $(CYGPATH_W) 'daemon/polkit.c'; else $(CYGPATH_W) '$(srcdir)/daemon/polkit.c'; fi`
+
 queue_test-queue-test.o: tests/queue-test.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(queue_test_CFLAGS) $(CFLAGS) -MT queue_test-queue-test.o -MD -MP -MF "$(DEPDIR)/queue_test-queue-test.Tpo" -c -o queue_test-queue-test.o `test -f 'tests/queue-test.c' || echo '$(srcdir)/'`tests/queue-test.c; \
 @am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/queue_test-queue-test.Tpo" "$(DEPDIR)/queue_test-queue-test.Po"; else rm -f "$(DEPDIR)/queue_test-queue-test.Tpo"; exit 1; fi
@@ -5198,6 +6047,20 @@ queue_test-queue-test.obj: tests/queue-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/queue-test.c' object='queue_test-queue-test.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(queue_test_CFLAGS) $(CFLAGS) -c -o queue_test-queue-test.obj `if test -f 'tests/queue-test.c'; then $(CYGPATH_W) 'tests/queue-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/queue-test.c'; fi`
+
+remix_test-remix-test.o: tests/remix-test.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(remix_test_CFLAGS) $(CFLAGS) -MT remix_test-remix-test.o -MD -MP -MF "$(DEPDIR)/remix_test-remix-test.Tpo" -c -o remix_test-remix-test.o `test -f 'tests/remix-test.c' || echo '$(srcdir)/'`tests/remix-test.c; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/remix_test-remix-test.Tpo" "$(DEPDIR)/remix_test-remix-test.Po"; else rm -f "$(DEPDIR)/remix_test-remix-test.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/remix-test.c' object='remix_test-remix-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(remix_test_CFLAGS) $(CFLAGS) -c -o remix_test-remix-test.o `test -f 'tests/remix-test.c' || echo '$(srcdir)/'`tests/remix-test.c
+
+remix_test-remix-test.obj: tests/remix-test.c
+@am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(remix_test_CFLAGS) $(CFLAGS) -MT remix_test-remix-test.obj -MD -MP -MF "$(DEPDIR)/remix_test-remix-test.Tpo" -c -o remix_test-remix-test.obj `if test -f 'tests/remix-test.c'; then $(CYGPATH_W) 'tests/remix-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/remix-test.c'; fi`; \
+@am__fastdepCC_TRUE@	then mv -f "$(DEPDIR)/remix_test-remix-test.Tpo" "$(DEPDIR)/remix_test-remix-test.Po"; else rm -f "$(DEPDIR)/remix_test-remix-test.Tpo"; exit 1; fi
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/remix-test.c' object='remix_test-remix-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(remix_test_CFLAGS) $(CFLAGS) -c -o remix_test-remix-test.obj `if test -f 'tests/remix-test.c'; then $(CYGPATH_W) 'tests/remix-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/remix-test.c'; fi`
 
 resampler_test-resampler-test.o: tests/resampler-test.c
 @am__fastdepCC_TRUE@	if $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(resampler_test_CFLAGS) $(CFLAGS) -MT resampler_test-resampler-test.o -MD -MP -MF "$(DEPDIR)/resampler_test-resampler-test.Tpo" -c -o resampler_test-resampler-test.o `test -f 'tests/resampler-test.c' || echo '$(srcdir)/'`tests/resampler-test.c; \
@@ -5348,6 +6211,23 @@ clean-libtool:
 distclean-libtool:
 	-rm -f libtool
 uninstall-info-am:
+install-policyDATA: $(policy_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(policydir)" || $(mkdir_p) "$(DESTDIR)$(policydir)"
+	@list='$(policy_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(policyDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(policydir)/$$f'"; \
+	  $(policyDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(policydir)/$$f"; \
+	done
+
+uninstall-policyDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(policy_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(policydir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(policydir)/$$f"; \
+	done
 install-pulseconfDATA: $(pulseconf_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(pulseconfdir)" || $(mkdir_p) "$(DESTDIR)$(pulseconfdir)"
@@ -5484,7 +6364,7 @@ all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(DATA) \
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(policydir)" "$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"; do \
 	  test -z "$$dir" || $(mkdir_p) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -5537,8 +6417,8 @@ info: info-am
 
 info-am:
 
-install-data-am: install-pulseconfDATA install-pulseincludeHEADERS \
-	install-xdgautostartDATA
+install-data-am: install-policyDATA install-pulseconfDATA \
+	install-pulseincludeHEADERS install-xdgautostartDATA
 
 install-exec-am: install-binPROGRAMS install-binSCRIPTS \
 	install-libLTLIBRARIES install-modlibexecLTLIBRARIES \
@@ -5572,9 +6452,9 @@ ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	uninstall-info-am uninstall-libLTLIBRARIES \
-	uninstall-modlibexecLTLIBRARIES uninstall-pulseconfDATA \
-	uninstall-pulseincludeHEADERS uninstall-pulselibexecPROGRAMS \
-	uninstall-xdgautostartDATA
+	uninstall-modlibexecLTLIBRARIES uninstall-policyDATA \
+	uninstall-pulseconfDATA uninstall-pulseincludeHEADERS \
+	uninstall-pulselibexecPROGRAMS uninstall-xdgautostartDATA
 
 .PHONY: CTAGS GTAGS all all-am check check-am clean clean-binPROGRAMS \
 	clean-generic clean-libLTLIBRARIES clean-libtool \
@@ -5586,15 +6466,16 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	install-binSCRIPTS install-data install-data-am install-exec \
 	install-exec-am install-exec-hook install-info install-info-am \
 	install-libLTLIBRARIES install-man \
-	install-modlibexecLTLIBRARIES install-pulseconfDATA \
-	install-pulseincludeHEADERS install-pulselibexecPROGRAMS \
-	install-strip install-xdgautostartDATA installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-binSCRIPTS uninstall-info-am \
-	uninstall-libLTLIBRARIES uninstall-modlibexecLTLIBRARIES \
+	install-modlibexecLTLIBRARIES install-policyDATA \
+	install-pulseconfDATA install-pulseincludeHEADERS \
+	install-pulselibexecPROGRAMS install-strip \
+	install-xdgautostartDATA installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags uninstall \
+	uninstall-am uninstall-binPROGRAMS uninstall-binSCRIPTS \
+	uninstall-info-am uninstall-libLTLIBRARIES \
+	uninstall-modlibexecLTLIBRARIES uninstall-policyDATA \
 	uninstall-pulseconfDATA uninstall-pulseincludeHEADERS \
 	uninstall-pulselibexecPROGRAMS uninstall-xdgautostartDATA
 
@@ -5636,10 +6517,12 @@ daemon.conf: daemon/daemon.conf.in Makefile
 install-exec-hook:
 	chown root $(DESTDIR)$(bindir)/pulseaudio ; true
 	chmod u+s $(DESTDIR)$(bindir)/pulseaudio
+	-chmod u+s $(DESTDIR)$(pulselibexecdir)/bt-proximity-helper
 	ln -sf pacat $(DESTDIR)$(bindir)/parec
 	rm -f $(DESTDIR)$(modlibexecdir)/*.a
 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.a
 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.la
+	rm -f $(DESTDIR)$(modlibexecdir)/*.la
 
 massif: pulseaudio
 	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio
@@ -5652,6 +6535,15 @@ update-speex:
 
 update-ffmpeg:
 	wget -O pulsecore/ffmpeg/resample2.c http://svn.mplayerhq.hu/ffmpeg/trunk/libavcodec/resample2.c?view=co
+
+# Automatically generate linker version script. We use the same one for all public .sos
+update-map-file:
+	( echo "PULSE_0 {" ; \
+	  echo "global:" ; \
+	  ctags -I PA_GCC_PURE,PA_GCC_CONST -f - --c-kinds=p $(pulseinclude_HEADERS) | awk '/^pa_/ { print $$1 ";" }' | sort ; \
+	  echo "local:" ;  \
+	  echo "*;" ; \
+	  echo "};" ) > $(srcdir)/map-file
 
 .PHONY: utils/padsp
 # Tell versions [3.59,3.63) of GNU make to not export all variables.

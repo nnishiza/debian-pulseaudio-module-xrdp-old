@@ -1,4 +1,4 @@
-/* $Id: resampler-test.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: resampler-test.c 2044 2007-11-11 02:30:59Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -71,6 +71,16 @@ static void dump_block(const pa_sample_spec *ss, const pa_memchunk *chunk) {
             break;
         }
 
+        case PA_SAMPLE_S32NE:
+        case PA_SAMPLE_S32RE: {
+            uint32_t *u = d;
+
+            for (i = 0; i < chunk->length / pa_frame_size(ss); i++)
+                printf("0x%08x ", *(u++));
+
+            break;
+        }
+
         case PA_SAMPLE_FLOAT32NE:
         case PA_SAMPLE_FLOAT32RE: {
             float *u = d;
@@ -137,6 +147,23 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
             break;
         }
 
+        case PA_SAMPLE_S32NE:
+        case PA_SAMPLE_S32RE: {
+            uint32_t *u = d;
+
+            u[0] = 0x00000001;
+            u[1] = 0xFFFF0002;
+            u[2] = 0x7FFF0003;
+            u[3] = 0x80000004;
+            u[4] = 0x9fff0005;
+            u[5] = 0x3fff0006;
+            u[6] =    0x10007;
+            u[7] = 0xF0000008;
+            u[8] =   0x200009;
+            u[9] =   0x21000A;
+            break;
+        }
+
         case PA_SAMPLE_FLOAT32NE:
         case PA_SAMPLE_FLOAT32RE: {
             float *u = d;
@@ -195,8 +222,8 @@ int main(int argc, char *argv[]) {
                    pa_sample_format_to_string(b.format),
                    pa_sample_format_to_string(a.format));
 
-            pa_assert_se(forth = pa_resampler_new(pool, &a, NULL, &b, NULL, PA_RESAMPLER_AUTO, FALSE));
-            pa_assert_se(back = pa_resampler_new(pool, &b, NULL, &a, NULL, PA_RESAMPLER_AUTO, FALSE));
+            pa_assert_se(forth = pa_resampler_new(pool, &a, NULL, &b, NULL, PA_RESAMPLER_AUTO, 0));
+            pa_assert_se(back = pa_resampler_new(pool, &b, NULL, &a, NULL, PA_RESAMPLER_AUTO, 0));
 
             i.memblock = generate_block(pool, &a);
             i.length = pa_memblock_get_length(i.memblock);

@@ -14,7 +14,7 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 2001 2007-10-30 15:23:56Z lennart $
+# $Id: Makefile.am 2023 2007-11-05 15:10:13Z lennart $
 #
 # This file is part of PulseAudio.
 #
@@ -126,6 +126,10 @@ AUTOMAKE = @AUTOMAKE@
 AVAHI_CFLAGS = @AVAHI_CFLAGS@
 AVAHI_LIBS = @AVAHI_LIBS@
 AWK = @AWK@
+BLUEZ_CFLAGS = @BLUEZ_CFLAGS@
+BLUEZ_LIBS = @BLUEZ_LIBS@
+BUILD_MANPAGES_FALSE = @BUILD_MANPAGES_FALSE@
+BUILD_MANPAGES_TRUE = @BUILD_MANPAGES_TRUE@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -168,6 +172,9 @@ HAVE_ALSA_TRUE = @HAVE_ALSA_TRUE@
 HAVE_AVAHI = @HAVE_AVAHI@
 HAVE_AVAHI_FALSE = @HAVE_AVAHI_FALSE@
 HAVE_AVAHI_TRUE = @HAVE_AVAHI_TRUE@
+HAVE_BLUEZ = @HAVE_BLUEZ@
+HAVE_BLUEZ_FALSE = @HAVE_BLUEZ_FALSE@
+HAVE_BLUEZ_TRUE = @HAVE_BLUEZ_TRUE@
 HAVE_DBUS = @HAVE_DBUS@
 HAVE_DBUS_FALSE = @HAVE_DBUS_FALSE@
 HAVE_DBUS_TRUE = @HAVE_DBUS_TRUE@
@@ -198,6 +205,9 @@ HAVE_MKFIFO_TRUE = @HAVE_MKFIFO_TRUE@
 HAVE_OSS = @HAVE_OSS@
 HAVE_OSS_FALSE = @HAVE_OSS_FALSE@
 HAVE_OSS_TRUE = @HAVE_OSS_TRUE@
+HAVE_POLKIT = @HAVE_POLKIT@
+HAVE_POLKIT_FALSE = @HAVE_POLKIT_FALSE@
+HAVE_POLKIT_TRUE = @HAVE_POLKIT_TRUE@
 HAVE_REGEX_FALSE = @HAVE_REGEX_FALSE@
 HAVE_REGEX_TRUE = @HAVE_REGEX_TRUE@
 HAVE_SIGXCPU_FALSE = @HAVE_SIGXCPU_FALSE@
@@ -265,6 +275,8 @@ PA_SYSTEM_GROUP = @PA_SYSTEM_GROUP@
 PA_SYSTEM_RUNTIME_PATH = @PA_SYSTEM_RUNTIME_PATH@
 PA_SYSTEM_USER = @PA_SYSTEM_USER@
 PKG_CONFIG = @PKG_CONFIG@
+POLKIT_CFLAGS = @POLKIT_CFLAGS@
+POLKIT_LIBS = @POLKIT_LIBS@
 PREOPEN_MODS = @PREOPEN_MODS@
 PREOPEN_MODS_FALSE = @PREOPEN_MODS_FALSE@
 PREOPEN_MODS_TRUE = @PREOPEN_MODS_TRUE@
@@ -278,6 +290,8 @@ SHELL = @SHELL@
 STATIC_BINS_FALSE = @STATIC_BINS_FALSE@
 STATIC_BINS_TRUE = @STATIC_BINS_TRUE@
 STRIP = @STRIP@
+USE_XMLTOMAN_FALSE = @USE_XMLTOMAN_FALSE@
+USE_XMLTOMAN_TRUE = @USE_XMLTOMAN_TRUE@
 VERSION = @VERSION@
 XMKMF = @XMKMF@
 X_CFLAGS = @X_CFLAGS@
@@ -309,6 +323,7 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 have_pkg_config = @have_pkg_config@
+have_xmltoman = @have_xmltoman@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -327,6 +342,7 @@ mkdir_p = @mkdir_p@
 modlibexecdir = @modlibexecdir@
 oldincludedir = @oldincludedir@
 pdfdir = @pdfdir@
+policydir = @policydir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
@@ -336,7 +352,7 @@ subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 EXTRA_DIST = bootstrap.sh LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
-SUBDIRS = src doxygen
+SUBDIRS = src doxygen man
 MAINTAINERCLEANFILES = 
 noinst_DATA = 
 pkgconfigdir = $(libdir)/pkgconfig

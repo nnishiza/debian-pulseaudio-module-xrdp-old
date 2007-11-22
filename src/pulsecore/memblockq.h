@@ -1,7 +1,7 @@
 #ifndef foomemblockqhfoo
 #define foomemblockqhfoo
 
-/* $Id: memblockq.h 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: memblockq.h 2063 2007-11-21 01:19:28Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -141,5 +141,11 @@ size_t pa_memblockq_get_maxlength(pa_memblockq *bq);
 
 /* Return the prebuffer length in bytes */
 size_t pa_memblockq_get_prebuf(pa_memblockq *bq);
+
+/* Change metrics. */
+void pa_memblockq_set_maxlength(pa_memblockq *memblockq, size_t maxlength);
+void pa_memblockq_set_tlength(pa_memblockq *memblockq, size_t tlength);
+void pa_memblockq_set_prebuf(pa_memblockq *memblockq, size_t prebuf);
+void pa_memblockq_set_minreq(pa_memblockq *memblockq, size_t minreq);
 
 #endif

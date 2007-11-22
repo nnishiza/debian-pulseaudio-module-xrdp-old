@@ -1,4 +1,4 @@
-/* $Id: module-oss.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-oss.c 2066 2007-11-21 01:21:53Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -76,9 +76,10 @@
 #include "oss-util.h"
 #include "module-oss-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("OSS Sink/Source")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("OSS Sink/Source");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "sink_name=<name for the sink> "
         "source_name=<name for the source> "
@@ -91,7 +92,7 @@ PA_MODULE_USAGE(
         "fragments=<number of fragments> "
         "fragment_size=<fragment size> "
         "channel_map=<channel map> "
-        "mmap=<enable memory mapping?>")
+        "mmap=<enable memory mapping?>");
 
 #define DEFAULT_DEVICE "/dev/dsp"
 
@@ -863,8 +864,8 @@ static void thread_func(void *userdata) {
 
     pa_log_debug("Thread starting up");
 
-    if (u->core->high_priority)
-        pa_make_realtime();
+    if (u->core->realtime_scheduling)
+        pa_make_realtime(u->core->realtime_priority);
 
     pa_thread_mq_install(&u->thread_mq);
     pa_rtpoll_install(u->rtpoll);
@@ -1138,7 +1139,7 @@ int pa__init(pa_module*m) {
     int fd = -1;
     int nfrags, frag_size;
     int mode, caps;
-    int record = 1, playback = 1, use_mmap = 1;
+    pa_bool_t record = TRUE, playback = TRUE, use_mmap = TRUE;
     pa_sample_spec ss;
     pa_channel_map map;
     pa_modargs *ma = NULL;
@@ -1154,7 +1155,7 @@ int pa__init(pa_module*m) {
     }
 
     if (pa_modargs_get_value_boolean(ma, "record", &record) < 0 || pa_modargs_get_value_boolean(ma, "playback", &playback) < 0) {
-        pa_log("record= and playback= expect numeric argument.");
+        pa_log("record= and playback= expect boolean argument.");
         goto fail;
     }
 

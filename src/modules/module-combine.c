@@ -1,4 +1,4 @@
-/* $Id: module-combine.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-combine.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -50,9 +50,10 @@
 
 #include "module-combine-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Combine multiple sinks to one")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Combine multiple sinks to one");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "sink_name=<name for the sink> "
         "master=<master sink> "
@@ -62,7 +63,7 @@ PA_MODULE_USAGE(
         "format=<sample format> "
         "channels=<number of channels> "
         "rate=<sample rate> "
-        "channel_map=<channel map>")
+        "channel_map=<channel map>");
 
 #define DEFAULT_SINK_NAME "combined"
 #define MEMBLOCKQ_MAXLENGTH (1024*170)
@@ -233,8 +234,8 @@ static void thread_func(void *userdata) {
 
     pa_log_debug("Thread starting up");
 
-    if (u->core->high_priority)
-        pa_make_realtime();
+    if (u->core->realtime_scheduling)
+        pa_make_realtime(u->core->realtime_priority+1);
 
     pa_thread_mq_install(&u->thread_mq);
     pa_rtpoll_install(u->rtpoll);

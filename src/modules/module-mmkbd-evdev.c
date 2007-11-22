@@ -1,4 +1,4 @@
-/* $Id: module-mmkbd-evdev.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-mmkbd-evdev.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -46,10 +46,11 @@
 
 #include "module-mmkbd-evdev-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Multimedia keyboard support via Linux evdev")
-PA_MODULE_VERSION(PACKAGE_VERSION)
-PA_MODULE_USAGE("device=<evdev device> sink=<sink name>")
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Multimedia keyboard support via Linux evdev");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
+PA_MODULE_USAGE("device=<evdev device> sink=<sink name>");
 
 #define DEFAULT_DEVICE "/dev/input/event0"
 

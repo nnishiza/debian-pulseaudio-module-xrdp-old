@@ -1,7 +1,7 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# $Id: configure.ac 2002 2007-10-30 16:02:25Z lennart $
+# $Id: configure.ac 2071 2007-11-21 23:09:17Z lennart $
 
 # This file is part of PulseAudio.
 #
@@ -26,9 +26,9 @@ AC_PREREQ(2.57)
 
 m4_define(PA_MAJOR, [0])
 m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [7])
+m4_define(PA_MICRO, [8])
 
-AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzcbylcnhqvb (at) 0pointer (dot) de])
+AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign -Wall])
@@ -36,14 +36,29 @@ AM_INIT_AUTOMAKE([foreign -Wall])
 AC_SUBST(PA_MAJORMINOR, "PA_MAJOR.PA_MINOR")
 AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
 
-AC_SUBST(PA_API_VERSION, 10)
-AC_SUBST(PA_PROTOCOL_VERSION, 11)
+AC_SUBST(PA_API_VERSION, 11)
+AC_SUBST(PA_PROTOCOL_VERSION, 12)
 
-AC_SUBST(LIBPULSE_VERSION_INFO, [3:0:3])
-AC_SUBST(LIBPULSECORE_VERSION_INFO, [4:0:0])
+# The stable ABI for client applications, for the version info x:y:z
+# always will hold y=z
+AC_SUBST(LIBPULSE_VERSION_INFO, [4:0:4])
+
+# A simplified, synchronous, ABI-stable interface for client
+# applications, for the version info x:y:z always will hold y=z
 AC_SUBST(LIBPULSE_SIMPLE_VERSION_INFO, [0:1:0])
+
+# The ABI-stable network browsing interface for client applications,
+# for the version info x:y:z always will hold y=z
 AC_SUBST(LIBPULSE_BROWSE_VERSION_INFO, [1:1:1])
+
+# The ABI-stable GLib adapter for client applications, for the version
+# info x:y:z always will hold y=z
 AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:3:0])
+
+# An internally used, ABI-unstable library that contains the
+# PulseAudio core, SONAMEs are bumped on every release, version info
+# suffix will always be 0:0
+AC_SUBST(LIBPULSECORE_VERSION_INFO, [5:0:0])
 
 AC_CANONICAL_HOST
 
@@ -774,6 +789,36 @@ AC_SUBST(HAL_LIBS)
 AC_SUBST(HAVE_HAL)
 AM_CONDITIONAL([HAVE_HAL], [test "x$HAVE_HAL" = x1])
 
+#### BlueZ support (optional) ####
+
+AC_ARG_ENABLE([bluez],
+    AC_HELP_STRING([--disable-bluez], [Disable optional BlueZ support]),
+        [
+            case "${enableval}" in
+                yes) bluez=yes ;;
+                no) bluez=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-bluez) ;;
+            esac
+        ],
+        [bluez=auto])
+if test "x${bluez}" != xno ; then
+    PKG_CHECK_MODULES(BLUEZ, [ bluez >= 3.0 ],
+        HAVE_BLUEZ=1,
+        [
+            HAVE_BLUEZ=0
+            if test "x$bluez" = xyes ; then
+                AC_MSG_ERROR([*** BLUEZ support not found])
+            fi
+        ])
+else
+    HAVE_BLUEZ=0
+fi
+
+AC_SUBST(BLUEZ_CFLAGS)
+AC_SUBST(BLUEZ_LIBS)
+AC_SUBST(HAVE_BLUEZ)
+AM_CONDITIONAL([HAVE_BLUEZ], [test "x$HAVE_BLUEZ" = x1])
+
 #### D-Bus support (optional) ####
 
 AC_ARG_ENABLE([dbus],
@@ -816,6 +861,84 @@ AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
 AC_SUBST(HAVE_DBUS)
 AM_CONDITIONAL([HAVE_DBUS], [test "x$HAVE_DBUS" = x1])
+
+#### PolicyKit support (optional) ####
+
+AC_ARG_ENABLE([polkit],
+    AC_HELP_STRING([--disable-polkit], [Disable optional PolicyKit support]),
+        [
+            case "${enableval}" in
+                yes) polkit=yes ;;
+                no) polkit=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-polkit) ;;
+            esac
+        ],
+        [polkit=auto])
+
+if test "x${polkit}" != xno ; then
+
+    PKG_CHECK_MODULES(POLKIT, [ polkit-dbus ],
+        [
+            HAVE_POLKIT=1
+            saved_LIBS="$LIBS"
+            LIBS="$LIBS POLKIT_LIBS"
+            AC_CHECK_FUNCS(polkit_context_is_caller_authorized)
+            LIBS="$saved_LIBS"
+            AC_DEFINE([HAVE_POLKIT], 1, [Have PolicyKit])
+            policydir=`pkg-config --variable prefix`/usr/share/PolicyKit/policy/
+            AC_SUBST(policydir)
+        ],
+        [
+            HAVE_POLKIT=0
+            if test "x$polkit" = xyes ; then
+                AC_MSG_ERROR([*** PolicyKit support not found])
+            fi
+        ])
+else
+    HAVE_POLKIT=0
+fi
+
+AC_SUBST(POLKIT_CFLAGS)
+AC_SUBST(POLKIT_LIBS)
+AC_SUBST(HAVE_POLKIT)
+AM_CONDITIONAL([HAVE_POLKIT], [test "x$HAVE_POLKIT" = x1])
+
+### Build and Install man pages ###
+AC_ARG_ENABLE(manpages,
+        AS_HELP_STRING([--disable-manpages],[Disable building and installation of man pages]),
+[case "${enableval}" in
+  yes) manpages=yes ;;
+  no)  manpages=no ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --disable-manpages]) ;;
+esac],[manpages=yes])
+
+if test x$manpages = xyes ; then
+    #
+    # XMLTOMAN manpage generation
+    #
+    AC_ARG_ENABLE(xmltoman,
+    AS_HELP_STRING([--disable-xmltoman],[Enable rebuilding of man pages with xmltoman]),
+    [case "${enableval}" in
+      yes) xmltoman=yes ;;
+      no)  xmltoman=no ;;
+      *) AC_MSG_ERROR([bad value ${enableval} for --disable-xmltoman]) ;;
+    esac],[xmltoman=yes])
+
+    if test x$xmltoman = xyes ; then
+        AC_CHECK_PROG(have_xmltoman, xmltoman, yes, no)
+    fi
+
+    if test x$have_xmltoman = xno -o x$xmltoman = xno; then
+        if ! test -e man/pulseaudio.1 ; then
+            AC_MSG_ERROR([*** xmltoman was not found or was disabled, it is required to build the manpages as they have not been pre-built, install xmltoman, pass --disable-manpages or dont pass --disable-xmltoman])
+            exit 1
+        fi
+        AC_MSG_WARN([*** Not rebuilding man pages as xmltoman is not found ***])
+        xmltoman=no
+    fi
+fi
+AM_CONDITIONAL([USE_XMLTOMAN], [test "x$xmltoman" = xyes])
+AM_CONDITIONAL([BUILD_MANPAGES], [test "x$manpages" = xyes])
 
 #### PulseAudio system group & user  #####
 
@@ -899,6 +1022,7 @@ AM_CONDITIONAL([FORCE_PREOPEN], [test "x$FORCE_PREOPEN" = "x1"])
 AC_CONFIG_FILES([
 Makefile
 src/Makefile
+man/Makefile
 libpulse.pc
 libpulse-simple.pc
 libpulse-browse.pc
@@ -975,6 +1099,16 @@ if test "x${HAVE_LIBSAMPLERATE}" = "x1" ; then
    ENABLE_LIBSAMPLERATE=yes
 fi
 
+ENABLE_BLUEZ=no
+if test "x${HAVE_BLUEZ}" = "x1" ; then
+   ENABLE_BLUEZ=yes
+fi
+
+ENABLE_POLKIT=no
+if test "x${HAVE_POLKIT}" = "x1" ; then
+   ENABLE_POLKIT=yes
+fi
+
 echo "
  ---{ $PACKAGE_NAME $VERSION }---
 
@@ -995,8 +1129,10 @@ echo "
     Enable Async DNS:       ${ENABLE_LIBASYNCNS}
     Enable LIRC:            ${ENABLE_LIRC}
     Enable HAL:             ${ENABLE_HAL}
+    Enable BlueZ:           ${ENABLE_BLUEZ}
     Enable TCP Wrappers:    ${ENABLE_TCPWRAP}
     Enable libsamplerate:   ${ENABLE_LIBSAMPLERATE}
+    Enable PolicyKit:       ${ENABLE_POLKIT}
     System User:            ${PA_SYSTEM_USER}
     System Group:           ${PA_SYSTEM_GROUP}
     Realtime Group:         ${PA_REALTIME_GROUP}

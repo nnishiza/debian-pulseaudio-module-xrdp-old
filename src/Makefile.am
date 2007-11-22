@@ -1,4 +1,4 @@
-# $Id: Makefile.am 1983 2007-10-29 20:03:49Z lennart $
+# $Id: Makefile.am 2061 2007-11-16 23:47:28Z lennart $
 #
 # This file is part of PulseAudio.
 #
@@ -64,7 +64,7 @@ AM_LIBADD = $(PTHREAD_LIBS)
 AM_LDADD = $(PTHREAD_LIBS)
 
 # Only required on some platforms but defined for all to avoid errors
-AM_LDFLAGS = -Wl,-no-undefined
+AM_LDFLAGS = -Wl,-no-undefined -ffunction-sections -fdata-sections -Wl,--gc-sections
 
 if STATIC_BINS
 BINLDFLAGS = -static
@@ -101,7 +101,9 @@ EXTRA_DIST = \
 		daemon/esdcompat.in \
 		utils/padsp \
 		modules/module-defs.h.m4 \
-		daemon/pulseaudio-module-xsmp.desktop
+		daemon/pulseaudio-module-xsmp.desktop \
+		map-file \
+		daemon/PulseAudio.policy
 
 pulseconf_DATA = \
 		default.pa \
@@ -150,6 +152,17 @@ else
 pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
 endif
 
+if HAVE_POLKIT
+
+policy_DATA = daemon/PulseAudio.policy
+
+pulseaudio_SOURCES += daemon/polkit.c daemon/polkit.h
+pulseaudio_CFLAGS += $(POLKIT_CFLAGS)
+pulseaudio_LDADD += $(POLKIT_LIBS)
+
+
+endif
+
 ###################################
 #       Utility programs          #
 ###################################
@@ -184,7 +197,7 @@ paplay_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 paplay_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 paplay_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-pactl_SOURCES = utils/pactl.c
+pactl_SOURCES = utils/pactl.c pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pactl_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 pactl_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 pactl_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
@@ -194,12 +207,12 @@ pasuspender_LDADD = $(AM_LDADD) libpulse.la $(LIBSNDFILE_LIBS)
 pasuspender_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 pasuspender_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-pacmd_SOURCES = utils/pacmd.c pulsecore/pid.c pulsecore/pid.h
+pacmd_SOURCES = utils/pacmd.c pulsecore/pid.c pulsecore/pid.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pacmd_CFLAGS = $(AM_CFLAGS)
 pacmd_LDADD = $(AM_LDADD) libpulse.la
 pacmd_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-pax11publish_SOURCES = utils/pax11publish.c
+pax11publish_SOURCES = utils/pax11publish.c pulsecore/x11prop.c pulsecore/x11prop.h pulse/client-conf.c pulse/client-conf.h pulsecore/authkey.h pulsecore/authkey.c pulsecore/random.h pulsecore/random.c pulsecore/conf-parser.c pulsecore/conf-parser.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 pax11publish_CFLAGS = $(AM_CFLAGS) $(X_CFLAGS)
 pax11publish_LDADD = $(AM_LDADD) libpulse.la $(X_PRE_LIBS) -lX11 $(X_LIBS) $(X_EXTRA_LIBS)
 pax11publish_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
@@ -238,7 +251,9 @@ noinst_PROGRAMS = \
 		rtpoll-test \
 		sig2str-test \
 		resampler-test \
-		smoother-test
+		smoother-test \
+		mix-test \
+		remix-test
 
 if HAVE_SIGXCPU
 noinst_PROGRAMS += \
@@ -374,7 +389,7 @@ sync_playback_CFLAGS = $(AM_CFLAGS)
 sync_playback_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 interpol_test_SOURCES = tests/interpol-test.c
-interpol_test_LDADD = $(AM_LDADD) libpulse.la
+interpol_test_LDADD = $(AM_LDADD) libpulse.la libpulsecore.la
 interpol_test_CFLAGS = $(AM_CFLAGS)
 interpol_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
@@ -387,6 +402,16 @@ resampler_test_SOURCES = tests/resampler-test.c
 resampler_test_LDADD = $(AM_LDADD) libpulsecore.la
 resampler_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
 resampler_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+
+mix_test_SOURCES = tests/mix-test.c
+mix_test_LDADD = $(AM_LDADD) libpulsecore.la
+mix_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
+mix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+
+remix_test_SOURCES = tests/remix-test.c
+remix_test_LDADD = $(AM_LDADD) libpulsecore.la
+remix_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
+remix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
 
 smoother_test_SOURCES = tests/smoother-test.c
 smoother_test_LDADD = $(AM_LDADD) libpulsecore.la
@@ -525,7 +550,7 @@ libpulse_la_SOURCES += \
 endif
 
 libpulse_la_CFLAGS = $(AM_CFLAGS)
-libpulse_la_LDFLAGS = -version-info $(LIBPULSE_VERSION_INFO)
+libpulse_la_LDFLAGS = -version-info $(LIBPULSE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LIBICONV)
 
 if HAVE_X11
@@ -541,17 +566,17 @@ endif
 libpulse_simple_la_SOURCES = pulse/simple.c pulse/simple.h
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
 libpulse_simple_la_LIBADD = $(AM_LIBADD) libpulse.la
-libpulse_simple_la_LDFLAGS = -version-info $(LIBPULSE_SIMPLE_VERSION_INFO)
+libpulse_simple_la_LDFLAGS = -version-info $(LIBPULSE_SIMPLE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 
-libpulse_browse_la_SOURCES = pulse/browser.c pulse/browser.h pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h
+libpulse_browse_la_SOURCES = pulse/browser.c pulse/browser.h pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h pulsecore/core-util.c pulsecore/core-util.h pulsecore/core-error.c pulsecore/core-error.h  pulsecore/log.c pulsecore/log.h pulsecore/once.c pulsecore/once.h $(PA_THREAD_OBJS)
 libpulse_browse_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 libpulse_browse_la_LIBADD = $(AM_LIBADD) libpulse.la $(AVAHI_LIBS)
-libpulse_browse_la_LDFLAGS = -version-info $(LIBPULSE_BROWSE_VERSION_INFO)
+libpulse_browse_la_LDFLAGS = -version-info $(LIBPULSE_BROWSE_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 
 libpulse_mainloop_glib_la_SOURCES = pulse/glib-mainloop.h pulse/glib-mainloop.c
 libpulse_mainloop_glib_la_CFLAGS = $(AM_CFLAGS) $(GLIB20_CFLAGS)
 libpulse_mainloop_glib_la_LIBADD = $(AM_LIBADD) libpulse.la $(GLIB20_LIBS)
-libpulse_mainloop_glib_la_LDFLAGS = -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO)
+libpulse_mainloop_glib_la_LDFLAGS = -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO) -Wl,-version-script=$(srcdir)/map-file
 
 ###################################
 #         OSS emulation           #
@@ -723,6 +748,7 @@ libpulsecore_la_SOURCES += \
 		pulsecore/macro.h \
 		pulsecore/once.c pulsecore/once.h \
 		pulsecore/time-smoother.c pulsecore/time-smoother.h \
+		pulsecore/start-child.c pulsecore/start-child.h \
 		$(PA_THREAD_OBJS)
 
 if OS_IS_WIN32
@@ -1039,11 +1065,13 @@ modlibexec_LTLIBRARIES += \
 		module-jack-source.la
 endif
 
+pulselibexec_PROGRAMS =
+
 if HAVE_GCONF
 modlibexec_LTLIBRARIES += \
 		module-gconf.la
 
-pulselibexec_PROGRAMS = \
+pulselibexec_PROGRAMS += \
 		gconf-helper
 endif
 
@@ -1056,6 +1084,14 @@ if HAVE_HAL
 modlibexec_LTLIBRARIES += \
 		libdbus-util.la \
 		module-hal-detect.la
+endif
+
+if HAVE_BLUEZ
+modlibexec_LTLIBRARIES += \
+		module-bt-proximity.la
+
+pulselibexec_PROGRAMS += \
+		bt-proximity-helper
 endif
 
 # These are generated by a M4 script
@@ -1108,6 +1144,7 @@ SYMDEF_FILES = \
 		modules/module-rescue-streams-symdef.h \
 		modules/module-suspend-on-idle-symdef.h \
 		modules/module-hal-detect-symdef.h \
+		modules/module-bt-proximity-symdef.h \
 		modules/gconf/module-gconf-symdef.h
 
 EXTRA_DIST += $(SYMDEF_FILES)
@@ -1406,6 +1443,17 @@ gconf_helper_LDADD = $(AM_LDADD) $(GCONF_LIBS) libpulsecore.la
 gconf_helper_CFLAGS = $(AM_CFLAGS) $(GCONF_CFLAGS)
 gconf_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
+# Bluetooth proximity
+module_bt_proximity_la_SOURCES = modules/module-bt-proximity.c
+module_bt_proximity_la_LDFLAGS = -module -avoid-version
+module_bt_proximity_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la libdbus-util.la
+module_bt_proximity_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) -DPA_BT_PROXIMITY_HELPER=\"$(pulselibexecdir)/bt-proximity-helper\"
+
+bt_proximity_helper_SOURCES = modules/bt-proximity-helper.c
+bt_proximity_helper_LDADD = $(AM_LDADD) $(BLUEZ_LIBS)
+bt_proximity_helper_CFLAGS = $(AM_CFLAGS) $(BLUEZ_CFLAGS)
+bt_proximity_helper_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+
 ###################################
 #        Some minor stuff         #
 ###################################
@@ -1442,10 +1490,12 @@ daemon.conf: daemon/daemon.conf.in Makefile
 install-exec-hook:
 	chown root $(DESTDIR)$(bindir)/pulseaudio ; true
 	chmod u+s $(DESTDIR)$(bindir)/pulseaudio
+	-chmod u+s $(DESTDIR)$(pulselibexecdir)/bt-proximity-helper
 	ln -sf pacat $(DESTDIR)$(bindir)/parec
 	rm -f $(DESTDIR)$(modlibexecdir)/*.a
 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.a
 	rm -f $(DESTDIR)$(libdir)/libpulsedsp.la
+	rm -f $(DESTDIR)$(modlibexecdir)/*.la
 
 massif: pulseaudio
 	libtool --mode=execute valgrind --tool=massif --depth=6  --alloc-fn=pa_xmalloc --alloc-fn=pa_xmalloc0 --alloc-fn=pa_xrealloc --alloc-fn=dbus_realloc --alloc-fn=pa_xnew0_internal --alloc-fn=pa_xnew_internal ./pulseaudio
@@ -1458,5 +1508,14 @@ update-speex:
 
 update-ffmpeg:
 	wget -O pulsecore/ffmpeg/resample2.c http://svn.mplayerhq.hu/ffmpeg/trunk/libavcodec/resample2.c?view=co
+
+# Automatically generate linker version script. We use the same one for all public .sos
+update-map-file:
+	( echo "PULSE_0 {" ; \
+	  echo "global:" ; \
+	  ctags -I PA_GCC_PURE,PA_GCC_CONST -f - --c-kinds=p $(pulseinclude_HEADERS) | awk '/^pa_/ { print $$1 ";" }' | sort ; \
+	  echo "local:" ;  \
+	  echo "*;" ; \
+	  echo "};" ) > $(srcdir)/map-file
 
 .PHONY: utils/padsp

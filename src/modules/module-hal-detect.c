@@ -1,4 +1,4 @@
-/* $Id: module-hal-detect.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-hal-detect.c 2050 2007-11-13 17:37:44Z lennart $ */
 
 /***
     This file is part of PulseAudio.
@@ -53,15 +53,16 @@
 #include "dbus-util.h"
 #include "module-hal-detect-symdef.h"
 
-PA_MODULE_AUTHOR("Shahms King")
-PA_MODULE_DESCRIPTION("Detect available audio hardware and load matching drivers")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Shahms King");
+PA_MODULE_DESCRIPTION("Detect available audio hardware and load matching drivers");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
 #if defined(HAVE_ALSA) && defined(HAVE_OSS)
-PA_MODULE_USAGE("api=<alsa or oss>")
+PA_MODULE_USAGE("api=<alsa or oss>");
 #elif defined(HAVE_ALSA)
-PA_MODULE_USAGE("api=<alsa>")
+PA_MODULE_USAGE("api=<alsa>");
 #elif defined(HAVE_OSS)
-PA_MODULE_USAGE("api=<oss>")
+PA_MODULE_USAGE("api=<oss>");
 #endif
 
 struct device {
@@ -190,12 +191,12 @@ static pa_module* hal_device_load_alsa(struct userdata *u, const char *udi, char
         *sink_name = pa_sprintf_malloc("alsa_output.%s", strip_udi(udi));
 
         module_name = "module-alsa-sink";
-        args = pa_sprintf_malloc("device=hw:%u sink_name=%s", card, *sink_name);
+        args = pa_sprintf_malloc("device_id=%u sink_name=%s", card, *sink_name);
     } else {
         *source_name = pa_sprintf_malloc("alsa_input.%s", strip_udi(udi));
 
         module_name = "module-alsa-source";
-        args = pa_sprintf_malloc("device=hw:%u source_name=%s", card, *source_name);
+        args = pa_sprintf_malloc("device_id=%u source_name=%s", card, *source_name);
     }
 
     pa_log_debug("Loading %s with arguments '%s'", module_name, args);

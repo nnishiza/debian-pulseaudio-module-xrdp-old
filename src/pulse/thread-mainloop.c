@@ -1,4 +1,4 @@
-/* $Id: thread-mainloop.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: thread-mainloop.c 2059 2007-11-14 16:11:51Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -103,7 +103,7 @@ pa_threaded_mainloop *pa_threaded_mainloop_new(void) {
         return NULL;
     }
 
-    m->mutex = pa_mutex_new(TRUE, FALSE);
+    m->mutex = pa_mutex_new(TRUE, TRUE);
     m->cond = pa_cond_new();
     m->accept_cond = pa_cond_new();
     m->thread = NULL;

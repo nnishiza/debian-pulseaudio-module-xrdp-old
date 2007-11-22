@@ -1,4 +1,4 @@
-/* $Id: core.c 1973 2007-10-29 08:34:30Z lennart $ */
+/* $Id: core.c 2067 2007-11-21 01:30:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -107,7 +107,7 @@ pa_core* pa_core_new(pa_mainloop_api *m, int shared) {
     c->scache = NULL;
     c->autoload_idxset = NULL;
     c->autoload_hashmap = NULL;
-    c->running_as_daemon = 0;
+    c->running_as_daemon = FALSE;
 
     c->default_sample_spec.format = PA_SAMPLE_S16NE;
     c->default_sample_spec.rate = 44100;
@@ -134,10 +134,11 @@ pa_core* pa_core_new(pa_mainloop_api *m, int shared) {
 
     c->resample_method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 3;
 
-    c->is_system_instance = 0;
-    c->disallow_module_loading = 0;
-    c->high_priority = 0;
-
+    c->is_system_instance = FALSE;
+    c->disallow_module_loading = FALSE;
+    c->realtime_scheduling = FALSE;
+    c->realtime_priority = 5;
+    c->disable_remixing = FALSE;
 
     for (j = 0; j < PA_CORE_HOOK_MAX; j++)
         pa_hook_init(&c->hooks[j], c);
@@ -217,4 +218,3 @@ void pa_core_check_quit(pa_core *c) {
         c->quit_event = NULL;
     }
 }
-

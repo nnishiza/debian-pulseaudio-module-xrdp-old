@@ -1,3 +1,423 @@
+2007-11-21 23:09  lennart
+
+	* configure.ac: bump version and soname
+
+2007-11-21 23:03  lennart
+
+	* man/pacat.1.xml.in, man/pulse-daemon.conf.5.xml.in: update man
+	  pages a bit
+
+2007-11-21 22:55  lennart
+
+	* src/pulsecore/protocol-native.c: when speaking to a client with a
+	  version < 12, hide S32 sample specs, and make them appaear as
+	  FLOAT32
+
+2007-11-21 01:31  lennart
+
+	* configure.ac: increment api and protocol version
+
+2007-11-21 01:30  lennart
+
+	* src/daemon/daemon-conf.c, src/daemon/daemon-conf.h,
+	  src/daemon/daemon.conf.in, src/daemon/main.c, src/map-file,
+	  src/modules/module-suspend-on-idle.c,
+	  src/modules/module-volume-restore.c, src/pulse/context.c,
+	  src/pulse/def.h, src/pulse/internal.h, src/pulse/operation.c,
+	  src/pulse/stream.c, src/pulse/stream.h, src/pulsecore/cli-text.c,
+	  src/pulsecore/core.c, src/pulsecore/core.h, src/pulsecore/pid.c,
+	  src/pulsecore/pid.h, src/pulsecore/protocol-native.c,
+	  src/pulsecore/sink-input.c, src/pulsecore/sink-input.h,
+	  src/pulsecore/sink.c, src/pulsecore/source-output.c,
+	  src/pulsecore/source-output.h, src/pulsecore/source.c,
+	  src/utils/pacat.c, src/utils/pacmd.c: - Check process name when
+	  dealing with PID files
+	  - Add new PA_STREAM_FIX_CHANNELS, FIX_RATE, FIX_FORMAT,
+	  DONT_MOVE, VARIABLE_RATES to pa_sream_flags_t adn implement it
+	  - Expose those flags in pacat
+	  - Add notifications about device suspend/resume to the protocol
+	  and expose them in libpulse
+	  - Allow changing of buffer_attr during playback
+	  - allow disabling for remixing globally
+	  - hookup polkit support
+
+2007-11-21 01:21  lennart
+
+	* src/modules/module-oss.c: minor typo fix
+
+2007-11-21 01:21  lennart
+
+	* PROTOCOL: add short version history of the PA protocol
+
+2007-11-21 01:20  lennart
+
+	* src/pulsecore/native-common.h: add a couple of new opcodes, and
+	  document the versions the opcodes where added
+
+2007-11-21 01:19  lennart
+
+	* src/pulsecore/memblockq.c, src/pulsecore/memblockq.h: add API to
+	  allow runtime reconfiguration of memblockqs
+
+2007-11-16 23:48  lennart
+
+	* configure.ac: detect whether PolicyKit support is available
+
+2007-11-16 23:47  lennart
+
+	* src/Makefile.am: build PolicyKit support
+
+2007-11-16 23:46  lennart
+
+	* src/daemon/PulseAudio.policy, src/daemon/polkit.c,
+	  src/daemon/polkit.h: add interface to PolicyKit
+
+2007-11-14 16:11  lennart
+
+	* src/pulse/thread-mainloop.c: use a prio inheriting mutex for the
+	  threaded mainloop, to ease writing of RT clients
+
+2007-11-14 16:11  lennart
+
+	* src/pulse/operation.c: use a free list for allocation
+	  pa_operation objects
+
+2007-11-14 16:10  lennart
+
+	* src/pulsecore/pdispatch.c: use a free list for allocating
+	  reply_info structs
+
+2007-11-14 16:09  lennart
+
+	* src/modules/module-jack-sink.c, src/modules/module-jack-source.c:
+	  add missing pa_boolization
+
+2007-11-13 23:42  lennart
+
+	* src/modules/alsa-util.c, src/modules/alsa-util.h,
+	  src/modules/module-alsa-sink.c, src/modules/module-alsa-source.c:
+	  Rework ALSA mixer channel detection code. This time we actually
+	  care about the channel names the ALSA mixer exports for us
+
+2007-11-13 23:41  lennart
+
+	* src/pulse/channelmap.c: add array size to increase chance of
+	  detecting missing updates
+
+2007-11-13 19:56  lennart
+
+	* src/Makefile.am: don't fail if the bt-proximity-helper is not
+	  built
+
+2007-11-13 19:39  lennart
+
+	* src/daemon/daemon-conf.c, src/daemon/daemon.conf.in: don't touch
+	  RLIMIT:MEMBLOCK by default. This should improve out-of-the-box
+	  comaptibility with JACK
+
+2007-11-13 19:21  lennart
+
+	* src/utils/pacmd.c: increase the pacmd timeout a bit
+
+2007-11-13 17:37  lennart
+
+	* src/modules/alsa-util.c, src/modules/alsa-util.h,
+	  src/modules/module-alsa-sink.c, src/modules/module-alsa-source.c,
+	  src/modules/module-bt-proximity.c, src/modules/module-cli.c,
+	  src/modules/module-detect.c, src/modules/module-hal-detect.c,
+	  src/modules/module-oss.c, src/modules/rtp/module-rtp-send.c,
+	  src/pulsecore/modargs.c, src/pulsecore/modargs.h,
+	  src/pulsecore/protocol-esound.c, src/pulsecore/protocol-native.c,
+	  src/pulsecore/protocol-simple.c: Completely rework ALSA device
+	  selection code: choose the device to open depending on the
+	  requested number of channels and channel map. In most cases it
+	  will now suffice to set default-channels=6 to enable 5.1 sound
+	  for all devices that support it
+
+2007-11-13 17:35  lennart
+
+	* src/pulsecore/module.c: fix loading of load-once modules if no
+	  other modules was loaded before
+
+2007-11-11 23:18  lennart
+
+	* configure.ac, src, src/Makefile.am,
+	  src/modules/bt-proximity-helper.c,
+	  src/modules/module-bt-proximity.c: add new fun module that
+	  automatically mutes your audio devices when you leave with your
+	  bluetooth phone, and unmutes when you come back
+
+2007-11-11 23:01  lennart
+
+	* src/modules/gconf/module-gconf.c: Port module-gconf to make use
+	  of the new API pa_start_child_for_read()
+
+2007-11-11 23:00  lennart
+
+	* src/pulsecore/start-child.c, src/pulsecore/start-child.h: pull
+	  code for starting helper processes out of module-gconf, clean it
+	  up, and stick into a new API pa_start_child_for_read()
+
+2007-11-11 22:59  lennart
+
+	* src/pulsecore/macro.h: add new function pa_strnull() to simplify
+	  passing null strings to non-linux printf()
+
+2007-11-11 02:30  lennart
+
+	* src, src/Makefile.am, src/pulsecore/resampler.c,
+	  src/pulsecore/resampler.h, src/pulsecore/sink-input.c,
+	  src/pulsecore/source-output.c, src/tests/remix-test.c,
+	  src/tests/resampler-test.c: add a simple fully-automatic
+	  fully-linearupmixer/downmixer and enable it by default
+
+2007-11-09 18:25  lennart
+
+	* src/daemon/dumpmodules.c, src/modules/gconf/module-gconf.c,
+	  src/modules/module-alsa-sink.c, src/modules/module-alsa-source.c,
+	  src/modules/module-cli.c, src/modules/module-combine.c,
+	  src/modules/module-default-device-restore.c,
+	  src/modules/module-defs.h.m4, src/modules/module-detect.c,
+	  src/modules/module-esound-compat-spawnfd.c,
+	  src/modules/module-esound-compat-spawnpid.c,
+	  src/modules/module-esound-sink.c,
+	  src/modules/module-hal-detect.c, src/modules/module-jack-sink.c,
+	  src/modules/module-jack-source.c,
+	  src/modules/module-ladspa-sink.c, src/modules/module-lirc.c,
+	  src/modules/module-match.c, src/modules/module-mmkbd-evdev.c,
+	  src/modules/module-native-protocol-fd.c,
+	  src/modules/module-null-sink.c, src/modules/module-oss.c,
+	  src/modules/module-pipe-sink.c, src/modules/module-pipe-source.c,
+	  src/modules/module-protocol-stub.c,
+	  src/modules/module-remap-sink.c,
+	  src/modules/module-rescue-streams.c, src/modules/module-sine.c,
+	  src/modules/module-suspend-on-idle.c,
+	  src/modules/module-tunnel.c, src/modules/module-volume-restore.c,
+	  src/modules/module-x11-bell.c, src/modules/module-x11-publish.c,
+	  src/modules/module-x11-xsmp.c,
+	  src/modules/module-zeroconf-discover.c,
+	  src/modules/module-zeroconf-publish.c,
+	  src/modules/rtp/module-rtp-recv.c,
+	  src/modules/rtp/module-rtp-send.c, src/pulsecore/modinfo.c,
+	  src/pulsecore/modinfo.h, src/pulsecore/module.c,
+	  src/pulsecore/module.h: tag modules that may only be loaded once
+	  at most especially, and enforce that in the module loader
+
+2007-11-09 18:24  lennart
+
+	* src/pulse/sample.h: minor typo
+
+2007-11-09 17:11  lennart
+
+	* src, src/Makefile.am, src/pulsecore/sample-util.c,
+	  src/pulsecore/sample-util.h, src/tests/mix-test.c: optimize
+	  mixing code a bit. Add mixers for S32LE, S32BE, ULAW, ALAW and
+	  FLOAT32BE. Add volume adjusters for FLOAT32BE, ALAW, ULAW.
+
+2007-11-09 14:20  lennart
+
+	* src/modules/module-ladspa-sink.c, src/pulsecore/sample-util.c,
+	  src/pulsecore/sconv.c: replace a few CLAMPs by PA_CLAMP_UNLIKELY
+
+2007-11-09 14:19  lennart
+
+	* src/pulsecore/macro.h: remove PA_CLAMP_LIKELY macro because it
+	  doesn't really make sense.
+
+2007-11-09 14:14  lennart
+
+	* src/Makefile.am: .la files for modules can probably be removed
+	  safely on all archs now
+
+2007-11-09 02:45  lennart
+
+	* src/modules/alsa-util.c, src/modules/oss-util.c,
+	  src/pulse/sample.c, src/pulse/sample.h,
+	  src/pulsecore/resampler.c, src/pulsecore/sample-util.c,
+	  src/pulsecore/sconv-s16be.c, src/pulsecore/sconv-s16be.h,
+	  src/pulsecore/sconv-s16le.c, src/pulsecore/sconv-s16le.h,
+	  src/pulsecore/sconv.c, src/tests/resampler-test.c: add support
+	  for 32bit integer samples
+
+2007-11-09 02:12  lennart
+
+	* src/pulsecore/gccmacro.h, src/pulsecore/macro.h: fix
+	  CLAMP_LIKELY/UNLIKELY definition
+
+2007-11-09 01:30  lennart
+
+	* src/utils/pactl.c: add missing #include
+
+2007-11-09 01:30  lennart
+
+	* src/pulsecore/endianmacros.h: add a few missing macro definitions
+
+2007-11-09 01:29  lennart
+
+	* src/pulsecore/macro.h: add PA_CLAMP_LIKELY and PA_CLAMP_UNLIKELY
+	  macros
+
+2007-11-09 01:28  lennart
+
+	* src/pulsecore/gccmacro.h: add support for likely()/unlikely()
+	  type macros
+
+2007-11-08 22:42  lennart
+
+	* src/Makefile.am, src/utils/pactl.c: parse the pasuspend argument
+	  like any other boolean in PulseAudio
+
+2007-11-08 22:31  lennart
+
+	* src/daemon/daemon.conf.in, src/pulse/client.conf.in: strip most
+	  comments from the default configuration files, since the man page
+	  is now more elaborate and we don't want to maintain those docs
+	  redundantly at two places
+
+2007-11-08 22:30  lennart
+
+	* man, man/Makefile.am, man/default.pa.5.xml.in,
+	  man/pacat.1.xml.in, man/pulse-client.conf.5.xml.in,
+	  man/pulse-daemon.conf.5.xml.in: add remaing man pages
+
+2007-11-07 13:52  lennart
+
+	* src/utils/pasuspender.c: warn if the sound server is not local
+
+2007-11-07 13:50  lennart
+
+	* man/Makefile.am, man/pabrowse.1.xml.in, man/padsp.1.xml.in,
+	  man/pasuspender.1.xml.in: add man pages for padsp, pabrowse,
+	  pasuspender
+
+2007-11-06 00:21  lennart
+
+	* man/pactl.1.xml.in: complete pactl man page
+
+2007-11-05 23:56  lennart
+
+	* src/utils/pactl.c, src/utils/paplay.c: minor cleanups of --help
+	  texts
+
+2007-11-05 23:56  lennart
+
+	* man/Makefile.am, man/esdcompat.1.xml.in, man/pacat.1.xml.in,
+	  man/pacmd.1.xml.in, man/pactl.1.xml.in, man/paplay.1.xml.in,
+	  man/pax11publish.1.xml.in, man/pulseaudio.1.xml.in: add a couple
+	  of more man pages
+
+2007-11-05 15:10  lennart
+
+	* Makefile.am, configure.ac, man, man/Makefile.am,
+	  man/pulseaudio.1.xml.in, man/xmltoman.css, man/xmltoman.dtd,
+	  man/xmltoman.xsl, src/daemon/cmdline.c: add a man page for the
+	  pulseaudio binary. More will follow.
+
+2007-11-04 16:51  lennart
+
+	* src/modules/module-esound-sink.c, src/pulsecore/iochannel.c: fix
+	  two alignment issues found by the debian buildd gcc on sparc
+
+2007-11-04 16:50  lennart
+
+	* src/modules/module-volume-restore.c: pa_boolization
+
+2007-11-04 14:17  lennart
+
+	* src/pulsecore/fdsem.c: add eventfd syscall nr for arm; patch from
+	  Sjoerd Simons; Closes #150
+
+2007-11-04 14:11  lennart
+
+	* src/pulsecore/core-util.c: Properly terminate pa_readlink()
+	  strings. Patch from Sjoerd Simons. Closes #149
+
+2007-11-04 13:51  lennart
+
+	* src/Makefile.am, src/map-file: Add linker version script to hide
+	  non-ABI stable symbols in the client
+	  libraries. While this helps defining a more streamlined ABI, this
+	  also requires
+	  linking a lot of additional symbols into some PA client utilities
+	  which until
+	  now made use of the non-ABI stable symbols in libpulse. To
+	  minimize the effect
+	  on there size a bit, strip unused symbols by linking with
+	  -ffunction-sections
+	  -fdata-sections -Wl,--gc-sections
+
+2007-11-01 22:51  lennart
+
+	* configure.ac: comment the library versions a bit
+
+2007-11-01 22:50  lennart
+
+	* libpulse-browse.pc.in, libpulse-mainloop-glib.pc.in,
+	  libpulse-simple.pc.in, libpulse.pc.in: add missing pthread libs
+
+2007-11-01 11:23  lennart
+
+	* src/daemon/main.c: make disallow-module-loading config option
+	  work again (original patch from Diego Petteno)
+
+2007-11-01 02:58  lennart
+
+	* src/daemon/main.c, src/modules/module-alsa-sink.c,
+	  src/modules/module-alsa-source.c, src/modules/module-combine.c,
+	  src/modules/module-jack-sink.c, src/modules/module-jack-source.c,
+	  src/modules/module-oss.c, src/pulsecore/core-util.c,
+	  src/pulsecore/core-util.h, src/pulsecore/core.c,
+	  src/pulsecore/core.h: make rtprio and nice level actually
+	  configurable
+
+2007-11-01 02:55  lennart
+
+	* src/modules/gconf/module-gconf.c: drop rt scheduling before we
+	  start our helper process
+
+2007-11-01 01:45  lennart
+
+	* src/daemon/cmdline.c: add new option --realtime
+
+2007-11-01 01:42  lennart
+
+	* src/daemon/cpulimit.c: save and restore errno in sig handler
+
+2007-11-01 00:34  lennart
+
+	* src/daemon/daemon-conf.c, src/daemon/daemon-conf.h,
+	  src/daemon/daemon.conf.in, src/daemon/main.c: add nice and rtprio
+	  resource limit support; make rtprio and nice level to use
+	  configurable; some minor updates
+
+2007-11-01 00:33  lennart
+
+	* src/pulse/client-conf.c, src/pulse/client-conf.h: pa_boolize the
+	  client config
+
+2007-11-01 00:32  lennart
+
+	* src/pulsecore/cli-command.c, src/pulsecore/cli-command.h,
+	  src/pulsecore/cli.c: more pa_boolization
+
+2007-11-01 00:31  lennart
+
+	* src/pulsecore/conf-parser.c: make the bool config parser actually
+	  parse bools
+
+2007-11-01 00:06  lennart
+
+	* src/pulsecore/core-util.c: fix comment
+
+2007-11-01 00:06  lennart
+
+	* src/pulsecore/core-util.h: add new function pa_yes_no()
+
+2007-10-30 18:35  lennart
+
+	* src/pulse/mainloop-signal.c: save and restore errno in the sig
+	  handler
+
 2007-10-30 16:02  lennart
 
 	* configure.ac: bump sonames

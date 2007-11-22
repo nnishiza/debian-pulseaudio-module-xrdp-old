@@ -1,4 +1,4 @@
-/* $Id: module-remap-sink.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-remap-sink.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -40,9 +40,10 @@
 
 #include "module-remap-sink-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Virtual channel remapping sink")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Virtual channel remapping sink");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "sink_name=<name for the sink> "
         "master=<name of sink to remap> "
@@ -50,7 +51,7 @@ PA_MODULE_USAGE(
         "format=<sample format> "
         "channels=<number of channels> "
         "rate=<sample rate> "
-        "channel_map=<channel map>")
+        "channel_map=<channel map>");
 
 struct userdata {
     pa_core *core;
