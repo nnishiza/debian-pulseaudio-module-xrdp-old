@@ -1,4 +1,4 @@
-/* $Id: module-native-protocol-fd.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-native-protocol-fd.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -37,9 +37,10 @@
 
 #include "module-native-protocol-fd-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Native protocol autospawn helper")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Native protocol autospawn helper");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
 
 static const char* const valid_modargs[] = {
     "fd",

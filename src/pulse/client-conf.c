@@ -1,4 +1,4 @@
-/* $Id: client-conf.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: client-conf.c 2009 2007-11-01 00:33:14Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -58,10 +58,10 @@ static const pa_client_conf default_conf = {
     .default_sink = NULL,
     .default_source = NULL,
     .default_server = NULL,
-    .autospawn = 0,
-    .disable_shm = 0,
+    .autospawn = FALSE,
+    .disable_shm = FALSE,
     .cookie_file = NULL,
-    .cookie_valid = 0,
+    .cookie_valid = FALSE,
 };
 
 pa_client_conf *pa_client_conf_new(void) {
@@ -172,7 +172,7 @@ int pa_client_conf_env(pa_client_conf *c) {
 int pa_client_conf_load_cookie(pa_client_conf* c) {
     pa_assert(c);
 
-    c->cookie_valid = 0;
+    c->cookie_valid = FALSE;
 
     if (!c->cookie_file)
         return -1;
@@ -180,7 +180,6 @@ int pa_client_conf_load_cookie(pa_client_conf* c) {
     if (pa_authkey_load_auto(c->cookie_file, c->cookie, sizeof(c->cookie)) < 0)
         return -1;
 
-    c->cookie_valid = 1;
+    c->cookie_valid = TRUE;
     return 0;
 }
-

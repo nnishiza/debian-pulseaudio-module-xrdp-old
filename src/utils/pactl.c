@@ -1,4 +1,4 @@
-/* $Id: pactl.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: pactl.c 2035 2007-11-09 01:30:46Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -38,6 +38,7 @@
 #include <sndfile.h>
 
 #include <pulse/pulseaudio.h>
+#include <pulsecore/core-util.h>
 
 #if PA_API_VERSION < 10
 #error Invalid PulseAudio API version
@@ -662,9 +663,9 @@ static void help(const char *argv0) {
            "%s [options] exit\n"
            "%s [options] upload-sample FILENAME [NAME]\n"
            "%s [options] play-sample NAME [SINK]\n"
+           "%s [options] remove-sample NAME\n"
            "%s [options] move-sink-input ID SINK\n"
            "%s [options] move-source-output ID SOURCE\n"
-           "%s [options] remove-sample NAME\n"
            "%s [options] load-module NAME [ARGS ...]\n"
            "%s [options] unload-module ID\n"
            "%s [options] suspend-sink [SINK] 1|0\n"
@@ -850,7 +851,7 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            suspend = !!atoi(argv[argc-1]);
+            suspend = pa_parse_boolean(argv[argc-1]);
 
             if (argc > optind+2)
                 sink_name = pa_xstrdup(argv[optind+1]);
@@ -863,7 +864,7 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            suspend = !!atoi(argv[argc-1]);
+            suspend = pa_parse_boolean(argv[argc-1]);
 
             if (argc > optind+2)
                 source_name = pa_xstrdup(argv[optind+1]);

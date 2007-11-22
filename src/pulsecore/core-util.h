@@ -1,7 +1,7 @@
 #ifndef foocoreutilhfoo
 #define foocoreutilhfoo
 
-/* $Id: core-util.h 1974 2007-10-29 15:31:24Z lennart $ */
+/* $Id: core-util.h 2014 2007-11-01 02:58:26Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -31,6 +31,7 @@
 #include <stdio.h>
 
 #include <pulsecore/gccmacro.h>
+#include <pulsecore/macro.h>
 
 struct timeval;
 
@@ -56,11 +57,15 @@ char *pa_strlcpy(char *b, const char *s, size_t l);
 
 char *pa_parent_dir(const char *fn);
 
-void pa_make_realtime(void);
-void pa_raise_priority(void);
+int pa_make_realtime(int rtprio);
+int pa_raise_priority(int nice_level);
 void pa_reset_priority(void);
 
 int pa_parse_boolean(const char *s) PA_GCC_PURE;
+
+static inline const char *pa_yes_no(pa_bool_t b) {
+    return b ? "yes" : "no";
+}
 
 char *pa_split(const char *c, const char*delimiters, const char **state);
 char *pa_split_spaces(const char *c, const char **state);

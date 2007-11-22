@@ -1,4 +1,4 @@
-/* $Id: module-ladspa-sink.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-ladspa-sink.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -45,9 +45,10 @@
 #include "module-ladspa-sink-symdef.h"
 #include "ladspa.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Virtual LADSPA sink")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Virtual LADSPA sink");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "sink_name=<name for the sink> "
         "master=<name of sink to remap> "
@@ -57,7 +58,7 @@ PA_MODULE_USAGE(
         "channel_map=<channel map> "
         "plugin=<ladspa plugin name> "
         "label=<ladspa plugin label> "
-        "control=<comma seperated list of input control values>")
+        "control=<comma seperated list of input control values>");
 
 struct userdata {
     pa_core *core;
@@ -177,14 +178,14 @@ static int sink_input_peek_cb(pa_sink_input *i, size_t length, pa_memchunk *chun
             p = src + c;
             q = u->input;
             for (j = 0; j < n; j++, p += u->channels, q++)
-                *q = CLAMP(*p, -1.0, 1.0);
+                *q = PA_CLAMP_UNLIKELY(*p, -1.0, 1.0);
 
             u->descriptor->run(u->handle[c], n);
 
             q = u->output;
             p = dst + c;
             for (j = 0; j < n; j++, q++, p += u->channels)
-                *p = CLAMP(*q, -1.0, 1.0);
+                *p = PA_CLAMP_UNLIKELY(*q, -1.0, 1.0);
         }
 
         pa_memblock_release(tchunk.memblock);

@@ -1,4 +1,4 @@
-/* $Id: module-match.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-match.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -46,10 +46,11 @@
 
 #include "module-match-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Playback stream expression matching module")
-PA_MODULE_USAGE("table=<filename>")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Playback stream expression matching module");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
+PA_MODULE_USAGE("table=<filename>");
 
 #define WHITESPACE "\n\r \t"
 
@@ -241,5 +242,3 @@ void pa__done(pa_module*m) {
 
     pa_xfree(u);
 }
-
-

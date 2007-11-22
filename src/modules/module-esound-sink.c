@@ -1,4 +1,4 @@
-/* $Id: module-esound-sink.c 1988 2007-10-29 21:23:08Z lennart $ */
+/* $Id: module-esound-sink.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -64,15 +64,16 @@
 
 #include "module-esound-sink-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("ESOUND Sink")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("ESOUND Sink");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "sink_name=<name for the sink> "
         "server=<address> cookie=<filename>  "
         "format=<sample format> "
         "channels=<number of channels> "
-        "rate=<sample rate>")
+        "rate=<sample rate>");
 
 #define DEFAULT_SINK_NAME "esound_out"
 
@@ -506,6 +507,7 @@ int pa__init(pa_module*m) {
     pa_modargs *ma = NULL;
     char *t;
     const char *espeaker;
+    uint32_t key;
 
     pa_assert(m);
 
@@ -584,7 +586,9 @@ int pa__init(pa_module*m) {
         pa_log("Failed to load cookie");
         goto fail;
     }
-    *(int32_t*) ((uint8_t*) u->write_data + ESD_KEY_LEN) = ESD_ENDIAN_KEY;
+
+    key = ESD_ENDIAN_KEY;
+    memcpy((uint8_t*) u->write_data + ESD_KEY_LEN, &key, sizeof(key));
 
     /* Reserve space for the response */
     u->read_data = pa_xmalloc(u->read_length = sizeof(int32_t));

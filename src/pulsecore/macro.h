@@ -1,7 +1,7 @@
 #ifndef foopulsemacrohfoo
 #define foopulsemacrohfoo
 
-/* $Id: macro.h 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: macro.h 2045 2007-11-11 22:59:34Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -31,6 +31,7 @@
 #include <unistd.h>
 
 #include <pulsecore/log.h>
+#include <pulsecore/gccmacro.h>
 
 #ifndef PACKAGE
 #error "Please include config.h before including this file!"
@@ -73,8 +74,13 @@ static inline size_t pa_page_align(size_t l) {
 #endif
 
 #ifndef CLAMP
-#define CLAMP(x, low, high)  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+#define CLAMP(x, low, high) (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 #endif
+
+#define PA_CLAMP_UNLIKELY(x, low, high) (PA_UNLIKELY((x) > (high)) ? (high) : (PA_UNLIKELY((x) < (low)) ? (low) : (x)))
+/* We don't define a PA_CLAMP_LIKELY here, because it doesn't really
+ * make sense: we cannot know if it is more likely that the values is
+ * lower or greater than the boundaries.*/
 
 /* This type is not intended to be used in exported APIs! Use classic "int" there! */
 #ifdef HAVE_STD_BOOL
@@ -145,5 +151,9 @@ typedef int pa_bool_t;
 #define PA_PATH_SEP "/"
 #define PA_PATH_SEP_CHAR '/'
 #endif
+
+static inline const char *pa_strnull(const char *x) {
+    return x ? x : "(null)";
+}
 
 #endif

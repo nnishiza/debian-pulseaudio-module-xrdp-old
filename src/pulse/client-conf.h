@@ -1,7 +1,7 @@
 #ifndef fooclientconfhfoo
 #define fooclientconfhfoo
 
-/* $Id: client-conf.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id: client-conf.h 2009 2007-11-01 00:33:14Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -30,9 +30,9 @@
 
 typedef struct pa_client_conf {
     char *daemon_binary, *extra_arguments, *default_sink, *default_source, *default_server, *cookie_file;
-    int autospawn, disable_shm;
+    pa_bool_t autospawn, disable_shm;
     uint8_t cookie[PA_NATIVE_COOKIE_LENGTH];
-    int cookie_valid; /* non-zero, when cookie is valid */
+    pa_bool_t cookie_valid; /* non-zero, when cookie is valid */
 } pa_client_conf;
 
 /* Create a new configuration data object and reset it to defaults */

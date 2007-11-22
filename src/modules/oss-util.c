@@ -1,4 +1,4 @@
-/* $Id: oss-util.c 1975 2007-10-29 15:32:22Z lennart $ */
+/* $Id: oss-util.c 2037 2007-11-09 02:45:07Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -164,6 +164,8 @@ int pa_oss_auto_format(int fd, pa_sample_spec *ss) {
         [PA_SAMPLE_S16BE] = AFMT_S16_BE,
         [PA_SAMPLE_FLOAT32LE] = AFMT_QUERY, /* not supported */
         [PA_SAMPLE_FLOAT32BE] = AFMT_QUERY, /* not supported */
+        [PA_SAMPLE_S32LE] = AFMT_QUERY, /* not supported */
+        [PA_SAMPLE_S32BE] = AFMT_QUERY, /* not supported */
     };
 
     pa_assert(fd >= 0);

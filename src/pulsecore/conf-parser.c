@@ -1,4 +1,4 @@
-/* $Id: conf-parser.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: conf-parser.c 2007 2007-11-01 00:31:59Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -169,7 +169,8 @@ int pa_config_parse_int(const char *filename, unsigned line, const char *lvalue,
 }
 
 int pa_config_parse_bool(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
-    int *b = data, k;
+    int k;
+    pa_bool_t *b = data;
 
     pa_assert(filename);
     pa_assert(lvalue);
@@ -181,7 +182,7 @@ int pa_config_parse_bool(const char *filename, unsigned line, const char *lvalue
         return -1;
     }
 
-    *b = k;
+    *b = !!k;
 
     return 0;
 }

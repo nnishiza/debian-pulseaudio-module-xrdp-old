@@ -1,4 +1,4 @@
-/* $Id: module-jack-source.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-jack-source.c 2056 2007-11-14 16:09:03Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -54,16 +54,17 @@
 /* See module-jack-sink for a few comments how this module basically
  * works */
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("JACK Source")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("JACK Source");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
 PA_MODULE_USAGE(
         "source_name=<name of source> "
         "server_name=<jack server name> "
         "client_name=<jack client name> "
         "channels=<number of channels> "
         "connect=<connect ports?>"
-        "channel_map=<channel map>")
+        "channel_map=<channel map>");
 
 #define DEFAULT_SOURCE_NAME "jack_in"
 
@@ -191,8 +192,8 @@ static void thread_func(void *userdata) {
 
     pa_log_debug("Thread starting up");
 
-    if (u->core->high_priority)
-        pa_make_realtime();
+    if (u->core->realtime_scheduling)
+        pa_make_realtime(u->core->realtime_priority);
 
     pa_thread_mq_install(&u->thread_mq);
     pa_rtpoll_install(u->rtpoll);
@@ -230,8 +231,8 @@ static void jack_init(void *arg) {
 
     pa_log_info("JACK thread starting up.");
 
-    if (u->core->high_priority)
-        pa_make_realtime();
+    if (u->core->realtime_scheduling)
+        pa_make_realtime(u->core->realtime_priority+4);
 }
 
 static void jack_shutdown(void* arg) {
@@ -249,7 +250,7 @@ int pa__init(pa_module*m) {
     jack_status_t status;
     const char *server_name, *client_name;
     uint32_t channels = 0;
-    int do_connect = 1;
+    pa_bool_t do_connect = TRUE;
     unsigned i;
     const char **ports = NULL, **p;
     char *t;

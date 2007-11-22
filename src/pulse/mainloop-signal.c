@@ -1,4 +1,4 @@
-/* $Id: mainloop-signal.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: mainloop-signal.c 2004 2007-10-30 18:35:08Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -67,10 +67,16 @@ static pa_io_event* io_event = NULL;
 static pa_signal_event *signals = NULL;
 
 static void signal_handler(int sig) {
+    int saved_errno;
+
+    saved_errno = errno;
+
 #ifndef HAVE_SIGACTION
     signal(sig, signal_handler);
 #endif
     pa_write(signal_pipe[1], &sig, sizeof(sig), NULL);
+
+    errno = saved_errno;
 }
 
 static void dispatch(pa_mainloop_api*a, int sig) {

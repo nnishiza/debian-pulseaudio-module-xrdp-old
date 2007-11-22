@@ -1,4 +1,4 @@
-/* $Id: module-cli.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-cli.c 2050 2007-11-13 17:37:44Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -38,10 +38,11 @@
 
 #include "module-cli-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Command line interface")
-PA_MODULE_VERSION(PACKAGE_VERSION)
-PA_MODULE_USAGE("exit_on_eof=<exit daemon after EOF?>")
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Command line interface");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
+PA_MODULE_USAGE("exit_on_eof=<exit daemon after EOF?>");
 
 static const char* const valid_modargs[] = {
     "exit_on_eof",
@@ -69,7 +70,7 @@ static void eof_and_exit_cb(pa_cli*c, void *userdata) {
 int pa__init(pa_module*m) {
     pa_iochannel *io;
     pa_modargs *ma;
-    int exit_on_eof = 0;
+    pa_bool_t exit_on_eof = FALSE;
 
     pa_assert(m);
 

@@ -1,7 +1,7 @@
 #ifndef foopidhfoo
 #define foopidhfoo
 
-/* $Id: pid.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id: pid.h 2067 2007-11-21 01:30:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -26,7 +26,7 @@
 
 int pa_pid_file_create(void);
 int pa_pid_file_remove(void);
-int pa_pid_file_check_running(pid_t *pid);
-int pa_pid_file_kill(int sig, pid_t *pid);
+int pa_pid_file_check_running(pid_t *pid, const char *binary_name);
+int pa_pid_file_kill(int sig, pid_t *pid, const char *binary_name);
 
 #endif

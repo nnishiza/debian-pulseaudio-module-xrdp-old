@@ -1,4 +1,4 @@
-/* $Id: operation.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: operation.c 2067 2007-11-21 01:30:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -27,18 +27,24 @@
 
 #include <pulse/xmalloc.h>
 #include <pulsecore/macro.h>
+#include <pulsecore/flist.h>
 
 #include "internal.h"
 #include "operation.h"
+
+PA_STATIC_FLIST_DECLARE(operations, 0, pa_xfree);
 
 pa_operation *pa_operation_new(pa_context *c, pa_stream *s, pa_operation_cb_t cb, void *userdata) {
     pa_operation *o;
     pa_assert(c);
 
-    o = pa_xnew(pa_operation, 1);
+    if (!(o = pa_flist_pop(PA_STATIC_FLIST_GET(operations))))
+        o = pa_xnew(pa_operation, 1);
+
     PA_REFCNT_INIT(o);
     o->context = c;
     o->stream = s;
+    o->private = NULL;
 
     o->state = PA_OPERATION_RUNNING;
     o->callback = cb;
@@ -58,7 +64,6 @@ pa_operation *pa_operation_ref(pa_operation *o) {
     PA_REFCNT_INC(o);
     return o;
 }
-
 void pa_operation_unref(pa_operation *o) {
     pa_assert(o);
     pa_assert(PA_REFCNT_VALUE(o) >= 1);
@@ -66,7 +71,9 @@ void pa_operation_unref(pa_operation *o) {
     if (PA_REFCNT_DEC(o) <= 0) {
         pa_assert(!o->context);
         pa_assert(!o->stream);
-        pa_xfree(o);
+
+        if (pa_flist_push(PA_STATIC_FLIST_GET(operations), o) < 0)
+            pa_xfree(o);
     }
 }
 

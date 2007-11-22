@@ -1,4 +1,4 @@
-/* $Id: module-zeroconf-publish.c 1990 2007-10-29 23:54:46Z lennart $ */
+/* $Id: module-zeroconf-publish.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -52,10 +52,11 @@
 
 #include "module-zeroconf-publish-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("mDNS/DNS-SD Service Publisher")
-PA_MODULE_VERSION(PACKAGE_VERSION)
-PA_MODULE_USAGE("port=<IP port number>")
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("mDNS/DNS-SD Service Publisher");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
+PA_MODULE_USAGE("port=<IP port number>");
 
 #define SERVICE_TYPE_SINK "_pulse-sink._tcp"
 #define SERVICE_TYPE_SOURCE "_pulse-source._tcp"

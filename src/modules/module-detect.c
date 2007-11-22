@@ -1,4 +1,4 @@
-/* $Id: module-detect.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-detect.c 2050 2007-11-13 17:37:44Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -47,10 +47,11 @@
 
 #include "module-detect-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("Detect available audio hardware and load matching drivers")
-PA_MODULE_VERSION(PACKAGE_VERSION)
-PA_MODULE_USAGE("just-one=<boolean>")
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("Detect available audio hardware and load matching drivers");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
+PA_MODULE_USAGE("just-one=<boolean>");
 
 static const char* const valid_modargs[] = {
     "just-one",
@@ -221,7 +222,8 @@ static int detect_waveout(pa_core *c, int just_one) {
 #endif
 
 int pa__init(pa_module*m) {
-    int just_one = 0, n = 0;
+    pa_bool_t just_one = FALSE;
+    int n = 0;
     pa_modargs *ma;
 
     pa_assert(m);

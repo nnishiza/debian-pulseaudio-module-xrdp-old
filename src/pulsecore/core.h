@@ -1,7 +1,7 @@
 #ifndef foocorehfoo
 #define foocorehfoo
 
-/* $Id: core.h 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: core.h 2067 2007-11-21 01:30:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -54,6 +54,7 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SOURCE_STATE_CHANGED,
     PA_CORE_HOOK_SOURCE_DESCRIPTION_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_NEW,
+    PA_CORE_HOOK_SINK_INPUT_FIXATE,
     PA_CORE_HOOK_SINK_INPUT_PUT,
     PA_CORE_HOOK_SINK_INPUT_UNLINK,
     PA_CORE_HOOK_SINK_INPUT_UNLINK_POST,
@@ -62,6 +63,7 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_INPUT_NAME_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_STATE_CHANGED,
     PA_CORE_HOOK_SOURCE_OUTPUT_NEW,
+    PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE,
     PA_CORE_HOOK_SOURCE_OUTPUT_PUT,
     PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK,
     PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST,
@@ -113,10 +115,12 @@ struct pa_core {
 
     pa_time_event *scache_auto_unload_event;
 
-    int disallow_module_loading, running_as_daemon;
+    pa_bool_t disallow_module_loading, running_as_daemon;
     pa_resample_method_t resample_method;
-    int is_system_instance;
-    int high_priority;
+    pa_bool_t is_system_instance;
+    pa_bool_t realtime_scheduling;
+    int realtime_priority;
+    pa_bool_t disable_remixing;
 
     /* hooks */
     pa_hook hooks[PA_CORE_HOOK_MAX];

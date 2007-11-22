@@ -1,4 +1,4 @@
-/* $Id: module-pipe-source.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: module-pipe-source.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -49,16 +49,17 @@
 
 #include "module-pipe-source-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("UNIX pipe source")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("UNIX pipe source");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "source_name=<name for the source> "
         "file=<path of the FIFO> "
         "format=<sample format> "
         "channels=<number of channels> "
         "rate=<sample rate> "
-        "channel_map=<channel map>")
+        "channel_map=<channel map>");
 
 #define DEFAULT_FILE_NAME "/tmp/music.input"
 #define DEFAULT_SOURCE_NAME "fifo_input"

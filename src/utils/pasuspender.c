@@ -1,4 +1,4 @@
-/* $Id: pasuspender.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: pasuspender.c 2028 2007-11-07 13:52:07Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -149,8 +149,10 @@ static void context_state_callback(pa_context *c, void *userdata) {
             if (pa_context_is_local(c)) {
                 pa_operation_unref(pa_context_suspend_sink_by_index(c, PA_INVALID_INDEX, 1, suspend_complete, NULL));
                 pa_operation_unref(pa_context_suspend_source_by_index(c, PA_INVALID_INDEX, 1, suspend_complete, NULL));
-            } else
+            } else {
+                fprintf(stderr, "WARNING: Sound server is not local, not suspending.\n");
                 start_child();
+            }
 
             break;
 

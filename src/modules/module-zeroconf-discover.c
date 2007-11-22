@@ -1,4 +1,4 @@
-/* $Id: module-zeroconf-discover.c 1991 2007-10-29 23:55:23Z lennart $ */
+/* $Id: module-zeroconf-discover.c 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -53,9 +53,10 @@
 
 #include "module-zeroconf-discover-symdef.h"
 
-PA_MODULE_AUTHOR("Lennart Poettering")
-PA_MODULE_DESCRIPTION("mDNS/DNS-SD Service Discovery")
-PA_MODULE_VERSION(PACKAGE_VERSION)
+PA_MODULE_AUTHOR("Lennart Poettering");
+PA_MODULE_DESCRIPTION("mDNS/DNS-SD Service Discovery");
+PA_MODULE_VERSION(PACKAGE_VERSION);
+PA_MODULE_LOAD_ONCE(TRUE);
 
 #define SERVICE_TYPE_SINK "_pulse-sink._tcp"
 #define SERVICE_TYPE_SOURCE "_non-monitor._sub._pulse-source._tcp"

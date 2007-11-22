@@ -1,4 +1,4 @@
-/* $Id: paplay.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id: paplay.c 2025 2007-11-05 23:56:30Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -203,9 +203,9 @@ static void help(const char *argv0) {
     printf("%s [options] [FILE]\n\n"
            "  -h, --help                            Show this help\n"
            "      --version                         Show version\n\n"
-           "  -v, --verbose                         Enable verbose operations\n\n"
+           "  -v, --verbose                         Enable verbose operation\n\n"
            "  -s, --server=SERVER                   The name of the server to connect to\n"
-           "  -d, --device=DEVICE                   The name of the sink/source to connect to\n"
+           "  -d, --device=DEVICE                   The name of the sink to connect to\n"
            "  -n, --client-name=NAME                How to call this client on the server\n"
            "      --stream-name=NAME                How to call this stream on the server\n"
            "      --volume=VOLUME                   Specify the initial (linear) volume in range 0...65536\n"

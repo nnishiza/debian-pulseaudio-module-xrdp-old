@@ -1,0 +1,16 @@
+.TH default.pa 5 User Manuals
+.SH NAME
+default.pa \- PulseAudio Sound Server Startup Script
+.SH SYNOPSIS
+\fB\fI~/.pulse/default.pa\fB
+
+\fI/etc/pulse/default.pa\fB
+\f1
+.SH DESCRIPTION
+The PulseAudio sound server interprets the file \fI~/.pulse/default.pa\f1 on startup, and when that file doesn't exist \fI/etc/pulse/default.pa\f1. It should contain directives in the PulseAudio CLI languages, as documented on \fBhttp://pulseaudio.org/wiki/CLI\f1.
+
+The same commands can also be entered during runtime in the \fBpacmd(1)\f1 tool, allowing flexible runtime reconfiguration.
+.SH AUTHORS
+The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
+.SH SEE ALSO
+\fBpulse-daemon.conf(5)\f1, \fBpulseaudio(1)\f1, \fBpacmd(1)\f1

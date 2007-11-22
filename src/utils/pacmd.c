@@ -1,4 +1,4 @@
-/* $Id: pacmd.c 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id: pacmd.c 2067 2007-11-21 01:30:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -50,7 +50,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
     size_t ibuf_index, ibuf_length, obuf_index, obuf_length;
     fd_set ifds, ofds;
 
-    if (pa_pid_file_check_running(&pid) < 0) {
+    if (pa_pid_file_check_running(&pid, "pulseaudio") < 0) {
         pa_log("no PulseAudio daemon running");
         goto fail;
     }
@@ -75,12 +75,12 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
         if (r >= 0)
             break;
 
-        if (pa_pid_file_kill(SIGUSR2, NULL) < 0) {
+        if (pa_pid_file_kill(SIGUSR2, NULL, "pulseaudio") < 0) {
             pa_log("failed to kill PulseAudio daemon.");
             goto fail;
         }
 
-        pa_msleep(50);
+        pa_msleep(300);
     }
 
     if (i >= 5) {

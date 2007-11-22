@@ -142,6 +142,13 @@
 /* Define to 1 if you have the `pipe' function. */
 #undef HAVE_PIPE
 
+/* Have PolicyKit */
+#undef HAVE_POLKIT
+
+/* Define to 1 if you have the `polkit_context_is_caller_authorized' function.
+   */
+#undef HAVE_POLKIT_CONTEXT_IS_CALLER_AUTHORIZED
+
 /* Define to 1 if you have the <poll.h> header file. */
 #undef HAVE_POLL_H
 
