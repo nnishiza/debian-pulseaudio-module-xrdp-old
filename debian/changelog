@@ -11,8 +11,12 @@ pulseaudio (0.9.8-1) UNRELEASED; urgency=low
     + Add libpulsecore4-dbg package.
     + Rename gstreamer plugin package in recommends.
     + Add Homepage field.
-  * debian/patches:
-    + Added 0004-Double-esound-maximum-sample-size.patch from Ubuntu.
+  * debian/patches/0002-Fix-pa_readlink-to-put-a-0-in-the-right-location.patch:
+    - Dropped, merged upstream.
+  * debian/p..s/0003-Define-__NR_eventfd-on-arm-if-it-wasn-t-defined-yet.patch:
+    - Dropped, merged upstream.
+  * debian/patches/0002-Double-esound-maximum-sample-size.patch:
+    + Added, from Ubuntu.
 
   [Daniel T Chen]
   * debian/control: Add lsb-base (>= 3) to pulseaudio's dependencies.

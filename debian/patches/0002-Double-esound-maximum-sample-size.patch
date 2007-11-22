@@ -1,4 +1,4 @@
-From 4834d66f60e6e57a69d4f3873ef9760e1bbb05fc Mon Sep 17 00:00:00 2001
+From 5def85371aa7f80523c0aa1640772ada6c66831c Mon Sep 17 00:00:00 2001
 From: Oliver Grawert <ogra@ubuntu.com>
 Date: Sun, 18 Nov 2007 20:36:17 +0100
 Subject: [PATCH] Double esound maximum sample size
@@ -10,7 +10,7 @@ connections.
  1 files changed, 1 insertions(+), 1 deletions(-)
 
 diff --git a/src/pulsecore/protocol-esound.c b/src/pulsecore/protocol-esound.c
-index 8b6b33a..b70ef88 100644
+index 70be848..e59c7da 100644
 --- a/src/pulsecore/protocol-esound.c
 +++ b/src/pulsecore/protocol-esound.c
 @@ -72,7 +72,7 @@
