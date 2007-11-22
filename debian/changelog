@@ -18,6 +18,8 @@ pulseaudio (0.9.8-1) UNRELEASED; urgency=low
     - Dropped, merged upstream.
   * debian/patches/0002-Double-esound-maximum-sample-size.patch:
     + Added, from Ubuntu.
+  * debian/p..s/0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch:
+    + Added, svn commit r2074 from upstream.
 
   [Daniel T Chen]
   * debian/control: Add lsb-base (>= 3) to pulseaudio's dependencies.
