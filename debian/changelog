@@ -20,6 +20,8 @@ pulseaudio (0.9.8-1) UNRELEASED; urgency=low
     + Added, from Ubuntu.
   * debian/p..s/0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch:
     + Added, svn commit r2074 from upstream.
+  * debian/patches/0004-Force-module-tunnel-to-use-protocol-version-11.patch:
+    + Added, fixes protocol errors in module-tunnel.
 
   [Daniel T Chen]
   * debian/control: Add lsb-base (>= 3) to pulseaudio's dependencies.

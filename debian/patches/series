@@ -1,3 +1,4 @@
 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
 0002-Double-esound-maximum-sample-size.patch
 0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch
+0004-Force-module-tunnel-to-use-protocol-version-11.patch

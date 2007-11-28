@@ -1,0 +1,25 @@
+From d91b6d26e698ad63761faf722850ad0cec52d4e4 Mon Sep 17 00:00:00 2001
+From: CJ van den Berg <cj@vdbonline.com>
+Date: Wed, 28 Nov 2007 22:26:14 +0100
+Subject: [PATCH] Force module-tunnel to use protocol version 11
+
+PulseAudio 0.9.8 uses protocol version 12, but module-tunnel does not
+support the new opcodes in version 12 yet. This should prevent
+module-tunnel reporting "protocol error" and unloading.
+---
+ src/modules/module-tunnel.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/src/modules/module-tunnel.c b/src/modules/module-tunnel.c
+index 43a10ce..5ff0416 100644
+--- a/src/modules/module-tunnel.c
++++ b/src/modules/module-tunnel.c
+@@ -1145,7 +1145,7 @@ static void on_connection(pa_socket_client *sc, pa_iochannel *io, void *userdata
+     t = pa_tagstruct_new(NULL, 0);
+     pa_tagstruct_putu32(t, PA_COMMAND_AUTH);
+     pa_tagstruct_putu32(t, tag = u->ctag++);
+-    pa_tagstruct_putu32(t, PA_PROTOCOL_VERSION);
++    pa_tagstruct_putu32(t, 11);
+     pa_tagstruct_put_arbitrary(t, u->auth_cookie, sizeof(u->auth_cookie));
+ 
+ #ifdef HAVE_CREDS
