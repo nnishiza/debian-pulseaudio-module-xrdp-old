@@ -23,6 +23,9 @@ pulseaudio (0.9.8-1) UNRELEASED; urgency=low
     + Added, svn commit r2074 from upstream.
   * debian/patches/0004-Force-module-tunnel-to-use-protocol-version-11.patch:
     + Added, fixes protocol errors in module-tunnel.
+  * debian/pa..es/0005-make-sure-to-create-.pulse-before-using-any-config.patch:
+    + Added, fixes module-volume-restore so that volumes are restored across
+      daemon restarts.
   * debian/pulseaudio.manpages: Add manpages default.pa.5, pulse-client.conf.5
       and pulse-daemon.conf.5
   * debian/pulseaudio-utils.manpages: Add manpages pabrowse.1, pacat.1,
