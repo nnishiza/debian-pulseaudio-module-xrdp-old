@@ -27,6 +27,8 @@ pulseaudio (0.9.8-1) UNRELEASED; urgency=low
       and pulse-daemon.conf.5
   * debian/pulseaudio-utils.manpages: Add manpages pabrowse.1, pacat.1,
       pacmd.1, pactl.1, padsp.1, paplay.1, pasuspender.1 and pax11publish.1
+  * debian/pulseaudio.default: Add a description of the preferred method of
+      running the daemon.
 
   [Daniel T Chen]
   * debian/control: Add lsb-base (>= 3) to pulseaudio's dependencies.
