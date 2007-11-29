@@ -12,6 +12,7 @@ pulseaudio (0.9.8-1) UNRELEASED; urgency=low
     + Rename gstreamer plugin package in recommends.
     + Add Homepage field.
     + Bump libpulsecore so version number to 5.
+    + Conflict with all pre libpulsecore split packages.
   * debian/patches/0002-Fix-pa_readlink-to-put-a-0-in-the-right-location.patch:
     - Dropped, merged upstream.
   * debian/p..s/0003-Define-__NR_eventfd-on-arm-if-it-wasn-t-defined-yet.patch:
