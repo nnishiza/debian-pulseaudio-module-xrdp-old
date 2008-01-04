@@ -1,2 +1,2 @@
-libpulse 0 libpulse0 (>= 0.9.7)
+libpulse 0 libpulse0 (>= 0.9.8)
 libpulse-simple 0 libpulse0
