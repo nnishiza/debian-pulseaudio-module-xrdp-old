@@ -1,4 +1,4 @@
-pulseaudio (0.9.8-2) UNRELEASED; urgency=low
+pulseaudio (0.9.8-2) unstable; urgency=low
 
   * Bump shlibs of libpulse and libpulse-browse. Upstream has started
     versioning symbols.
@@ -19,7 +19,7 @@ pulseaudio (0.9.8-2) UNRELEASED; urgency=low
     - Added. Fixes compliation on non-linux platforms such as GNU/kFreeBSD.
     Thanks to Aurelien Jarno for the patch (Closes: #454197)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 04 Jan 2008 12:13:08 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 04 Jan 2008 16:12:27 +0100
 
 pulseaudio (0.9.8-1) unstable; urgency=low
 
