@@ -1,0 +1,41 @@
+From 6cfd9de5d5e1fcfe718b790700418b98e4b5f447 Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@luon.net>
+Date: Fri, 4 Jan 2008 12:47:46 +0100
+Subject: [PATCH] Change config to not fail if loading of esd, gconf or x11-publish fails
+
+---
+ src/daemon/default.pa.in |    6 ++++++
+ 1 files changed, 6 insertions(+), 0 deletions(-)
+
+diff --git a/src/daemon/default.pa.in b/src/daemon/default.pa.in
+index b09d0f2..7afd800 100755
+--- a/src/daemon/default.pa.in
++++ b/src/daemon/default.pa.in
+@@ -46,7 +46,9 @@ load-module module-detect
+ .endif
+ 
+ ### Load several protocols
++.nofail
+ load-module module-esound-protocol-unix socket="/tmp/.esd/socket"
++.fail
+ load-module module-native-protocol-unix
+ 
+ ### Network access (may be configured with paprefs, so leave this commented
+@@ -79,6 +81,8 @@ load-module module-suspend-on-idle
+ #load-module module-x11-bell sample=x11-bell
+ 
+ ### Publish connection data in the X11 root window
++.nofail
++
+ .ifexists @PA_DLSEARCHPATH@/module-x11-publish@PA_SOEXT@
+ load-module module-x11-publish
+ .endif
+@@ -95,6 +99,8 @@ load-module module-x11-publish
+ load-module module-gconf
+ .endif
+ 
++.fail
++
+ ### Make some devices default
+ #set-default-sink output
+ #set-default-source input
