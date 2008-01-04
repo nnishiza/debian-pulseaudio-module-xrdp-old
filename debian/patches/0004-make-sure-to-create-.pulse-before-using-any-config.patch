@@ -1,4 +1,4 @@
-From dcff2dd5a7b6ae0c0a4aa0944fdad9501eeb84d3 Mon Sep 17 00:00:00 2001
+From 6a46aba92e3bf840c5fb9640ae0488e94c019322 Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Sat, 24 Nov 2007 16:22:23 +0000
 Subject: [PATCH] make sure to create ~/.pulse before using any configuration file from it

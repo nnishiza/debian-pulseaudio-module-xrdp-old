@@ -2,6 +2,17 @@ pulseaudio (0.9.8-2) UNRELEASED; urgency=low
 
   * Bump shlibs of libpulse and libpulse-browse. Upstream has started
     versioning symbols.
+  * debian/patches/0005-Don-t-add-protocol-fields-introduced-in-version-12-w.patch
+    - Added. Don't send fields/opcodes adding in protocol version 12 to
+      clients using version 11.
+  * debian/patches/0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
+    - Added. Add dummy implementations of the opcodes added in protocol
+    version 12.
+  * debian/patches/0004-Force-module-tunnel-to-use-protocol-version-11.patch
+    - Removed. Obsoleted by the two previous patches
+  * debian/patches/0005-make-sure-to-create-.pulse-before-using-any-config.patch
+    - Renamed to 0004-make-sure-to-create-.pulse-before-using-any-config.patch
+  * debian/patches/
 
  -- Sjoerd Simons <sjoerd@debian.org>  Fri, 04 Jan 2008 12:13:08 +0100
 
