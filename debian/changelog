@@ -15,6 +15,9 @@ pulseaudio (0.9.8-2) UNRELEASED; urgency=low
   * debian/p.../0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
     - Added. Don't fail to load if esd, gconf or x11-publish fail.
       (Closes: 456590, #456505)
+  * debian/patches/0008-Fix-compilation-on-non-linux-platforms.patch
+    - Added. Fixes compliation on non-linux platforms such as GNU/kFreeBSD.
+    Thanks to Aurelien Jarno for the patch (Closes: #454197)
 
  -- Sjoerd Simons <sjoerd@debian.org>  Fri, 04 Jan 2008 12:13:08 +0100
 

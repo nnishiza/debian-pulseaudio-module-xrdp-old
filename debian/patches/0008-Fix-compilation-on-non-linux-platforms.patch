@@ -1,0 +1,39 @@
+From 36aaad043cf1d8cc06bf93be1a8531cc5a040566 Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@luon.net>
+Date: Fri, 4 Jan 2008 13:53:54 +0100
+Subject: [PATCH] Fix compilation on non-linux platforms
+
+---
+ src/pulsecore/rtpoll.c  |    2 ++
+ src/tests/rtpoll-test.c |    2 ++
+ 2 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/src/pulsecore/rtpoll.c b/src/pulsecore/rtpoll.c
+index 354c4c0..8300826 100644
+--- a/src/pulsecore/rtpoll.c
++++ b/src/pulsecore/rtpoll.c
+@@ -161,8 +161,10 @@ void pa_rtpoll_install(pa_rtpoll *p) {
+     p->installed = 1;
+ 
+ #ifdef HAVE_PPOLL
++# ifdef __linux__
+     if (p->dont_use_ppoll)
+         return;
++# endif
+ 
+     if ((p->rtsig = pa_rtsig_get_for_thread()) < 0) {
+         pa_log_warn("Failed to reserve POSIX realtime signal.");
+diff --git a/src/tests/rtpoll-test.c b/src/tests/rtpoll-test.c
+index 3ab992a..e649377 100644
+--- a/src/tests/rtpoll-test.c
++++ b/src/tests/rtpoll-test.c
+@@ -49,7 +49,9 @@ int main(int argc, char *argv[]) {
+     pa_rtpoll_item *i, *w;
+     struct pollfd *pollfd;
+ 
++#ifdef SIGRTMIN
+     pa_rtsig_configure(SIGRTMIN+10, SIGRTMAX);
++#endif
+ 
+     p = pa_rtpoll_new();
+ 
