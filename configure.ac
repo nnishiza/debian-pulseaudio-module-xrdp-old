@@ -1,11 +1,11 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# $Id: configure.ac 2071 2007-11-21 23:09:17Z lennart $
+# $Id: configure.ac 2101 2008-01-24 01:06:44Z lennart $
 
 # This file is part of PulseAudio.
 #
-# Copyright 2004-2006 Lennart Poettering
+# Copyright 2004-2008 Lennart Poettering
 # Copyright 2006-2007 Pierre Ossman <ossman@cendio.se> for Cendio AB
 #
 # PulseAudio is free software; you can redistribute it and/or modify it
@@ -26,7 +26,7 @@ AC_PREREQ(2.57)
 
 m4_define(PA_MAJOR, [0])
 m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [8])
+m4_define(PA_MICRO, [9])
 
 AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
