@@ -1,3 +1,11 @@
+pulseaudio (0.9.9-2) UNRELEASED; urgency=low
+
+  [ Petter Reinholdtsen ]
+  * debian/pulseaudio.init: Fix problems with LSB header in init.d script.
+      (Closes: #470934)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Fri, 14 Mar 2008 21:50:26 +0100
+
 pulseaudio (0.9.9-1) unstable; urgency=high
 
   * New Upstream Version.
