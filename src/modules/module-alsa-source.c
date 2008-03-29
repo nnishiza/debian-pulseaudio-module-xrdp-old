@@ -1,4 +1,4 @@
-/* $Id: module-alsa-source.c 2055 2007-11-13 23:42:15Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

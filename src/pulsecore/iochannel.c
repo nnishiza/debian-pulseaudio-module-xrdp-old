@@ -1,4 +1,4 @@
-/* $Id: iochannel.c 2022 2007-11-04 16:51:26Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

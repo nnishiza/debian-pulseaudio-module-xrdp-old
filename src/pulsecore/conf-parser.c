@@ -1,4 +1,4 @@
-/* $Id: conf-parser.c 2007 2007-11-01 00:31:59Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

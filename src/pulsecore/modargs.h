@@ -1,7 +1,7 @@
 #ifndef foomodargshfoo
 #define foomodargshfoo
 
-/* $Id: modargs.h 2050 2007-11-13 17:37:44Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

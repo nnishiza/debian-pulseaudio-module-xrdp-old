@@ -1,4 +1,4 @@
-/* $Id: module-esound-compat-spawnfd.c 2043 2007-11-09 18:25:40Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

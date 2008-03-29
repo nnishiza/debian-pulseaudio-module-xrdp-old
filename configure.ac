@@ -1,7 +1,7 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# $Id: configure.ac 2101 2008-01-24 01:06:44Z lennart $
+# $Id$
 
 # This file is part of PulseAudio.
 #
@@ -26,7 +26,7 @@ AC_PREREQ(2.57)
 
 m4_define(PA_MAJOR, [0])
 m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [9])
+m4_define(PA_MICRO, [10])
 
 AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
@@ -41,7 +41,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 12)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [4:0:4])
+AC_SUBST(LIBPULSE_VERSION_INFO, [4:1:4])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -58,7 +58,7 @@ AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:3:0])
 # An internally used, ABI-unstable library that contains the
 # PulseAudio core, SONAMEs are bumped on every release, version info
 # suffix will always be 0:0
-AC_SUBST(LIBPULSECORE_VERSION_INFO, [5:0:0])
+AC_SUBST(LIBPULSECORE_VERSION_INFO, [5:1:0])
 
 AC_CANONICAL_HOST
 
@@ -78,6 +78,10 @@ case $host in
 esac
 
 #### Checks for programs. ####
+
+# mkdir -p
+
+AC_PROG_MKDIR_P
 
 # CC
 
@@ -121,6 +125,43 @@ if test "x$GCC" = "xyes" ; then
     done
 fi
 
+# Native atomic operation support
+AC_ARG_ENABLE([atomic-arm-linux-helpers],
+    AC_HELP_STRING([--disable-atomic-arm-linux-helpers], [use inline asm or libatomic_ops instead]),
+        [
+            case "${enableval}" in
+                yes) atomic_arm_linux_helpers=yes ;;
+                no) atomic_arm_linux_helpers=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-atomic-arm-linux-helpers) ;;
+            esac
+        ],
+        [atomic_arm_linux_helpers=auto])
+
+AC_ARG_ENABLE([atomic-arm-memory-barrier],
+    AC_HELP_STRING([--enable-atomic-arm-memory-barrier], [only really needed in SMP arm systems]),
+        [
+            case "${enableval}" in
+                yes) AC_DEFINE_UNQUOTED(ATOMIC_ARM_MEMORY_BARRIER_ENABLED, 1, [Enable memory barriers]) ;;
+                no) ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-atomic-arm-linux-helpers) ;;
+            esac
+        ],)
+
+AC_MSG_CHECKING([target operating system])
+case $host in
+    	*-*-linux*)
+	    AC_MSG_RESULT([linux])
+	    pulse_target_os=linux
+    	;;
+	*)
+	    AC_MSG_RESULT([unknown])
+	    pulse_target_os=unknown
+	;;
+esac
+
+# If everything else fails use libatomic_ops
+need_libatomic_ops=yes
+
 AC_MSG_CHECKING([whether $CC knows __sync_bool_compare_and_swap()])
 AC_LANG_CONFTEST([int main() { int a = 4; __sync_bool_compare_and_swap(&a, 4, 5); }])
 $CC conftest.c $CFLAGS -o conftest > /dev/null 2> /dev/null
@@ -129,8 +170,53 @@ rm -f conftest.o conftest
 if test $ret -eq 0 ; then
     AC_DEFINE([HAVE_ATOMIC_BUILTINS], 1, [Have __sync_bool_compare_and_swap() and friends.])
     AC_MSG_RESULT([yes])
+    need_libatomic_ops=no
 else
     AC_MSG_RESULT([no])
+    # HW specific atomic ops stuff
+    AC_MSG_CHECKING([architecture for native atomic operations])
+    case $host_cpu in
+        arm*)
+	    AC_MSG_RESULT([arm])
+	    AC_MSG_CHECKING([whether we can use Linux kernel helpers])
+	    # The Linux kernel helper functions have been there since 2.6.16. However
+  	    # compile time checking for kernel version in cross compile environment
+	    # (which is usually the case for arm cpu) is tricky (or impossible).
+	    if test "x$pulse_target_os" = "xlinux" && test "x$atomic_arm_linux_helpers" != "xno"; then
+	        AC_MSG_RESULT([yes])
+        	AC_DEFINE_UNQUOTED(ATOMIC_ARM_LINUX_HELPERS, 1, [special arm linux implementation])
+    		need_libatomic_ops=no
+	    else
+	       AC_MSG_RESULT([no])
+	       AC_MSG_CHECKING([compiler support for arm inline asm atomic operations])
+	       AC_LANG_CONFTEST([[int main()
+	       {
+                   volatile int a=0;
+	           int o=0, n=1, r;
+	           asm volatile ("ldrex	%0, [%1]\n"
+			 	 "subs	%0, %0, %2\n"
+			 	 "strexeq %0, %3, [%1]\n"
+			 	 : "=&r" (r)
+			 	 : "r" (&a), "Ir" (o), "r" (n)
+			 	 : "cc");
+                   return (a==1 ? 0 : -1);
+	       }]])
+	       $CC conftest.c $CFLAGS -o conftest > /dev/null 2>&1
+	       ret=$?
+	       rm -f conftest.o conftest
+	       if test $ret -eq 0 ; then
+	       	   AC_DEFINE([ATOMIC_ARM_INLINE_ASM], 1, [Have ARMv6 instructions.])
+	    	   AC_MSG_RESULT([yes])
+		   need_libatomic_ops=no
+	       else
+	    	   AC_MSG_RESULT([no])
+               fi
+	   fi
+      	;;
+        *)
+	    AC_MSG_RESULT([unknown])
+        ;;
+    esac
 fi
 
 AC_MSG_CHECKING([whether $CC knows __thread])
@@ -167,6 +253,12 @@ AC_PROG_LIBTOOL
 AC_SUBST(LTDLINCL)
 AC_SUBST(LIBLTDL)
 AC_CONFIG_SUBDIRS(libltdl)
+
+old_LIBS=$LIBS
+LIBS="$LIBS $LIBLTDL"
+AC_CHECK_FUNCS([lt_dlmutex_register])
+LIBS=$old_LIBS
+AC_CHECK_TYPES([struct lt_user_dlloader, lt_dladvise], , , [#include <ltdl.h>])
 
 if test "x$enable_ltdl_install" = "xno" && test "x$ac_cv_lib_ltdl_lt_dlinit" = "xno" ; then
     AC_MSG_ERROR([[
@@ -273,6 +365,7 @@ AC_SEARCH_LIBS([sched_setscheduler], [rt])
 AC_SEARCH_LIBS([dlopen], [dl])
 AC_SEARCH_LIBS([shm_open], [rt])
 AC_SEARCH_LIBS([inet_ntop], [nsl])
+AC_SEARCH_LIBS([timer_create], [rt])
 
 # BSD
 AC_SEARCH_LIBS([connect], [socket])
@@ -401,13 +494,19 @@ AC_SUBST(LIBSNDFILE_LIBS)
 
 #### atomic-ops ###
 
-AC_CHECK_HEADERS([atomic_ops.h], [], [
-AC_MSG_ERROR([*** libatomic-ops headers not found])
-])
+AC_MSG_CHECKING([whether we need libatomic_ops])
+if test "x$need_libatomic_ops" = "xyes"; then
+   AC_MSG_RESULT([yes])
+   AC_CHECK_HEADERS([atomic_ops.h], [], [
+   AC_MSG_ERROR([*** libatomic-ops headers not found])
+   ])
 
-# Win32 does not need the lib and breaks horribly if we try to include it
-if test "x$os_is_win32" != "x1" ; then
-    LIBS="$LIBS -latomic_ops"
+   # Win32 does not need the lib and breaks horribly if we try to include it
+   if test "x$os_is_win32" != "x1" ; then
+       LIBS="$LIBS -latomic_ops"
+   fi
+else
+   AC_MSG_RESULT([no])
 fi
 
 #### Libsamplerate support (optional) ####
@@ -836,7 +935,7 @@ if test "x$HAVE_HAL" = x1 ; then
    dbus=yes
 fi
 
-if test "x${dbus}" != xno ; then
+if test "x${dbus}" != xno || test "x${bluez}" != xno || "x${hal}" != xno ; then
 
     PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.0.0 ],
         [
@@ -877,15 +976,11 @@ AC_ARG_ENABLE([polkit],
 
 if test "x${polkit}" != xno ; then
 
-    PKG_CHECK_MODULES(POLKIT, [ polkit-dbus ],
+    PKG_CHECK_MODULES(POLKIT, [ polkit-dbus >= 0.7 ],
         [
             HAVE_POLKIT=1
-            saved_LIBS="$LIBS"
-            LIBS="$LIBS POLKIT_LIBS"
-            AC_CHECK_FUNCS(polkit_context_is_caller_authorized)
-            LIBS="$saved_LIBS"
             AC_DEFINE([HAVE_POLKIT], 1, [Have PolicyKit])
-            policydir=`pkg-config --variable prefix`/usr/share/PolicyKit/policy/
+            policydir=`pkg-config polkit-dbus --variable prefix`/share/PolicyKit/policy/
             AC_SUBST(policydir)
         ],
         [
@@ -977,6 +1072,22 @@ else
 fi
 AC_SUBST(PA_ACCESS_GROUP)
 AC_DEFINE_UNQUOTED(PA_ACCESS_GROUP,"$PA_ACCESS_GROUP", [Access group])
+
+AC_ARG_ENABLE(
+        per_user_esound_socket,
+        AS_HELP_STRING([--disable-per-user-esound-socket], [Use per-user esound socket directory, like /tmp/.esd-UID/socket.]),
+        [
+            case "${enableval}" in
+                yes) per_user_esound_socket=1 ;;
+                no) per_user_esound_socket=0 ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-per-user-esound-socket) ;;
+            esac
+        ],
+        [per_user_esound_socket=1])
+
+if test "x$per_user_esound_socket" = "x1"; then
+   AC_DEFINE([USE_PER_USER_ESOUND_SOCKET], [1], [Define this if you want per-user esound socket directories])
+fi
 
 #### PulseAudio system runtime dir ####
 PA_SYSTEM_RUNTIME_PATH="${localstatedir}/run/pulse"
@@ -1109,32 +1220,38 @@ if test "x${HAVE_POLKIT}" = "x1" ; then
    ENABLE_POLKIT=yes
 fi
 
+ENABLE_PER_USER_ESOUND_SOCKET=no
+if test "x$per_user_esound_socket" = "x1" ; then
+   ENABLE_PER_USER_ESOUND_SOCKET=yes
+fi
+
 echo "
  ---{ $PACKAGE_NAME $VERSION }---
 
-    prefix:                 ${prefix}
-    sysconfdir:             ${sysconfdir}
-    localstatedir:          ${localstatedir}
-    System Runtime Path:    ${PA_SYSTEM_RUNTIME_PATH}
-    Compiler:               ${CC}
-    CFLAGS:                 ${CFLAGS}
-    Have X11:               ${ENABLE_X11}
-    Enable OSS:             ${ENABLE_OSS}
-    Enable Alsa:            ${ENABLE_ALSA}
-    Enable Solaris:         ${ENABLE_SOLARIS}
-    Enable GLib 2.0:        ${ENABLE_GLIB20}
-    Enable GConf:           ${ENABLE_GCONF}
-    Enable Avahi:           ${ENABLE_AVAHI}
-    Enable Jack:            ${ENABLE_JACK}
-    Enable Async DNS:       ${ENABLE_LIBASYNCNS}
-    Enable LIRC:            ${ENABLE_LIRC}
-    Enable HAL:             ${ENABLE_HAL}
-    Enable BlueZ:           ${ENABLE_BLUEZ}
-    Enable TCP Wrappers:    ${ENABLE_TCPWRAP}
-    Enable libsamplerate:   ${ENABLE_LIBSAMPLERATE}
-    Enable PolicyKit:       ${ENABLE_POLKIT}
-    System User:            ${PA_SYSTEM_USER}
-    System Group:           ${PA_SYSTEM_GROUP}
-    Realtime Group:         ${PA_REALTIME_GROUP}
-    Access Group:           ${PA_ACCESS_GROUP}
+    prefix:                        ${prefix}
+    sysconfdir:                    ${sysconfdir}
+    localstatedir:                 ${localstatedir}
+    System Runtime Path:           ${PA_SYSTEM_RUNTIME_PATH}
+    Compiler:                      ${CC}
+    CFLAGS:                        ${CFLAGS}
+    Have X11:                      ${ENABLE_X11}
+    Enable OSS:                    ${ENABLE_OSS}
+    Enable Alsa:                   ${ENABLE_ALSA}
+    Enable Solaris:                ${ENABLE_SOLARIS}
+    Enable GLib 2.0:               ${ENABLE_GLIB20}
+    Enable GConf:                  ${ENABLE_GCONF}
+    Enable Avahi:                  ${ENABLE_AVAHI}
+    Enable Jack:                   ${ENABLE_JACK}
+    Enable Async DNS:              ${ENABLE_LIBASYNCNS}
+    Enable LIRC:                   ${ENABLE_LIRC}
+    Enable HAL:                    ${ENABLE_HAL}
+    Enable BlueZ:                  ${ENABLE_BLUEZ}
+    Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
+    Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
+    Enable PolicyKit:              ${ENABLE_POLKIT}
+    System User:                   ${PA_SYSTEM_USER}
+    System Group:                  ${PA_SYSTEM_GROUP}
+    Realtime Group:                ${PA_REALTIME_GROUP}
+    Access Group:                  ${PA_ACCESS_GROUP}
+    Enable per-user EsounD socket: ${ENABLE_PER_USER_ESOUND_SOCKET}
 "

@@ -1,4 +1,4 @@
-/* $Id: cli.c 2008 2007-11-01 00:32:45Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

@@ -1,4 +1,4 @@
-/* $Id: resampler-test.c 2044 2007-11-11 02:30:59Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

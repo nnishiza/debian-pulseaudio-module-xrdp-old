@@ -1,7 +1,7 @@
 #ifndef foostrlisthfoo
 #define foostrlisthfoo
 
-/* $Id: strlist.h 1984 2007-10-29 20:30:15Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

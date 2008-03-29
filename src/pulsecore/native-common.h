@@ -1,7 +1,7 @@
 #ifndef foonativecommonhfoo
 #define foonativecommonhfoo
 
-/* $Id: native-common.h 2064 2007-11-21 01:20:16Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

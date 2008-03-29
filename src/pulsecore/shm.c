@@ -1,4 +1,4 @@
-/* $Id: shm.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id$ */
 
 /***
     This file is part of PulseAudio.
@@ -318,6 +318,7 @@ int pa_shm_attach_ro(pa_shm *m, unsigned id) {
 
 int pa_shm_cleanup(void) {
 
+#ifdef HAVE_SHM_OPEN
 #ifdef SHM_PATH
     DIR *d;
     struct dirent *de;
@@ -375,7 +376,8 @@ int pa_shm_cleanup(void) {
     }
 
     closedir(d);
-#endif
+#endif /* SHM_PATH */
+#endif /* HAVE_SHM_OPEN */
 
     return 0;
 }

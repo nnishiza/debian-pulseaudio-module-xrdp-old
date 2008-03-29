@@ -1,4 +1,4 @@
-/* $Id: main.c 2067 2007-11-21 01:30:40Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -242,7 +242,8 @@ static int change_user(void) {
     }
 
     set_env("USER", PA_SYSTEM_USER);
-    set_env("LOGNAME", PA_SYSTEM_GROUP);
+    set_env("USERNAME", PA_SYSTEM_USER);
+    set_env("LOGNAME", PA_SYSTEM_USER);
     set_env("HOME", PA_SYSTEM_RUNTIME_PATH);
 
     /* Relevant for pa_runtime_path() */
@@ -333,6 +334,7 @@ int main(int argc, char *argv[]) {
     int valid_pid_file = 0;
     gid_t gid = (gid_t) -1;
     pa_bool_t allow_realtime, allow_high_priority;
+    pa_bool_t ltdl_init = FALSE;
 
 #ifdef OS_IS_WIN32
     pa_time_event *timer;
@@ -504,6 +506,7 @@ int main(int argc, char *argv[]) {
 
     LTDL_SET_PRELOADED_SYMBOLS();
     pa_ltdl_init();
+    ltdl_init = TRUE;
 
     if (conf->dl_search_path)
         lt_dlsetsearchpath(conf->dl_search_path);
@@ -596,13 +599,13 @@ int main(int argc, char *argv[]) {
         int tty_fd;
 
         if (pa_stdio_acquire() < 0) {
-            pa_log("failed to acquire stdio.");
+            pa_log("Failed to acquire stdio.");
             goto finish;
         }
 
 #ifdef HAVE_FORK
         if (pipe(daemon_pipe) < 0) {
-            pa_log("failed to create pipe.");
+            pa_log("Failed to create pipe.");
             goto finish;
         }
 
@@ -704,6 +707,7 @@ int main(int argc, char *argv[]) {
     signal(SIGPIPE, SIG_IGN);
 #endif
 
+    pa_log_info("This is PulseAudio " PACKAGE_VERSION);
     pa_log_info("Page size is %lu bytes", (unsigned long) PA_PAGE_SIZE);
 
     if (pa_rtclock_hrtimer())
@@ -775,7 +779,7 @@ int main(int argc, char *argv[]) {
     c->disallow_module_loading = !!conf->disallow_module_loading;
 
     if (r < 0 && conf->fail) {
-        pa_log("failed to initialize daemon.");
+        pa_log("Failed to initialize daemon.");
 #ifdef HAVE_FORK
         if (conf->daemonize)
             pa_loop_write(daemon_pipe[1], &retval, sizeof(retval), NULL);
@@ -789,16 +793,19 @@ int main(int argc, char *argv[]) {
     } else {
 
         retval = 0;
+
+        if (c->default_sink_name &&
+            pa_namereg_get(c, c->default_sink_name, PA_NAMEREG_SINK, 1) == NULL) {
+            pa_log_error("%s : Default sink name (%s) does not exist in name register.", __FILE__, c->default_sink_name);
+            retval = !!conf->fail;
+        }
+
 #ifdef HAVE_FORK
         if (conf->daemonize)
             pa_loop_write(daemon_pipe[1], &retval, sizeof(retval), NULL);
 #endif
 
-        if (c->default_sink_name &&
-            pa_namereg_get(c, c->default_sink_name, PA_NAMEREG_SINK, 1) == NULL) {
-            pa_log_error("%s : Fatal error. Default sink name (%s) does not exist in name register.", __FILE__, c->default_sink_name);
-            retval = 1;
-        } else {
+        if (!retval) {
             pa_log_info("Daemon startup complete.");
             if (pa_mainloop_run(mainloop, &retval) < 0)
                 retval = 1;
@@ -836,7 +843,8 @@ finish:
     WSACleanup();
 #endif
 
-    pa_ltdl_done();
+    if (ltdl_init)
+        pa_ltdl_done();
 
 #ifdef HAVE_DBUS
     dbus_shutdown();

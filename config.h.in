@@ -1,5 +1,14 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Have ARMv6 instructions. */
+#undef ATOMIC_ARM_INLINE_ASM
+
+/* special arm linux implementation */
+#undef ATOMIC_ARM_LINUX_HELPERS
+
+/* Enable memory barriers */
+#undef ATOMIC_ARM_MEMORY_BARRIER_ENABLED
+
 /* Define to the type of elements in the array set by `getgroups'. Usually
    this is either `int' or `gid_t'. */
 #undef GETGROUPS_T
@@ -70,7 +79,7 @@
 /* Define to 1 if you have the <grp.h> header file. */
 #undef HAVE_GRP_H
 
-/* Define if you have the iconv() function. */
+/* Define if you have the iconv() function and it works. */
 #undef HAVE_ICONV
 
 /* Define to 1 if you have the `inet_ntop' function. */
@@ -105,6 +114,12 @@
 
 /* Define to 1 if you have the `lstat' function. */
 #undef HAVE_LSTAT
+
+/* Define to 1 if the system has the type `lt_dladvise'. */
+#undef HAVE_LT_DLADVISE
+
+/* Define to 1 if you have the `lt_dlmutex_register' function. */
+#undef HAVE_LT_DLMUTEX_REGISTER
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -144,10 +159,6 @@
 
 /* Have PolicyKit */
 #undef HAVE_POLKIT
-
-/* Define to 1 if you have the `polkit_context_is_caller_authorized' function.
-   */
-#undef HAVE_POLKIT_CONTEXT_IS_CALLER_AUTHORIZED
 
 /* Define to 1 if you have the <poll.h> header file. */
 #undef HAVE_POLL_H
@@ -253,6 +264,9 @@
 
 /* Define to 1 if you have the `strtof_l' function. */
 #undef HAVE_STRTOF_L
+
+/* Define to 1 if the system has the type `struct lt_user_dlloader'. */
+#undef HAVE_STRUCT_LT_USER_DLLOADER
 
 /* Define to 1 if you have the `sysconf' function. */
 #undef HAVE_SYSCONF
@@ -401,6 +415,9 @@
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Define this if you want per-user esound socket directories */
+#undef USE_PER_USER_ESOUND_SOCKET
 
 /* Version number of package */
 #undef VERSION

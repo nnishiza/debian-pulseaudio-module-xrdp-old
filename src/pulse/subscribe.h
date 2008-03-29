@@ -1,7 +1,7 @@
 #ifndef foosubscribehfoo
 #define foosubscribehfoo
 
-/* $Id: subscribe.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

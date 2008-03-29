@@ -1,4 +1,4 @@
-/* $Id: channelmap.c 2054 2007-11-13 23:41:17Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

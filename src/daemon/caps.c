@@ -1,4 +1,4 @@
-/* $Id: caps.c 2100 2008-01-24 01:05:24Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

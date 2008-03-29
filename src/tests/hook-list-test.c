@@ -1,4 +1,4 @@
-/* $Id: hook-list-test.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id$ */
 
 #ifdef HAVE_CONFIG_H
 #include <config.h>

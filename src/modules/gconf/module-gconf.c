@@ -1,4 +1,4 @@
-/* $Id: module-gconf.c 2047 2007-11-11 23:01:44Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

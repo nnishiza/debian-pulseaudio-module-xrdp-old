@@ -1,4 +1,4 @@
-/* $Id: thread-mainloop.c 2059 2007-11-14 16:11:51Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

@@ -1,4 +1,4 @@
-# $Id: Makefile.am 2061 2007-11-16 23:47:28Z lennart $
+# $Id$
 #
 # This file is part of PulseAudio.
 #
@@ -103,7 +103,7 @@ EXTRA_DIST = \
 		modules/module-defs.h.m4 \
 		daemon/pulseaudio-module-xsmp.desktop \
 		map-file \
-		daemon/PulseAudio.policy
+		daemon/org.pulseaudio.policy
 
 pulseconf_DATA = \
 		default.pa \
@@ -154,7 +154,7 @@ endif
 
 if HAVE_POLKIT
 
-policy_DATA = daemon/PulseAudio.policy
+policy_DATA = daemon/org.pulseaudio.policy
 
 pulseaudio_SOURCES += daemon/polkit.c daemon/polkit.h
 pulseaudio_CFLAGS += $(POLKIT_CFLAGS)
@@ -604,7 +604,7 @@ noinst_LTLIBRARIES = libspeex-resampler-fixed.la libspeex-resampler-float.la lib
 libspeex_resampler_fixed_la_CPPFLAGS = $(AM_CPPFLAGS) -DRANDOM_PREFIX=paspfx -DOUTSIDE_SPEEX -DFIXED_POINT
 libspeex_resampler_fixed_la_SOURCES = pulsecore/speex/resample.c pulsecore/speex/speex_resampler.h pulsecore/speex/arch.h pulsecore/speex/fixed_generic.h pulsecore/speexwrap.h
 
-libspeex_resampler_float_la_CPPFLAGS = $(AM_CPPFLAGS) -DRANDOM_PREFIX=paspfl -DOUTSIDE_SPEEX
+libspeex_resampler_float_la_CPPFLAGS = $(AM_CPPFLAGS) -DRANDOM_PREFIX=paspfl -DOUTSIDE_SPEEX -DFLOATING_POINT
 libspeex_resampler_float_la_SOURCES = pulsecore/speex/resample.c pulsecore/speex/speex_resampler.h pulsecore/speex/arch.h
 
 libffmpeg_resampler_la_CPPFLAGS = $(AM_CPPFLAGS)
@@ -1151,9 +1151,9 @@ EXTRA_DIST += $(SYMDEF_FILES)
 BUILT_SOURCES += $(SYMDEF_FILES)
 
 $(SYMDEF_FILES): modules/module-defs.h.m4
-	-mkdir modules
-	-mkdir modules/gconf
-	-mkdir modules/rtp
+	$(MKDIR_P) modules
+	$(MKDIR_P) modules/gconf
+	$(MKDIR_P) modules/rtp
 	$(M4) -Dfname="$@" $< > $@
 
 # Simple protocol
@@ -1424,8 +1424,8 @@ module_jack_source_la_CFLAGS = $(AM_CFLAGS) $(JACK_CFLAGS)
 # HAL
 libdbus_util_la_SOURCES = modules/dbus-util.c modules/dbus-util.h
 libdbus_util_la_LDFLAGS = -avoid-version
-libdbus_util_la_LIBADD = $(AM_LIBADD) $(HAL_LIBS) libpulsecore.la
-libdbus_util_la_CFLAGS = $(AM_CFLAGS) $(HAL_CFLAGS)
+libdbus_util_la_LIBADD = $(AM_LIBADD) $(DBUS_LIBS) libpulsecore.la
+libdbus_util_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 
 module_hal_detect_la_SOURCES = modules/module-hal-detect.c
 module_hal_detect_la_LDFLAGS = -module -avoid-version

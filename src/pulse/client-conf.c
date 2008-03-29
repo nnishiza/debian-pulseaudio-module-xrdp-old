@@ -1,4 +1,4 @@
-/* $Id: client-conf.c 2009 2007-11-01 00:33:14Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

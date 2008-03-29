@@ -1,4 +1,4 @@
-/* $Id: inet_ntop.c 1986 2007-10-29 20:32:53Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

@@ -1,4 +1,4 @@
-# $Id: daemon.conf.in 2067 2007-11-21 01:30:40Z lennart $
+# $Id$
 #
 # This file is part of PulseAudio.
 #
@@ -38,7 +38,7 @@
 ; module-idle-time = 20
 ; scache-idle-time = 20
 
-; dl-search-path = @PA_DLSEARCHPATH@
+; dl-search-path = (depends on architecture)
 
 ; default-script-file = @PA_DEFAULT_CONFIG_FILE@
 

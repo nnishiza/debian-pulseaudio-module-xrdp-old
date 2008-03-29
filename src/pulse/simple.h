@@ -1,7 +1,7 @@
 #ifndef foosimplehfoo
 #define foosimplehfoo
 
-/* $Id: simple.h 1999 2007-10-30 14:17:41Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
