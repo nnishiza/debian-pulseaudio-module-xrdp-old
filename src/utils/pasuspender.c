@@ -1,4 +1,4 @@
-/* $Id: pasuspender.c 2028 2007-11-07 13:52:07Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

@@ -1,4 +1,4 @@
-/* $Id: flist-test.c 1439 2007-05-22 23:37:27Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

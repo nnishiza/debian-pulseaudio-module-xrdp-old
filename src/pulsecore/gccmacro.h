@@ -1,7 +1,7 @@
 #ifndef foopulsegccmacrohfoo
 #define foopulsegccmacrohfoo
 
-/* $Id: gccmacro.h 2036 2007-11-09 02:12:09Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -79,7 +79,7 @@
 
 #ifndef PA_LIKELY
 #ifdef __GNUC__
-#define PA_LIKELY(x) (__builtin_expect((x),1))
+#define PA_LIKELY(x) (__builtin_expect(!!(x),1))
 #define PA_UNLIKELY(x) (__builtin_expect((x),0))
 #else
 #define PA_LIKELY(x) (x)

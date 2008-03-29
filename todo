@@ -1,4 +1,4 @@
-*** $Id: todo 1971 2007-10-28 19:13:50Z lennart $ ***
+*** $Id$ ***
 
 Build System:
 - Remove symdef files and use macros (like most other projects)

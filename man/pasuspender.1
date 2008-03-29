@@ -10,6 +10,8 @@ pasuspender --version\fB
 \f1
 .SH DESCRIPTION
 \fIpasuspender\f1 is a tool that can be used to tell a local PulseAudio sound server to temporarily suspend access to the audio devices, to allow other applications access them directly. \fIpasuspender\f1 will suspend access to the audio devices, fork a child process, and when the child process terminates, resume access again.
+
+Make sure to include \fB--\f1 in your \fIpasuspender\f1 command line before passing the subprocess command line (as shown above). Otherwise \fIpasuspender\f1 itself might end up interpreting the command line switches and options you intended to pass to the subprocess.
 .SH OPTIONS
 .TP
 \fB-h | --help\f1

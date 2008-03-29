@@ -1,4 +1,4 @@
-# $Id: Makefile.am 2029 2007-11-08 22:30:33Z lennart $
+# $Id$
 #
 # This file is part of PulseAudio.
 #

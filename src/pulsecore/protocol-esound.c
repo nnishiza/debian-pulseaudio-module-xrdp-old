@@ -1,4 +1,4 @@
-/* $Id: protocol-esound.c 2050 2007-11-13 17:37:44Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -72,7 +72,7 @@
 #define RECORD_BUFFER_SECONDS (5)
 #define RECORD_BUFFER_FRAGMENTS (100)
 
-#define MAX_CACHE_SAMPLE_SIZE (1024000)
+#define MAX_CACHE_SAMPLE_SIZE (2048000)
 
 #define SCACHE_PREFIX "esound."
 

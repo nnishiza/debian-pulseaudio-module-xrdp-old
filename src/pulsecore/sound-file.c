@@ -1,4 +1,4 @@
-/* $Id: sound-file.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -119,7 +119,10 @@ int pa_sound_file_load(
     }
 
     if (map)
-        pa_channel_map_init_auto(map, ss->channels, PA_CHANNEL_MAP_DEFAULT);
+        if (!pa_channel_map_init_auto(map, ss->channels, PA_CHANNEL_MAP_DEFAULT)) {
+            pa_log("Unsupported channel map in file %s", fname);
+            goto finish;
+        }
 
     if ((l = pa_frame_size(ss) * sfinfo.frames) > PA_SCACHE_ENTRY_SIZE_MAX) {
         pa_log("File too large");

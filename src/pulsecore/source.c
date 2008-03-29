@@ -1,4 +1,4 @@
-/* $Id: source.c 2067 2007-11-21 01:30:40Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -64,7 +64,7 @@ pa_source* pa_source_new(
     pa_return_null_if_fail(pa_sample_spec_valid(spec));
 
     if (!map)
-        map = pa_channel_map_init_auto(&tmap, spec->channels, PA_CHANNEL_MAP_DEFAULT);
+        pa_return_null_if_fail(map = pa_channel_map_init_auto(&tmap, spec->channels, PA_CHANNEL_MAP_DEFAULT));
 
     pa_return_null_if_fail(map && pa_channel_map_valid(map));
     pa_return_null_if_fail(map->channels == spec->channels);

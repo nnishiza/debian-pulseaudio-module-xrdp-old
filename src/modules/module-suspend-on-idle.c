@@ -1,4 +1,4 @@
-/* $Id: module-suspend-on-idle.c 2067 2007-11-21 01:30:40Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

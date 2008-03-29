@@ -1,4 +1,4 @@
-/* $Id: parseaddr.c 1998 2007-10-30 14:05:18Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

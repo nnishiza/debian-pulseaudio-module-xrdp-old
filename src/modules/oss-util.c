@@ -1,4 +1,4 @@
-/* $Id: oss-util.c 2037 2007-11-09 02:45:07Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

@@ -1,7 +1,7 @@
 #ifndef fooversionhfoo /*-*-C-*-*/
 #define fooversionhfoo
 
-/* $Id: version.h.in 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -37,7 +37,7 @@ PA_C_DECL_BEGIN
 /** Return the version of the header files. Keep in mind that this is
 a macro and not a function, so it is impossible to get the pointer of
 it. */
-#define pa_get_headers_version() ("0.9.9")
+#define pa_get_headers_version() ("0.9.10")
 
 /** Return the version of the library the current application is linked to. */
 const char* pa_get_library_version(void);

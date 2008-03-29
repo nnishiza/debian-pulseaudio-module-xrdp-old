@@ -1,7 +1,7 @@
 #ifndef foopulsesourceoutputhfoo
 #define foopulsesourceoutputhfoo
 
-/* $Id: source-output.h 2067 2007-11-21 01:30:40Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

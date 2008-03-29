@@ -1,7 +1,7 @@
 #ifndef foomemblockqhfoo
 #define foomemblockqhfoo
 
-/* $Id: memblockq.h 2063 2007-11-21 01:19:28Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

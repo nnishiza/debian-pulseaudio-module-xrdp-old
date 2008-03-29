@@ -1,7 +1,7 @@
 #ifndef fooautoloadhfoo
 #define fooautoloadhfoo
 
-/* $Id: autoload.h 1426 2007-02-13 15:35:19Z ossman $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
@@ -37,7 +37,7 @@ typedef struct pa_autoload_entry {
     uint32_t index;
     char *name;
     pa_namereg_type_t type; /* Type of the autoload entry */
-    int in_action; /* Currently loaded */
+    int in_action; /* The module is currently being loaded */
     char *module, *argument;
 } pa_autoload_entry;
 

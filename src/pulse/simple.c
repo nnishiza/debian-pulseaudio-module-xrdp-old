@@ -1,5 +1,5 @@
 
-/* $Id: simple.c 1971 2007-10-28 19:13:50Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

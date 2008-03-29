@@ -1,4 +1,4 @@
-/* $Id: namereg.c 1981 2007-10-29 20:01:49Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.

@@ -2,7 +2,7 @@
 <!DOCTYPE manpage SYSTEM "xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="xmltoman.xsl" ?>
 
-<!-- $Id: pacat.1.xml.in 2070 2007-11-21 23:03:19Z lennart $ -->
+<!-- $Id$ -->
 
 <!--
 This file is part of PulseAudio.

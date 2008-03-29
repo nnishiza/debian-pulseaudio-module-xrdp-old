@@ -1,4 +1,4 @@
-/* $Id: sconv.c 2040 2007-11-09 14:20:12Z lennart $ */
+/* $Id$ */
 
 /***
   This file is part of PulseAudio.
