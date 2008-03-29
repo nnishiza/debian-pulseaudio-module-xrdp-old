@@ -1,8 +1,1 @@
 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
-0002-Double-esound-maximum-sample-size.patch
-0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch
-0004-make-sure-to-create-.pulse-before-using-any-config.patch
-0005-Don-t-add-protocol-fields-introduced-in-version-12-w.patch
-0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
-0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
-0008-Fix-compilation-on-non-linux-platforms.patch

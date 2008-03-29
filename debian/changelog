@@ -2,6 +2,14 @@ pulseaudio (0.9.10~svn2189-1) UNRELEASED; urgency=low
 
   [ CJ van den Berg ]
   * New Upstream Version
+  * debian/patches: Drop patches merged upstream
+    - 0002-Double-esound-maximum-sample-size.patch
+    - 0003-fix-uploading-of-samples-into-PA.-Problem-discovered.patch
+    - 0004-make-sure-to-create-.pulse-before-using-any-config.patch
+    - 0005-Don-t-add-protocol-fields-introduced-in-version-12-w.patch
+    - 0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
+    - 0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
+    - 0008-Fix-compilation-on-non-linux-platforms.patch
 
   [ Petter Reinholdtsen ]
   * debian/pulseaudio.init: Fix problems with LSB header in init.d script.
