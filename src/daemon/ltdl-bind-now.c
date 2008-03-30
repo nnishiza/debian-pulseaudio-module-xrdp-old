@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: ltdl-bind-now.c 2167 2008-03-27 23:35:06Z lennart $ */
 
 /***
   This file is part of PulseAudio.

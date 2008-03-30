@@ -1,7 +1,7 @@
 #ifndef foopulsegccmacrohfoo
 #define foopulsegccmacrohfoo
 
-/* $Id$ */
+/* $Id: gccmacro.h 2150 2008-03-27 23:18:27Z lennart $ */
 
 /***
   This file is part of PulseAudio.

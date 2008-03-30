@@ -1,7 +1,7 @@
 #ifndef foopidhfoo
 #define foopidhfoo
 
-/* $Id$ */
+/* $Id: pid.h 2067 2007-11-21 01:30:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.

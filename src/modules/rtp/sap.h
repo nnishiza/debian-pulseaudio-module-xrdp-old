@@ -1,7 +1,7 @@
 #ifndef foosaphfoo
 #define foosaphfoo
 
-/* $Id$ */
+/* $Id: sap.h 1465 2007-05-29 17:24:48Z lennart $ */
 
 /***
   This file is part of PulseAudio.

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: time-smoother.c 1977 2007-10-29 16:38:57Z lennart $ */
 
 /***
   This file is part of PulseAudio.

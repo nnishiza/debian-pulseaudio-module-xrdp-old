@@ -1,0 +1,7263 @@
+2008-03-30 01:43  lennart
+
+	* src/Makefile.am: fix buildsystem to provide pa_log() in all
+	  binaries
+
+2008-03-30 01:42  lennart
+
+	* src/pulsecore/macro.h: rework pa_assert_se() to make sure it
+	  never gets optmized away, even if NDEBUG is defined
+
+2008-03-30 00:39  lennart
+
+	* src/daemon/caps.c, src/daemon/caps.h: make pa_drop_caps() abort
+	  on failure
+
+2008-03-30 00:38  lennart
+
+	* src/pulsecore/hashmap.c: avoid name clash with libc's remove()
+	  function
+
+2008-03-29 23:09  lennart
+
+	* src/tests/smoother-test.c: fix compiler warning
+
+2008-03-29 22:09  lennart
+
+	* configure.ac: require autoconf 2.60 since we use AC_PROG_MKDIR_P
+
+2008-03-29 00:42  lennart
+
+	* configure.ac: bump soname
+
+2008-03-29 00:31  lennart
+
+	* src/pulsecore/protocol-native.c: merge r2187 from trunk
+
+2008-03-28 18:09  lennart
+
+	* src/daemon/main.c: don't fail on init if the default device does
+	  not exist and .nofail is active
+
+2008-03-28 18:01  lennart
+
+	* src/modules/module-tunnel.c: don't segfault when module-tunnel is
+	  used without a sink_name/source_name parameter. Closes #197
+
+2008-03-28 17:12  lennart
+
+	* src/pulse/util.c: if we are run as root, always use 'root' as
+	  username, regardless of any env vars
+
+2008-03-28 17:03  lennart
+
+	* src/daemon/main.c: actually set lennart to the user name, not the
+	  group name. Set lennart too.
+
+2008-03-28 00:51  lennart
+
+	* src/utils/padsp.c: Fix ioctl() definition for solaris compat.
+	  Patch from yippi. Closes #253
+
+2008-03-28 00:47  lennart
+
+	* src/utils/pactl.c: work around yet another solaris braindamage
+
+2008-03-27 23:47  lennart
+
+	* src/daemon/default.pa.in: initialize gconf module before we
+	  publish our X11 credentials -- because gconf might cause network
+	  support enabled in the first place
+
+2008-03-27 23:41  lennart
+
+	* src/modules/bt-proximity-helper.c: merge r2146 from trunk
+
+2008-03-27 23:41  lennart
+
+	* src/daemon/default.pa.in: merge r2134 from trunk
+
+2008-03-27 23:40  lennart
+
+	* src/pulsecore/protocol-esound.c: merge r2133 from trunk
+
+2008-03-27 23:39  lennart
+
+	* src/daemon/daemon.conf.in, src/daemon/default.pa.in,
+	  src/pulsecore/cli-command.c: merge r2132 from trunk
+
+2008-03-27 23:38  lennart
+
+	* configure.ac, src/daemon/polkit.c: merge r2131 from trunk
+
+2008-03-27 23:38  lennart
+
+	* src/Makefile.am, src/daemon/PulseAudio.policy,
+	  src/daemon/org.pulseaudio.policy: merge r2130 from trunk
+
+2008-03-27 23:38  lennart
+
+	* src/daemon/PulseAudio.policy: merge r2129 from trunk
+
+2008-03-27 23:37  lennart
+
+	* src/daemon/cpulimit.c: merge r2128 from trunk
+
+2008-03-27 23:37  lennart
+
+	* configure.ac, src/pulsecore/atomic.h: merge r2127 from trunk
+
+2008-03-27 23:36  lennart
+
+	* src/utils/pactl.c: merge r2117 from trunk
+
+2008-03-27 23:36  lennart
+
+	* src/daemon/PulseAudio.policy: merge r2116 from trunk
+
+2008-03-27 23:35  lennart
+
+	* configure.ac, src/daemon/ltdl-bind-now.c: merge r2113,r2214,r2115
+	  from trunk
+
+2008-03-27 23:33  lennart
+
+	* src/pulsecore/autoload.h: merge r2112 from trunk
+
+2008-03-27 23:33  lennart
+
+	* src/daemon/main.c: merge r2111 from trunk
+
+2008-03-27 23:32  lennart
+
+	* src/pulsecore/shm.c: merge r2110 from trunk
+
+2008-03-27 23:31  lennart
+
+	* man/pasuspender.1.xml.in: merge r2109 from trunk
+
+2008-03-27 23:31  lennart
+
+	* configure.ac: merge r2108 from trunk
+
+2008-03-27 23:31  lennart
+
+	* src/daemon/main.c: merge r2107 from trunk
+
+2008-03-27 23:30  lennart
+
+	* src/utils/padsp.c: merge r2106 from trunk
+
+2008-03-27 23:29  lennart
+
+	* src/modules/alsa-util.c, src/modules/module-combine.c,
+	  src/modules/module-jack-sink.c, src/modules/module-jack-source.c,
+	  src/modules/module-zeroconf-discover.c, src/pulse/stream.c,
+	  src/pulsecore/core-scache.c, src/pulsecore/resampler.c,
+	  src/pulsecore/sink-input.c, src/pulsecore/sink.c,
+	  src/pulsecore/sound-file.c, src/pulsecore/source-output.c,
+	  src/pulsecore/source.c: merge r2105 from trunk
+
+2008-03-27 23:27  lennart
+
+	* src/daemon/cmdline.c: merge r2104 from trunk
+
+2008-03-27 23:25  lennart
+
+	* src/pulse/sample.h: merge r2098 from trunk
+
+2008-03-27 23:24  lennart
+
+	* src/pulsecore/protocol-native.c: merge r2097 from trunk
+
+2008-03-27 23:23  lennart
+
+	* src/modules/module-tunnel.c: merge r2096 from trunk
+
+2008-03-27 23:23  lennart
+
+	* src/pulsecore/rtpoll.c, src/tests/rtpoll-test.c: merge r2095 from
+	  trunk
+
+2008-03-27 23:22  lennart
+
+	* src/modules/module-ladspa-sink.c: merge r2092,r2093,r2094,r2152
+	  from trunk
+
+2008-03-27 23:18  lennart
+
+	* src/modules/module-ladspa-sink.c: merge r2091 from trunk
+
+2008-03-27 23:18  lennart
+
+	* src/pulsecore/gccmacro.h: merge r2090 from trunk
+
+2008-03-27 23:18  lennart
+
+	* src/pulsecore/cli-command.c: merge r2084 from trunk
+
+2008-03-27 23:17  lennart
+
+	* configure.ac, src/modules/module-protocol-stub.c: merge r2145
+	  from trunk
+
+2008-03-27 23:16  lennart
+
+	* configure.ac, src/modules/module-protocol-stub.c: merge r2083
+	  from trunk
+
+2008-03-27 21:24  lennart
+
+	* src/pulse/context.c: merge r2081 from trunk
+
+2008-03-27 21:24  lennart
+
+	* src/pulsecore/endianmacros.h: merge r2079 from trunk
+
+2008-03-27 21:22  lennart
+
+	* configure.ac, src/Makefile.am: merge r2077 from trunk
+
+2008-03-27 21:22  lennart
+
+	* configure.ac, src/Makefile.am: merge r2076 from trunk
+
+2008-03-27 21:21  lennart
+
+	* configure.ac: merge r2075 from trunk
+
+2008-03-27 21:21  lennart
+
+	* src/Makefile.am, src/pulsecore/speex/arch.h,
+	  src/pulsecore/speex/resample.c: merge r2073 from trunk
+
+2008-03-27 21:20  lennart
+
+	* src/pulse/stream.c: merge r2074 from trunk
+
+2008-03-27 21:20  lennart
+
+	* src/pulsecore/core-util.c: merge r2078 from trunk
+
+2008-03-27 21:15  lennart
+
+	* configure.ac: bump revision
+
+2008-03-27 21:14  lennart
+
+	* .: create branch for 0.9.10
+
+2008-01-24 01:06  lennart
+
+	* : bump revision
+
+2008-01-24 01:05  lennart
+
+	* : fix CVE-2008-0008.patch
+
+2008-01-24 00:44  lennart
+
+	* : prepare 0.9.9
+
+2007-11-21 23:59  lennart
+
+	* : Tagging release 0.9.8
+
+2007-11-21 23:09  lennart
+
+	* : bump version and soname
+
+2007-11-21 23:03  lennart
+
+	* : update man pages a bit
+
+2007-11-21 22:55  lennart
+
+	* : when speaking to a client with a version < 12, hide S32 sample
+	  specs, and make them appaear as FLOAT32
+
+2007-11-21 01:31  lennart
+
+	* : increment api and protocol version
+
+2007-11-21 01:30  lennart
+
+	* : - Check process name when dealing with PID files
+	  - Add new PA_STREAM_FIX_CHANNELS, FIX_RATE, FIX_FORMAT,
+	  DONT_MOVE, VARIABLE_RATES to pa_sream_flags_t adn implement it
+	  - Expose those flags in pacat
+	  - Add notifications about device suspend/resume to the protocol
+	  and expose them in libpulse
+	  - Allow changing of buffer_attr during playback
+	  - allow disabling for remixing globally
+	  - hookup polkit support
+
+2007-11-21 01:21  lennart
+
+	* : minor typo fix
+
+2007-11-21 01:21  lennart
+
+	* : add short version history of the PA protocol
+
+2007-11-21 01:20  lennart
+
+	* : add a couple of new opcodes, and document the versions the
+	  opcodes where added
+
+2007-11-21 01:19  lennart
+
+	* : add API to allow runtime reconfiguration of memblockqs
+
+2007-11-16 23:48  lennart
+
+	* : detect whether PolicyKit support is available
+
+2007-11-16 23:47  lennart
+
+	* : build PolicyKit support
+
+2007-11-16 23:46  lennart
+
+	* : add interface to PolicyKit
+
+2007-11-14 16:11  lennart
+
+	* : use a prio inheriting mutex for the threaded mainloop, to ease
+	  writing of RT clients
+
+2007-11-14 16:11  lennart
+
+	* : use a free list for allocation pa_operation objects
+
+2007-11-14 16:10  lennart
+
+	* : use a free list for allocating reply_info structs
+
+2007-11-14 16:09  lennart
+
+	* : add missing pa_boolization
+
+2007-11-13 23:42  lennart
+
+	* : Rework ALSA mixer channel detection code. This time we actually
+	  care about the channel names the ALSA mixer exports for us
+
+2007-11-13 23:41  lennart
+
+	* : add array size to increase chance of detecting missing updates
+
+2007-11-13 19:56  lennart
+
+	* : don't fail if the bt-proximity-helper is not built
+
+2007-11-13 19:39  lennart
+
+	* : don't touch RLIMIT:MEMBLOCK by default. This should improve
+	  out-of-the-box comaptibility with JACK
+
+2007-11-13 19:21  lennart
+
+	* : increase the pacmd timeout a bit
+
+2007-11-13 17:37  lennart
+
+	* : Completely rework ALSA device selection code: choose the device
+	  to open depending on the requested number of channels and channel
+	  map. In most cases it will now suffice to set default-channels=6
+	  to enable 5.1 sound for all devices that support it
+
+2007-11-13 17:35  lennart
+
+	* : fix loading of load-once modules if no other modules was loaded
+	  before
+
+2007-11-11 23:18  lennart
+
+	* : add new fun module that automatically mutes your audio devices
+	  when you leave with your bluetooth phone, and unmutes when you
+	  come back
+
+2007-11-11 23:01  lennart
+
+	* : Port module-gconf to make use of the new API
+	  pa_start_child_for_read()
+
+2007-11-11 23:00  lennart
+
+	* : pull code for starting helper processes out of module-gconf,
+	  clean it up, and stick into a new API pa_start_child_for_read()
+
+2007-11-11 22:59  lennart
+
+	* : add new function pa_strnull() to simplify passing null strings
+	  to non-linux printf()
+
+2007-11-11 02:30  lennart
+
+	* : add a simple fully-automatic fully-linearupmixer/downmixer and
+	  enable it by default
+
+2007-11-09 18:25  lennart
+
+	* : tag modules that may only be loaded once at most especially,
+	  and enforce that in the module loader
+
+2007-11-09 18:24  lennart
+
+	* : minor typo
+
+2007-11-09 17:11  lennart
+
+	* : optimize mixing code a bit. Add mixers for S32LE, S32BE, ULAW,
+	  ALAW and FLOAT32BE. Add volume adjusters for FLOAT32BE, ALAW,
+	  ULAW.
+
+2007-11-09 14:20  lennart
+
+	* : replace a few CLAMPs by PA_CLAMP_UNLIKELY
+
+2007-11-09 14:19  lennart
+
+	* : remove PA_CLAMP_LIKELY macro because it doesn't really make
+	  sense.
+
+2007-11-09 14:14  lennart
+
+	* : .la files for modules can probably be removed safely on all
+	  archs now
+
+2007-11-09 02:45  lennart
+
+	* : add support for 32bit integer samples
+
+2007-11-09 02:12  lennart
+
+	* : fix CLAMP_LIKELY/UNLIKELY definition
+
+2007-11-09 01:30  lennart
+
+	* : add missing #include
+
+2007-11-09 01:30  lennart
+
+	* : add a few missing macro definitions
+
+2007-11-09 01:29  lennart
+
+	* : add PA_CLAMP_LIKELY and PA_CLAMP_UNLIKELY macros
+
+2007-11-09 01:28  lennart
+
+	* : add support for likely()/unlikely() type macros
+
+2007-11-08 22:42  lennart
+
+	* : parse the pasuspend argument like any other boolean in
+	  PulseAudio
+
+2007-11-08 22:31  lennart
+
+	* : strip most comments from the default configuration files, since
+	  the man page is now more elaborate and we don't want to maintain
+	  those docs redundantly at two places
+
+2007-11-08 22:30  lennart
+
+	* : add remaing man pages
+
+2007-11-07 13:52  lennart
+
+	* : warn if the sound server is not local
+
+2007-11-07 13:50  lennart
+
+	* : add man pages for padsp, pabrowse, pasuspender
+
+2007-11-06 00:21  lennart
+
+	* : complete pactl man page
+
+2007-11-05 23:56  lennart
+
+	* : minor cleanups of --help texts
+
+2007-11-05 23:56  lennart
+
+	* : add a couple of more man pages
+
+2007-11-05 15:10  lennart
+
+	* : add a man page for the pulseaudio binary. More will follow.
+
+2007-11-04 16:51  lennart
+
+	* : fix two alignment issues found by the debian buildd gcc on
+	  sparc
+
+2007-11-04 16:50  lennart
+
+	* : pa_boolization
+
+2007-11-04 14:17  lennart
+
+	* : add eventfd syscall nr for arm; patch from Sjoerd Simons;
+	  Closes #150
+
+2007-11-04 14:11  lennart
+
+	* : Properly terminate pa_readlink() strings. Patch from Sjoerd
+	  Simons. Closes #149
+
+2007-11-04 13:51  lennart
+
+	* : Add linker version script to hide non-ABI stable symbols in the
+	  client
+	  libraries. While this helps defining a more streamlined ABI, this
+	  also requires
+	  linking a lot of additional symbols into some PA client utilities
+	  which until
+	  now made use of the non-ABI stable symbols in libpulse. To
+	  minimize the effect
+	  on there size a bit, strip unused symbols by linking with
+	  -ffunction-sections
+	  -fdata-sections -Wl,--gc-sections
+
+2007-11-01 22:51  lennart
+
+	* : comment the library versions a bit
+
+2007-11-01 22:50  lennart
+
+	* : add missing pthread libs
+
+2007-11-01 11:23  lennart
+
+	* : make disallow-module-loading config option work again (original
+	  patch from Diego Petteno)
+
+2007-11-01 02:58  lennart
+
+	* : make rtprio and nice level actually configurable
+
+2007-11-01 02:55  lennart
+
+	* : drop rt scheduling before we start our helper process
+
+2007-11-01 01:45  lennart
+
+	* : add new option --realtime
+
+2007-11-01 01:42  lennart
+
+	* : save and restore errno in sig handler
+
+2007-11-01 00:34  lennart
+
+	* : add nice and rtprio resource limit support; make rtprio and
+	  nice level to use configurable; some minor updates
+
+2007-11-01 00:33  lennart
+
+	* : pa_boolize the client config
+
+2007-11-01 00:32  lennart
+
+	* : more pa_boolization
+
+2007-11-01 00:31  lennart
+
+	* : make the bool config parser actually parse bools
+
+2007-11-01 00:06  lennart
+
+	* : fix comment
+
+2007-11-01 00:06  lennart
+
+	* : add new function pa_yes_no()
+
+2007-10-30 18:35  lennart
+
+	* : save and restore errno in the sig handler
+
+2007-10-30 16:02  lennart
+
+	* : bump sonames
+
+2007-10-30 15:23  lennart
+
+	* : make sjoerd happy: include ChangeLog built from svn logs in
+	  tarball
+
+2007-10-30 15:08  lennart
+
+	* : make make distcheck pass
+
+2007-10-30 14:17  lennart
+
+	* : rename 'length' parameters in the API to 'bytes', to make their
+	  unit clear
+
+2007-10-30 14:05  lennart
+
+	* : handle tcp4: prefix for server specs correctly. (Closes #136)
+
+2007-10-30 02:35  lennart
+
+	* : rename stream names too, when the sink name changes
+
+2007-10-30 02:05  lennart
+
+	* : ignore updates not relevant to us
+
+2007-10-30 01:50  lennart
+
+	* : rework the tunnel naming scheme, and make it follow the
+	  description changes of the underlying devices; never check for
+	  tagstruct eof, to ease later extensions
+
+2007-10-30 00:49  lennart
+
+	* : initialize userdata struct with 0
+
+2007-10-30 00:32  lennart
+
+	* : remove libltdl from SVN
+
+2007-10-30 00:17  lennart
+
+	* : deal properly with signals interrupting us when we wait for
+	  data from gconf helper
+
+2007-10-29 23:55  lennart
+
+	* : keep track of configured tunnels and make sure to unload them
+	  when they disappear from zeroconf again
+
+2007-10-29 23:54  lennart
+
+	* : don't announce monitor sources
+
+2007-10-29 22:14  lennart
+
+	* : don't try to send pause request before our stream is properly
+	  set up
+
+2007-10-29 21:23  lennart
+
+	* : ignore network sinks/sources
+
+2007-10-29 21:19  lennart
+
+	* : make gcc shut up a bit more
+
+2007-10-29 20:32  lennart
+
+	* : we don't want to include assert.h anymore
+
+2007-10-29 20:30  lennart
+
+	* : reverse server order for PULSE_SERVER x11 property, to follow
+	  order in which modules are loaded
+
+2007-10-29 20:30  lennart
+
+	* : add new API pa_strlist_reverse()
+
+2007-10-29 20:03  lennart
+
+	* : add new module module-zeroconf-discover
+
+2007-10-29 20:03  lennart
+
+	* : publish dns-sd subtypes to allow distinction of virtual,
+	  hardware and monitor sinks/source
+
+2007-10-29 20:01  lennart
+
+	* : export pa_namereg_is_valid_name()
+
+2007-10-29 20:01  lennart
+
+	* : fail on name clash
+
+2007-10-29 16:54  lennart
+
+	* : bring back module-tunnel, yay!
+
+2007-10-29 16:39  lennart
+
+	* : downgrade a few log messages
+
+2007-10-29 16:38  lennart
+
+	* : properly deal with time pausing
+
+2007-10-29 15:33  lennart
+
+	* : use real path of binary instead of /proc/self/exe to execute
+	  ourselves
+
+2007-10-29 15:32  lennart
+
+	* : make use of new pa_readlink() where applicable
+
+2007-10-29 15:31  lennart
+
+	* : add new pa_readlink() API
+
+2007-10-29 08:34  lennart
+
+	* : make speex-float-3 the default resampler
+
+2007-10-28 19:24  lennart
+
+	* : add missing dependency on socket-util
+
+2007-10-28 19:13  lennart
+
+	* : merge 'lennart' branch back into trunk.
+
+2007-08-24 07:12  tanuk
+
+	* : Corrected a bogus comment.
+
+2007-08-20 06:22  tanuk
+
+	* : Modified the JACK sink heavily:
+	  * Made the sink realtime-safe.
+	  * To achieve the previous item, internal buffering was be added.
+	  New module
+	  argument: buffersize.
+	  * Removed the user's need to set the JACK transport to playing
+	  state before he
+	  could hear anything from PulseAudio.
+	  * In process of achieving the previous item, latency calculation
+	  got more
+	  inaccurate: the reported latency is now always a multiple of the
+	  JACK
+	  processing block size, and constant.
+	  * The JACK ports now have a running numbering in their names.
+
+2007-08-04 19:53  lennart
+
+	* : compat with automake 1.10
+
+2007-08-04 19:53  lennart
+
+	* : jack driver build fix which became apparent on fedora
+
+2007-07-10 15:21  ossman
+
+	* : Make sure we link to the core to get all symbols.
+
+2007-07-10 15:20  ossman
+
+	* : Solaris hides inet_ntop in nsl.
+
+2007-07-10 14:36  ossman
+
+	* : Make -no-undefined actually work (and fix up error found by
+	  it).
+
+2007-07-10 14:36  ossman
+
+	* : Move pthreads detection as it gets confused by things in LIBS.
+
+2007-06-13 07:21  ossman
+
+	* : Make sure mixer ioctls work on /dev/dsp aswell.
+
+2007-06-11 11:22  ossman
+
+	* : Support stat() and friends as some programs (audacity) likes to
+	  check if
+	  the device node is there first.
+
+2007-06-04 09:52  ossman
+
+	* : Add support for the poorly documented SNDCTL_DSP_GETTRIGGER.
+
+2007-05-29 17:24  lennart
+
+	* : Kill spaces on EOL
+
+2007-05-29 17:16  lennart
+
+	* : add target "eolspace" to makefil to remove trailing newlines
+	  from all source files
+
+2007-05-29 07:47  ossman
+
+	* : We now use gid unconditionally, so make sure it's defined.
+
+2007-05-28 15:52  lennart
+
+	* : build fix for systems lacking capability suppoort. (Problem
+	  identified and original patch supplied by Diego Petteno
+
+2007-05-27 20:58  lennart
+
+	* : Bump revision of libs and package
+
+2007-05-27 20:38  lennart
+
+	* : Replace AO_xxx usage with pa_atomic_xxx and friends wherever it
+	  makes sense
+
+2007-05-27 16:59  lennart
+
+	* : unfortunately we cannot detect if a foreign thread is still
+	  running. Thus sucks. But what can we do? U. Drepper thinks our
+	  use case is invalid.
+
+2007-05-27 16:37  lennart
+
+	* : Minor optimization: read log level character code from array
+
+2007-05-26 23:39  lennart
+
+	* : Add a new meta command ".ifexists" to the CLI language, to
+	  execute commands only if a specified file exists. Original patch
+	  from cjvdb. Closes #36
+
+2007-05-25 20:35  lennart
+
+	* : when called with the setid bit change euid to uid sooner to
+	  make sure that we can access our own files even when we dropped
+	  most capabilities. (Closes #21)
+
+2007-05-25 20:24  lennart
+
+	* : fix suid Makefile target
+
+2007-05-23 23:38  lennart
+
+	* : only browse for ipv4 pa servers for now. Needs better fixing
+	  which however is not trivial and probably breaks the API
+
+2007-05-23 17:24  lennart
+
+	* : Fix another DoS vulnerability that has been identified by Luigi
+	  Auriemma. (Finally closes #67)
+
+2007-05-23 17:12  lennart
+
+	* : add a missing initialization that causes a crash when parsing
+	  invalid volume restoration tables (Problem identified by Luigi
+	  Auriemma, re #67)
+
+2007-05-23 16:59  lennart
+
+	* : Fix a DoS with allocating overly large silence buffers.
+	  (Identified by Luigi Auriemma (re #67)
+
+2007-05-23 16:57  lennart
+
+	* : don't allow excessively high sample rates
+
+2007-05-23 16:42  lennart
+
+	* : Fix yet another DoS vulnerability, also identified Luigi
+	  Auriemma (re #67)
+
+2007-05-23 16:30  lennart
+
+	* : fix minor typo
+
+2007-05-23 16:29  lennart
+
+	* : Fix another DoS vulnerability, also identified Luigi Auriemma
+	  (closes #67)
+
+2007-05-23 16:24  lennart
+
+	* : fix a DoS vulnerability (re #67), originally identified by
+	  Luigi Auriemma
+
+2007-05-23 15:30  lennart
+
+	* : fix a few obvious copynpaste errors when handling volumes
+
+2007-05-23 12:32  lennart
+
+	* : Treat empty :0.0 identically to unset :0.0 when trying to find
+	  a PA server. (Closes #87)
+
+2007-05-23 01:02  lennart
+
+	* : Fix module-oss for devices that return EAGAIN when we don't
+	  expect it. (Closes #66)
+
+2007-05-22 23:39  lennart
+
+	* : show socket directory when we fail to create it. (Closes #85)
+
+2007-05-22 23:38  lennart
+
+	* : Fix build and only load OSS xor ALSA modules if both are
+	  available
+
+2007-05-22 23:37  lennart
+
+	* : drop unused variable
+
+2007-05-22 23:08  lennart
+
+	* : fix comment
+
+2007-03-07 09:27  ossman
+
+	* : Add support for SNDCTL_DSP_SETTRIGGER. (closes #56)
+
+2007-03-06 15:47  ossman
+
+	* : Fix some instances where we printed a string without first
+	  checking that
+	  the pointer was valid.
+
+2007-03-06 13:42  ossman
+
+	* : Pulsecore should be linked into all modules.
+
+2007-03-06 13:31  ossman
+
+	* : Don't fail if hal doesn't currently contain any devices.
+	  (closes #55)
+
+2007-03-02 09:20  ossman
+
+	* : Handle suspended alsa devices. Based on patch by ranma. (closes
+	  #26)
+
+2007-03-01 17:15  ossman
+
+	* : Revert stuff from commit 1431 that wasn't supposed to be there.
+
+2007-03-01 17:13  ossman
+
+	* : Handle when ALSA tweaks our sample spec so much that the frame
+	  size changes.
+	  (closes #57).
+
+2007-03-01 17:11  ossman
+
+	* : Add some debugging output from sample cache subsystem.
+
+2007-02-14 12:13  ossman
+
+	* : Add a wrapper around close() to work around Windows' ass
+	  backwards way of
+	  handling sockets.
+
+2007-02-14 09:27  ossman
+
+	* : Allow a formatted string in the validation warning.
+
+2007-02-14 09:26  ossman
+
+	* : Prefix log lines with a character indicating level.
+
+2007-02-13 15:35  ossman
+
+	* : Add copyright notices to all relevant files. (based on svn log)
+
+2007-02-12 09:39  ossman
+
+	* : Make sure we get proper host identifiers.
+
+2007-02-12 09:37  ossman
+
+	* : Allow specification of device number.
+
+2007-02-05 10:26  ossman
+
+	* : Don't abort config loading when the user specific cannot be
+	  loaded.
+
+2007-01-19 08:00  ossman
+
+	* : Make sure we report success for SNDCTL_DSP_SETDUPLEX.
+	  
+	  (Patch by ZlatkO)
+
+2007-01-04 14:20  ossman
+
+	* : Report IO error on ioctl() when we're in a fatal error state.
+
+2007-01-04 14:17  ossman
+
+	* : Free stream objects when they've been invalidated.
+
+2007-01-04 14:06  ossman
+
+	* : Fix error messages for failure connecting streams.
+
+2007-01-04 13:43  ossman
+
+	* : Huge trailing whitespace cleanup. Let's keep the tree pure from
+	  here on,
+	  mmmkay?
+
+2006-12-04 08:15  ossman
+
+	* : Fix silly copy-and-paste error. (closes #45)
+
+2006-11-24 09:29  ossman
+
+	* : Fix incorrect assert.
+
+2006-11-10 14:58  ossman
+
+	* : Add atomic.h as a dependency at relevant places.
+
+2006-11-10 12:20  ossman
+
+	* : Make sure we package version.h.in.
+
+2006-11-09 15:23  ossman
+
+	* : Yet again try to fix the creation of necessary directories when
+	  srcdir !=
+	  builddir.
+
+2006-11-08 13:03  ossman
+
+	* : Support reversed endian floats. (closes #28) (closes #35)
+
+2006-11-08 12:56  ossman
+
+	* : Check correct variable for return value. Closes #37.
+
+2006-11-06 13:16  ossman
+
+	* : Fix some missing line breaks.
+
+2006-11-06 13:06  ossman
+
+	* : Revert r1404 and keep it on a development branch until it is
+	  fully tested.
+
+2006-11-06 10:17  ossman
+
+	* : The OSS spec is unclear what should happen when a reset is
+	  requested. Let's
+	  have a nicer attitude and keep as much settings as possible.
+
+2006-11-06 10:14  ossman
+
+	* : Handle when threaded mainloop is freed before it is started.
+
+2006-09-26 23:50  lennart
+
+	* : rework memory block management to be thread-safe and mostly
+	  lock-free.
+	  
+	  pa_memblock is now an opaque structure. Access to its fields is
+	  now done
+	  through various accessor functions in a thread-safe manner.
+	  
+	  pa_memblock_acquire() and pa_memblock_release() are now used to
+	  access the
+	  attached audio data. Why? To allow safe manipulation of the
+	  memory pointer
+	  maintained by the memory block. Internally _acquire() and
+	  _release() maintain a
+	  reference counter. Please do not confuse this reference counter
+	  whith the one
+	  maintained by pa_memblock_ref()/_unref()!
+	  
+	  As a side effect this patch removes all direct usages of AO_t and
+	  replaces it
+	  with pa_atomic_xxx based code.
+	  
+	  This stuff needs some serious testing love. Especially if threads
+	  are actively
+	  used.
+
+2006-09-26 23:42  lennart
+
+	* : upgrade refcnt.h to make use of our new pa_atomic_xxx() API
+
+2006-09-26 23:41  lennart
+
+	* : add asynchronous inter-thread notification API
+
+2006-09-20 19:02  lennart
+
+	* : enable module-hal-detect in the default configuration file only
+	  if HAL support is enabled (closes #30)
+
+2006-09-20 19:01  lennart
+
+	* : rename default realtime group from "realtime" to "pulse-rt",
+	  since it is pulseaudio specific. you may still pass
+	  --with-realtime-group=realtime to configure to get the old
+	  behaviour
+
+2006-09-19 07:54  ossman
+
+	* : Revert r1398 as it broke the srcdir != builddir patch. New fix
+	  that doesn't
+	  use the $(mkdir_p) define as it isn't present on many systems.
+
+2006-09-19 07:49  ossman
+
+	* : No need to create these dirs as they're part of the source
+	  tree.
+
+2006-09-14 16:00  ossman
+
+	* : Stop using x86-isms and use ISO C (oversized shifts are
+	  undefined).
+
+2006-09-14 14:56  ossman
+
+	* : Fix debug output for SNDCTL_DSP_SETFRAGMENT.
+
+2006-09-11 07:56  ossman
+
+	* : Fix up build structure for platform dependent modules. Also add
+	  implementation
+	  on Win32 for pa_once().
+
+2006-09-11 07:54  ossman
+
+	* : Use platform independent sleep.
+
+2006-09-11 07:14  ossman
+
+	* : Fix typo.
+
+2006-09-09 23:59  lennart
+
+	* : ignore flist-test in the correct dir
+
+2006-09-09 23:58  lennart
+
+	* : ignore flist-test
+
+2006-09-09 23:56  lennart
+
+	* : update Makefile
+
+2006-09-09 23:55  lennart
+
+	* : make pa_mutex_new() and pa_cond_new() succeed in all cases.
+	  Similar behaviour to pa_xmalloc().
+
+2006-09-09 23:54  lennart
+
+	* : add pa_once testing code
+
+2006-09-09 23:54  lennart
+
+	* : rework pa_once once again, because the once function needs to
+	  have terminated before pa_once returns, regardless whether the
+	  local call executes it or another thread does.
+	  
+	  With the previous code it might happen that an long-running
+	  initializing in a once function is not terminated yet when
+	  another thread thinks it already is.
+
+2006-09-09 22:59  lennart
+
+	* : update for newer APIs: replace direct usage of libatomic_ops by
+	  usage of our own atomic.h; remove pa_once implementation; always
+	  use our pa_once implementation instead of the POSIX version
+
+2006-09-09 22:55  lennart
+
+	* : implement trival pa_once API based on atomic operations
+
+2006-09-09 22:54  lennart
+
+	* : add static initializer PA_ATOMIC_INIT()
+
+2006-09-09 21:09  lennart
+
+	* : add a test program for the free list
+
+2006-09-09 21:05  lennart
+
+	* : implement a simple lock-free free list
+
+2006-09-08 15:43  lennart
+
+	* : add a tiny wrapper around libatomic_ops: pa_atomic_int_t and
+	  pa_atomit_ptr_t.
+	  
+	  Reasoning:
+	  
+	  This wrapper fixes a few API issues I found with atomic_ops:
+	  
+	  * AO_t is an int, which can be written to with "=".
+	  pa_tomic_int_t however is
+	  a struct which due to type-safety enforces proper access with
+	  pa_atomic_xx(). (Inspired by the way the Linux kernel handles
+	  this)
+	  
+	  * AO_load()'s parameter is lacking a "const"
+	  
+	  * Explicitly choosing the proper memory barrier for each call is
+	  very
+	  difficult and especially hard to debug because most CPUs support
+	  only two
+	  different barrier types which the eight types defined by
+	  atomic_ops are
+	  mapped to. Most other software (i.e. glib, Linux kernel) which
+	  provides
+	  atomic variable access usually do a full barrier in all cases and
+	  so should
+	  we. Eventually we might choose to add additional memory barrier
+	  calls, in
+	  which case we can add special versions of the current function
+	  with special
+	  suffixes.
+	  
+	  * The function names are unnecesarily long
+	  
+	  * Atomic pointer accesses are only supported with manual casts.
+	  
+	  The new pa_atomic_xxx interface borrows heavily from the GLib and
+	  Linux kernel
+	  atomicity API, though it is different from both of them.
+	  
+	  In addition this abstract API makes it easy to port PA to
+	  different atomicty
+	  APIs, if libatomic_ops should ever become out-of-fashion or if
+	  the system OS
+	  supports atomic primitives anyway.
+
+2006-09-07 20:17  lennart
+
+	* : don't maintain a list of allocated mempool slots, we don't use
+	  it anyway
+
+2006-09-07 19:08  lennart
+
+	* : make pa_stream thread-safe: use new refcounting system, protect
+	  access using mutexes
+
+2006-09-07 13:31  lennart
+
+	* : add missing channel names (fixes a segfault when parsing
+	  invalid channel maps)
+
+2006-09-07 13:29  lennart
+
+	* : fix alsa-sink example
+
+2006-09-06 22:19  lennart
+
+	* : don't hit an assert in the client if posix shm is not available
+
+2006-09-06 22:19  lennart
+
+	* : fix indentation
+
+2006-09-06 21:37  lennart
+
+	* : fix a bogus debug line
+
+2006-09-06 19:47  lennart
+
+	* : implement a few more ioctl()s, including a subset of
+	  SNDCTL_DSP_GETOPTR. Just enough to make JavaSound work.
+
+2006-09-04 22:38  lennart
+
+	* : remove yet another occurence of pthread_yield() by
+	  pa_thread_yield()
+
+2006-09-04 22:15  lennart
+
+	* : add accessor functions for the userdata attached to a pa_thread
+	  object
+
+2006-09-04 22:04  lennart
+
+	* : fix pa_thread_is_running() for foreign threads; fix a memory
+	  leak for foreign threads
+
+2006-09-04 21:29  lennart
+
+	* : port the threaded mainloop to our new abstract mutex/thread API
+
+2006-09-04 21:28  lennart
+
+	* : make pa_thread_self() return a sensible pointer on foreign
+	  threads
+
+2006-09-02 15:18  lennart
+
+	* : add missing g_type_init()
+
+2006-09-02 14:59  lennart
+
+	* : rework handling of srcdir != builddir (patch from Flameeyes)
+
+2006-09-02 14:57  lennart
+
+	* : include PTRHEAD_LIBS in pkg-config file (patch from Flameeyes)
+
+2006-09-02 14:56  lennart
+
+	* : update acx_pthread.m4
+
+2006-09-02 12:51  lennart
+
+	* : allow building when srcdir != builddir (patch from Flameeyes)
+
+2006-09-02 12:45  lennart
+
+	* : fix a few autoconf warnings (patch by Flameeyes)
+
+2006-09-02 12:28  lennart
+
+	* : fix esdcompat for non-gnu systems
+
+2006-09-02 12:28  lennart
+
+	* : make esdcompat executable
+
+2006-09-02 12:03  lennart
+
+	* : Merge FreeBSD compatibility patch (from Flameeyes)
+
+2006-09-01 19:06  ossman
+
+	* : Fix call to pa_mutex_new().
+
+2006-09-01 18:39  ossman
+
+	* : Add pthread_once() equivalent support.
+
+2006-09-01 18:16  ossman
+
+	* : Thread implementation for Win32.
+
+2006-09-01 00:24  lennart
+
+	* : fix a race condition with stream connection vs. latency
+	  measuremtn (found by theBear)
+
+2006-08-31 16:39  ossman
+
+	* : Make sure libatomic_ops.a isn't included in win32 builds as
+	  libtool doesn't
+	  like static libs in dlls. Everything is in the headers anyway, so
+	  we do not
+	  need it.
+
+2006-08-31 16:13  ossman
+
+	* : Also wrap yield functionality so that it can be platform
+	  independent.
+
+2006-08-31 15:31  lennart
+
+	* : work around bug in firefox which apparently misuses access() as
+	  NULL pointer test. Original patch by "alon". (Closes #27)
+
+2006-08-31 15:20  lennart
+
+	* : define AO_REQUIRE_CAS in the Makefile instead of each source
+	  file, effectively reversing r1348
+
+2006-08-31 15:17  lennart
+
+	* : update todo
+
+2006-08-30 17:12  lennart
+
+	* : fix handling of "running" variable
+
+2006-08-30 17:01  ossman
+
+	* : Add AO_REQUIRE_CAS as we do.
+
+2006-08-30 16:55  ossman
+
+	* : Make sure the libatomic_ops lib is included.
+
+2006-08-30 14:44  ossman
+
+	* : Remove check for libatomic_ops library as some systems have no
+	  (zero, nada)
+	  symbols in it.
+
+2006-08-30 13:02  ossman
+
+	* : We need to have a callback when changing volume or we might
+	  deadlock.
+
+2006-08-29 19:51  lennart
+
+	* : add a threading primitive API
+
+2006-08-29 02:01  lennart
+
+	* : make pa_mempool_stat thread-safe/lock-free
+
+2006-08-29 01:16  lennart
+
+	* : modify memory block reference counting to use the new reference
+	  counting API
+
+2006-08-29 01:15  lennart
+
+	* : add lock-free reference counting macros, based on libatomic-ops
+
+2006-08-29 01:15  lennart
+
+	* : add libatomic-ops to hard dependencies
+
+2006-08-28 19:16  lennart
+
+	* : fix an misdesigned assert()
+
+2006-08-28 06:25  ossman
+
+	* : Add PulseAudio logo to tree.
+
+2006-08-28 05:15  ossman
+
+	* : update todo
+
+2006-08-27 13:04  lennart
+
+	* : increase operation timeout
+
+2006-08-26 19:22  lennart
+
+	* : bump version and sonames
+
+2006-08-26 19:00  lennart
+
+	* : fix module-combine when used on top of a tunnel sink
+
+2006-08-25 22:52  lennart
+
+	* : update module-tunnel to latest protocol
+
+2006-08-25 12:12  lennart
+
+	* : activate HAL in the default config
+
+2006-08-24 08:57  ossman
+
+	* : Add missing header.
+
+2006-08-23 22:28  lennart
+
+	* : fix handling of "mtu" module argument (patch by "theBear")
+
+2006-08-23 07:58  ossman
+
+	* : fix typo
+
+2006-08-23 07:57  ossman
+
+	* : Make the recording a bit more chunky so that we can fit in the
+	  pool and have
+	  efficient blocks.
+
+2006-08-22 16:25  ossman
+
+	* : Remove silence generation in solaris module.
+
+2006-08-22 16:15  ossman
+
+	* : Remove silence generation in waveout module.
+
+2006-08-22 15:36  ossman
+
+	* : Proceed with connect even when no cookie is loaded. Allows you
+	  to connect
+	  to server which do not require a cookie under all circumstances.
+
+2006-08-22 15:24  ossman
+
+	* : Fix memory leak in waveout module.
+
+2006-08-22 15:20  ossman
+
+	* : Log when there is a problem opening the waveOut/waveIn device.
+
+2006-08-22 12:51  ossman
+
+	* : Fall back to creating a "normal" memory pool if unable to get a
+	  shared one.
+
+2006-08-22 12:46  ossman
+
+	* : Improve error messages a bit.
+
+2006-08-22 12:45  ossman
+
+	* : Fix up portability of memory pool handling a bit.
+
+2006-08-22 12:29  lennart
+
+	* : update todo
+
+2006-08-22 12:04  lennart
+
+	* : fix typo
+
+2006-08-22 11:41  ossman
+
+	* : Fix detection of shared memory support and proper fallback.
+
+2006-08-22 11:39  ossman
+
+	* : Fix typo.
+
+2006-08-22 11:38  ossman
+
+	* : Add missing header.
+
+2006-08-22 11:37  ossman
+
+	* : Fix call to pa_memblock_new().
+
+2006-08-22 07:41  ossman
+
+	* : Fix detection of page size for non-POSIX systems.
+
+2006-08-22 07:25  ossman
+
+	* : Fix missing header for timeval helpers.
+
+2006-08-22 07:23  ossman
+
+	* : Fix calls to pa_memblock_new().
+
+2006-08-22 07:21  ossman
+
+	* : Add header for pa_cstrerror().
+
+2006-08-22 07:18  ossman
+
+	* : Fix call to pa_pstream_send_tagstruct().
+
+2006-08-22 07:12  ossman
+
+	* : Add an ifdef for when we do not have creds.
+
+2006-08-21 22:37  lennart
+
+	* : fix pactl output (sink drivers and names where switched)
+
+2006-08-19 23:09  lennart
+
+	* : update todo
+
+2006-08-19 23:08  lennart
+
+	* : restore the sink/source for a client in addition to the
+	  playback volume. This changes the file format of the table file.
+	  To avoid parse errors ~/.pulse/volume.table has been renamed to
+	  ~/.pulse/volume-restore.table
+
+2006-08-19 23:06  lennart
+
+	* : If a client leaves the sink/source for a stream unspecified by
+	  passing NULL as
+	  sink/source name sink/source we should pass NULL to
+	  pa_sink_input_new()/pa_source_output_new() as too. This allows
+	  hooks to change the sink/source device only if it is left
+	  unspecified by the client
+
+2006-08-19 23:04  lennart
+
+	* : fix a bad memory access
+
+2006-08-19 18:58  lennart
+
+	* : update todo
+
+2006-08-19 18:57  lennart
+
+	* : when transferring large memory chunks of a pa_pstream, split
+	  them up
+
+2006-08-19 18:28  lennart
+
+	* : update todo
+
+2006-08-19 17:34  lennart
+
+	* : update todo
+
+2006-08-19 17:30  lennart
+
+	* : check for posix_memalign and friends
+
+2006-08-19 17:27  lennart
+
+	* : if MAP_ANONYMOUS is not supported use posix_memalign if
+	  possible to allocate the memory pool
+
+2006-08-19 16:26  lennart
+
+	* : update todo
+
+2006-08-19 16:25  lennart
+
+	* : print per-type memory block statistics on "stat"
+
+2006-08-19 16:25  lennart
+
+	* : generate per-type memory block statistics
+
+2006-08-19 02:24  lennart
+
+	* : update todo
+
+2006-08-19 02:23  lennart
+
+	* : rework the resample to allocate temporary memory with
+	  pa_memblock_new() instead of pa_xrealloc()
+
+2006-08-19 02:23  lennart
+
+	* : fix a memory leak
+
+2006-08-19 01:23  lennart
+
+	* : update todo
+
+2006-08-19 01:21  lennart
+
+	* : add --disable-shm command line option to the daemon
+
+2006-08-19 01:20  lennart
+
+	* : add "disable-shm=" to default daemon configuration file
+
+2006-08-19 01:20  lennart
+
+	* : add new "disable-shm" server config option
+
+2006-08-19 01:18  lennart
+
+	* : add default "disable-shm" option to client.conf
+
+2006-08-19 01:18  lennart
+
+	* : add new "disable-shm" option to client.conf
+
+2006-08-19 01:16  lennart
+
+	* : allow importing of external shm data blocks unconditionally,
+	  even when local SHM support is disabled
+
+2006-08-19 01:15  lennart
+
+	* : deal properly with pa_mempool_new() failing
+
+2006-08-19 01:15  lennart
+
+	* : fix allocation of anonymous memory
+
+2006-08-19 01:14  lennart
+
+	* : fix a memory leak
+
+2006-08-18 23:45  lennart
+
+	* : update todo
+
+2006-08-18 23:45  lennart
+
+	* : enable SHM support on the client side only if both the client
+	  and the server run as the same user and the server supports it
+
+2006-08-18 23:44  lennart
+
+	* : activate SHM support on the server side only when new client
+	  supports it and when client and server have the same UID.
+
+2006-08-18 23:43  lennart
+
+	* : one s/0/NULL/
+
+2006-08-18 23:42  lennart
+
+	* : remove export/import objects when SHM is disable for a
+	  pa_pstream object
+
+2006-08-18 23:40  lennart
+
+	* : add new function pa_mempool_is_shared() to test whether a
+	  memory pool is suitable for SHM data transfers
+
+2006-08-18 21:39  lennart
+
+	* : hide memblock-test
+
+2006-08-18 21:38  lennart
+
+	* : remove all occurences of
+	  
+	  pa_logXXX(__FILE__":
+	  
+	  and replace them by
+	  
+	  pa_logXXX("
+
+2006-08-18 21:26  lennart
+
+	* : rework logging subsystem, to implicitly include __FILE__ in
+	  pa_log() calls. In addition we now record the line numbers and
+	  function names of pa_log calls. However, those are only shown If
+	  $PULSE_LOG_META is set.
+
+2006-08-18 19:57  lennart
+
+	* : update todo
+
+2006-08-18 19:57  lennart
+
+	* : look for shm_open in -lrt
+
+2006-08-18 19:56  lennart
+
+	* : add new test memblock-test for testing SHM import/export
+
+2006-08-18 19:56  lennart
+
+	* : update tests for new memory manager
+
+2006-08-18 19:55  lennart
+
+	* : Rework memory management to allow shared memory data transfer.
+	  The central idea
+	  is to allocate all audio memory blocks from a per-process memory
+	  pool which is
+	  available as read-only SHM segment to other local processes.
+	  Then, instead of
+	  writing the actual audio data to the socket just write references
+	  to this
+	  shared memory pool.
+	  
+	  To work optimally all memory blocks should now be of type
+	  PA_MEMBLOCK_POOL or
+	  PA_MEMBLOCK_POOL_EXTERNAL. The function pa_memblock_new() now
+	  generates memory
+	  blocks of this type by default.
+
+2006-08-18 19:46  lennart
+
+	* : add abstracted shared memory API
+
+2006-08-18 19:45  lennart
+
+	* : fix a bad type cast
+
+2006-08-18 19:43  lennart
+
+	* : cleanup hashmap.[ch] a little: use hash/compare func prototypes
+	  defined in idxset.h, add pa_hashmpa_{get,steal}_first
+
+2006-08-18 19:42  lennart
+
+	* : cleanup idxset.[ch] a little: define proper types for the
+	  hash/compare funcs, do ptr->int/int->ptr conversions with clean
+	  macros
+
+2006-08-17 20:03  lennart
+
+	* : fix a PA_LLIST_HEAD_INIT invocation
+
+2006-08-17 20:03  lennart
+
+	* : add missing #include
+
+2006-08-17 20:02  lennart
+
+	* : modify pa_bytes_snprint() to return the string we just wrote
+	  to. This should be binary compat with older versions which
+	  returned void
+
+2006-08-17 20:01  lennart
+
+	* : make PA_LLIST_HEAD_INIT thread safe
+
+2006-08-15 18:15  lennart
+
+	* : use the description field of sinks/sources to name the zeroconf
+	  services, instead of the logical name
+
+2006-08-14 08:38  ossman
+
+	* : update todo
+
+2006-08-13 20:45  lennart
+
+	* : update todo
+
+2006-08-13 20:45  lennart
+
+	* : extend module-rescue-streams to move also source outputs when a
+	  source dies
+
+2006-08-13 20:44  lennart
+
+	* : fix a segfault when registering a service with avahi fails
+
+2006-08-13 20:44  lennart
+
+	* : create rtp source output on correct source
+
+2006-08-13 20:43  lennart
+
+	* : minor optimization
+
+2006-08-13 19:55  lennart
+
+	* : implement hook_source_ouput_new. For this I modified the
+	  pa_source_output_new constructor to take a struct similar to what
+	  I already did for pa_sink_input_new()
+
+2006-08-13 19:53  lennart
+
+	* : split a validity check into two
+
+2006-08-13 19:53  lennart
+
+	* : implement hook_source_disconnect
+
+2006-08-13 19:52  lennart
+
+	* : define new hooks: hook_source_output_new,
+	  hook_source_disconnect
+
+2006-08-13 17:39  lennart
+
+	* : update todo
+
+2006-08-13 17:35  lennart
+
+	* : Load module-rescue-streams by default
+
+2006-08-13 17:34  lennart
+
+	* : implement new module "module-rescue-streams" which moves sink
+	  inputs away when their sink is removed.
+
+2006-08-13 17:33  lennart
+
+	* : properly implement a pa_sink_disconnect() hook
+
+2006-08-13 17:32  lennart
+
+	* : Clean up module description a little
+
+2006-08-13 17:31  lennart
+
+	* : ignore if we recieved a memory block for an invalid stream,
+	  since this might happen unwillingly due to the asychnronous
+	  nature of the protocol
+
+2006-08-13 17:30  lennart
+
+	* : remove pa_sink_input::variable_rate field since it has been
+	  folded into pa_sink_input::flags
+
+2006-08-13 16:22  lennart
+
+	* : hide hook-list-test
+
+2006-08-13 16:21  lennart
+
+	* : modify module-volume-restore to change the initial volume of a
+	  sink input from a hook instead of an asyncronous subscription
+	  event.
+
+2006-08-13 16:19  lennart
+
+	* : allow hooking into the process of creating playback streams. To
+	  implement this I modified the pa_sink_input_new() signature to
+	  take a pa_sink_input_new_data structure instead of direct
+	  arguments.
+
+2006-08-13 16:14  lennart
+
+	* : fix bad printf()
+
+2006-08-13 16:13  lennart
+
+	* : rework hook list stuff once again: change the callback
+	  prototype to recieve three data pointers: one to the data for the
+	  hook, once for the slot and once for the call
+
+2006-08-13 01:43  lennart
+
+	* : rework hook list stuff again, and replace macros with real
+	  functins. We loose type safety but things are much cleaner now
+
+2006-08-12 23:55  lennart
+
+	* : update hook list test
+
+2006-08-12 23:55  lennart
+
+	* : reall add type safe hook list
+
+2006-08-12 23:35  lennart
+
+	* : implement typeafe hook chain
+
+2006-08-12 17:59  lennart
+
+	* : extend maximum sink/source name length, because HAL UDIs can
+	  get ridiculously long
+
+2006-08-12 17:07  lennart
+
+	* : update todo
+
+2006-08-12 17:06  lennart
+
+	* : test if sink->monitor_source is set before making use of it
+
+2006-08-12 17:06  lennart
+
+	* : make use of pa_sink_used_by()/pa_source_used_by() wherever
+	  applicable
+
+2006-08-12 16:50  lennart
+
+	* : add pa_sink_used_by()/pa_source_used_by()
+
+2006-08-12 16:40  lennart
+
+	* : categorize todo file
+
+2006-08-12 16:33  lennart
+
+	* : name the sink/source after the device file, just like we
+	  already do for the non-mmaped driver
+
+2006-08-12 16:26  lennart
+
+	* : generate default sink/source names from the device files they
+	  belong to
+
+2006-08-12 16:02  lennart
+
+	* : update todo
+
+2006-08-12 16:02  lennart
+
+	* : handle hot-remeving of OSS devices properly
+
+2006-08-12 16:01  lennart
+
+	* : print the device capabilities after opening the device
+
+2006-08-12 15:09  lennart
+
+	* : when the requested sample format is not available for OSS
+	  devices, print a nice warning and take what we can get instead
+
+2006-08-12 15:08  lennart
+
+	* : there's no need to queue subscription events if noone is
+	  listening, hence don't do it!
+
+2006-08-12 13:18  lennart
+
+	* : * only load an OSS driver for the first device of a sound card,
+	  similar to what is done for ALSA.
+	  * fix a mem leak
+
+2006-08-12 13:17  lennart
+
+	* : fix a segfault in module-oss
+
+2006-08-12 12:07  lennart
+
+	* : fix pa_gettimeofday() return value testing
+
+2006-08-12 12:03  lennart
+
+	* : update todo
+
+2006-08-12 02:20  lennart
+
+	* : update todo
+
+2006-08-12 02:19  lennart
+
+	* : clean up event generation a little: suppress unnecessary events
+	  and generate new ones on owner change
+
+2006-08-12 02:18  lennart
+
+	* : rework subscription code: try to drop redundant queued events
+
+2006-08-12 02:16  lennart
+
+	* : fix a compiler warning
+
+2006-08-12 02:16  lennart
+
+	* : add new macro PA_LLIST_INSERT_AFTER
+
+2006-08-12 01:17  shahms
+
+	* : increase module argument buffer size to prevent truncating
+	  names
+
+2006-08-12 00:26  lennart
+
+	* : update todo
+
+2006-08-12 00:25  lennart
+
+	* : allow setting the null sink description by a module parameter
+
+2006-08-11 23:58  lennart
+
+	* : don't set the sink/source descriptions manually, use the new
+	  functions pa_{sink,source}_set_description() instead
+
+2006-08-11 23:31  lennart
+
+	* : comment which values in
+	  pa_{sink,source,sink_input,source_output} structures may be NULL
+
+2006-08-11 17:53  lennart
+
+	* : * introduce new functions pa_sink_set_description() and
+	  pa_source_set_description() for changing the description of a
+	  sink/source
+	  * allow sinks without monitor sources attached
+
+2006-08-11 17:15  lennart
+
+	* : update todo
+
+2006-08-11 17:14  lennart
+
+	* : shorten sink/source device descriptions a little
+
+2006-08-11 17:12  lennart
+
+	* : use the HAL UDI for naming input/output devices
+
+2006-08-11 16:58  lennart
+
+	* : do not export name validity checking routes and apply them only
+	  to sink/source names, not sample names
+
+2006-08-11 16:56  lennart
+
+	* : fix bad memory access and a leak when detructing ALSA fd lists
+
+2006-08-11 16:38  lennart
+
+	* : rework name register a litle to only allow "valid" names.
+
+2006-08-11 16:38  lennart
+
+	* : Build HAL support only when either OSS or ALSA is available
+
+2006-08-11 16:29  lennart
+
+	* : remove OSS specific code from module-hal-detect if HAVE_OSS is
+	  not set. Same for ALSA
+
+2006-08-11 15:08  lennart
+
+	* : ALSA: handle write()/read() errors properly by unloading the
+	  driver module. This should fix problems when removing USB audio
+	  device while pulseaudio is running.
+
+2006-08-11 15:06  lennart
+
+	* : change order of the ALSA event dispatch code to make sure that
+	  the code survives if the event dispatcher frees the ALSA client
+
+2006-08-11 15:05  lennart
+
+	* : use the copied udi string as hash key for the device table,
+	  because the temporary one is freed when the function exits
+
+2006-08-08 19:26  shahms
+
+	* : add HAL support for OSS devices and capability changes
+
+2006-08-07 20:29  shahms
+
+	* : clean up hal patch to use pa_xnew and timeval compatibility
+	  wrappers
+
+2006-08-07 16:50  lennart
+
+	* : try to reduce volume updates in the ALSA sinks/sources: only
+	  touch the shadowed hw volme if necessary
+
+2006-08-06 19:14  lennart
+
+	* : * add SVN $Id$ tags
+	  * add a const
+
+2006-08-06 16:16  lennart
+
+	* : merge HAL support from Shams E. King
+
+2006-08-03 22:34  lennart
+
+	* : update todo
+
+2006-08-03 22:33  lennart
+
+	* : implement "pactl move-source-output"
+
+2006-08-03 22:33  lennart
+
+	* : implement pa_context_move_source_output_by_{name,index}()
+
+2006-08-03 22:32  lennart
+
+	* : wrap pa_source_output_move_to() in the native protocol
+
+2006-08-03 22:31  lennart
+
+	* : add new CLI command move-source-output as wrapper around
+	  pa_source_output_move_to()
+
+2006-08-03 22:30  lennart
+
+	* : Implement pa_source_input_move_to() for moving record streams
+	  between sources
+
+2006-08-03 22:29  lennart
+
+	* : - don't call pa_sink_notify in pa_sink_input_new() because the
+	  virtual methods are not yet initialized at this time
+	  - some minor cleanups
+
+2006-08-01 21:04  lennart
+
+	* : bump API and protocol version. Return PA_ERR_NOTSUPPORTED if
+	  pa_context_move_sink_input_by_*()is called for servers that don't
+	  support it
+
+2006-07-31 21:55  lennart
+
+	* : add new "move-sink-input" command to pactl
+
+2006-07-31 21:55  lennart
+
+	* : wrap PA_COMMAND_MOVE_SINK_INPUT for libpulse
+
+2006-07-31 21:54  lennart
+
+	* : add new native protocol function for moving sink inputs between
+	  sinks
+
+2006-07-31 21:54  lennart
+
+	* : add new commands opcode for moving sink inputs and source
+	  outputs
+
+2006-07-31 21:53  lennart
+
+	* : deal properly with recursive module unloading
+
+2006-07-31 21:53  lennart
+
+	* : fix bad memory access if a non-existing entry shall be removed
+	  from a pa_idxset by index
+
+2006-07-29 17:42  lennart
+
+	* : fix module-gconf initialization
+
+2006-07-29 17:20  lennart
+
+	* : don't hit an assetr if there are operations outstanding when
+	  the pa_context is destroyed
+
+2006-07-29 15:34  lennart
+
+	* : fix two typos (pierre, have you been sleeping? next time please
+	  the comments wrong but the code right, not the other way round!
+	  ;-))
+
+2006-07-29 15:07  lennart
+
+	* : add new CLI function "move-sink-input" as wrapper around
+	  pa_sink_input_move_to()
+
+2006-07-29 15:06  lennart
+
+	* : * implement "hot" moving of playback streams between sinks
+	  (pa_sink_input_move_to()).
+	  * optimize the adjusting of the volume in pa_sink_input_peek() a
+	  little
+
+2006-07-29 15:04  lennart
+
+	* : free the memblockq if we decide not to play it
+
+2006-07-29 15:03  lennart
+
+	* : if the memblockq is empty, return -1 in all cases
+
+2006-07-29 15:02  lennart
+
+	* : fix calculation of pa_usec_to_bytes, to make sure that it never
+	  returns fractions of a frame size
+
+2006-07-29 15:02  lennart
+
+	* : handle EOF correctly if it is read before the stream was
+	  created
+
+2006-07-28 23:29  lennart
+
+	* : for the playing field of pa_timing_info use
+	  pa_sink_input::state == PA_SINK_INPUT_RUNNING. This means that
+	  this variable will now refer to the current state and not to the
+	  expected future state, which is probably more what clients
+	  expect.
+
+2006-07-28 23:27  lennart
+
+	* : fold the seperate variable pa_sink_input::playing into
+	  pa_sink_input::state as state PA_SINK_INPUT_DRAINED. The
+	  following mappings hold:
+	  
+	  old PA_SINK_RUNNING + playing set = new PA_SINK_RUNNING
+	  old PA_SINK_RUNNING + playing not set = new PA_SINK_DRAINED
+
+2006-07-28 22:52  lennart
+
+	* : introduce pa_play_memblockq() which creates a playback stream
+	  and passes the data from the memblockq to it. after that is done,
+	  frees the memblockq
+
+2006-07-27 18:40  lennart
+
+	* : update todo
+
+2006-07-27 18:35  lennart
+
+	* : load module-gconf in default install
+
+2006-07-27 18:02  lennart
+
+	* : introduce three virtual sink/source names: @DEFAULT_SINK@,
+	  @DEFAULT_SOURCE@, @DEFAULT_MONITOR@. Especially the latter is
+	  useful for connecting to the monitor source of the default sink.
+
+2006-07-27 16:51  lennart
+
+	* : if possible do not unload already loaded modules when the gconf
+	  settings change. instead try to reuse already loaded modules as
+	  much as possible
+
+2006-07-27 16:50  lennart
+
+	* : because gconf doesn't provide real transactions we emulate our
+	  own with a "locked" gconf key
+
+2006-07-27 16:49  lennart
+
+	* : remove superfluous code
+
+2006-07-26 22:39  lennart
+
+	* : remove two superfluous lines
+
+2006-07-26 22:39  lennart
+
+	* : mainloop fixes: when disabling time events when dispatching
+	  them, make sure to adjust the cache time event and enabled time
+	  event counters
+
+2006-07-26 18:28  lennart
+
+	* : add some protection that the gconf helper process will be
+	  killed when the daemon process dies. make sure the gconf helper
+	  process doesn't keep open file descriptors belonging to the
+	  daemon; if gconf helper path
+
+2006-07-26 17:46  lennart
+
+	* : add missing configure.ac checks for module-gconf
+
+2006-07-26 17:36  lennart
+
+	* : add new module "module-gconf" which reads configuration
+	  information from gconf. this will be used in my upcoming paconf
+	  module
+
+2006-07-25 20:51  lennart
+
+	* : add new command line option --no-cpu-limit. This is useful when
+	  running PulseAudio in valgrind's massif or callgrind tools
+
+2006-07-25 20:39  lennart
+
+	* : Results of profiling PulseAudio with valgrind's callgrind
+	  module: rework the default event loop implementation to use
+	  PA_LLIST_xxx instead of pa_idxset; don't generate weakeup events
+	  if we aren't in STATE_POLLING; minimize dispatching of io events;
+	  cache next time event instead of traversing the list of time
+	  events on every event loop iteration; other optimizations
+
+2006-07-25 20:10  lennart
+
+	* : split a few asserts
+
+2006-07-25 20:10  lennart
+
+	* : split a few assert()s
+
+2006-07-25 20:09  lennart
+
+	* : add a few more g_assert()s and change all assert()s to
+	  g_assert()s
+
+2006-07-24 20:03  lennart
+
+	* : add autogen.sh for jhbuild (for you, elmarco!)
+
+2006-07-24 17:48  lennart
+
+	* : bump version and sonames
+
+2006-07-23 22:36  lennart
+
+	* : add massif target to Makefile
+
+2006-07-23 22:35  lennart
+
+	* : as a result of memory profiling with valgrind/massif: decrease
+	  default hash table size from 1024 to 127. the hashtables are
+	  sparsely filled most of the time, so there is no point in
+	  allocating to much memory by default.
+
+2006-07-23 19:23  lennart
+
+	* : update todo
+
+2006-07-22 00:54  lennart
+
+	* : fix horribly broken glib timeout event handling
+
+2006-07-21 21:19  ossman
+
+	* : Use proper @libdir@ in pc.in files to handle x86_64 machines.
+
+2006-07-21 19:59  lennart
+
+	* : raise the default value for RLIMIT_NOFILE to 200 since 25 is
+	  apparently too small if every single GNOME apps thinks it needs
+	  to create its own server connection!
+
+2006-07-20 23:21  ossman
+
+	* : Get ACL:s to work on Win32.
+
+2006-07-20 23:12  lennart
+
+	* : remove access group setting from default client.conf
+
+2006-07-20 23:04  lennart
+
+	* : fix a few @@ replacments
+
+2006-07-20 22:58  lennart
+
+	* : even more FreeBSD portability (thanks Flameeyes, again!)
+
+2006-07-20 22:46  lennart
+
+	* : add missing #ifdef HAVE_CREDS (thanks, Flameeyes)
+
+2006-07-20 22:44  lennart
+
+	* : some more FreeBSD compat from Flameeyes
+
+2006-07-20 21:48  lennart
+
+	* : bump release and sonames
+
+2006-07-20 21:28  lennart
+
+	* : remove configurable client access group, since can never work
+	  on Linux anway, since SCM_CREDENTAILS doesn't allow sending
+	  supplementary GIDs
+
+2006-07-20 18:43  lennart
+
+	* : update todo
+
+2006-07-20 18:43  lennart
+
+	* : implement "auth-ip-acl=" in the native and esound protocols
+
+2006-07-20 16:56  lennart
+
+	* : actually ship src/pulsecore/creds.h in the tarballs
+
+2006-07-20 16:48  lennart
+
+	* : add IP address ACL subsystem
+
+2006-07-20 13:28  ossman
+
+	* : Fix incorrect call to nonexistant pa_log_warning().
+
+2006-07-20 13:24  ossman
+
+	* : Only warn when running as root and not --system.
+
+2006-07-20 13:24  ossman
+
+	* : Centralise check if we're running as root.
+
+2006-07-20 13:19  ossman
+
+	* : Move check for SUID into the caps functions.
+
+2006-07-20 13:16  ossman
+
+	* : Handle user switch in a more platform independent manner.
+
+2006-07-20 13:07  ossman
+
+	* : Make sure parse_rlimit is only used when rlimits are supported.
+
+2006-07-20 01:25  lennart
+
+	* : add support to set resource limits for the daemon and set some
+	  of them to some sane values
+
+2006-07-20 00:52  lennart
+
+	* : undo r1111 in some way: include sys/socket.h and sys/un.h but
+	  wrap it in #ifdef
+	  HAVE_xxx_H. This should be safe because config.h should be the
+	  first included
+	  header in all .c files and creds.h is never included by any
+	  external tools
+
+2006-07-20 00:28  ossman
+
+	* : Add missing header.
+
+2006-07-20 00:21  ossman
+
+	* : Make -1 mean "current group/user" so that some platform
+	  dependent calls
+	  can be centralised.
+
+2006-07-20 00:13  ossman
+
+	* : Protect platform dependent headers with ifdefs.
+
+2006-07-20 00:12  ossman
+
+	* : Remove unneeded headers.
+
+2006-07-19 23:16  lennart
+
+	* : add a few comments
+
+2006-07-19 21:48  lennart
+
+	* : * add new function pa_check_in_group()
+	  * abstract credential APis a little bit by introducing HAVE_CREDS
+	  and a structure pa_creds
+	  * rework credential authentication
+	  * fix module-volume-restore and friends for usage in system-wide
+	  instance
+	  * remove loopback= argument from moulde-*-protocol-tcp since it
+	  is a superset of listen= and usually a bad idea anyway since the
+	  user shouldn't load the TCP module at all if he doesn't want
+	  remote access
+	  * rename a few variables in the jack modules to make sure they
+	  don't conflict with symbols defined in the system headers
+	  * add server address for system-wide daemons to the default
+	  server list for the the client libs
+	  * update todo
+
+2006-07-19 18:14  lennart
+
+	* : use access group dedclared in ~/.pulse/client.conf instead of
+	  PA_ACCESS_GROUP
+
+2006-07-19 18:11  lennart
+
+	* : update @@ tokens according to recent Makefile.am change
+
+2006-07-19 18:08  lennart
+
+	* : fix sed scripts according to #define renames
+
+2006-07-19 17:44  lennart
+
+	* : * add new --system command line parameter to the daemon for
+	  running PulseAudio as system-wide instance
+	  * add PA_ prefixes to all global #defines
+	  * modify auth-by-creds: define a new group "pulse-access" which
+	  is used for authentication
+	  * add proper privilige dropping when running in --system mode
+	  * create runtime directory once on startup and not by each module
+	  seperately
+
+2006-07-18 19:53  lennart
+
+	* : remove glib 1.2 adapter. It started to bitrot and wasn't used
+	  by anything anyway.
+
+2006-07-18 19:50  lennart
+
+	* : add two more \since
+
+2006-07-18 19:19  lennart
+
+	* : fix module-detect on FreeBSD (patch from Diego "Flameeyes"
+	  Pettenó)
+
+2006-07-18 18:52  lennart
+
+	* : turn the glib adapter into a single GSource instead of creating
+	  a bunch of seperate GSources for each event
+
+2006-07-18 18:51  lennart
+
+	* : define proper typdefs for callback prototypes
+
+2006-07-17 21:20  lennart
+
+	* : change licensing blurb form "Library GPL" to "Lesser GPL" on
+	  request of Loic Minier. Effectively this means using the same
+	  license blurb like in all other source files.
+
+2006-07-17 11:42  ossman
+
+	* : Forgot to protect one access to with_creds with an ifdef.
+
+2006-07-17 11:26  ossman
+
+	* : Restore SIGPIPE warning when the platform doesn't have
+	  MSG_NOSIGNAL.
+
+2006-07-16 23:20  lennart
+
+	* : make pulseaudio compile again on FreeBSD (patch from Diego
+	  "Flameeyes" Petteno)
+
+2006-07-16 17:42  lennart
+
+	* : todo
+
+2006-07-16 17:38  lennart
+
+	* : show summary after "configure" has run (closes: #22)
+
+2006-07-16 17:29  lennart
+
+	* : show value of PA_SINK_HARDWARE/PA_SOURCE_HARDWARE in pactl
+
+2006-07-16 17:28  lennart
+
+	* : set is_hardware flag for a few hw plugins
+
+2006-07-16 17:28  lennart
+
+	* : add new PA_SOURCE_HARDWARE/PA_SINK_HARDWARE flag
+
+2006-07-16 17:26  lennart
+
+	* : add a new boolean variable is_hardware to pa_sink/pa_source to
+	  denote wether the specific device is a hardware device or
+	  virtual/software
+
+2006-07-15 12:40  lennart
+
+	* : update todo
+
+2006-07-14 23:59  lennart
+
+	* : improve latency calculation of NULL sink
+
+2006-07-14 23:08  lennart
+
+	* : update todo
+
+2006-07-14 23:06  lennart
+
+	* : remove checking for SIGPIPE blocking from client code. Because
+	  we use
+	  send(,,MSG_NOSIGNAL) for most socket writes now the reason for
+	  SIGPIPE blocking
+	  is no longer give. We keep this check for the server side
+	  however, because
+	  pipes create SIGPIPE too but cannot be used with MSG_NOSIGNAL.
+	  Some modules use
+	  pipes for internal and external communication.
+
+2006-07-14 23:00  lennart
+
+	* : don't send SCM_CREDENTIALS on every sendmsg(), instead do it
+	  only on handshake
+
+2006-07-14 23:00  lennart
+
+	* : don't set MSG_NOSIGNAL for recvmsg(), since it doesn't make
+	  sense there
+
+2006-07-14 22:42  lennart
+
+	* : try to use send(,,MSG_NOSIGNAL) instead of write() wherever
+	  possible (which
+	  will allow us to drop the SIGPIPE check). Cache the results of
+	  the last
+	  write()/send() to make sure that we do not issue more than
+	  necessary system
+	  calls.
+
+2006-07-14 10:20  lennart
+
+	* : remove vi'ism
+
+2006-07-14 10:19  lennart
+
+	* : update todo
+
+2006-07-14 10:08  ossman
+
+	* : Make sure the win32 default conf gets shipped.
+
+2006-07-14 00:19  lennart
+
+	* : add new test get-binary-name-test for testing
+	  pa_get_binary_name()
+
+2006-07-14 00:18  lennart
+
+	* : Don't call pa_path_get_filename() anymore since it is
+	  implicitly called by pa_get_binary_name() anyway
+
+2006-07-14 00:17  lennart
+
+	* : * fall back to prctl(PR_GET_NAME) in pa_get_binary_name() if
+	  readlink() fails
+	  * call pa_path_get_filename() in all cases before returning in
+	  pa_get_binary_name(). We already did so on Win32, but didn't on
+	  Linux.
+
+2006-07-13 23:12  lennart
+
+	* : support time events with NULL timevals which are OK in avahi,
+	  but not in PA. This makes padevchooser actually work on top of
+	  the new avahi browsing stuff
+
+2006-07-13 23:10  lennart
+
+	* : update todo
+
+2006-07-13 18:23  lennart
+
+	* : remove avahi/howl item from todo list
+
+2006-07-13 17:44  lennart
+
+	* : remove howl-wrap.[ch]
+
+2006-07-13 17:44  lennart
+
+	* : remove HOWL snippet from configure script
+
+2006-07-13 17:35  lennart
+
+	* : * add proper error handling to pabrowse.c
+	  * properly destroy pa_browser object on exit
+
+2006-07-13 17:34  lennart
+
+	* : add browser.h to doxygen docs
+
+2006-07-13 17:33  lennart
+
+	* : * port libpulse-browse to use the native avahi API instead of
+	  the HOWL cruft
+	  * add new function pa_browser_set_error_callback()
+	  * add doxygen docs to browser.h
+
+2006-07-13 15:54  lennart
+
+	* : update module-zeroconf-publish to make use of the native AVAHI
+	  API, instead of HOWL
+
+2006-07-13 15:52  lennart
+
+	* : make sure gccmacro.h and cdecl.h may be included at the same
+	  time as those headers from the avahi project
+
+2006-07-13 15:51  lennart
+
+	* : check for avahi in configure.ac
+
+2006-07-10 17:56  lennart
+
+	* : mark HAL for shams king
+
+2006-07-08 13:25  lennart
+
+	* : * remove doc/ directory
+	  * move doc/todo to root dir
+
+2006-07-08 11:29  ossman
+
+	* : Remove some unused m4 files.
+
+2006-07-08 10:51  ossman
+
+	* : Fix typo.
+
+2006-07-08 10:40  lennart
+
+	* : unhide a few files
+
+2006-07-07 16:05  lennart
+
+	* : remove all docs from tarball since they are now available on
+	  pulseaudio.org
+
+2006-07-07 14:36  lennart
+
+	* : s/avahi/pulseuaiod/
+
+2006-07-07 12:59  lennart
+
+	* : replace remaining ML refs to polyp
+
+2006-07-07 12:53  lennart
+
+	* : fix mailman URL
+
+2006-07-07 12:45  lennart
+
+	* : update readme for 0.9.2
+
+2006-06-30 08:16  ossman
+
+	* : Make sure we print the file name we actually use.
+
+2006-06-21 16:36  lennart
+
+	* : increase the maxium number of concurrent esd and native
+	  connections
+
+2006-06-21 14:05  lennart
+
+	* : include config.h in browser.c (closes #20)
+
+2006-06-21 00:18  lennart
+
+	* : only interpolate when the last timing info told us the stream
+	  is indeed playing
+
+2006-06-20 22:27  lennart
+
+	* : bump version number
+
+2006-06-20 21:23  lennart
+
+	* : fix segfault when module-alsa-source fails to load
+
+2006-06-20 16:43  ossman
+
+	* : Fix handling of the io flags in duplex mode.
+
+2006-06-20 15:45  ossman
+
+	* : Warn when applications use SNDCTL_DSP_GET[IO]PTR even when they
+	  shouldn't.
+
+2006-06-20 15:36  ossman
+
+	* : Make fix_metrics() exit early so that it doesn't spam the
+	  output needlessly.
+
+2006-06-20 14:26  ossman
+
+	* : Make sure we do not use pthread_yield() on platforms that do
+	  not have them.
+
+2006-06-20 14:22  ossman
+
+	* : Check for pthread_yield() as not all platforms have that.
+
+2006-06-20 13:49  ossman
+
+	* : Make interpol-test build on Win32 and non-pthread systems.
+
+2006-06-20 13:02  ossman
+
+	* : Fix the final few occurences of polyp.
+
+2006-06-19 23:56  lennart
+
+	* : s/POLYP/PULSE/g
+
+2006-06-19 23:52  lennart
+
+	* : update docs
+
+2006-06-19 23:51  lennart
+
+	* : * more s/pulseaudio/PulseAudio/ replacements
+	  * name the per-user dir ~/.pulse (instead of .pulseaudio), just
+	  like /etc/pulse/
+
+2006-06-19 23:06  lennart
+
+	* : update references to the pkg-config files in the docs
+
+2006-06-19 23:00  lennart
+
+	* : name the pkg-config files after the library names
+
+2006-06-19 22:11  lennart
+
+	* : replace a few remaining uppercase "Polypaudio" occurences with
+	  "PulseAudio"
+
+2006-06-19 22:03  lennart
+
+	* : hide pulseadudio binary from SVN
+
+2006-06-19 21:55  lennart
+
+	* : rename polypaudio.h to pulseaudio.h
+
+2006-06-19 21:53  lennart
+
+	* : big s/polyp/pulse/g
+
+2006-06-19 21:00  lennart
+
+	* : unhide padsp
+
+2006-06-19 20:58  lennart
+
+	* : hide interpol-test
+
+2006-06-19 16:39  ossman
+
+	* : Handle clients that just want to set fragment size (and not
+	  count).
+
+2006-06-19 12:37  lennart
+
+	* : * rework latency interpolation to make it smoother
+	  * increase latency update interval to 100ms
+
+2006-06-19 12:20  lennart
+
+	* : minor cleanups
+
+2006-06-19 11:27  lennart
+
+	* : add new test "interpol-test"
+
+2006-06-18 11:10  lennart
+
+	* : * add new argument 'exit_on_eof' to module-cli and make use of
+	  it if "-C" is passed to the daemon
+
+2006-06-17 23:37  lennart
+
+	* : * implement volume adjusting and mixing for S16RE
+	  * some optimizations
+
+2006-06-17 23:36  lennart
+
+	* : * make hw param settings easier to debug by splitting up long
+	  if
+	  * actually set the sample rate
+	  * disable resampling done by ALSA
+
+2006-06-16 21:11  ossman
+
+	* : /dev/dsp should default to U8, not mulaw.
+
+2006-06-16 21:08  ossman
+
+	* : Creating a stream might take some time, so check that it's in
+	  the right state
+	  before transferring data.
+
+2006-06-16 21:07  ossman
+
+	* : Record support.
+
+2006-06-16 19:33  lennart
+
+	* : if S16NE is not supported, fall back to S16RE. If FLOAT32NE is
+	  not supported, fall back to FLOAT32NE. If still nothing is
+	  supported, try everything else in order
+
+2006-06-15 17:34  lennart
+
+	* : update todo
+
+2006-06-15 14:47  ossman
+
+	* : Make debug output in padsp a bit less verbose. Specifying -d
+	  twice will give
+	  original output.
+
+2006-06-13 15:54  ossman
+
+	* : Make a copy of the va_list as vsnprintf() is free to change it.
+
+2006-06-13 13:21  ossman
+
+	* : Catch the access() system call as some applications do this to
+	  test if they
+	  can open /dev/dsp.
+
+2006-06-13 10:53  ossman
+
+	* : Make sure our inet_ntop() implementation gets linked into the
+	  new users.
+
+2006-06-13 09:33  ossman
+
+	* : Tweak the printing of client connections a bit so that it's
+	  more apparent
+	  what and who it is that's connecting.
+
+2006-06-13 09:33  ossman
+
+	* : Handle pretty printing of IPv6 socket names.
+
+2006-06-12 14:18  ossman
+
+	* : Use AM_ICONV to determine what needs to be done for iconv
+	  support. (closes #19)
+
+2006-06-12 13:56  ossman
+
+	* : Fix AC_CHECK_DEFINE so that we can look in different files for
+	  the same
+	  define.
+
+2006-06-12 12:52  ossman
+
+	* : Also look in winsock2.h for INADDR_NONE. (solves #18)
+
+2006-06-12 12:19  ossman
+
+	* : Properly escape the m4 macros and make the code a bit more
+	  readable.
+
+2006-06-11 01:34  ossman
+
+	* : Add all the preopen libs to the polypaudio binary's dependency
+	  list as they
+	  aren't automatically detected. (Closes #17)
+
+2006-06-03 01:15  lennart
+
+	* : rework ioline EOF handling to actually work properly
+
+2006-06-03 00:59  lennart
+
+	* : fix pa_xstrndup() implementation to not access potentially
+	  uninitialized memory
+
+2006-06-02 22:56  lennart
+
+	* : actually build cpulimit support if SIGXCPU is available
+
+2006-06-02 21:06  lennart
+
+	* : fix ugly access-after-free bug when doing asyncronous NS
+	  lookups
+
+2006-06-02 19:49  lennart
+
+	* : update docs for 0.9.1
+
+2006-06-02 19:28  lennart
+
+	* : bump version and soname
+
+2006-06-02 15:30  lennart
+
+	* : Add new configure options to disable/enable specific modules at
+	  configure time. Original patch by ed@catmur.co.uk. (Closes #16)
+
+2006-06-01 13:49  ossman
+
+	* : update todo
+
+2006-06-01 13:49  ossman
+
+	* : Try the ltdl mangled name ourselves so that .la files for
+	  modules are optional.
+
+2006-05-31 19:17  lennart
+
+	* : remove superfluous prefixes from service names
+
+2006-05-31 15:07  lennart
+
+	* : update TODO
+
+2006-05-31 00:05  lennart
+
+	* : decrease maximum allowed sample frequency for ALSA devices to
+	  5%, since 48000 would otherwise match with 44100
+
+2006-05-30 22:57  lennart
+
+	* : downgrade a log message
+
+2006-05-30 22:48  lennart
+
+	* : * alsa-sink: if "PCM" is not found as mixer track name,
+	  fallback to "Master"
+	  * alsa-source: if "Capture" is not found as mixer track name,
+	  fallback to "Mic"
+
+2006-05-30 22:05  lennart
+
+	* : * if an ALSA device doesn't support the channel count
+	  requested, use what ALSA suggests instead
+	  * if an ALSA device doesn't support the sampling freq requested,
+	  use what ALSA suggests and resample if this deviates more than
+	  10% from what we requested
+	  * fix segfault freeing an unitialized mixer_fdl field
+
+2006-05-30 15:28  lennart
+
+	* : update todo
+
+2006-05-30 12:23  lennart
+
+	* : load alsa modules with device string hw:0 instead of hw:0,0
+
+2006-05-30 00:25  lennart
+
+	* : fix amd64 portability issues
+
+2006-05-29 14:06  lennart
+
+	* : merge patch from Igor Zubkov, fixing linking of the HOWL
+	  modules
+
+2006-05-29 13:01  lennart
+
+	* : update svn:ignore to reflect the esdcompat name change
+
+2006-05-29 12:59  lennart
+
+	* : drop the .sh suffix from esdcompat
+
+2006-05-26 18:00  lennart
+
+	* : update README for 0.9.0
+
+2006-05-26 17:59  lennart
+
+	* : disable padsp for the polypaudio daemon itself by defining the
+	  __padsp_disabled__ symbol
+
+2006-05-26 12:24  ossman
+
+	* : update todo
+
+2006-05-26 12:18  ossman
+
+	* : Fix the fix_metrics() function so that we don't get a tiny
+	  buffer by default.
+
+2006-05-26 09:21  ossman
+
+	* : Fix typos.
+
+2006-05-26 07:24  ossman
+
+	* : Returned buffer attr is const.
+
+2006-05-26 07:24  ossman
+
+	* : Explicitly check version number when determining which fields
+	  are in a stream
+	  create response.
+
+2006-05-25 23:40  lennart
+
+	* : update todo
+
+2006-05-25 23:20  lennart
+
+	* : * add new API function pa_stream_get_buffer_attr().
+	  * modify pacat.c to make use of that new API
+	  * extend protocol to allow transfer of the necessary information
+	  * update protocol version accordingly
+
+2006-05-25 17:27  ossman
+
+	* : Wrong prefix used in the padsp script.
+
+2006-05-25 17:26  ossman
+
+	* : We only need the so for libpolypdsp.
+
+2006-05-25 17:18  lennart
+
+	* : really fix a superfluous warning when building padsp.c
+
+2006-05-25 17:16  lennart
+
+	* : * split pa_cstrerror() into its own file
+	  polypcore/core-error.[ch]
+	  * fix building of padsp
+	  * remove a warning when compiling padsp.c
+
+2006-05-25 16:05  lennart
+
+	* : move modules to ${libdir}/polypaudio-${PA_MAJORMINOR}/modules/
+
+2006-05-25 15:44  ossman
+
+	* : Fix padsp script so that it accepts parameters, setting
+	  relevant environment
+	  variables as needed.
+
+2006-05-25 13:56  ossman
+
+	* : Use only the basename of libpolypdsp.so so that it will work on
+	  multi-arch
+	  systems.
+
+2006-05-25 13:31  ossman
+
+	* : Move libpolypdsp in the makefile to avoid the libtool bug where
+	  it must come
+	  after any things it depends on.
+
+2006-05-25 13:29  lennart
+
+	* : add item about moving pa_cstrerror() to TODO
+
+2006-05-25 01:26  lennart
+
+	* : update todo
+
+2006-05-25 01:19  lennart
+
+	* : read stream and client name from $PADSP_STREAM_NAME resp.
+	  $PADSP_CLIENT_NAME, if available
+
+2006-05-25 01:14  lennart
+
+	* : add support to disable emulation of
+	  /dev/dsp,/dev/mixer,/dev/sndstat selectively by either passing an
+	  environment variable or by defining a symbol __padsp_disable__ in
+	  the process
+
+2006-05-25 00:40  lennart
+
+	* : fix evil, evil typo that cause all gtk2 based apps to crash
+
+2006-05-25 00:25  lennart
+
+	* : * issue volume updates syncrhonously
+	  * correct channel order of OSS volumes (swap left,right)
+
+2006-05-25 00:12  lennart
+
+	* : update TODO
+
+2006-05-24 15:38  ossman
+
+	* : padsp needs dlsym & co so make sure we get that lib included.
+
+2006-05-24 13:23  ossman
+
+	* : Fix warnings.
+
+2006-05-24 13:22  ossman
+
+	* : Remove the exceedingly anal warnings. It's impossible to write
+	  a non-trivial
+	  C program and not trigger these.
+
+2006-05-24 08:14  ossman
+
+	* : Fix stray \
+
+2006-05-24 02:13  lennart
+
+	* : implement a /dev/mixer interface
+
+2006-05-24 00:42  lennart
+
+	* : fix playback of small sound files
+
+2006-05-23 23:57  lennart
+
+	* : implement emulation of /dev/sndstat
+
+2006-05-23 23:06  lennart
+
+	* : - use pthread_atfork() to disable open sound streams in the
+	  child after a fork.
+	  Obviusly sound won't work in child process but at least we don't
+	  leak fds
+	  from the parent. Now any operation on the device fd in the child
+	  will result
+	  in an EBADF error, which seems somewhat clean to me.
+	  
+	  - flush our unix socket properly on RESET ioctl
+
+2006-05-23 16:37  lennart
+
+	* : pass the binary name as client name to polypaudio
+
+2006-05-23 15:24  ossman
+
+	* : Cast size_t to long to be more compatible with 64-bit systems.
+
+2006-05-23 14:42  lennart
+
+	* : add new padsp utility: a $LD_PRELOAD wrapper for using the OSS
+	  API with polypaudio
+
+2006-05-23 14:39  lennart
+
+	* : change return type of pa_cstrerror() to "const char*"
+
+2006-05-23 07:33  ossman
+
+	* : Fix some warnings.
+
+2006-05-22 16:47  ossman
+
+	* : Fix TLS on Win32 to something a bit more safe and portable
+	  (compiler-wise).
+
+2006-05-22 15:56  lennart
+
+	* : add missing #include
+
+2006-05-22 15:20  ossman
+
+	* : Wrap strerror() in a function that makes it thread safe and
+	  converts the
+	  output to UTF-8.
+
+2006-05-22 15:19  ossman
+
+	* : update todo
+
+2006-05-21 14:06  lennart
+
+	* : add missing #include
+
+2006-05-21 14:06  lennart
+
+	* : add new function pa_usec_to_bytes() as inverse of
+	  pa_bytes_to_usec()
+
+2006-05-20 19:27  lennart
+
+	* : doc update
+
+2006-05-20 15:00  lennart
+
+	* : fix long-standing buf that could cause polypaudio to eat 100%
+	  CPU: fix handling of event bits for pa_iochannel
+
+2006-05-20 14:59  lennart
+
+	* : rename pa_simple_get_playback_latency() to
+	  pa_simple_get_latency() and allow its usage on capture streams
+
+2006-05-19 17:40  lennart
+
+	* : generate PA_MAJORMINOR properly - only from major and minor,
+	  not from micro
+
+2006-05-19 11:32  ossman
+
+	* : Fix some missing headers.
+
+2006-05-19 07:38  ossman
+
+	* : Fix which headers get installed for libpolyp.
+
+2006-05-19 07:29  ossman
+
+	* : Sort source files.
+
+2006-05-18 10:36  ossman
+
+	* : update todo
+
+2006-05-18 10:36  ossman
+
+	* : Convert log text to current locale before passing it on to
+	  stderr or syslog.
+
+2006-05-18 08:21  ossman
+
+	* : Make paplay convert names to UTF-8 before sending to the
+	  server.
+
+2006-05-18 08:19  ossman
+
+	* : And functions for convertion to and from current locale and
+	  UTF-8.
+
+2006-05-18 07:07  ossman
+
+	* : Missing include of util.h.
+
+2006-05-18 07:04  ossman
+
+	* : Don't include util.h from core-util.h as it is not needed by
+	  many users.
+
+2006-05-18 06:53  ossman
+
+	* : PATH_MAX needs limits.h.
+
+2006-05-18 06:46  ossman
+
+	* : update todo
+
+2006-05-18 06:45  ossman
+
+	* : Move timeval calculation functions into their own file.
+
+2006-05-17 21:39  lennart
+
+	* : update README for 0.9.0
+
+2006-05-17 21:07  lennart
+
+	* : modify lirc module to use pa_sink_mute() for muting and
+	  unmuting
+
+2006-05-17 20:44  lennart
+
+	* : fix include line for "core-util.h"
+
+2006-05-17 20:44  lennart
+
+	* : add C++ macros to utf8.h
+
+2006-05-17 20:43  lennart
+
+	* : add C++ macros to xmalloc.h
+
+2006-05-17 20:43  lennart
+
+	* : * add doxygen docs to header file
+	  * add C++ macros to header file
+
+2006-05-17 20:42  lennart
+
+	* : add util.h to doxygen
+
+2006-05-17 20:42  lennart
+
+	* : include util.h in polypaudio.h
+
+2006-05-17 20:09  lennart
+
+	* : split polypcore/util.[ch] into polypcore/core-util.[ch] and
+	  polyp/util.[ch]
+
+2006-05-17 19:26  lennart
+
+	* : replace memory allocation function calls with pa_xXXXX()
+
+2006-05-17 19:26  lennart
+
+	* : include more files in polypaudio.h
+
+2006-05-17 19:07  lennart
+
+	* : add doxygen docs for utf8.h
+
+2006-05-17 19:07  lennart
+
+	* : * make pa_xfree() a real function
+	  * update doxygen docs for xmalloc.h
+
+2006-05-17 19:06  lennart
+
+	* : add utf8.h and xmalloc.h to doxygen docs
+
+2006-05-17 18:52  lennart
+
+	* : add new channel map argument to pa_simple_new()
+
+2006-05-17 18:51  lennart
+
+	* : fix svn tag
+
+2006-05-17 17:30  ossman
+
+	* : Move utf8 to the public part (libpolyp).
+
+2006-05-17 16:34  ossman
+
+	* : Move xmalloc to the public side (libpolyp).
+
+2006-05-17 15:38  lennart
+
+	* : more sensible default.pa file
+
+2006-05-17 15:21  lennart
+
+	* : add proper locking when accessing the file match.table
+
+2006-05-17 15:21  lennart
+
+	* : add proper locking when accessing the file volume.table
+
+2006-05-17 15:19  lennart
+
+	* : add documentation for module-volume-restore
+
+2006-05-17 15:19  lennart
+
+	* : update todo
+
+2006-05-17 14:58  lennart
+
+	* : update todo
+
+2006-05-17 14:55  lennart
+
+	* : * support native ULAW/ALAW file streams
+	  * fix shutdown of file streams
+
+2006-05-17 14:55  lennart
+
+	* : support loading ULAW/ALAW files into ULAW/ALAW memchunks
+
+2006-05-17 14:54  lennart
+
+	* : * use S16NE for SF_FORMAT_PCM_S8 formats, too
+
+2006-05-17 14:06  lennart
+
+	* : when playing an ULAW or ALAW audio file, do not convert to
+	  S16NE unconditionally, instead use sf_read_raw() to read raw
+	  audio data
+
+2006-05-17 13:15  lennart
+
+	* : increase PA_CHANNELS_MAX to 32
+
+2006-05-17 13:09  lennart
+
+	* : use PA_CHANNEL_MAP_OSS in module-oss, module-oss-mmap
+
+2006-05-17 13:06  lennart
+
+	* : add new channel mapping standard PA_CHANNEL_MAP_OSS
+
+2006-05-17 11:23  ossman
+
+	* : update todo
+
+2006-05-17 11:10  ossman
+
+	* : Update documentation to contain the UTF-8 requirement.
+
+2006-05-17 11:07  ossman
+
+	* : Documentation for the threaded main loop API.
+
+2006-05-17 06:58  ossman
+
+	* : Set default channel map system for waveout module.
+
+2006-05-17 06:58  ossman
+
+	* : Add Microsoft's WAVEFORMWATEEXTENSIBLE channel mapping.
+
+2006-05-17 06:31  ossman
+
+	* : Use default channel map for Solaris module. There doesn't seem
+	  to be a standard
+	  for > 2 channels, so we'll have to rely on the user.
+
+2006-05-16 23:47  lennart
+
+	* : * modify pa_channel_map_init_auto() to take an extra argument
+	  specifying the standard to use (ALSA, AIFF, ...)
+	  * add some more validity checks to
+	  pa_source_new(),pa_sink_new(),pa_sink_input_new(),pa_source_output_new()
+
+2006-05-16 19:15  lennart
+
+	* : change version number from "0.9" to "0.9.0" to make version
+	  comparisons easier
+
+2006-05-16 18:28  lennart
+
+	* : bump version number to 0.9
+
+2006-05-16 17:54  lennart
+
+	* : * add new configure option --with-module-dir=
+	  * drop version suffix from soname of libpolyp and friends
+	  * add version suffix by default to $(modlibexecdir)
+
+2006-05-16 15:30  lennart
+
+	* : update todo
+
+2006-05-16 15:29  lennart
+
+	* : * remove .a files from the modules directory after installation
+	  * rename $(modlibdir) to $(modlibexecdir) in accordance with
+	  secion 11.2 of the automake docs ("The two parts of install")
+
+2006-05-16 01:43  lennart
+
+	* : tell svn to ignore the utf8-test binary
+
+2006-05-16 01:40  lennart
+
+	* : instead of kicking clients with invalid UTF8 stream names,
+	  filter invalid characters and use that instead
+
+2006-05-16 00:46  lennart
+
+	* : add new test programme utf8-test.c
+
+2006-05-16 00:45  lennart
+
+	* : add svn:keywords property
+
+2006-05-16 00:45  lennart
+
+	* : add double include protection
+
+2006-05-16 00:44  lennart
+
+	* : * remove "const" from return type of pa_utf8_filter() since it
+	  desn't make any sense
+	  * fix pa_utf8_filter() to not skip the next character too if it
+	  found an invalid one
+
+2006-05-16 00:06  lennart
+
+	* : use the new latency update callback to be notified when latency
+	  data becomes
+	  available again after PA_ERR_NODATA is returned by
+	  pa_stream_get_latency()
+
+2006-05-16 00:04  lennart
+
+	* : downgrade a log message
+
+2006-05-16 00:04  lennart
+
+	* : * fix segfault in pa_utf8_validate()
+	  * remove some compiler warnings
+	  * use our own pa_xmalloc() implementation instead of libc's
+	  malloc()
+
+2006-05-15 20:17  lennart
+
+	* : add notification callback which is called when new latency data
+	  becomes available
+
+2006-05-15 13:04  ossman
+
+	* : Add function to filter a string of any invalid UTF-8 sequences.
+	  User must
+	  free() the result.
+
+2006-05-15 12:45  lennart
+
+	* : undo r868
+
+2006-05-15 12:44  ossman
+
+	* : Clean up the UTF-8 validation code.
+
+2006-05-15 12:33  lennart
+
+	* : remove regex.h from include, since it is actually not used
+
+2006-05-15 06:41  ossman
+
+	* : module-volume-restore uses regexp() so make sure it's only
+	  built on systems
+	  that have it.
+
+2006-05-15 06:36  ossman
+
+	* : Include utf8.h for the validation function.
+
+2006-05-14 16:19  lennart
+
+	* : update TODO
+
+2006-05-14 16:18  lennart
+
+	* : add utf8 validity checking to esound protocol
+
+2006-05-14 16:17  lennart
+
+	* : remove superfluous log line
+
+2006-05-14 16:17  lennart
+
+	* : take the filename specified on the command line as default
+	  stream name
+
+2006-05-14 16:02  lennart
+
+	* : check for valid utf8 strings
+
+2006-05-14 16:02  lennart
+
+	* : add utf8 validity checking API
+
+2006-05-14 14:07  lennart
+
+	* : update todo
+
+2006-05-14 00:41  lennart
+
+	* : add new module module-volume-restore which saves and restores
+	  volume of playback streams
+
+2006-05-14 00:41  lennart
+
+	* : * add new parameter to pa_open_config_file() to specify open
+	  mode
+	  * modify pa_sink_input_new() to take initial volume settings as
+	  argument
+	  * call pa_sink_input_set_volume() when changing stream volume in
+	  protocol-esound.c to make sure that subscribe events are issued
+	  properly
+
+2006-05-14 00:36  lennart
+
+	* : modify argument order of pa_client_new() to actually match how
+	  it is usually called
+
+2006-05-13 21:40  lennart
+
+	* : fix esound sample cache names
+
+2006-05-13 21:20  lennart
+
+	* : * set default fragment metrics depending on the sample specs of
+	  the device in OSS and ALSA
+	  * fix fragment size calculation in module-alsa-sink
+
+2006-05-13 21:19  lennart
+
+	* : first set buffer size, and afterwards period size
+
+2006-05-13 21:18  lennart
+
+	* : don't hit an assert when trying to resample data for 6channel
+	  audio
+
+2006-05-13 20:47  lennart
+
+	* : fix fragment size calculation for module-alsa-source
+
+2006-05-13 20:29  lennart
+
+	* : use default alsa channel map for alsa devices
+
+2006-05-13 19:55  lennart
+
+	* : remove superfluous log message
+
+2006-05-11 22:37  lennart
+
+	* : fix hangup detection for recording streams
+
+2006-05-11 21:38  lennart
+
+	* : fix iochannel for hangup signals
+
+2006-05-11 14:57  ossman
+
+	* : Windows support for the threaded API.
+
+2006-05-11 13:17  lennart
+
+	* : update doxygen docs
+
+2006-05-11 13:17  lennart
+
+	* : don't signal the accept_cond automatically when waiting for a
+	  signal event
+
+2006-05-11 13:01  lennart
+
+	* : split of signal releasing into its own function and name it
+	  pa_threaded_mainloop_accept()
+
+2006-05-11 12:59  lennart
+
+	* : add thread-mainloop.h to doxygen docs
+
+2006-05-11 11:30  ossman
+
+	* : Remove some debug code that wasn't supposed to be committed.
+
+2006-05-11 11:30  ossman
+
+	* : pa_write() should use a const pointer.
+
+2006-05-11 11:08  ossman
+
+	* : Handle pipes on platforms where they are non-existant of
+	  broken.
+	  We do this by creating a TCP socket pair instead of a normal
+	  pipe. Since
+	  Windows isn't UNIX-y enough to support read()/write() on sockets,
+	  we also
+	  need a wrapper to handle read() vs recv() and write() vs send().
+
+2006-05-11 11:04  ossman
+
+	* : Include log header to get rid of warnings.
+
+2006-05-11 11:03  ossman
+
+	* : ANSI codes aren't supported on Windows terminals.
+
+2006-05-11 11:02  ossman
+
+	* : Do WSAStartup() in the DLL entry routine instead of at context
+	  creation.
+
+2006-05-09 15:16  lennart
+
+	* : fix handling of timing status requests
+
+2006-05-09 15:15  lennart
+
+	* : update todo
+
+2006-05-09 08:39  ossman
+
+	* : Add stubs for the threaded main loop so that we can compile it
+	  on
+	  non-supported platforms (still can't run it though).
+
+2006-05-09 08:38  ossman
+
+	* : Use pa_msleep() to get platform independence.
+
+2006-05-06 20:58  lennart
+
+	* : rework the simple API to make use of the new threaded mainloop
+	  implementation
+
+2006-05-06 20:58  lennart
+
+	* : * optionally, make pa_threaded_mainloop_signal() wait until the
+	  main thread took over control
+	  * more header file comments
+
+2006-05-06 20:56  lennart
+
+	* : add support for reading audio data from a file instead of plain
+	  STDIN in pacat-simple.c
+
+2006-05-06 20:55  lennart
+
+	* : remove bogus check that disallowed latency interpolation and
+	  stuff for record streams
+
+2006-05-06 16:38  lennart
+
+	* : allow signalling from event loop thread
+
+2006-05-03 08:56  ossman
+
+	* : update todo
+
+2006-05-02 11:27  ossman
+
+	* : Fix control flow in pa_oss_open(). Also fall back to half
+	  duplex when device doesn't
+	  support full.
+
+2006-05-02 09:50  ossman
+
+	* : We need to read the cookie in binary mode for things to work
+	  correctly.
+
+2006-05-02 08:41  ossman
+
+	* : Windows doesn't have POSIX thread. ifdef out things for now.
+
+2006-04-30 23:34  lennart
+
+	* : add new threaded main loop implementation (with test/example)
+
+2006-04-30 23:33  lennart
+
+	* : * make sure the wakeup fd is polled on wven when no other fd is
+	  registered for polling
+	  * initialize mainloop return value to -1
+	  * some optimizations
+
+2006-04-28 11:33  lennart
+
+	* : fix date
+
+2006-04-28 07:29  ossman
+
+	* : When a control is removed, all bits are set so we need to test
+	  for that first.
+
+2006-04-28 07:28  ossman
+
+	* : Zero the fd list since we do a memcmp on it later.
+
+2006-04-27 22:59  lennart
+
+	* : ouch!
+	  
+	  fix brown paperbag bug which was triggered when runnign
+	  "pavumeter" and
+	  specifying a sink on the command line.
+
+2006-04-27 05:43  ossman
+
+	* : Clarify how the automatic channel map is generated.
+
+2006-04-27 05:41  ossman
+
+	* : Channel map argument support for solaris.
+
+2006-04-27 05:39  ossman
+
+	* : Channel map argument support for waveout.
+
+2006-04-27 05:26  ossman
+
+	* : update todo
+
+2006-04-26 21:31  lennart
+
+	* : doc update for 0.8.1
+
+2006-04-26 19:24  lennart
+
+	* : bump version number
+
+2006-04-26 16:50  lennart
+
+	* : fail if the channel map doesn't match the sample specs
+
+2006-04-26 16:28  lennart
+
+	* : allow the user to specify an alternative channel map in paplay
+	  too
+
+2006-04-26 16:27  lennart
+
+	* : fix volume range printed on --help
+
+2006-04-26 16:27  lennart
+
+	* : if a sample is not yet loaded, don't print rubbish about its
+	  channel map
+
+2006-04-26 16:27  lennart
+
+	* : it was a bad idea to require that a channel map doesn't contain
+	  the same position twice
+
+2006-04-26 16:07  lennart
+
+	* : allow specifying the channel map to use on the command line
+
+2006-04-26 16:07  lennart
+
+	* : * make a validity check of parsed channel maps before rteurning
+	  theme
+	  * don't overwrite the return buffer unless the parsed channel map
+	  is known to be valid
+
+2006-04-26 15:40  lennart
+
+	* : support new channel_map argument in sink/source modules
+
+2006-04-26 15:37  lennart
+
+	* : add support for parsing channel maps as module arguments
+
+2006-04-26 15:37  lennart
+
+	* : don't allow channel positions to be specified twice in the same
+	  channelmap
+
+2006-04-26 14:34  lennart
+
+	* : add new test 'channelmap-test'
+
+2006-04-26 14:33  lennart
+
+	* : * add new function pa_channel_map_parse()
+	  * increase PA_CHANNEL_MAP_SNPRINT_MAX
+	  * add "top" channel positions
+
+2006-04-26 09:38  ossman
+
+	* : update todo
+
+2006-04-25 07:55  ossman
+
+	* : update todo
+
+2006-04-25 07:54  ossman
+
+	* : Fall back to software volume if hardware mixer cannot control
+	  all channels.
+
+2006-04-25 07:13  ossman
+
+	* : glibc <= 2.2 has a broken unistd.h, lacking setresuid().
+
+2006-04-24 19:29  lennart
+
+	* : * rework reference counting in the client libraries: now
+	  refcounting goes
+	  strictly "one-way" - the "bigger" object refcounts the "smaller"
+	  one, never the
+	  other way round.
+	  
+	  * when registering for a reply packet in pdispatch, specify a
+	  function that is
+	  called when the pdispatch object is destroyed but the reply
+	  hasn't yet been
+	  recieved.
+	  
+	  * move prototype of pa_free_cb from stream.h to def.h
+
+2006-04-24 15:07  ossman
+
+	* : chown() and chmod() aren't available on Windows.
+
+2006-04-24 13:59  ossman
+
+	* : Undo invalid automake version requirement.
+
+2006-04-23 21:25  lennart
+
+	* : fix a segfault when uploading samples with esound
+
+2006-04-23 21:01  lennart
+
+	* : * add validity checking for sample_spec, channel_map and
+	  cvolume structures
+	  * return PA_ERR_TOOLARGE when the user tries to upload a
+	  over-sized sample
+	  * notify the user if uploading a simple faield due to some reason
+
+2006-04-23 20:59  lennart
+
+	* : small optimization
+
+2006-04-23 20:59  lennart
+
+	* : fix sample uploading
+
+2006-04-23 20:59  lennart
+
+	* : enforce maximum sample size in sample cache
+
+2006-04-23 20:58  lennart
+
+	* : * fix ref counting of pa_stream: strictly refcount from context
+	  to stream and never vice versa to make sure that we never loose
+	  memory
+	  * don't hit an assert() in case of a timeout events
+
+2006-04-23 20:56  lennart
+
+	* : introduce a new error PA_ERR_TOOLARGE
+
+2006-04-23 19:49  lennart
+
+	* : * when playing back a sample from the sample cache, just take a
+	  pa_volume_t and not a pa_cvolume_t as argument for the volume.
+	  Usually it is not known to the player of theses samples how many
+	  channels it has, hence it doesn't make any sense to allow him to
+	  pass a by-channel volume structure here.
+	  * fix volume calculation when playing samples from the sample
+	  cache
+
+2006-04-23 19:46  lennart
+
+	* : fix multiplication of software pa_cvolumes
+
+2006-04-23 19:42  lennart
+
+	* : allow recieving of invalid channel maps, volumes and sample
+	  specs. This makes handling of uninitialized data better, e.g.
+	  when sending info about lazy-load sample chache entries, where
+	  the channel mapping and sample spec is still unknown.
+
+2006-04-23 14:29  lennart
+
+	* : * Merge build system patch from Igor Zubkov
+	  * Build libparseaddr.so before libsocket-client.so
+
+2006-04-22 21:53  lennart
+
+	* : remove superfluous "set -ex" line
+
+2006-04-22 21:53  lennart
+
+	* : require automake 1.9 in configure.ac
+
+2006-04-22 21:51  lennart
+
+	* : modify x11 modules to not cache the Display variable since
+	  pa_x11wrap_get_display() is now used as notification that the x11
+	  output buffer needs flushing
+
+2006-04-22 21:50  lennart
+
+	* : when loading sound files, initialize channel map data properly
+
+2006-04-22 21:49  lennart
+
+	* : fix x11 handling
+
+2006-04-22 21:04  lennart
+
+	* : fix sample cache
+
+2006-04-22 20:06  lennart
+
+	* : * for unix sockets: remove the right parent directory on
+	  shutdown
+	  * other cleanups
+
+2006-04-22 20:05  lennart
+
+	* : add new function pa_parent_dir()
+
+2006-04-22 20:04  lennart
+
+	* : first unlink the socket, the close it
+
+2006-04-22 20:04  lennart
+
+	* : try to remove the directory where the PID file resides in after
+	  removing the PID file
+
+2006-04-22 14:31  lennart
+
+	* : chown() and chmod() /tmp/.esd/ before checking if everything is
+	  ok with it
+
+2006-04-20 12:53  lennart
+
+	* : replace copy by symlink when installing homepage
+
+2006-04-20 12:45  lennart
+
+	* : minor improvements to the LICENSE text
+
+2006-04-20 12:40  lennart
+
+	* : ship GPL and LGPL files with the tarball
+
+2006-04-20 12:40  lennart
+
+	* : add new explaining LICENSE file
+
+2006-04-20 12:33  lennart
+
+	* : * rename "LICENSE" to "LGPL"
+	  * add GPL text
+	  * update LGPL text in regards to FSF addresses
+
+2006-04-20 07:44  ossman
+
+	* : update todo
+
+2006-04-19 15:37  ossman
+
+	* : Tweaks for the solaris module. The sound system requires
+	  complete frames
+	  to be written. Also, the sample counter can magically go
+	  backwards sometimes,
+	  causing havoc with our buffer handling.
+
+2006-04-19 14:30  ossman
+
+	* : Sun's documentation about SIGPOLL on EOF:s is wrong, so use a
+	  timer based
+	  solution instead.
+
+2006-04-19 11:56  ossman
+
+	* : Minor fixes for the way Windows handles sockets.
+
+2006-04-19 11:55  ossman
+
+	* : WaveOut needs to have rather large chunks. This is about as low
+	  as we can
+	  go without getting underflows.
+
+2006-04-19 11:54  ossman
+
+	* : Win32 needs to have the socket subsystem initialised.
+
+2006-04-19 11:53  ossman
+
+	* : Having constant deferred events isn't allowed and causes
+	  problems. Use timers
+	  instead.
+
+2006-04-19 07:31  ossman
+
+	* : Reverse order of IPv6/IPv4 binding to handle systems without
+	  IPV6_V6ONLY.
+	  
+	  System that always do IPV6_V6ONLY will now still bind to both
+	  sockets, just
+	  in another order.
+	  
+	  System that never do IPV6_V6ONLY will now fail to bind IPv4
+	  instead of IPv6.
+	  But since they force IPv6 sockets to accept IPv4 connections,
+	  everything is
+	  peachy anyway.
+
+2006-04-18 19:44  lennart
+
+	* : make proper use of the muting facility of sinks in
+	  module-mmkbd-evdev
+
+2006-04-18 19:31  lennart
+
+	* : fix a couple of issues I found when compiling polypaudio with
+	  gcc 2.95
+
+2006-04-18 19:12  lennart
+
+	* : fix CFLAGS for jack modules
+
+2006-04-18 18:44  lennart
+
+	* : fix "make distccheck" properly
+
+2006-04-18 18:18  lennart
+
+	* : fix make distcheck
+
+2006-04-18 17:52  lennart
+
+	* : Documentation updates
+
+2006-04-18 17:43  lennart
+
+	* : add JACK module documentation
+
+2006-04-18 17:20  lennart
+
+	* : fix connecting of jack source in jack daemon
+
+2006-04-18 17:19  lennart
+
+	* : build jack source
+
+2006-04-18 16:33  lennart
+
+	* : fix code for pre-C99
+
+2006-04-18 15:40  lennart
+
+	* : * fix pa_random_seet() function prototype
+	  * drop pa_ prefix from pa_random_proper(), because it is a static
+	  function
+
+2006-04-18 15:16  ossman
+
+	* : Make the probe for RNG sources at runtime since the configure
+	  script isn't
+	  compatible with cross-compiling.
+
+2006-04-18 14:11  ossman
+
+	* : Clarify that JACK libs are optional.
+
+2006-04-18 14:09  ossman
+
+	* : More fixes caused by Sun's complete inability to follow any
+	  standard
+	  whatsoever.
+
+2006-04-18 13:37  ossman
+
+	* : update todo
+
+2006-04-18 13:36  ossman
+
+	* : We need to emulate sendmsg/recvmsg to support rtp on Windows.
+	  Will do
+	  this some time in the future.
+
+2006-04-18 13:36  ossman
+
+	* : Avoid including non-portable header sys/poll.h.
+
+2006-04-18 13:22  lennart
+
+	* : add a jack source module
+
+2006-04-18 13:20  lennart
+
+	* : * allow the user to set the jack client name
+	  * take the number of channels for the sink from the number of
+	  physical ports in the jack server
+	  * name the polypaudio ports in the jack server after their
+	  channel position in polypaudio
+
+2006-04-18 12:46  ossman
+
+	* : C99 requires explicit marking of integer literals' size.
+
+2006-04-17 00:11  lennart
+
+	* : add new JACK sink
+
+2006-04-16 17:25  lennart
+
+	* : * add pa_mainloop_wakeup() calls for deferred events
+	  * place pa_mainloop_wakeup() calls a little bit more carfully, to
+	  minimize needless wakeups.
+
+2006-04-16 16:46  lennart
+
+	* : add new API to replace the poll() function used by the main
+	  loop implementation
+
+2006-04-16 16:45  lennart
+
+	* : properly initialize session counter
+
+2006-04-16 13:34  lennart
+
+	* : add documentation for the new RTP modules
+
+2006-04-16 12:44  lennart
+
+	* : limit number of concurrent RTP streams
+
+2006-04-16 12:44  lennart
+
+	* : fix typo in module description
+
+2006-04-16 11:13  lennart
+
+	* : change default mcast address once again, to make sure our
+	  traffic doesn't leave the network by default
+
+2006-04-16 10:59  lennart
+
+	* : ignore symdef file of module-rtp-send
+
+2006-04-16 10:56  lennart
+
+	* : rename module-rtp-monitor to module-rtp-send
+
+2006-04-16 10:53  lennart
+
+	* : * make sure RTP ports are chosen to be even
+
+2006-04-16 09:23  ossman
+
+	* : Fix ALSA fd handling to be compatible with blocking deferred
+	  events.
+
+2006-04-16 09:22  ossman
+
+	* : Clarify behaviour of deferred events.
+
+2006-04-16 09:15  lennart
+
+	* : * deal properly with underruns, overflows and packet losses
+	  * change default mcast address
+	  * detect RTP loops
+
+2006-04-16 09:14  lennart
+
+	* : * increase default MTU
+	  * change default mcast address to 224.0.1.3
+	  * randomize RTP ports by default
+
+2006-04-16 09:13  lennart
+
+	* : replace homegrown endswith() with pa_endswith() from util.h
+
+2006-04-16 09:13  lennart
+
+	* : initialize random seed globaly from $RANDOM_DEVICE
+
+2006-04-16 09:12  lennart
+
+	* : * add new check for $RANDOM_DEVICE
+	  * move AC_SYS_LARGEFILE to avoid autoconf warning
+
+2006-04-16 00:18  lennart
+
+	* : todo update
+
+2006-04-16 00:16  lennart
+
+	* : * add RTP/SAP/SDP reciever module
+	  * use server cookie as RTP SSRC
+	  * enable SVN keywords
+	  * add new option "loop" for RTP sender module
+
+2006-04-15 15:26  lennart
+
+	* : * change default multicast address
+	  * fix timestamp calculation
+
+2006-04-15 15:25  lennart
+
+	* : correct some types
+
+2006-04-14 23:49  lennart
+
+	* : * ignore some more files
+	  * make necessary changes to Makefile to compile RTP module
+
+2006-04-14 23:47  lennart
+
+	* : add an RTP sender module
+
+2006-04-14 23:46  lennart
+
+	* : minor beautification
+
+2006-04-13 19:31  lennart
+
+	* : minor doc updates
+
+2006-04-13 19:07  lennart
+
+	* : * add a link to Cendio to the README
+
+2006-04-13 18:56  lennart
+
+	* : remove yet another item from the todo list! This means we are
+	  now read for 0.8!
+
+2006-04-13 18:55  lennart
+
+	* : unbreak module-tunnel
+
+2006-04-13 18:28  lennart
+
+	* : remove yet another item from the todo list
+
+2006-04-13 18:27  lennart
+
+	* : include in-flux resampled chunk in latency calculations of
+	  playback streams
+
+2006-04-13 18:20  lennart
+
+	* : fix latency calculations of module-combine
+
+2006-04-13 17:53  lennart
+
+	* : hmm, nothing important
+
+2006-04-13 17:33  lennart
+
+	* : add code to allow polypaudio dump preloaded modules using
+	  "--dump-modules"
+
+2006-04-13 17:32  lennart
+
+	* : make --enable-force-preopen the default for SVN builds
+
+2006-04-13 17:32  lennart
+
+	* : add new configure option to enable preloading even on
+	  architectures that support dlopen(). Useful for debugging
+
+2006-04-13 15:10  lennart
+
+	* : update documentation for release 0.8
+
+2006-04-13 13:46  lennart
+
+	* : doc updates
+
+2006-04-13 13:45  lennart
+
+	* : more documentation updates
+
+2006-04-13 00:56  lennart
+
+	* : Documentation updates
+
+2006-04-12 23:58  lennart
+
+	* : remove yet another item from the todo
+
+2006-04-12 23:57  lennart
+
+	* : include local record memblockq in latency calculations
+
+2006-04-12 23:55  lennart
+
+	* : when storing recording data in file, create file with proper
+	  access rights
+
+2006-04-12 23:19  lennart
+
+	* : yet anotrher fix for slow links
+
+2006-04-12 23:12  lennart
+
+	* : small fix to deal properly with slow links
+
+2006-04-12 22:45  lennart
+
+	* : * dispatch defer events in pa_mainloop_dispatch() and not
+	  already in pa_mainloop_prepare()
+	  * fix the "timeout" parameter of pa_mainloop_prepare()
+	  * remove pa_mainloop_deferred_pending() and update the simple API
+	  accordingly
+
+2006-04-12 18:33  lennart
+
+	* : * fix latency calculation where a full playback buffer was
+	  erroneously taken as empty buffer and vice versa.
+
+2006-04-12 17:26  lennart
+
+	* : remove a bunch of log messages
+
+2006-04-12 17:18  lennart
+
+	* : beefup pacat a little:
+	  * when -v is passed, show current playback time and latency
+	  * modify SIGUSR1 behaviour to show only playback time and latency
+
+2006-04-12 17:17  lennart
+
+	* : * rename "latency correction" to "write index correction"
+	  * add read index invalidation code
+	  * rename "ipol_event" stuff to "auto_timing_update"
+	  * remove buffer_usec field from pa_timing_info, since it can be
+	  easily calculated from write_index and read_index anyway
+	  * add read_index_corrupt field to "pa_timing_info", similar to
+	  the already existing write_index_corrupt field
+	  * restart automatic timing update event every time a query is
+	  issued, not just when the last event elapsed
+	  * proper invalidation code for pa_stream_flush()
+	  * do tarsnport/sink/source latency correction for playback time
+	  only when device is not corked
+
+2006-04-12 17:12  lennart
+
+	* : protocol change: don't send stream buffer size in latency
+	  update. This data is redundant, since it can be calculated from
+	  write_index - read_index anyway
+
+2006-04-12 17:10  lennart
+
+	* : proper validity checking for pa_context_is_pending()
+
+2006-04-12 17:09  lennart
+
+	* : when flushin a memblockq, set the write index to the read index
+
+2006-04-12 17:09  lennart
+
+	* : todo update
+
+2006-04-10 21:15  lennart
+
+	* : unbreak fresh SVN builds
+
+2006-04-10 20:43  lennart
+
+	* : return the error code and not just -1 when
+	  pa_context_is_pending() fails
+
+2006-04-10 20:38  lennart
+
+	* : validity checks for pa_context_is_pending()
+
+2006-04-10 19:44  lennart
+
+	* : update todo
+
+2006-04-10 19:43  lennart
+
+	* : * Beef up latency calculation in module-oss-mmap
+	  * Add recording latency code for module-oss-mmap
+	  * other cleanups
+
+2006-04-10 19:42  lennart
+
+	* : minor cleanups for OSS module
+
+2006-04-10 19:42  lennart
+
+	* : when using record mode, allow file to save data to to be passed
+	  on the command line
+
+2006-04-10 17:42  lennart
+
+	* : todo update
+
+2006-04-10 17:39  lennart
+
+	* : * implement PA_STREAM_AUTO_TIMING_UPDATE
+	  * accept PA_STREAM_NOT_MONOTONOUS properly
+
+2006-04-10 17:38  lennart
+
+	* : add new PA_STREAM_AUTO_TIMING_UPDATE
+
+2006-04-10 17:22  lennart
+
+	* : Lennart is blind
+
+2006-04-10 17:17  lennart
+
+	* : update TODO
+
+2006-04-10 16:40  lennart
+
+	* : unbreak last commit from ossman
+
+2006-04-09 19:32  ossman
+
+	* : Use the modern Ki/Mi/Gi prefixes to clarify that 1024 is the
+	  base.
+
+2006-04-09 19:31  ossman
+
+	* : Big documentation update. Describe the client API in a more
+	  tutorial like
+	  manner.
+
+2006-04-08 00:19  lennart
+
+	* : clip volume at PA_VOLUME_NORM for alsa devices
+
+2006-04-08 00:19  lennart
+
+	* : add proper volume clipping support for OSS devices
+
+2006-04-08 00:09  lennart
+
+	* : when doing software volume adjustments, don't use the volume
+	  value as linear factor, but pass it through
+	  pa_sw_volume_to_linear() first.
+
+2006-04-07 23:08  lennart
+
+	* : remove another item from the todo list
+
+2006-04-07 23:05  lennart
+
+	* : * show flags value when dumping sink/source info in pactl.
+	  * show volume for sources, too
+	  * show value of "mute" field for sinks/sources
+
+2006-04-07 23:02  lennart
+
+	* : add new introspection data field for sinks/sources: a flags
+	  field which specifies whether the sink/source supports hw volume
+	  control and latency querying
+
+2006-04-07 22:46  lennart
+
+	* : todo update
+
+2006-04-07 22:45  lennart
+
+	* : minor cleanups
+
+2006-04-07 22:28  lennart
+
+	* : remove item from TODO list, since it requires the
+	  SNDCTL_DSP_GETERROR ioctl() which isn't supported by the Linux
+	  kernel
+
+2006-04-07 21:57  lennart
+
+	* : todo update
+
+2006-04-07 21:55  lennart
+
+	* : * enable write_index correction and timing interpolation only
+	  for playback (and record) streams
+
+2006-04-07 21:10  lennart
+
+	* : fix pkg-config files
+
+2006-04-07 06:29  ossman
+
+	* : Some memcpy arithmetic that wasn't removed when doing the
+	  redesign to update
+	  the data pointer instead.
+
+2006-04-07 01:32  lennart
+
+	* : remove yet another item from the todo list
+
+2006-04-07 01:31  lennart
+
+	* : hdie some more
+
+2006-04-07 01:29  lennart
+
+	* : * update docs for reworked latency API
+	  * rename pa_latency_info to pa_timing_info, since that describes
+	  better what it is. Most people will only use pa_stream_get_time()
+	  anyway
+
+2006-04-07 00:25  lennart
+
+	* : update simple API for new latency API
+
+2006-04-07 00:25  lennart
+
+	* : update pacat.c for new latency API
+
+2006-04-07 00:24  lennart
+
+	* : rework latency querying API (this needs more testing)
+
+2006-04-07 00:23  lennart
+
+	* : remove queue length field from latency request (server side)
+
+2006-04-06 23:52  lennart
+
+	* : * really pass the ipv6 socket server to protocol_new in case of
+	  ipv6.
+	  * create the pa_modargs object properly when using TCP
+	  * other cleanups
+
+2006-04-06 23:31  lennart
+
+	* : change pa_gettimeofday() to return a pointer to the struct
+	  timeval*, instead of an int
+
+2006-04-06 23:28  lennart
+
+	* : s/index/idx/, to avoid gcc warning
+
+2006-04-06 23:28  lennart
+
+	* : * set IPV6_V6ONLY for IPv6 sockets, to avoid warning when both
+	  ipv6 and the ipv4 sockets try to bind to the same port
+	  * enable SO_REUSEADDR only on platforms that support it
+
+2006-04-06 20:17  lennart
+
+	* : remove some GCC warnings introduced by improperly casting to
+	  (char*) instead of (const char*)
+
+2006-03-31 08:54  ossman
+
+	* : Fix some warnings caused by size_t having varying size.
+
+2006-03-31 08:34  ossman
+
+	* : Large file support. Polypaudio probably doesn't need it, but it
+	  causes warnings
+	  when linking libpolyp with applications that do. So this is just
+	  to make life
+	  easier for other applications.
+
+2006-03-17 08:16  ossman
+
+	* : update todo
+
+2006-03-11 21:26  ossman
+
+	* : We no longer guarantee that an operation object is returned.
+	  Need to tweak
+	  some parts to handle this.
+
+2006-03-11 21:25  ossman
+
+	* : Remember to store the struct with module info.
+
+2006-03-08 13:00  ossman
+
+	* : We filled the volume with the wrong channel count (we used the
+	  input, not
+	  the output) causing static. Also swapped the comments since they
+	  were
+	  misplaced.
+
+2006-03-07 18:29  ossman
+
+	* : The extra stream ref actually did some good. Re-add it, but
+	  with some more
+	  symmetry, assertions and comments.
+
+2006-03-07 16:04  ossman
+
+	* : We've already set an initial reference count of 1 so don't
+	  count it up again.
+
+2006-03-07 16:02  ossman
+
+	* : Trying to listen on an IPv6 socket by default and only do IPv4
+	  if that fails
+	  (which it doesn't most of the time) is terribly confusing. What
+	  the user
+	  most likely wants is for it to listen to both IPv4 and IPv6 and
+	  gracefully
+	  continue if only of them succeed.
+
+2006-03-05 21:00  ossman
+
+	* : update todo
+
+2006-03-05 20:59  ossman
+
+	* : Fetch sound card name into sink/source description.
+
+2006-03-05 20:18  ossman
+
+	* : update todo
+
+2006-03-05 20:18  ossman
+
+	* : Volume support in tunnel module.
+
+2006-03-05 18:37  ossman
+
+	* : It's safer to set buffer size than to try setting number of
+	  periods.
+
+2006-03-05 18:35  ossman
+
+	* : Return the proper error code so that we get a correct error
+	  message.
+
+2006-03-05 15:42  ossman
+
+	* : Tried to get the volume information even upon init failure.
+
+2006-03-04 21:30  ossman
+
+	* : Update module-tunnel to the new protocol.
+
+2006-03-04 17:31  ossman
+
+	* : Fix warning caused by missing return in main().
+
+2006-03-04 13:56  ossman
+
+	* : update todo
+
+2006-03-04 13:55  ossman
+
+	* : Alignment safe protocol handling in esound module.
+
+2006-03-02 21:56  ossman
+
+	* : Negotiate protocol version between server and client. Will
+	  allow smoother
+	  protocol modifications in the future.
+
+2006-03-02 16:40  ossman
+
+	* : The tag argument is no longer unused.
+
+2006-03-02 16:37  ossman
+
+	* : Fix warnings on 64-bit systems.
+
+2006-03-02 16:32  ossman
+
+	* : Handle the new latency protocol. This is just a quick fix and
+	  does not
+	  handle the new memblockq system.
+
+2006-03-02 14:46  ossman
+
+	* : typo fix
+
+2006-03-02 14:22  lennart
+
+	* : protocol changes for new latency API (partial!)
+
+2006-02-27 09:22  ossman
+
+	* : update todo
+
+2006-02-27 09:21  ossman
+
+	* : update todo
+
+2006-02-27 09:20  ossman
+
+	* : We have both sink and source in this module.
+
+2006-02-27 09:18  ossman
+
+	* : Catch volume update events.
+
+2006-02-27 09:09  ossman
+
+	* : 64-bit fixes.
+
+2006-02-27 08:58  ossman
+
+	* : Fix some signed/unsigned warnings.
+
+2006-02-27 08:57  ossman
+
+	* : Function prototype didn't match actual definition.
+
+2006-02-26 21:55  ossman
+
+	* : update todo
+
+2006-02-26 21:50  ossman
+
+	* : Get notifications about mixer changes from ALSA.
+
+2006-02-26 19:09  ossman
+
+	* : Handle ALSA file descriptors more correctly. This means a bit
+	  more overhead,
+	  but following their API properly should avoid problems in the
+	  future.
+
+2006-02-26 17:58  ossman
+
+	* : Fix correct default device.
+
+2006-02-26 17:57  ossman
+
+	* : Hardware volume support in ALSA modules.
+
+2006-02-24 17:27  lennart
+
+	* : move scatter/gather todo item to post-0.8, since it's impact on
+	  perfomance might not even be worth the effort.
+
+2006-02-24 17:15  lennart
+
+	* : todo update
+
+2006-02-24 17:14  lennart
+
+	* : * Add new "auth-group=" parameter to protocol-native-unix
+	  * Rename "public=" argument of protocol-{esound,native} to
+	  "auth-anonymous"
+
+2006-02-24 16:29  ossman
+
+	* : Do an explicit cast to shut up gcc.
+
+2006-02-24 16:28  ossman
+
+	* : This wasn't supposed to be checked in.
+
+2006-02-24 16:28  ossman
+
+	* : Wrong variable used for port.
+
+2006-02-24 16:27  ossman
+
+	* : Tweak the handling of missing credential support so that we
+	  minimise non-POSIX
+	  headers in our headers.
+
+2006-02-24 15:12  lennart
+
+	* : add support for authentication using SCM_CREDENTIALS
+
+2006-02-24 10:18  ossman
+
+	* : Call correct function.
+
+2006-02-24 10:18  ossman
+
+	* : Make local function static.
+
+2006-02-24 10:17  ossman
+
+	* : Hardware sink mute support.
+
+2006-02-24 09:12  ossman
+
+	* : IGAIN is a better choice than IMIX for source volume.
+
+2006-02-24 01:07  lennart
+
+	* : todo update
+
+2006-02-24 00:49  lennart
+
+	* : todo update
+
+2006-02-24 00:49  lennart
+
+	* : add a few more validity checks to protocol-esound
+
+2006-02-23 12:06  ossman
+
+	* : Some new additions were mislabeled as '\since 0.9'.
+
+2006-02-23 12:04  ossman
+
+	* : Mute switch for sinks and sources. This is independent of the
+	  volume
+	  setting (similar to ALSA).
+
+2006-02-23 12:00  ossman
+
+	* : update todo
+
+2006-02-23 09:45  ossman
+
+	* : update todo
+
+2006-02-23 09:44  ossman
+
+	* : Hardware source volume support.
+
+2006-02-23 09:37  ossman
+
+	* : inet_pton expects in[6]_addr structures, nothing else.
+
+2006-02-23 09:30  ossman
+
+	* : Add inet_pton emulation for platforms that lack it. Only
+	  support IPv4 at
+	  this point.
+
+2006-02-23 09:28  ossman
+
+	* : Update hardware volume to a correct initial value.
+
+2006-02-23 09:08  ossman
+
+	* : Wrong function name.
+
+2006-02-23 09:07  ossman
+
+	* : Make sure hardware volume gets a correct initial value.
+
+2006-02-23 08:59  ossman
+
+	* : Hardware source volume support in OSS.
+
+2006-02-23 02:29  lennart
+
+	* : update todo
+
+2006-02-23 02:29  lennart
+
+	* : really ignore pabrowse
+
+2006-02-23 02:28  lennart
+
+	* : ignore pabrowse
+
+2006-02-23 02:27  lennart
+
+	* : change pa_log() and friends to not require a trailing \n on all
+	  logged strings
+
+2006-02-23 01:24  lennart
+
+	* : simplify tagstruct creation
+
+2006-02-23 01:17  lennart
+
+	* : fix source volume adjustment: copy memchunk before changing the
+	  volume of it
+
+2006-02-22 21:02  lennart
+
+	* : enforce maximum memblockq length for clients
+
+2006-02-22 20:45  lennart
+
+	* : update todo
+
+2006-02-22 20:44  lennart
+
+	* : add listen= parameter to tcp protocol modules
+
+2006-02-22 20:14  lennart
+
+	* : todo update
+
+2006-02-22 20:14  lennart
+
+	* : pkg-config update
+
+2006-02-22 20:11  lennart
+
+	* : revive howl support
+
+2006-02-22 19:00  lennart
+
+	* : unbreak Makefile.am
+
+2006-02-22 18:59  lennart
+
+	* : todo test
+
+2006-02-22 18:54  lennart
+
+	* : rework parameter validity checking in protocol-native server
+	  side
+
+2006-02-22 18:43  lennart
+
+	* : todo update
+
+2006-02-22 15:36  ossman
+
+	* : Wrong userdata used to init operation.
+
+2006-02-22 14:11  ossman
+
+	* : Support for setting volume on sources.
+
+2006-02-22 09:39  ossman
+
+	* : Remove polyplib-error and polyplib-mainloop for requirements.
+
+2006-02-22 00:06  lennart
+
+	* : todo update - outline what i consider pre-0.8 and post-0.8
+	  issues
+
+2006-02-21 23:56  lennart
+
+	* : add hw info to description for oss-mmap, too
+
+2006-02-21 23:40  lennart
+
+	* : include hw description gathered from /dev/sndstat in
+	  sink/source description string
+
+2006-02-21 23:34  lennart
+
+	* : add new utility function pa_endswith()
+
+2006-02-21 23:34  lennart
+
+	* : remove left-over log line in protocol-esound.c
+
+2006-02-21 20:28  lennart
+
+	* : todo update
+
+2006-02-21 16:35  ossman
+
+	* : update todo
+
+2006-02-21 16:35  ossman
+
+	* : Hardware volume support on Windows.
+
+2006-02-21 01:22  lennart
+
+	* : fix pacat
+
+2006-02-21 01:09  lennart
+
+	* : todo update
+
+2006-02-21 01:08  lennart
+
+	* : * Don't build seperate ipv4/ipv6 versions of the protocol
+	  plugins
+	  * Instead try IPv6 and if that fails fall back to IPv4
+
+2006-02-21 00:37  lennart
+
+	* : todo update
+
+2006-02-21 00:37  lennart
+
+	* : * Get rid of libpolyp-mainloop
+	  * Remove pkg-config file of polyplib-error
+
+2006-02-21 00:16  lennart
+
+	* : todo update
+
+2006-02-21 00:14  lennart
+
+	* : add hw volume control for module-oss-mmap
+
+2006-02-20 23:59  lennart
+
+	* : todo update
+
+2006-02-20 23:58  lennart
+
+	* : disable SIGPIPE before calling pa_core_new(), this way the
+	  warning message is not printed
+
+2006-02-20 23:50  lennart
+
+	* : build defer() function in src/polyp/mainloop-signal.c only on
+	  win32
+
+2006-02-20 23:47  lennart
+
+	* : fix snd_pcm_hw_params_set_rate_near() usage
+
+2006-02-20 23:40  lennart
+
+	* : build dllmain.c only on win32 (makes gcc shut up a little more)
+
+2006-02-20 23:32  lennart
+
+	* : todo update
+
+2006-02-20 23:32  lennart
+
+	* : improve error checking in simple API
+
+2006-02-20 23:31  lennart
+
+	* : add validity check for the "server" parameter of
+	  pa_context_connect()
+
+2006-02-20 23:30  lennart
+
+	* : fix yet another pa_context_connect() occurance with regards to
+	  the flags parameter
+
+2006-02-20 23:30  lennart
+
+	* : remove a superfluous log line
+
+2006-02-20 23:29  lennart
+
+	* : change calls of pa_context_connect() to pass flags arugment
+	  correctly
+
+2006-02-20 22:41  lennart
+
+	* : fix moddir
+
+2006-02-20 22:41  lennart
+
+	* : * modify pa_context_exit_daemon() to return a pa_operation
+	  object
+	  * add callback prototypes to all introspection functions in
+	  client lib
+	  * add proper validity checking and error handling to all
+	  functions in the client lib
+	  * other minor cleanups
+	  * todo update
+
+2006-02-20 17:09  lennart
+
+	* : * a lot of doxygen updates
+	  * s/pa_operation_callback/pa_operation_callback_t/g
+	  * add more typedefs for function prototypes
+	  * add API to query the channel map used by a pa_stream
+
+2006-02-20 16:34  lennart
+
+	* : todo update
+
+2006-02-20 16:31  lennart
+
+	* : add doxygen docs for channel map
+
+2006-02-20 16:24  ossman
+
+	* : Add aligment fix in esound to todo.
+
+2006-02-20 16:23  lennart
+
+	* : minor doxygen fixes
+
+2006-02-20 16:21  ossman
+
+	* : Fix some warnings by making sure we have the right signedness
+	  on things.
+
+2006-02-20 16:13  ossman
+
+	* : Hardware volume support for Solaris.
+
+2006-02-20 16:10  lennart
+
+	* : replace "spawn" parameter of pa_context_new() with a proper
+	  flags parameter
+
+2006-02-20 16:09  lennart
+
+	* : explcitily cast strings to make gcc shut up
+
+2006-02-20 16:01  lennart
+
+	* : * Make typdefs for the pa_context callback prototypes
+	  * s/pa_context_notify_cb/pa_context_notify_cb_t/g
+
+2006-02-20 15:55  lennart
+
+	* : remove cdecl.h from doxygen docs
+
+2006-02-20 13:59  ossman
+
+	* : Fixes for the Solaris detection.
+
+2006-02-20 12:49  ossman
+
+	* : Add mute switch to todo.
+
+2006-02-20 12:47  ossman
+
+	* : Detect support for Windows' waveout.
+
+2006-02-20 12:42  ossman
+
+	* : Detect support for Solaris (/dev/audio).
+
+2006-02-20 10:40  ossman
+
+	* : Remove a debug fprintf that was left in.
+
+2006-02-20 10:38  ossman
+
+	* : util.c uses some socket functions so we need winsock on
+	  Windows.
+
+2006-02-20 04:06  lennart
+
+	* : update TODO
+
+2006-02-20 04:05  lennart
+
+	* : make doxygen ignore PA_CDECL_BEGIN/PA_CDECL_END
+
+2006-02-20 04:05  lennart
+
+	* : 1) Add flexible seeking support (including absolute) for memory
+	  block queues and playback streams
+	  2) Add support to synchronize multiple playback streams
+	  3) add two tests for 1) and 2)
+	  4) s/PA_ERROR/PA_ERR/
+	  5) s/PA_ERROR_OK/PA_OK/
+	  6) update simple API to deal properly with new peek/drop
+	  recording API
+	  7) add beginnings of proper validity checking on API calls in
+	  client libs (needs to be extended)
+	  8) report playback buffer overflows/underflows to the client
+	  9) move client side recording mcalign stuff into the memblockq
+	  10) create typedefs for a bunch of API callback prototypes
+	  11) simplify handling of HUP poll() events
+	  
+	  Yes, i know, it's usually better to commit a lot of small patches
+	  instead of a
+	  single big one. In this case however, this would have
+	  contradicted the other
+	  rule: never commit broken or incomplete stuff.
+	  
+	  *** This stuff needs a lot of additional testing! ***
+
+2006-02-18 14:58  lennart
+
+	* : update todo
+
+2006-02-17 17:00  ossman
+
+	* : Properly clear members during init.
+
+2006-02-17 16:48  ossman
+
+	* : That's a delta parameter, not a size parameter.
+
+2006-02-17 15:42  ossman
+
+	* : Have a memblock queue on the client side during recording. This
+	  makes the
+	  record callback optional in stead of mandatory.
+	  
+	  For applications that wish to retain the old behaviour, simply
+	  call
+	  pa_stream_peek() followed by pa_stream_drop() in the callback.
+
+2006-02-17 13:20  ossman
+
+	* : Ignore generated win32 binaries.
+
+2006-02-17 13:18  ossman
+
+	* : Module needs stuff in libpolypcore.
+
+2006-02-17 13:18  ossman
+
+	* : Fix path to poll.h.
+
+2006-02-17 13:11  ossman
+
+	* : Fix typo in #ifndef.
+
+2006-02-17 13:08  ossman
+
+	* : Integrate error routines into libpolyp. Not much point in
+	  having this as a
+	  separate library.
+
+2006-02-17 12:34  ossman
+
+	* : Make sure that all polypcore headers are installed.
+
+2006-02-17 12:10  ossman
+
+	* : Cleaned up the includes after the restructuring. Indicate which
+	  headers are
+	  public and which are internal through <> vs "".
+
+2006-02-17 09:12  ossman
+
+	* : Move the util libs to the modules section since they're in that
+	  directory.
+
+2006-02-17 00:11  lennart
+
+	* : fix doxygen
+
+2006-02-16 23:48  lennart
+
+	* : include header files in simple.h with <> instead of ""
+
+2006-02-16 23:13  lennart
+
+	* : * rename polypcore/subscribe.[ch] to
+	  polypcore/core-subscribe.[ch] to avoid confusion with
+	  polyp/subscribe.[ch]
+	  * same for scache.[ch]
+
+2006-02-16 23:12  lennart
+
+	* : shorten include list of utils a little
+
+2006-02-16 23:11  lennart
+
+	* : * drop polylib prefix from #define
+	  * include error.h from polypaudio.h
+
+2006-02-16 23:10  lennart
+
+	* : fix compilation of simple API
+
+2006-02-16 22:43  lennart
+
+	* : drop polyplib- prefix from client library files
+
+2006-02-16 22:34  lennart
+
+	* : make channel naming somewhat RFC2551 compliant
+
+2006-02-16 22:11  lennart
+
+	* : add a bunch of simple Makefile in the subdirs, just to make
+	  compilation with emacs easier
+	  
+	  they are not intended to be distributed or anything.
+
+2006-02-16 22:08  lennart
+
+	* : move alsa-util.[ch], oss-util.[ch] and howl-wrap.[ch] to the
+	  modules directory since they are just helper source used
+	  exclusively by the modules
+
+2006-02-16 21:37  lennart
+
+	* : * svn:ignore some files
+	  * move configuration files to the directories they belong to
+	  * built esd-compat.sh in the src/ dir
+
+2006-02-16 19:19  ossman
+
+	* : Reorganised the source tree. We now have src/ with a couple of
+	  subdirs:
+	  
+	  * daemon/ - Contains the files specific to the polypaudio daemon.
+	  * modules/ - All loadable modules.
+	  * polyp/ - Files that are part of the public, application
+	  interface or
+	  are only used in libpolyp.
+	  * polypcore/ - All other shared files.
+	  * tests/ - Test programs.
+	  * utils/ - Utility programs.
+
+2006-02-16 01:17  lennart
+
+	* : add simple hardware auto detection module
+
+2006-02-16 01:16  lennart
+
+	* : Add HAVE_ALSA and HAVE_OSS defines
+
+2006-02-16 01:16  lennart
+
+	* : allow polypaudio to startup without any enabled module
+
+2006-02-16 01:15  lennart
+
+	* : print ALSA error messages on failure
+
+2006-02-16 01:14  lennart
+
+	* : fix warning text
+
+2006-02-15 23:44  lennart
+
+	* : todo update
+
+2006-02-14 13:41  ossman
+
+	* : Fix api. Setting volume is done through a pa_cvolume struct,
+	  not a pa_volume_t
+	  scalar.
+
+2006-02-13 13:37  ossman
+
+	* : Add function to "wake up", i.e. interrupt, a running poll().
+	  This is needed
+	  when having the poll() in a separate thread.
+
+2006-02-13 13:28  ossman
+
+	* : Split mainloop_iterate() into three, distinct parts. Allows for
+	  more flexible
+	  use, like having the poll() run in a separate thread.
+
+2006-02-10 12:05  ossman
+
+	* : Fix some new alignment bugs in the tagstruct handling.
+
+2006-02-10 08:44  ossman
+
+	* : Install the new headers for channels and volume.
+
+2006-02-03 14:39  ossman
+
+	* : Let's have just one endian conversion macro suite.
+
+2006-02-03 14:36  ossman
+
+	* : Fix endian conversion macros and reformat them to be a bit more
+	  readable.
+
+2006-02-03 13:33  ossman
+
+	* : Use defines and not hard coded values for volume levels. Caused
+	  incorrect
+	  volume levels for all esound clients that changed the volume.
+
+2006-02-03 12:23  ossman
+
+	* : Volume adjustment must be done _after_ dropping the chunk since
+	  drop will
+	  reject a modified chunk.
+
+2006-02-03 09:14  ossman
+
+	* : Reverting an incorrect checkin.
+
+2006-01-30 12:58  ossman
+
+	* : Fixes for the new infrastructure so that the waveout module
+	  compiles.
+
+2006-01-30 12:21  ossman
+
+	* : Fixes for the new infrastructure so that the solaris module
+	  compiles.
+
+2006-01-30 11:49  ossman
+
+	* : Breaks missing from conversion to a switch statement.
+
+2006-01-30 11:38  ossman
+
+	* : Print an error message before aborting.
+
+2006-01-28 01:07  lennart
+
+	* : * add variadic function pa_tagstruct_get() and
+	  pa_tagstruct_put() for parsing/constructing tagstruct records
+	  * convert some of the tagstruct uses to this new API
+
+2006-01-27 16:30  lennart
+
+	* : add support more for up to 16 auxiliary channel positions
+
+2006-01-27 16:25  lennart
+
+	* : Mega patch:
+	  
+	  * implement inner loops using liboil
+	  * drop "typeid" stuff
+	  * add support for channel maps
+	  * add support for seperate volumes per channel
+	  * add support for hardware mixer settings (only module-oss
+	  implements this for now)
+	  * fix a lot of types for _t suffix
+
+2006-01-27 14:52  ossman
+
+	* : Remove the version number from the module directory. Makes life
+	  easier
+	  for any external projects that need to use that directory.
+
+2006-01-25 17:27  ossman
+
+	* : We get the -lcap through LIBS, so no need for CAP_LIBS.
+
+2006-01-25 17:25  ossman
+
+	* : Use AC_SEARCH_LIBS instead of AC_CHECK_LIBS since it is a lot
+	  smarter and
+	  doesn't add unnecessary libs.
+
+2006-01-20 10:16  ossman
+
+	* : Fix so that peer name can be determined on Windows. We do not
+	  support console
+	  on Windows at this time so we do not have to worry about that
+	  right now.
+
+2006-01-19 10:26  ossman
+
+	* : Open the device in non-blocking mode.
+
+2006-01-19 10:24  ossman
+
+	* : Ugly hack to get around Solaris particularly brain dead sound
+	  system.
+	  The system has a buffer size of 0.5 MB which cannot be changed.
+	  We emulate
+	  a smaller buffer through some SIGPOLL trickery.
+
+2006-01-16 13:35  ossman
+
+	* : We need a logical, not an arithmetic shift here. So use
+	  unsigned types when
+	  doing the shifting.
+
+2006-01-12 17:12  ossman
+
+	* : Under win32 we freed the wrong pointer causing a segmentation
+	  fault.
+
+2006-01-12 16:11  ossman
+
+	* : Some crappy hardware generate noise on the output when reading
+	  input. To
+	  avoid triggering this needlesly we tweak the algorithm a bit to
+	  avoid reading
+	  when nothing is connected to the source.
+
+2006-01-12 16:09  ossman
+
+	* : Some drivers (via82xx) doesn't start recording until we read
+	  something.
+	  This is ugly, but unfortunately required.
+
+2006-01-12 16:08  ossman
+
+	* : Used 0 as an invalid fd. Changed to -1.
+
+2006-01-12 16:04  ossman
+
+	* : If the card couldn't do duplex when required we would
+	  incorrectly return
+	  success from this function with a closed fd.
+
+2006-01-11 14:36  ossman
+
+	* : Many (FSF and Sun at least) have interpreted the C99 standard
+	  in a way
+	  that int64_t and similar types are only defined on 64 bit
+	  platforms. Using
+	  -std=gnu99 lifts this rather silly restriction.
+	  
+	  The HAVE_NETLINK define is not generated anywhere in our
+	  configure. So it
+	  was rather pointless to use it for any test.
+
+2006-01-11 14:13  ossman
+
+	* : Remove the old compiler flag test now that we have a new shiny
+	  one.
+
+2006-01-11 14:12  ossman
+
+	* : Our makefiles work just fine on older automakes (1.7 tested).
+	  Let's keep
+	  this out until we run into something that doesn't work.
+
+2006-01-11 01:17  lennart
+
+	* : * remove a lot of compiler warnings introduced by using some
+	  new GCC flags
+	  * add typedefs for public structs and enums and drop the
+	  struct/enum prefixs from all uses where it makes sense
+
+2006-01-10 18:04  lennart
+
+	* : build system updates, including support for some newer GCC
+	  options
+
+2006-01-10 17:51  lennart
+
+	* : Merge Pierre's changes
+
+2006-01-09 12:38  lennart
+
+	* : improve sync clock change
+
+2006-01-09 12:37  lennart
+
+	* : fix synchronized clock change
+
+2005-09-16 00:11  lennart
+
+	* : fix alsa memory leak
+
+2005-09-16 00:11  lennart
+
+	* : chance ALSA sink to use "default" as default alsa device
+
+2005-09-16 00:09  lennart
+
+	* : initialize running_as_daemon
+
+2005-09-16 00:08  lennart
+
+	* : increase number of allowed connections
+
+2005-09-16 00:08  lennart
+
+	* : add new field running_as_daemon to pa_core
+
+2005-09-16 00:04  lennart
+
+	* : add pa_sound_file_too_big_to_cache()
+
+2005-09-16 00:03  lennart
+
+	* : handle float values in sound files sensibly
+
+2005-09-16 00:02  lennart
+
+	* : print a nice message when libltdl is missing
+
+2005-09-16 00:01  lennart
+
+	* :
+
+2005-09-16 00:00  lennart
+
+	* : build fix
+
+2005-09-16 00:00  lennart
+
+	* : bail out if no sink is defined
+
+2005-09-15 23:50  lennart
+
+	* : alter alsa periods number
+
+2005-09-15 23:50  lennart
+
+	* : handle EOF in ioline.c
+
+2005-09-15 23:48  lennart
+
+	* : remove esound protocol directory on unload of
+	  module-protocol-esound
+
+2005-09-15 23:47  lennart
+
+	* : fix start_timeout()
+
+2005-09-15 23:46  lennart
+
+	* : add libsamplerate/libsndfile CFLAGS
+
+2005-01-12 20:22  lennart
+
+	* : * fix LIRC configuration
+
+2005-01-12 18:51  lennart
+
+	* : * extend HTTP module
+
+2005-01-12 17:37  lennart
+
+	* : * make pa_sample_spec_snprint return point to written string
+	  * first try of a http module
+
+2005-01-11 20:47  lennart
+
+	* : * new environment variable $POLYP_LOG
+	  * fix connection establishing algorithm
+	  * add timeout for establishing connections
+	  * add fqdn to the server directive to connect to in browse API
+	  * quieten ESOUND protocol
+
+2005-01-09 01:11  lennart
+
+	* : * add new module module-mmkbd-evdev
+	  * fix stupid error message in main.c
+
+2005-01-08 22:32  lennart
+
+	* : * todo update
+	  * lirc warning fix
+	  * c++ compat
+
+2005-01-08 21:43  lennart
+
+	* : * increase timeout in pacmd
+
+2005-01-08 21:40  lennart
+
+	* : * make lirc program name configurable
+
+2005-01-08 21:36  lennart
+
+	* : * add new module for LIRC volume control
+
+2005-01-08 01:19  lennart
+
+	* : change doxygen build stuff for better compat with moderm
+	  automakes
+
+2005-01-08 01:16  lennart
+
+	* : update todo list
+
+2005-01-08 01:15  lennart
+
+	* : * add support for asynchronous name resolution
+	  * remove directories listing from doxygen
+
+2005-01-06 01:07  lennart
+
+	* : minor fixes
+
+2004-12-18 20:45  lennart
+
+	* : fix conditional X11 compilation
+
+2004-12-16 20:08  lennart
+
+	* : gcc 2.95 compat
+
+2004-12-15 01:17  lennart
+
+	* : * fix error message when starting polypaudio while it is
+	  already running
+
+2004-12-15 01:04  lennart
+
+	* : cleanup zeroconf service names
+
+2004-12-15 01:02  lennart
+
+	* : * Publish server info in mDNS in addition to sinks/sources
+	  * Split off address parser
+	  * Add port= argument to module-zeroconf-publish
+
+2004-12-14 14:20  lennart
+
+	* : do mor daemonizing work
+
+2004-12-14 14:09  lennart
+
+	* : * fix daemonizing
+
+2004-12-14 13:17  lennart
+
+	* : * prepare polyplib-browse for installation
+
+2004-12-12 22:58  lennart
+
+	* : * fix include file names in installed header files
+	  * add browsing API
+	  * add new tool pabrowse
+	  * add typeid subsystem
+	  * bump API version
+	  * split off random.c
+	  * add an identification cookie
+
+2004-12-12 15:56  lennart
+
+	* : * complete zeroconf publisher
+	  * make cli.c shut up unless run with -v
+
+2004-12-11 16:48  lennart
+
+	* : * fix alsa initialisation
+	  * add some missing zeroconf files
+	  * make module-match shut up a bit
+
+2004-12-11 00:10  lennart
+
+	* : * add first part of zeroconf publisher
+	  * bump version to 0.7.1.
+	  * improve logging subsystem (introducing log levels)
+	  * remove verbose flag on cli
+	  * add new API pa_sample_format_to_string()
+	  * replace strtol() by usages of pa_atou() and pa_atoi()
+
+2004-11-27 18:50  lennart
+
+	* : * really fix integer only resampler
+
+2004-11-27 14:00  lennart
+
+	* : * fix autospawn lock file creation
+
+2004-11-26 00:07  lennart
+
+	* : * use setresuid() instead of setruid() if available
+	  * if fix for the non-fp resampler
+
+2004-11-23 13:34  lennart
+
+	* : * install fix
+	  * use syslog as standard log target when run from esdcompat.sh
+
+2004-11-23 13:00  lennart
+
+	* : * some fixes for MacOS X by Conrad Parker
+	  * Minor build fixes
+
+2004-11-21 22:25  lennart
+
+	* : prepare for release
+
+2004-11-21 22:07  lennart
+
+	* : Documentation updates
+
+2004-11-21 21:31  lennart
+
+	* : Comment some more files
+
+2004-11-21 19:47  lennart
+
+	* : * make --help fit in 80 columns terminal
+
+2004-11-21 19:40  lennart
+
+	* : * update todo
+
+2004-11-21 19:39  lennart
+
+	* : calculate buffer sizes from sample spec
+
+2004-11-21 18:41  lennart
+
+	* : * create parec as link to pacat
+
+2004-11-21 18:15  lennart
+
+	* : * new tool pacmd
+	  * fix pacat/paplay/pactl for new API version
+	  * fix memory leak in pa_ioline
+
+2004-11-21 17:06  lennart
+
+	* : bump version number
+
+2004-11-21 17:02  lennart
+
+	* : * add some missing "static"s
+	  * include libltdl in distribution
+
+2004-11-21 16:27  lennart
+
+	* : fixes for bugs found when compiling with gcc 2.95
+
+2004-11-21 15:22  lennart
+
+	* : * fix the trivial resampler
+
+2004-11-21 13:18  lennart
+
+	* : * PID and lock file fixes
+
+2004-11-21 02:43  lennart
+
+	* : some commenting
+
+2004-11-21 00:04  lennart
+
+	* : * some minor pid file fixes
+
+2004-11-20 23:48  lennart
+
+	* : * remove autospawn lock file usage
+	  * fix some compiler warnings
+	  * implement PID file support
+
+2004-11-20 22:17  lennart
+
+	* : option to use ALSA default fragment number and size
+
+2004-11-20 16:23  lennart
+
+	* : * add µlaw/alaw support
+	  * abstracted resampler API
+	  * add integer-only resampler ("trivial")
+	  * show used resampler wherever useful
+	  * add mixing/volume adjusting for float32ne and u8
+
+2004-11-18 20:50  lennart
+
+	* : * some iochannel fixes
+	  * introduce reference counting in ioline
+	  * fix memory leak in socket-client.c
+	  * fix double-free error in protocol-esound.c
+
+2004-11-18 00:28  lennart
+
+	* : limit the number of concurrent connections for all four
+	  protocols
+	  kick a client if it doesn't authenticate within 5s on ESD and
+	  native protocol
+
+2004-11-17 23:11  lennart
+
+	* : minor fixes for latency interpolation
+
+2004-11-17 03:10  lennart
+
+	* : todo update
+
+2004-11-17 01:22  lennart
+
+	* : fix module-tunnel.c
+
+2004-11-17 01:22  lennart
+
+	* : update todo list
+
+2004-11-17 01:04  lennart
+
+	* : * fix a long standing bug in ioline.c (large prints failed)
+	  * fix a bug regarding ipv6 binding
+
+2004-11-17 00:05  lennart
+
+	* : * some commenting work
+	  * add new field "read_only" to memory blocks
+	  * add new API function pa_context_get_server()
+	  * filter capture data through mcalign on client
+	  * make module-tunnel use pa_socket_client_new_string() instead of
+	  using pa_resolve_server() directly.
+	  * remove pa_resolve_server()
+	  * remove debug.h and replace it by a macro definition on the gcc
+	  command line
+	  * some strbuf cleanups
+	  * small fixes in pa_stream for cleanup when server dies
+	  * new CLI command "load-sample-dir-lazy"
+	  * send FQDN as part of server info
+	  * rework mcalign, this time with memory block merging
+	  * fix iochannel cleanup when connection dies
+	  * check getaddrinfo() results
+
+2004-11-14 14:59  lennart
+
+	* : todo update
+
+2004-11-14 14:58  lennart
+
+	* : Make the whole stuff LGPL only
+
+2004-11-14 02:36  lennart
+
+	* : * implement module-esound-sink
+
+2004-11-14 00:04  lennart
+
+	* : * remove as superfluous assert() in polyplib-stream which broke
+	  the gstreamer plugin
+	  * fix module-tunnel meta info
+
+2004-11-12 00:42  lennart
+
+	* : remove a debug message
+
+2004-11-11 21:18  lennart
+
+	* : add username to runtime directory name in /tmp/
+	  rework autospawning code and x11 credential publishing
+	  add support for IPv6
+	  reenable LOWDELAY for tcp sockets
+
+2004-11-09 23:19  lennart
+
+	* : split out x11prop.[ch]
+	  add client support for auth daemon info in X display
+
+2004-11-09 01:04  lennart
+
+	* : use fqdn in module-x11-publish as well
+
+2004-11-09 00:14  lennart
+
+	* : export FQDN instead of hostname
+
+2004-11-08 23:53  lennart
+
+	* : build pax11publish only when X11 is available
+
+2004-11-08 23:48  lennart
+
+	* : implemented pax11publish.c
+
+2004-11-07 20:48  lennart
+
+	* : * Look for M4 in configure.ac
+	  * Share auth cookies in module-tunnel.c, module-x11-publish.c and
+	  native-protocol.c
+	  * disable TCP_NODELAY
+	  * publish auth cookie in module-x11-publish
+
+2004-11-04 21:27  lennart
+
+	* : some commenting
+	  change alogrithm for checking for configuration files
+
+2004-11-04 20:01  lennart
+
+	* : compilation fix
+
+2004-11-04 18:57  lennart
+
+	* : add some more comments
+
+2004-11-04 18:56  lennart
+
+	* : fix client libaryr in case no latency interpolation is required
+
+2004-11-01 23:37  lennart
+
+	* : Apply Joe Marcus Clarke's FreeBSD patches
+
+2004-10-30 01:55  lennart
+
+	* : some updates for pa_hashmap
+	  add property infrastructure
+	  add module module-x11-publish
+	  allow ldpreloading of all modules
+	  abstract x11wrap from module-x11-bell
+
+2004-10-29 13:50  lennart
+
+	* : use setreuid() instead of setuid()/seteuid() when dropping root
+	  chdir to / on daemon startup
+	  (both are suggestions by alan cox)
+
+2004-10-28 14:41  lennart
+
+	* : require newer libsndfile
+	  update todo file
+
+2004-10-27 22:43  lennart
+
+	* : prepare next release 0.6
+
+2004-10-27 16:23  lennart
+
+	* : make autoload list use idxset
+
+2004-10-27 14:46  lennart
+
+	* : minor updates
+
+2004-10-27 14:45  lennart
+
+	* : update todo
+
+2004-10-27 14:42  lennart
+
+	* : add null sink
+
+2004-10-27 14:14  lennart
+
+	* : latency calculation fix
+
+2004-10-27 01:09  lennart
+
+	* : two latency interpolation fixes
+
+2004-10-27 00:10  lennart
+
+	* : support for latency interpolation
+
+2004-10-24 00:48  lennart
+
+	* : add user volume API
+
+2004-10-12 21:52  lennart
+
+	* : gcc 2.95 fix
+	  default.pa fix
+
+2004-10-11 16:21  lennart
+
+	* : enlarge default buffers
+
+2004-10-01 12:48  lennart
+
+	* : todo update
+
+2004-09-29 22:04  lennart
+
+	* : add sample spec parameters to pacat
+
+2004-09-29 20:13  lennart
+
+	* : Add support for libwrap
+
+2004-09-29 19:13  lennart
+
+	* : really fix API version API
+
+2004-09-29 17:38  lennart
+
+	* : renamed module-tunnel to module-tunnel-sink
+	  new module module-tunnel-source
+	  fix recording
+
+2004-09-28 23:52  lennart
+
+	* : fix module-tunnel for to aborting when connection fails
+
+2004-09-28 23:49  lennart
+
+	* : add latency measurement support to tunnel module
+
+2004-09-28 22:47  lennart
+
+	* : Add module-tunnel
+	  add proper locking when autospawning a daemon
+
+2004-09-27 21:05  lennart
+
+	* : try to use file sample type for cache entries and play-file
+	  playback
+	  allow paplay to use STDIN
+	  add new module: module-match
+
+2004-09-27 17:21  lennart
+
+	* : really fix cpu usage when using esddsp with polypaudio
+
+2004-09-27 15:40  lennart
+
+	* : add POSIX locking to authkey.c
+	  fix esound protocol cpu consumption when finishing a stream
+
+2004-09-26 22:27  lennart
+
+	* : add new tool paplay
+
+2004-09-26 17:02  lennart
+
+	* : bum version number
+	  add new macro PA_API_VERSION for preprocessor level conditional
+	  compiling
+	  add new native APIs:
+	  - counter
+	  - cork & flush for record streams
+	  - add flags parameters to pa_stream_connect_xx()
+	  - new prebuf command
+	  - time api, and total latency calculator
+	  - return sample spec
+	  ability to cork source output streams
+	  dump server status on SIGHUP to syslog
+	  show sink input/source outputs status in cli-text.c
+	  don't flush esound output buffer when client disconnects
+	  move version api to polyplib-version.h
+
+2004-09-23 23:26  lennart
+
+	* : bump version number and update documentation
+
+2004-09-23 22:42  lennart
+
+	* : allow high priority scheduling only for users in group
+	  "realtime"
+
+2004-09-23 20:42  lennart
+
+	* : ignore default.in
+
+2004-09-23 20:41  lennart
+
+	* : place full binary path in default.pa's shebang line
+
+2004-09-23 16:33  lennart
+
+	* : Fix a bug in the build system reported by Iain Fothergill
+
+2004-09-23 15:57  lennart
+
+	* : OSX protability patches from Conrad Parker
+
+2004-09-23 15:47  lennart
+
+	* : add support for capabilities
+
+2004-09-21 20:46  lennart
+
+	* : improve esound module
+
+2004-09-21 19:40  lennart
+
+	* : support for esd arguments: -spawnpid and -spawnfd
+
+2004-09-21 19:00  lennart
+
+	* : add noop implementation of standby/resume ESOUND commands
+
+2004-09-21 18:43  lennart
+
+	* : show which command is unknown in esound protocol
+	  fix esdcompat.sh
+
+2004-09-20 22:22  lennart
+
+	* : add link to mailing list
+
+2004-09-20 21:03  lennart
+
+	* : build updates
+
+2004-09-20 20:52  lennart
+
+	* : documentation update
+
+2004-09-20 19:37  lennart
+
+	* : fix xmms spawn bug
+
+2004-09-20 17:19  lennart
+
+	* : update module descriptions
+
+2004-09-19 23:12  lennart
+
+	* : remove obnoxious assert from module-combine
+	  tagstruct: add support for NULL strings
+	  improve pactl
+	  correct pa_bytes_snprint()
+	  pa_sample_spec_snprint(): don't fail on invalid sample spec
+	  rename PA_SAMPLE_SNPRINT_MAX_LENGTH to PA_SAMPLE_SPEC_SNPRINT_MAX
+
+2004-09-19 00:03  lennart
+
+	* : add new function pa_mainloop_deferred_pending()
+
+2004-09-18 23:40  lennart
+
+	* : add pacat command line parsing
+
+2004-09-18 12:38  lennart
+
+	* : work around gcc 2.95 limitation
+
+2004-09-18 12:28  lennart
+
+	* : work around gcc 2.95 limitation
+
+2004-09-17 23:45  lennart
+
+	* : minor stuff
+
+2004-09-17 21:17  lennart
+
+	* : change sysconf path
+
+2004-09-17 21:10  lennart
+
+	* : add resample_method option module-combine
+
+2004-09-17 20:43  lennart
+
+	* : add --resample-method argument
+
+2004-09-17 20:08  lennart
+
+	* : rename some more
+
+2004-09-17 20:06  lennart
+
+	* : rename some stuff
+
+2004-09-17 19:52  lennart
+
+	* : make daemon.conf/client.conf autogenerated
+
+2004-09-17 19:45  lennart
+
+	* : new configuration subsystem
+
+2004-09-16 23:43  lennart
+
+	* : update according to autoscan
+
+2004-09-16 23:34  lennart
+
+	* : gcc 2.95 compatibility, take 2
+
+2004-09-16 22:44  lennart
+
+	* : fix two gcc 2.95 incompatibilities
+
+2004-09-16 22:07  lennart
+
+	* : add support for subscribing to autoload table changes
+	  fix module-combine so that the sample rate of at least one
+	  streams is not changed from the original
+
+2004-09-16 00:05  lennart
+
+	* : add input latency measurement
+	  add GETOSPACE support to module-oss
+
+2004-09-15 19:16  lennart
+
+	* : work around C99/GCC incompatibility
+	  native protocol:
+	  add "local" field to pa_context
+	  add volume paramter to pa_stream_connect_playback
+	  add support for renaming streams/clients
+	  support lazy samples
+	  add functions to kill clients/source inputs/sink outputs
+	  add functions for loading/unloading modules
+	  add autoload management API
+
+2004-09-15 14:05  lennart
+
+	* : remove auto-load-sample stuff
+	  introduce "lazy samples"
+
+2004-09-15 13:03  lennart
+
+	* : correct autospawning
+
+2004-09-14 23:08  lennart
+
+	* : make module-combine autoloadable
+	  clean up cli language
+	  introduce lazy sample cache
+
+2004-09-14 20:53  lennart
+
+	* : add refernce counting for sinks, sources, sink-inputs and
+	  source-outputs
+
+2004-09-14 17:52  lennart
+
+	* : add module-combine
+	  remove option "stay-root"
+	  clean up pa_conf
+
+2004-09-13 23:28  lennart
+
+	* : new configuration subsystem
+
+2004-09-13 13:26  lennart
+
+	* : correct latency calculation
+
+2004-09-13 00:28  lennart
+
+	* : fix parsing of POLYP_SERVER environment variable
+
+2004-09-12 23:40  lennart
+
+	* : fix public= on native and esound protocol
+
+2004-09-12 23:29  lennart
+
+	* : build system update
+
+2004-09-12 19:37  lennart
+
+	* : update simple API
+
+2004-09-12 13:14  lennart
+
+	* : extend pa_usec_t to 64 bit
+
+2004-09-11 23:17  lennart
+
+	* : add modinfo support
+
+2004-09-11 00:03  lennart
+
+	* : add version number to library names
+
+2004-09-10 22:35  lennart
+
+	* : add support for module search path as command line argument
+	  protocol-native: move first data request into ack of stream
+	  creation
+	  improve mainloop API: return the number of dispatched sources on
+	  iterate()
+	  fix a resampling bug
+	  introduce network latency measurement
+	  
+	  WARNING: all these changes together may break some applications
+
+2004-09-08 00:08  lennart
+
+	* : add FAQ to homepage
+
+2004-09-07 23:01  lennart
+
+	* : date fix
+
+2004-09-07 22:40  lennart
+
+	* : documentation update
+
+2004-09-07 17:06  lennart
+
+	* : implemented new CLI command: dump
+	  add prefork() and postfork() arguments to
+	  pa_context_connect_spawn()
+
+2004-09-07 14:58  lennart
+
+	* : change the way the default sink/source is selected
+
+2004-09-06 21:55  lennart
+
+	* : add support for setting/getting default sink/source via native
+	  protocol
+
+2004-09-06 18:55  lennart
+
+	* : correct a recording bug in native protocol
+
+2004-09-06 17:47  lennart
+
+	* : add module-pipe-source
+
+2004-09-05 00:03  lennart
+
+	* : implement proper logging
+
+2004-09-04 00:27  lennart
+
+	* : add support for automatic termination of the daemon after the
+	  last client quit
+	  remove all gcc warnings
+	  add boolean types for tagstruct and modargs
+
+2004-09-03 22:44  lennart
+
+	* : add option to disallow module loading after startup
+
+2004-09-03 20:14  lennart
+
+	* : add CPU load limiter
+
+2004-09-01 22:46  lennart
+
+	* : add total sample cache size to statistics
+	  add size to sample cache entry info
+
+2004-09-01 22:36  lennart
+
+	* : make use F_CLOEXEC wherever useful
+
+2004-09-01 21:12  lennart
+
+	* : daemon auto spawn
+
+2004-09-01 17:36  lennart
+
+	* : add esd compatible startup script
+	  add default configuration script
+
+2004-09-01 15:55  lennart
+
+	* : add sound file streaming
+
+2004-09-01 15:00  lennart
+
+	* : introduce sink input and source output limits
+
+2004-09-01 13:04  lennart
+
+	* : add PA_MININFTY
+
+2004-09-01 12:51  lennart
+
+	* : cleanup comment
+
+2004-09-01 12:49  lennart
+
+	* : add \since to dB functions
+
+2004-09-01 12:48  lennart
+
+	* : add support for dB volumes
+
+2004-09-01 12:21  lennart
+
+	* : implement missing scache_get_id_by_name
+	  add some more consts to idxset
+	  add module-sine, a sine generating sink_input module
+
+2004-09-01 00:46  lennart
+
+	* : remove most -W compiler warnings
+
+2004-09-01 00:23  lennart
+
+	* : add support for SCHED_FIFO
+
+2004-08-27 19:06  lennart
+
+	* : fix module path
+
+2004-08-27 18:55  lennart
+
+	* : fix homepage script
+
+2004-08-27 18:52  lennart
+
+	* : minor fixes
+
+2004-08-27 18:41  lennart
+
+	* : readme update (licensing)
+
+2004-08-27 18:38  lennart
+
+	* : add LGPL/GPL to dist package
+
+2004-08-27 18:38  lennart
+
+	* : relicense client library to LGPL
+
+2004-08-27 17:03  lennart
+
+	* : document every polyplib function
+
+2004-08-27 16:24  lennart
+
+	* : minor cleanups
+
+2004-08-27 01:29  lennart
+
+	* : latency work
+	  major main loop bugfix
+
+2004-08-23 18:48  lennart
+
+	* : minor documentation update
+
+2004-08-22 21:13  lennart
+
+	* : new features:
+	  future cancellation
+	  corking
+	  flushing
+	  for playback streams in native protocol
+
+2004-08-20 20:30  lennart
+
+	* : add pkg config file glib12-mainloop
+
+2004-08-20 20:20  lennart
+
+	* : add support for glib12
+
+2004-08-20 13:18  lennart
+
+	* : documentation update
+
+2004-08-20 13:06  lennart
+
+	* : documentation update
+
+2004-08-20 11:08  lennart
+
+	* : doxygen fix
+
+2004-08-20 11:05  lennart
+
+	* : readme update
+
+2004-08-20 11:04  lennart
+
+	* : Doxygen stuff
+
+2004-08-20 10:54  lennart
+
+	* : build fixes
+
+2004-08-19 23:14  lennart
+
+	* : move sample cache to namereg
+	  documentation
+
+2004-08-19 06:24  lennart
+
+	* : minor stuff
+
+2004-08-18 01:00  lennart
+
+	* : add version routines to polyplib
+
+2004-08-17 19:47  lennart
+
+	* : add missing copyright headers
+
+2004-08-17 19:37  lennart
+
+	* : remove global memblock statistic variables in favor of
+	  memblock_stat objects
+
+2004-08-17 18:53  lennart
+
+	* : fix x11 build
+	  disable prebuf on drain
+
+2004-08-17 17:57  lennart
+
+	* : todo update
+
+2004-08-17 17:56  lennart
+
+	* : autoconf beefup
+	  build fixes
+
+2004-08-17 17:17  lennart
+
+	* : Documentation work
+	  add pkg-config support for GLIB main loop
+
+2004-08-17 13:30  lennart
+
+	* : remove native-common-internal
+
+2004-08-17 13:28  lennart
+
+	* : create native-common-internal.h
+
+2004-08-17 13:00  lennart
+
+	* : update todo file
+
+2004-08-17 13:00  lennart
+
+	* : make clitext to cli-text renaming complete
+
+2004-08-17 12:49  lennart
+
+	* : rename clitext to cli-text
+
+2004-08-16 20:16  lennart
+
+	* : fix sink iunput and source output stuff
+
+2004-08-16 19:55  lennart
+
+	* : add sink input/source output support to the native protocol
+
+2004-08-15 13:15  lennart
+
+	* : add support for volume manipulation
+
+2004-08-15 00:02  lennart
+
+	* : proper ref counting for more objects
+	  some documentation update
+
+2004-08-14 20:25  lennart
+
+	* : implement proper refcounting in polyplib
+	  split polyplib to multiple modules
+	  add some prelimenary documentation
+	  add doxygen support
+
+2004-08-13 16:05  lennart
+
+	* : rename polyplib-sample to polyplib-scache
+
+2004-08-13 13:27  lennart
+
+	* : add polyplib-sample.c
+
+2004-08-13 13:26  lennart
+
+	* : add polyplib-sample
+
+2004-08-13 13:24  lennart
+
+	* : add internal header file for polyplib
+
+2004-08-13 13:22  lennart
+
+	* : split polyplib.h
+
+2004-08-13 13:14  lennart
+
+	* : some preliminary cleanup
+
+2004-08-12 23:27  lennart
+
+	* : todo fix
+
+2004-08-12 23:25  lennart
+
+	* : add more subscription events
+	  add support for clients/modules in native protocol
+
+2004-08-11 15:11  lennart
+
+	* : info and subscription work
+
+2004-08-11 00:12  lennart
+
+	* : todo update
+
+2004-08-11 00:11  lennart
+
+	* : add subscription subsystem
+
+2004-08-10 15:11  lennart
+
+	* : compile fix
+
+2004-08-10 13:00  lennart
+
+	* : glib mainloop fix
+	  implement server status command
+	  support for sink_list/source_list in polyplib
+
+2004-08-07 10:52  lennart
+
+	* : better mainloop test build system
+
+2004-08-07 10:43  lennart
+
+	* : rename mainloop testing tool
+
+2004-08-07 10:42  lennart
+
+	* : cleanup priority management in main loop
+
+2004-08-06 23:07  lennart
+
+	* : add mainloop test utility
+	  fix glib mainloop support
+
+2004-08-05 19:53  lennart
+
+	* : add initial glib mainloop adapter
+	  clean up mainloop API
+
+2004-08-04 16:42  lennart
+
+	* : forgot some files
+
+2004-08-04 16:39  lennart
+
+	* : introduce pa_xmalloc() and friends
+	  implement module auto loading
+
+2004-08-03 19:26  lennart
+
+	* : sample cache work
+
+2004-08-02 19:45  lennart
+
+	* : add support for querying sample ist with esound protocol
+
+2004-08-02 16:24  lennart
+
+	* : add new module "module-x11-bell"
+	  fix scache memory leak
+
+2004-07-20 01:08  lennart
+
+	* : add a todo item
+
+2004-07-20 01:07  lennart
+
+	* : sample cache work
+
+2004-07-18 14:19  lennart
+
+	* : minor fixes
+
+2004-07-17 16:00  lennart
+
+	* : readme update
+
+2004-07-17 15:48  lennart
+
+	* : two simple fixes
+
+2004-07-17 15:44  lennart
+
+	* : some makefile fixes
+
+2004-07-17 15:22  lennart
+
+	* : make distcheck clean
+
+2004-07-17 15:00  lennart
+
+	* : make polypaudio run when installed
+	  update docs
+
+2004-07-17 14:14  lennart
+
+	* : fix Makefile.am and configure.ac to match directory renaming
+
+2004-07-17 14:12  lennart
+
+	* : rename src to polyp
+
+2004-07-17 14:09  lennart
+
+	* : rename configuration file
+	  make sure the todo file is packaged
+
+2004-07-17 14:08  lennart
+
+	* : move todo file
+
+2004-07-17 14:08  lennart
+
+	* : ignore README
+
+2004-07-17 14:06  lennart
+
+	* : add documentation
+
+2004-07-16 20:58  lennart
+
+	* : add pkgconfig stuff
+
+2004-07-16 20:02  lennart
+
+	* : add missing liecenses
+
+2004-07-16 19:56  lennart
+
+	* : include copyright and svn tag in *.[ch]
+
+2004-07-16 19:16  lennart
+
+	* : include config.h in every file
+
+2004-07-16 19:08  lennart
+
+	* : fix distcheck
+
+2004-07-16 18:58  lennart
+
+	* : adjust file references due to renaming
+
+2004-07-16 18:40  lennart
+
+	* : rename a bunch of files
+
+2004-07-16 17:56  lennart
+
+	* : make a symbol in module-ptorocol-stub static
+
+2004-07-16 17:51  lennart
+
+	* : make oss sample spec configurable
+
+2004-07-16 17:03  lennart
+
+	* : implement alsa source
+	  split off alsa-util.c
+
+2004-07-16 14:43  lennart
+
+	* : split PA_SAMPLE_FLOAT32 into PA_SAMPLE_FLOAT{LE,BE}
+	  add more configuration arguments to alsa sink
+
+2004-07-16 00:27  lennart
+
+	* : add alsa sink
+
+2004-07-15 21:51  lennart
+
+	* : optimize esound latency for xmms
+
+2004-07-15 21:18  lennart
+
+	* : implement get_latency native command
+
+2004-07-15 20:51  lennart
+
+	* : add pactl tool
+
+2004-07-15 20:12  lennart
+
+	* : remove global exported variables:
+	  pa_memblock statistics
+	  pa_default_sample_spec
+
+2004-07-15 19:00  lennart
+
+	* : implement daemonizing
+
+2004-07-15 17:33  lennart
+
+	* : fix modargs memory leak
+
+2004-07-15 00:16  lennart
+
+	* : implement client side TCP support
+
+2004-07-14 22:48  lennart
+
+	* : update todo
+	  fix polypaudio.run
+
+2004-07-14 21:52  lennart
+
+	* : complete implementation of the command line
+
+2004-07-12 21:28  lennart
+
+	* : add preliminary command line parsing
+
+2004-07-11 23:21  lennart
+
+	* : make module-oss-* use modargs
+
+2004-07-11 22:20  lennart
+
+	* : make the protocol plugins make use of modargs
+
+2004-07-11 16:59  lennart
+
+	* : rename hashset to hashmap
+	  add module arguments parse in modargs.c
+	  make module-pipe-sink use it
+
+2004-07-11 01:09  lennart
+
+	* : add dependency script
+	  fix some dependencies
+	  split off socket-util.c and clitext.c
+
+2004-07-10 20:56  lennart
+
+	* : add description field for sinks/sources
+	  add owner field to all entities
+	  add client file to source outputs and sink inputs
+
+2004-07-10 19:23  lennart
+
+	* : make memblockq merge chunks
+
+2004-07-10 19:06  lennart
+
+	* : forgot to add parec-simple
+
+2004-07-10 19:04  lennart
+
+	* : implement parec-simple and matching simple recording API
+	  add support for killing source outputs in native protocol
+	  fix channel management in client library
+
+2004-07-10 16:50  lennart
+
+	* : implement recording in native API
+	  fix a memory leak in memblock.c
+
+2004-07-09 23:26  lennart
+
+	* : fix recording for simpel and esound protocols
+
+2004-07-07 22:02  lennart
+
+	* : add output stream draining
+
+2004-07-07 00:22  lennart
+
+	* : draining ind native protocol
+	  fixes in callback code on object destruction
+	  simple protocol
+
+2004-07-06 00:08  lennart
+
+	* : auth support in esound and native
+	  AUTH and SET_NAME operatins in native
+	  simple library
+
+2004-07-04 17:40  lennart
+
+	* : add kill_* and default_* commands to CLI
+	  make module-cli unload itself on EOF
+	  clean up stdio usage
+	  add sink pointer to monitor sources
+
+2004-07-03 23:35  lennart
+
+	* : add pa_ prefix to all identifiers.
+	  fix downsampling/resampling
+	  add support for U8 samples
+
+2004-07-03 00:32  lennart
+
+	* : fix minor typo
+
+2004-07-03 00:20  lennart
+
+	* : add libsamplerate dependency
+
+2004-07-03 00:19  lennart
+
+	* : forgot to add memchunk.[ch]
+
+2004-07-03 00:19  lennart
+
+	* : add resampling
+
+2004-07-02 18:47  lennart
+
+	* : add resampler
+
+2004-06-30 00:00  lennart
+
+	* : latency
+	  esound volume changing
+
+2004-06-29 20:37  lennart
+
+	* : volume work
+
+2004-06-29 18:50  lennart
+
+	* : extended esound protocol
+
+2004-06-29 16:48  lennart
+
+	* : esound protocol
+
+2004-06-27 22:42  lennart
+
+	* : add name registrar
+
+2004-06-27 20:00  lennart
+
+	* : make native playback work
+
+2004-06-27 17:50  lennart
+
+	* : many fixes
+
+2004-06-24 23:27  lennart
+
+	* : some fixes
+
+2004-06-23 23:43  lennart
+
+	* : make rename of oss.[ch] to oss-util.[ch] complete
+
+2004-06-23 23:40  lennart
+
+	* : rename oss.[ch] to oss-util.[ch]
+
+2004-06-23 23:38  lennart
+
+	* : minor compile work
+
+2004-06-23 23:18  lennart
+
+	* : ignore some more stuff
+
+2004-06-23 23:17  lennart
+
+	* : main part of the native protocol
+
+2004-06-20 01:12  lennart
+
+	* : partial implementation of native protocol
+
+2004-06-19 19:28  lennart
+
+	* : mofiy keyword expansion
+
+2004-06-19 19:27  lennart
+
+	* : cli protocol
+
+2004-06-19 18:51  lennart
+
+	* : rename module-simple-protocol to module-protocol-stub
+
+2004-06-19 18:51  lennart
+
+	* : minor work
+
+2004-06-19 18:41  lennart
+
+	* : add simple ptorocol with unix
+
+2004-06-19 01:01  lennart
+
+	* : some more work on the cli
+
+2004-06-18 17:12  lennart
+
+	* : some more work
+
+2004-06-18 00:22  lennart
+
+	* : basic cli interface
+
+2004-06-16 00:05  lennart
+
+	* : configure fix
+
+2004-06-16 00:05  lennart
+
+	* : got mmap oss output working
+
+2004-06-15 17:19  lennart
+
+	* : fix mixing
+
+2004-06-15 17:05  lennart
+
+	* : cleanup
+
+2004-06-15 15:18  lennart
+
+	* : more work
+
+2004-06-15 15:17  lennart
+
+	* : minor work
+
+2004-06-15 00:29  lennart
+
+	* : oss output works
+
+2004-06-14 22:47  lennart
+
+	* : rename some more
+
+2004-06-14 22:47  lennart
+
+	* : commit some work and rename
+
+2004-06-14 20:34  lennart
+
+	* : remove oss.c
+
+2004-06-14 20:30  lennart
+
+	* : more cleanups
+
+2004-06-14 18:38  lennart
+
+	* : a bunch of fixes
+
+2004-06-11 21:30  lennart
+
+	* : remove moddep files (since they are obsolete)
+
+2004-06-11 21:30  lennart
+
+	* : make the whole stuff run and clean it self up again
+
+2004-06-11 17:18  lennart
+
+	* : module dependencie foo
+
+2004-06-11 12:01  lennart
+
+	* : ignore fix
+
+2004-06-11 00:33  lennart
+
+	* : autoconf
+
+2004-06-10 23:22  lennart
+
+	* : make it compile
+
+2004-06-08 23:54  lennart
+
+	* : initial commit
+
+2004-06-08 21:50  lennart
+
+	* : Create trunk directory
+

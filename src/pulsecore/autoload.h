@@ -1,7 +1,7 @@
 #ifndef fooautoloadhfoo
 #define fooautoloadhfoo
 
-/* $Id$ */
+/* $Id: autoload.h 2166 2008-03-27 23:33:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.

@@ -1,7 +1,7 @@
 #ifndef foomodulehfoo
 #define foomodulehfoo
 
-/* $Id$ */
+/* $Id: module.h 2043 2007-11-09 18:25:40Z lennart $ */
 
 /***
   This file is part of PulseAudio.

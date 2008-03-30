@@ -1,7 +1,7 @@
 #ifndef fooclicommandhfoo
 #define fooclicommandhfoo
 
-/* $Id$ */
+/* $Id: cli-command.h 2008 2007-11-01 00:32:45Z lennart $ */
 
 /***
   This file is part of PulseAudio.

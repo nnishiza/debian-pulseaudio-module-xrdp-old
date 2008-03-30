@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: module-protocol-stub.c 2148 2008-03-27 23:17:13Z lennart $ */
 
 /***
   This file is part of PulseAudio.

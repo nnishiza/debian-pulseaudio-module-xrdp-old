@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: protocol-native.c 2188 2008-03-29 00:31:10Z lennart $ */
 
 /***
   This file is part of PulseAudio.

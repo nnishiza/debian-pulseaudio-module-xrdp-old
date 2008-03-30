@@ -1,7 +1,7 @@
 #ifndef foomainloopsignalhfoo
 #define foomainloopsignalhfoo
 
-/* $Id$ */
+/* $Id: mainloop-signal.h 1426 2007-02-13 15:35:19Z ossman $ */
 
 /***
   This file is part of PulseAudio.

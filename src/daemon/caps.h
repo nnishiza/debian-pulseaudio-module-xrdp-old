@@ -1,7 +1,7 @@
 #ifndef foocapshfoo
 #define foocapshfoo
 
-/* $Id$ */
+/* $Id: caps.h 2193 2008-03-30 00:39:57Z lennart $ */
 
 /***
   This file is part of PulseAudio.
@@ -25,7 +25,7 @@
 ***/
 
 void pa_drop_root(void);
+void pa_drop_caps(void);
 int pa_limit_caps(void);
-int pa_drop_caps(void);
 
 #endif
