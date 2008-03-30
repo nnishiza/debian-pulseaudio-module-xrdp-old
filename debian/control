@@ -37,8 +37,8 @@ Description: PulseAudio sound server
      into one (with sample rate adjustment).
  .
    * Wide range of supported client libraries. ESD, ALSA, oss, libao and
-     gstreamer client applications are supported as-is. Native PulseAudio
-     plug-ins are also available for xmms and mplayer. 
+     GStreamer client applications are supported as-is. Native PulseAudio
+     plug-ins are also available for xmms and mplayer.
  .
    * Good low latency behaviour and very accurate latency measurement for
      playback and recording. Ability to fully synchronize multiple playback
@@ -221,12 +221,12 @@ Description: lirc module for PulseAudio sound server debugging symbols
 Package: pulseaudio-module-gconf
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: gconf module for PulseAudio sound server
+Description: GConf module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
  much better latency, mixing/re-sampling quality and overall architecture.
  .
- This module enables PulseAudio to store additional configuration in gconf.
+ This module enables PulseAudio to store additional configuration in GConf.
  .
  The module is called module-gconf.
 
@@ -234,12 +234,12 @@ Package: pulseaudio-module-gconf-dbg
 Architecture: any
 Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-gconf (= ${binary:Version})
-Description: gconf module for PulseAudio sound server debugging symbols
+Description: GConf module for PulseAudio sound server debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
  much better latency, mixing/re-sampling quality and overall architecture.
  .
- This package contains debugging symbols for the PulseAudio gconf module.
+ This package contains debugging symbols for the PulseAudio GConf module.
 
 Package: pulseaudio-module-x11
 Architecture: any
