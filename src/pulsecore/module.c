@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: module.c 2049 2007-11-13 17:35:48Z lennart $ */
 
 /***
   This file is part of PulseAudio.

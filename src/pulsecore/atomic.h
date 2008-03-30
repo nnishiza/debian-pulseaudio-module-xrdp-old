@@ -1,7 +1,7 @@
 #ifndef foopulseatomichfoo
 #define foopulseatomichfoo
 
-/* $Id$ */
+/* $Id: atomic.h 2170 2008-03-27 23:37:23Z lennart $ */
 
 /***
   This file is part of PulseAudio.

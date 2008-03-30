@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: module-ladspa-sink.c 2153 2008-03-27 23:22:57Z lennart $ */
 
 /***
   This file is part of PulseAudio.

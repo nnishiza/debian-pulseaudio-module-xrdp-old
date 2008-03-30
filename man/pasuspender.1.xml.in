@@ -2,7 +2,7 @@
 <!DOCTYPE manpage SYSTEM "xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="xmltoman.xsl" ?>
 
-<!-- $Id$ -->
+<!-- $Id: pasuspender.1.xml.in 2163 2008-03-27 23:31:55Z lennart $ -->
 
 <!--
 This file is part of PulseAudio.

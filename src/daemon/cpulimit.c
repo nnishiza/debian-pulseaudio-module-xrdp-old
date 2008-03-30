@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: cpulimit.c 2171 2008-03-27 23:37:46Z lennart $ */
 
 /***
   This file is part of PulseAudio.

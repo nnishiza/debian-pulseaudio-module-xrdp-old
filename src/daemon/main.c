@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: main.c 2187 2008-03-28 18:09:25Z lennart $ */
 
 /***
   This file is part of PulseAudio.

@@ -1,4 +1,4 @@
-/* $Id$ */
+/* $Id: paplay.c 2025 2007-11-05 23:56:30Z lennart $ */
 
 /***
   This file is part of PulseAudio.

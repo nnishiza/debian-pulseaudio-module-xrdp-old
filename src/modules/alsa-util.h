@@ -1,7 +1,7 @@
 #ifndef fooalsautilhfoo
 #define fooalsautilhfoo
 
-/* $Id$ */
+/* $Id: alsa-util.h 2055 2007-11-13 23:42:15Z lennart $ */
 
 /***
   This file is part of PulseAudio.

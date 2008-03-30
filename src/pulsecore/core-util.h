@@ -1,7 +1,7 @@
 #ifndef foocoreutilhfoo
 #define foocoreutilhfoo
 
-/* $Id$ */
+/* $Id: core-util.h 2014 2007-11-01 02:58:26Z lennart $ */
 
 /***
   This file is part of PulseAudio.
