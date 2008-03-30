@@ -1,4 +1,4 @@
-pulseaudio (0.9.10~svn2189-1) UNRELEASED; urgency=low
+pulseaudio (0.9.10-1) UNRELEASED; urgency=low
 
   [ CJ van den Berg ]
   * New Upstream Version
@@ -15,7 +15,7 @@ pulseaudio (0.9.10~svn2189-1) UNRELEASED; urgency=low
   * debian/pulseaudio.init: Fix problems with LSB header in init.d script.
       (Closes: #470934)
 
- -- CJ van den Berg <cj@vdbonline.com>  Sat, 29 Mar 2008 08:24:26 +0100
+ -- CJ van den Berg <cj@vdbonline.com>  Sun, 30 Mar 2008 20:11:02 +0200
 
 pulseaudio (0.9.9-1) unstable; urgency=high
 
