@@ -287,7 +287,7 @@ Description: PulseAudio sound server core
 Package: libpulsecore5-dbg
 Architecture: any
 Priority: extra
-Depends: ${misc:Depends}, pulseaudio (= ${binary:Version})
+Depends: ${misc:Depends}, libpulsecore5 (= ${binary:Version})
 Description: PulseAudio sound server core detached debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
@@ -364,7 +364,7 @@ Description: PulseAudio client libraries (zeroconf support)
 Package: libpulse-browse0-dbg
 Architecture: any
 Priority: extra
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${misc:Depends}, libpulse-browse0 (= ${binary:Version})
 Description: PulseAudio client libraries (zeroconf support) debugging symbols
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
