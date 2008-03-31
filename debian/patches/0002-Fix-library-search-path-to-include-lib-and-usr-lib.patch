@@ -1,0 +1,24 @@
+From 35b5f2362512ecd8ec56c3cea489b35e7ff637fb Mon Sep 17 00:00:00 2001
+From: Courteney van den Berg <vdberg@ffm.tc.iot.dtag.de>
+Date: Mon, 31 Mar 2008 17:11:29 +0200
+Subject: [PATCH] Fix library search path to include /lib and /usr/lib
+
+---
+ aclocal.m4 |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/aclocal.m4 b/aclocal.m4
+index 67e4c42..297612a 100644
+--- a/aclocal.m4
++++ b/aclocal.m4
+@@ -2820,8 +2820,8 @@ linux* | k*bsd*-gnu)
+   # Some rework will be needed to allow for fast_install
+   # before this can be enabled.
+   hardcode_into_libs=yes
+-  sys_lib_search_path_spec="/usr/lib${libsuff} /lib${libsuff} /usr/local/lib${libsuff}"
+-  sys_lib_dlsearch_path_spec="/usr/lib${libsuff} /lib${libsuff}"
++  sys_lib_search_path_spec="/usr/lib /usr/lib${libsuff} /lib /lib${libsuff} /usr/local/lib${libsuff}"
++  sys_lib_dlsearch_path_spec="/usr/lib /usr/lib${libsuff} /lib /lib${libsuff}"
+ 
+   # Append ld.so.conf contents to the search path
+   if test -f /etc/ld.so.conf; then

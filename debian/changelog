@@ -10,6 +10,8 @@ pulseaudio (0.9.10-1) UNRELEASED; urgency=low
     - 0006-Implement-opcodes-added-in-version-12-in-the-tunnel.patch
     - 0007-Change-config-to-not-fail-if-loading-of-esd-gconf-o.patch
     - 0008-Fix-compilation-on-non-linux-platforms.patch
+  * debian/patches: Add patch to fix RPATHs.
+    + 0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
   * debian/control:
     + Make libpulsecore5-dbg depend on libpulsecore5, instead of pulseaudio.
     + Make libpulse-browse0-dbg depend on libpulse-browse0.
