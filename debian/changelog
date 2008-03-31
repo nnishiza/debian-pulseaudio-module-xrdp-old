@@ -1,4 +1,4 @@
-pulseaudio (0.9.10-1) UNRELEASED; urgency=low
+pulseaudio (0.9.10-1) unstable; urgency=low
 
   [ CJ van den Berg ]
   * New Upstream Version
