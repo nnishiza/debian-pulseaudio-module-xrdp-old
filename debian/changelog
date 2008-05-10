@@ -7,8 +7,11 @@ pulseaudio (0.9.10-2) UNRELEASED; urgency=low
     - Added. Load module-gconf before module-volume-restore and
     module-device-restore. Otherwise setting virtual sinks/sources as default
     won't be persistent
+  * debian/patches/0005-Reduce-RT-prio-logging-severity.patch
+    - Added. Reduce the priority of the RT warnings. Not running with RT
+    priorities is the default.
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 10 May 2008 18:35:53 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 10 May 2008 22:01:14 +0200
 
 pulseaudio (0.9.10-1) unstable; urgency=low
 

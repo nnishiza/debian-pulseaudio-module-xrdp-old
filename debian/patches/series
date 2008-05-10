@@ -2,3 +2,4 @@
 0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
 0003-Define-PULSE_INTERNAL.patch
 0004-load-module-gconf-earlier.patch
+0005-Reduce-RT-prio-logging-severity.patch
