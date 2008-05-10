@@ -1,0 +1,45 @@
+From c10991788a48ffb8d47a9d6fa8684086ee6e6c5a Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@luon.net>
+Date: Sat, 10 May 2008 18:35:08 +0200
+Subject: [PATCH] load module-gconf earlier
+
+---
+ src/daemon/default.pa.in |   18 +++++++++---------
+ 1 files changed, 9 insertions(+), 9 deletions(-)
+
+diff --git a/src/daemon/default.pa.in b/src/daemon/default.pa.in
+index be46526..47ea7ab 100755
+--- a/src/daemon/default.pa.in
++++ b/src/daemon/default.pa.in
+@@ -64,6 +64,15 @@ load-module module-native-protocol-unix
+ #load-module module-null-sink sink_name=rtp format=s16be channels=2 rate=44100 description="RTP Multicast Sink"
+ #load-module module-rtp-send source=rtp.monitor
+ 
++### Load additional modules from GConf settings. This can be configured with the paprefs tool.
++### Please keep in mind that the modules configured by paprefs might conflict with manually
++### loaded modules.
++.ifexists module-gconf@PA_SOEXT@
++.nofail
++load-module module-gconf
++.fail
++.endif
++
+ ### Automatically restore the volume of playback streams
+ load-module module-volume-restore
+ 
+@@ -85,15 +94,6 @@ load-module module-suspend-on-idle
+ # Instead we load this via /etc/xdg/autostart/ and "pactl load-module" now
+ # load-module module-x11-xsmp
+ 
+-### Load additional modules from GConf settings. This can be configured with the paprefs tool.
+-### Please keep in mind that the modules configured by paprefs might conflict with manually
+-### loaded modules.
+-.ifexists module-gconf@PA_SOEXT@
+-.nofail
+-load-module module-gconf
+-.fail
+-.endif
+-
+ ### Publish connection data in the X11 root window
+ .ifexists module-x11-publish@PA_SOEXT@
+ .nofail

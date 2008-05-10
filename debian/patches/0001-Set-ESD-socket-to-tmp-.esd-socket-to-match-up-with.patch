@@ -1,4 +1,4 @@
-From 4ca50fb382e88a8da101ff069d099e9f25412468 Mon Sep 17 00:00:00 2001
+From 6ec4a2caba74203b6814635beec957a899645410 Mon Sep 17 00:00:00 2001
 From: CJ van den Berg <cj@vdbonline.com>
 Date: Wed, 31 Oct 2007 13:59:31 +0100
 Subject: [PATCH] Set ESD socket to /tmp/.esd/socket to match up with libesd
