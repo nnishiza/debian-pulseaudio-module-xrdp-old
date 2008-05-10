@@ -1,4 +1,4 @@
-pulseaudio (0.9.10-2) UNRELEASED; urgency=low
+pulseaudio (0.9.10-2) unstable; urgency=low
 
   * debian/patches/0003-Define-PULSE_INTERNAL.patch
     - Added. Let the daemon put PULSE_INTERNAL in its environment so things
@@ -11,7 +11,7 @@ pulseaudio (0.9.10-2) UNRELEASED; urgency=low
     - Added. Reduce the priority of the RT warnings. Not running with RT
     priorities is the default.
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 10 May 2008 22:01:14 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 10 May 2008 22:16:12 +0200
 
 pulseaudio (0.9.10-1) unstable; urgency=low
 
