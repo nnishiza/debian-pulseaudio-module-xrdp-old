@@ -1,3 +1,10 @@
+pulseaudio (0.9.10-4) UNRELEASED; urgency=low
+
+  * debian/patches/0007-fix-FTBFS-on-GNU-kFreeBSD.patch
+    - Added. Fix FTBTS on GNU/kFreeBSD. (Closes: #497624)
+
+ -- CJ van den Berg <cj@vdbonline.com>  Wed, 03 Sep 2008 12:53:23 +0200
+
 pulseaudio (0.9.10-3) unstable; urgency=low
 
   * debian/patches/0006-fix-iteration-over-random-devices.patch
