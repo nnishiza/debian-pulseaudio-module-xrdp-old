@@ -25,8 +25,12 @@ pulseaudio (0.9.13-1) UNRELEASED; urgency=low
     - Dropped, not necessary anymore, the --disable-per-user-esound-socket
       configure flag now has the same result
   * debian/control: Add libspeexdsp-dev (>= 1.2~rc1) to Build-Depends
+  * debian/control: Add Build-Depends on libpolkit-dbus-dev and
+    libbluetooth-dev
+  * debian/pulseaudio.install: Install various new modules. Including bluetooth
+    and polkit, which will move into a seperate package later.
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 14:10:34 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 16:38:44 +0100
 
 pulseaudio (0.9.10-3) unstable; urgency=low
 
