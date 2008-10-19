@@ -33,6 +33,7 @@ pulseaudio (0.9.13-1) experimental; urgency=low
   * debian/control: add a depend on consolekit. Might be downgrade to a
     recommend later
   * debian/control: Set the maintainer to the pkg-pulseaudio mailinglist
+  * debian/control: Add libgdbm-dev to build-depends
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 21:05:13 +0100
 
