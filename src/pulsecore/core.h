@@ -1,8 +1,6 @@
 #ifndef foocorehfoo
 #define foocorehfoo
 
-/* $Id: core.h 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -35,6 +33,7 @@
 #include <pulsecore/llist.h>
 #include <pulsecore/hook-list.h>
 #include <pulsecore/asyncmsgq.h>
+#include <pulsecore/sample-util.h>
 
 typedef struct pa_core pa_core;
 
@@ -43,16 +42,20 @@ typedef struct pa_core pa_core;
 #include <pulsecore/msgobject.h>
 
 typedef enum pa_core_hook {
-    PA_CORE_HOOK_SINK_NEW_POST,
+    PA_CORE_HOOK_SINK_NEW,
+    PA_CORE_HOOK_SINK_FIXATE,
+    PA_CORE_HOOK_SINK_PUT,
     PA_CORE_HOOK_SINK_UNLINK,
     PA_CORE_HOOK_SINK_UNLINK_POST,
     PA_CORE_HOOK_SINK_STATE_CHANGED,
-    PA_CORE_HOOK_SINK_DESCRIPTION_CHANGED,
-    PA_CORE_HOOK_SOURCE_NEW_POST,
+    PA_CORE_HOOK_SINK_PROPLIST_CHANGED,
+    PA_CORE_HOOK_SOURCE_NEW,
+    PA_CORE_HOOK_SOURCE_FIXATE,
+    PA_CORE_HOOK_SOURCE_PUT,
     PA_CORE_HOOK_SOURCE_UNLINK,
     PA_CORE_HOOK_SOURCE_UNLINK_POST,
     PA_CORE_HOOK_SOURCE_STATE_CHANGED,
-    PA_CORE_HOOK_SOURCE_DESCRIPTION_CHANGED,
+    PA_CORE_HOOK_SOURCE_PROPLIST_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_NEW,
     PA_CORE_HOOK_SINK_INPUT_FIXATE,
     PA_CORE_HOOK_SINK_INPUT_PUT,
@@ -60,8 +63,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_INPUT_UNLINK_POST,
     PA_CORE_HOOK_SINK_INPUT_MOVE,
     PA_CORE_HOOK_SINK_INPUT_MOVE_POST,
-    PA_CORE_HOOK_SINK_INPUT_NAME_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_STATE_CHANGED,
+    PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED,
     PA_CORE_HOOK_SOURCE_OUTPUT_NEW,
     PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE,
     PA_CORE_HOOK_SOURCE_OUTPUT_PUT,
@@ -69,8 +72,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST,
     PA_CORE_HOOK_SOURCE_OUTPUT_MOVE,
     PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_POST,
-    PA_CORE_HOOK_SOURCE_OUTPUT_NAME_CHANGED,
     PA_CORE_HOOK_SOURCE_OUTPUT_STATE_CHANGED,
+    PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED,
     PA_CORE_HOOK_MAX
 } pa_core_hook_t;
 
@@ -91,7 +94,7 @@ struct pa_core {
     pa_idxset *clients, *sinks, *sources, *sink_inputs, *source_outputs, *modules, *scache, *autoload_idxset;
 
     /* Some hashmaps for all sorts of entities */
-    pa_hashmap *namereg, *autoload_hashmap, *properties;
+    pa_hashmap *namereg, *autoload_hashmap, *shared;
 
     /* The name of the default sink/source */
     char *default_source_name, *default_sink_name;
@@ -108,19 +111,23 @@ struct pa_core {
     pa_subscription_event *subscription_event_last;
 
     pa_mempool *mempool;
+    pa_silence_cache silence_cache;
 
     int exit_idle_time, module_idle_time, scache_idle_time;
 
-    pa_time_event *quit_event;
+    pa_time_event *exit_event;
 
     pa_time_event *scache_auto_unload_event;
 
-    pa_bool_t disallow_module_loading, running_as_daemon;
+    pa_bool_t disallow_module_loading:1;
+    pa_bool_t disallow_exit:1;
+    pa_bool_t running_as_daemon:1;
+    pa_bool_t realtime_scheduling:1;
+    pa_bool_t disable_remixing:1;
+    pa_bool_t disable_lfe_remixing:1;
+
     pa_resample_method_t resample_method;
-    pa_bool_t is_system_instance;
-    pa_bool_t realtime_scheduling;
     int realtime_priority;
-    pa_bool_t disable_remixing;
 
     /* hooks */
     pa_hook hooks[PA_CORE_HOOK_MAX];
@@ -134,9 +141,11 @@ enum {
     PA_CORE_MESSAGE_MAX
 };
 
-pa_core* pa_core_new(pa_mainloop_api *m, int shared);
+pa_core* pa_core_new(pa_mainloop_api *m, pa_bool_t shared, size_t shm_size);
 
 /* Check whether noone is connected to this core */
-void pa_core_check_quit(pa_core *c);
+void pa_core_check_idle(pa_core *c);
+
+int pa_core_exit(pa_core *c, pa_bool_t force, int retval);
 
 #endif

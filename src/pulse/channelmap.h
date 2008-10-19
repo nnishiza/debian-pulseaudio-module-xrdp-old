@@ -1,8 +1,6 @@
 #ifndef foochannelmaphfoo
 #define foochannelmaphfoo
 
-/* $Id: channelmap.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -27,6 +25,7 @@
 
 #include <pulse/sample.h>
 #include <pulse/cdecl.h>
+#include <pulse/gccmacro.h>
 
 /** \page channelmap Channel Maps
  *
@@ -48,8 +47,10 @@
  *
  * \li pa_channel_map_init_mono() - Create a channel map with only mono audio.
  * \li pa_channel_map_init_stereo() - Create a standard stereo mapping.
- * \li pa_channel_map_init_auto() - Create a standard channel map for up to
- *                                  six channels.
+ * \li pa_channel_map_init_auto() - Create a standard channel map for a specific number of channels
+ * \li pa_channel_map_init_extend() - Similar to
+ * pa_channel_map_init_auto() but synthesize a channel map if noone
+ * predefined one is known for the specified number of channels.
  *
  * \section conv_sec Convenience Functions
  *
@@ -141,24 +142,42 @@ typedef enum pa_channel_position {
 
 /** A list of channel mapping definitions for pa_channel_map_init_auto() */
 typedef enum pa_channel_map_def {
-    PA_CHANNEL_MAP_AIFF,   /**< The mapping from RFC3551, which is based on AIFF-C */
-    PA_CHANNEL_MAP_ALSA,   /**< The default mapping used by ALSA */
-    PA_CHANNEL_MAP_AUX,    /**< Only aux channels */
-    PA_CHANNEL_MAP_WAVEEX, /**< Microsoft's WAVEFORMATEXTENSIBLE mapping */
-    PA_CHANNEL_MAP_OSS,    /**< The default channel mapping used by OSS as defined in the OSS 4.0 API specs */
+    PA_CHANNEL_MAP_AIFF,
+    /**< The mapping from RFC3551, which is based on AIFF-C */
 
-    PA_CHANNEL_MAP_DEFAULT = PA_CHANNEL_MAP_AIFF /**< The default channel map */
+    PA_CHANNEL_MAP_ALSA,
+    /**< The default mapping used by ALSA */
+
+    PA_CHANNEL_MAP_AUX,
+    /**< Only aux channels */
+
+    PA_CHANNEL_MAP_WAVEEX,
+    /**< Microsoft's WAVEFORMATEXTENSIBLE mapping */
+
+    PA_CHANNEL_MAP_OSS,
+    /**< The default channel mapping used by OSS as defined in the OSS 4.0 API specs */
+
+    /**< Upper limit of valid channel mapping definitions */
+    PA_CHANNEL_MAP_DEF_MAX,
+
+    PA_CHANNEL_MAP_DEFAULT = PA_CHANNEL_MAP_AIFF
+    /**< The default channel map */
 } pa_channel_map_def_t;
 
 /** A channel map which can be used to attach labels to specific
  * channels of a stream. These values are relevant for conversion and
  * mixing of streams */
 typedef struct pa_channel_map {
-    uint8_t channels; /**< Number of channels */
-    pa_channel_position_t map[PA_CHANNELS_MAX]; /**< Channel labels */
+    uint8_t channels;
+    /**< Number of channels */
+
+    pa_channel_position_t map[PA_CHANNELS_MAX];
+    /**< Channel labels */
 } pa_channel_map;
 
-/** Initialize the specified channel map and return a pointer to it */
+/** Initialize the specified channel map and return a pointer to
+ * it. The channel map will have a defined state but
+ * pa_channel_map_valid() will fail for it. */
 pa_channel_map* pa_channel_map_init(pa_channel_map *m);
 
 /** Initialize the specified channel map for monoaural audio and return a pointer to it */
@@ -167,9 +186,17 @@ pa_channel_map* pa_channel_map_init_mono(pa_channel_map *m);
 /** Initialize the specified channel map for stereophonic audio and return a pointer to it */
 pa_channel_map* pa_channel_map_init_stereo(pa_channel_map *m);
 
-/** Initialize the specified channel map for the specified number
- * of channels using default labels and return a pointer to it. */
+/** Initialize the specified channel map for the specified number of
+ * channels using default labels and return a pointer to it. This call
+ * will fail (return NULL) if there is no default channel map known for this
+ * specific number of channels and mapping. */
 pa_channel_map* pa_channel_map_init_auto(pa_channel_map *m, unsigned channels, pa_channel_map_def_t def);
+
+/** Similar to pa_channel_map_init_auto() but instead of failing if no
+ * default mapping is known with the specified parameters it will
+ * synthesize a mapping based on a known mapping with fewer channels
+ * and fill up the rest with AUX0...AUX31 channels  \since 0.9.11 */
+pa_channel_map* pa_channel_map_init_extend(pa_channel_map *m, unsigned channels, pa_channel_map_def_t def);
 
 /** Return a text label for the specified channel position */
 const char* pa_channel_position_to_string(pa_channel_position_t pos) PA_GCC_PURE;
@@ -177,20 +204,28 @@ const char* pa_channel_position_to_string(pa_channel_position_t pos) PA_GCC_PURE
 /** Return a human readable text label for the specified channel position. \since 0.9.7 */
 const char* pa_channel_position_to_pretty_string(pa_channel_position_t pos);
 
-/** The maximum length of strings returned by pa_channel_map_snprint() */
+/** The maximum length of strings returned by
+ * pa_channel_map_snprint(). Please note that this value can change
+ * with any release without warning and without being considered API
+ * or ABI breakage. You should not use this definition anywhere where
+ * it might become part of an ABI. */
 #define PA_CHANNEL_MAP_SNPRINT_MAX 336
 
 /** Make a humand readable string from the specified channel map */
 char* pa_channel_map_snprint(char *s, size_t l, const pa_channel_map *map);
 
-/** Parse a channel position list into a channel map structure. \since 0.8.1 */
+/** Parse a channel position list into a channel map structure. */
 pa_channel_map *pa_channel_map_parse(pa_channel_map *map, const char *s);
 
 /** Compare two channel maps. Return 1 if both match. */
 int pa_channel_map_equal(const pa_channel_map *a, const pa_channel_map *b) PA_GCC_PURE;
 
-/** Return non-zero of the specified channel map is considered valid */
+/** Return non-zero if the specified channel map is considered valid */
 int pa_channel_map_valid(const pa_channel_map *map) PA_GCC_PURE;
+
+/** Return non-zero if the specified channel map is compatible with
+ * the specified sample spec. \since 0.9.12 */
+int pa_channel_map_compatible(const pa_channel_map *map, const pa_sample_spec *ss) PA_GCC_PURE;
 
 PA_C_DECL_END
 

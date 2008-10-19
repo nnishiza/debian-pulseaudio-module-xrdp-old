@@ -1,8 +1,6 @@
 #ifndef foopulseclienthfoo
 #define foopulseclienthfoo
 
-/* $Id: client.h 1426 2007-02-13 15:35:19Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -28,6 +26,7 @@
 
 typedef struct pa_client pa_client;
 
+#include <pulse/proplist.h>
 #include <pulsecore/core.h>
 #include <pulsecore/module.h>
 
@@ -37,10 +36,11 @@ typedef struct pa_client pa_client;
 
 struct pa_client {
     uint32_t index;
-
-    pa_module *owner;
-    char *name, *driver;
     pa_core *core;
+
+    pa_proplist *proplist;
+    pa_module *module;
+    char *driver;
 
     void (*kill)(pa_client *c);
     void *userdata;

@@ -1,12 +1,14 @@
-/* $Id: channelmap-test.c 1418 2007-01-04 13:43:45Z ossman $ */
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 
 #include <stdio.h>
 #include <assert.h>
 
 #include <pulse/channelmap.h>
-#include <pulsecore/gccmacro.h>
+#include <pulse/gccmacro.h>
 
-int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
+int main(int argc, char *argv[]) {
     char cm[PA_CHANNEL_MAP_SNPRINT_MAX];
     pa_channel_map map, map2;
 
@@ -22,12 +24,15 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
 
     fprintf(stderr, "map: <%s>\n", pa_channel_map_snprint(cm, sizeof(cm), &map));
 
+    pa_channel_map_init_extend(&map, 14, PA_CHANNEL_MAP_ALSA);
+
+    fprintf(stderr, "map: <%s>\n", pa_channel_map_snprint(cm, sizeof(cm), &map));
+
     pa_channel_map_parse(&map2, cm);
 
     assert(pa_channel_map_equal(&map, &map2));
 
     pa_channel_map_parse(&map2, "left,test");
-
 
     return 0;
 }

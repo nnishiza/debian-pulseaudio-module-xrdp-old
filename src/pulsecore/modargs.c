@@ -1,5 +1,3 @@
-/* $Id: modargs.c 2050 2007-11-13 17:37:44Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -53,6 +51,12 @@ static int add_key_value(pa_hashmap *map, char *key, char *value, const char* co
     pa_assert(key);
     pa_assert(value);
 
+    if (pa_hashmap_get(map, key)) {
+        pa_xfree(key);
+        pa_xfree(value);
+        return -1;
+    }
+
     if (valid_keys) {
         const char*const* v;
         for (v = valid_keys; *v; v++)
@@ -80,7 +84,15 @@ pa_modargs *pa_modargs_new(const char *args, const char* const* valid_keys) {
     map = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
 
     if (args) {
-        enum { WHITESPACE, KEY, VALUE_START, VALUE_SIMPLE, VALUE_DOUBLE_QUOTES, VALUE_TICKS } state;
+        enum {
+            WHITESPACE,
+            KEY,
+            VALUE_START,
+            VALUE_SIMPLE,
+            VALUE_DOUBLE_QUOTES,
+            VALUE_TICKS
+        } state;
+
         const char *p, *key, *value;
         size_t key_len = 0, value_len = 0;
 
@@ -100,6 +112,8 @@ pa_modargs *pa_modargs_new(const char *args, const char* const* valid_keys) {
                 case KEY:
                     if (*p == '=')
                         state = VALUE_START;
+                    else if (isspace(*p))
+                        goto fail;
                     else
                         key_len++;
                     break;
@@ -169,7 +183,7 @@ fail:
     return NULL;
 }
 
-static void free_func(void *p, PA_GCC_UNUSED void*userdata) {
+static void free_func(void *p, void*userdata) {
     struct entry *e = p;
     pa_assert(e);
 
@@ -308,8 +322,7 @@ int pa_modargs_get_sample_spec_and_channel_map(pa_modargs *ma, pa_sample_spec *r
     if (pa_modargs_get_sample_spec(ma, &ss) < 0)
         return -1;
 
-    if (!pa_channel_map_init_auto(&map, ss.channels, def))
-        map.channels = 0;
+    pa_channel_map_init_extend(&map, ss.channels, def);
 
     if (pa_modargs_get_channel_map(ma, NULL, &map) < 0)
         return -1;

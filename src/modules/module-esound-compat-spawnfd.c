@@ -1,5 +1,3 @@
-/* $Id: module-esound-compat-spawnfd.c 2043 2007-11-09 18:25:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -68,7 +66,7 @@ int pa__init(pa_module*m) {
 
     pa_assert_se(pa_close(fd) == 0);
 
-    pa_module_unload_request(m);
+    pa_module_unload_request(m, TRUE);
 
     ret = 0;
 

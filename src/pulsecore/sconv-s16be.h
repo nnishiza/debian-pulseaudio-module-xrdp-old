@@ -1,8 +1,6 @@
 #ifndef foosconv_s16befoo
 #define foosconv_s16befoo
 
-/* $Id: sconv-s16be.h 2037 2007-11-09 02:45:07Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

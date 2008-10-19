@@ -1,8 +1,6 @@
 #ifndef foologhfoo
 #define foologhfoo
 
-/* $Id: log.h 1426 2007-02-13 15:35:19Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -27,7 +25,7 @@
 
 #include <stdarg.h>
 #include <stdlib.h>
-#include <pulsecore/gccmacro.h>
+#include <pulse/gccmacro.h>
 
 /* A simple logging subsystem */
 
@@ -51,8 +49,10 @@ typedef enum pa_log_level {
 /* Set an identification for the current daemon. Used when logging to syslog. */
 void pa_log_set_ident(const char *p);
 
+typedef void (*pa_log_func_t)(pa_log_level_t t, const char*s);
+
 /* Set another log target. If t is PA_LOG_USER you may specify a function that is called every log string */
-void pa_log_set_target(pa_log_target_t t, void (*func)(pa_log_level_t t, const char*s));
+void pa_log_set_target(pa_log_target_t t, pa_log_func_t func);
 
 /* Minimal log level */
 void pa_log_set_maximal_level(pa_log_level_t l);

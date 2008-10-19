@@ -1,5 +1,3 @@
-/* $Id: pactl.c 2182 2008-03-28 00:47:31Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -34,15 +32,13 @@
 #include <stdlib.h>
 #include <limits.h>
 #include <getopt.h>
+#include <locale.h>
 
 #include <sndfile.h>
 
+#include <pulse/i18n.h>
 #include <pulse/pulseaudio.h>
 #include <pulsecore/core-util.h>
-
-#if PA_API_VERSION < 10
-#error Invalid PulseAudio API version
-#endif
 
 #define BUFSIZE 1024
 
@@ -108,19 +104,19 @@ static void complete_action(void) {
 static void stat_callback(pa_context *c, const pa_stat_info *i, void *userdata) {
     char s[128];
     if (!i) {
-        fprintf(stderr, "Failed to get statistics: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get statistics: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
 
     pa_bytes_snprint(s, sizeof(s), i->memblock_total_size);
-    printf("Currently in use: %u blocks containing %s bytes total.\n", i->memblock_total, s);
+    printf(_("Currently in use: %u blocks containing %s bytes total.\n"), i->memblock_total, s);
 
     pa_bytes_snprint(s, sizeof(s), i->memblock_allocated_size);
-    printf("Allocated during whole lifetime: %u blocks containing %s bytes total.\n", i->memblock_allocated, s);
+    printf(_("Allocated during whole lifetime: %u blocks containing %s bytes total.\n"), i->memblock_allocated, s);
 
     pa_bytes_snprint(s, sizeof(s), i->scache_size);
-    printf("Sample cache size: %s\n", s);
+    printf(_("Sample cache size: %s\n"), s);
 
     complete_action();
 }
@@ -129,21 +125,21 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
     char s[PA_SAMPLE_SPEC_SNPRINT_MAX];
 
     if (!i) {
-        fprintf(stderr, "Failed to get server information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get server information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
 
     pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec);
 
-    printf("User name: %s\n"
+    printf(_("User name: %s\n"
            "Host Name: %s\n"
            "Server Name: %s\n"
            "Server Version: %s\n"
            "Default Sample Specification: %s\n"
            "Default Sink: %s\n"
            "Default Source: %s\n"
-           "Cookie: %08x\n",
+           "Cookie: %08x\n"),
            i->user_name,
            i->host_name,
            i->server_name,
@@ -158,9 +154,10 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
 
 static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_last, void *userdata) {
     char s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char *pl;
 
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get sink information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get sink information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -176,38 +173,43 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
         printf("\n");
     nl = 1;
 
-    printf("*** Sink #%u ***\n"
+    printf(_("*** Sink #%u ***\n"
            "Name: %s\n"
            "Driver: %s\n"
-           "Description: %s\n"
            "Sample Specification: %s\n"
            "Channel Map: %s\n"
            "Owner Module: %u\n"
            "Volume: %s\n"
-           "Monitor Source: %u\n"
-           "Latency: %0.0f usec\n"
-           "Flags: %s%s%s\n",
+           "Monitor Source: %s\n"
+           "Latency: %0.0f usec, configured %0.0f usec\n"
+           "Flags: %s%s%s%s%s%s\n"
+           "Properties:\n%s"),
            i->index,
            i->name,
-           i->driver,
-           i->description,
+           pa_strnull(i->driver),
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            i->owner_module,
-           i->mute ? "muted" : pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           i->monitor_source,
-           (double) i->latency,
+           i->mute ? _("muted") : pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
+           pa_strnull(i->monitor_source_name),
+           (double) i->latency, (double) i->configured_latency,
+           i->flags & PA_SINK_HARDWARE ? "HARDWARE " : "",
+           i->flags & PA_SINK_NETWORK ? "NETWORK " : "",
+           i->flags & PA_SINK_HW_MUTE_CTRL ? "HW_MUTE_CTRL " : "",
            i->flags & PA_SINK_HW_VOLUME_CTRL ? "HW_VOLUME_CTRL " : "",
+           i->flags & PA_SINK_DECIBEL_VOLUME ? "DECIBEL_VOLUME " : "",
            i->flags & PA_SINK_LATENCY ? "LATENCY " : "",
-           i->flags & PA_SINK_HARDWARE ? "HARDWARE" : "");
+           pl = pa_proplist_to_string(i->proplist));
 
+    pa_xfree(pl);
 }
 
 static void get_source_info_callback(pa_context *c, const pa_source_info *i, int is_last, void *userdata) {
-    char s[PA_SAMPLE_SPEC_SNPRINT_MAX], t[32], cv[PA_CVOLUME_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char *pl;
 
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get source information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get source information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -223,40 +225,42 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
         printf("\n");
     nl = 1;
 
-    snprintf(t, sizeof(t), "%u", i->monitor_of_sink);
-
-    printf("*** Source #%u ***\n"
+    printf(_("*** Source #%u ***\n"
            "Name: %s\n"
            "Driver: %s\n"
-           "Description: %s\n"
            "Sample Specification: %s\n"
            "Channel Map: %s\n"
            "Owner Module: %u\n"
            "Volume: %s\n"
            "Monitor of Sink: %s\n"
-           "Latency: %0.0f usec\n"
-           "Flags: %s%s%s\n",
+           "Latency: %0.0f usec, configured %0.0f usec\n"
+           "Flags: %s%s%s%s%s%s\n"
+           "Properties:\n%s"),
            i->index,
            i->name,
-           i->driver,
-           i->description,
+           pa_strnull(i->driver),
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            i->owner_module,
            i->mute ? "muted" : pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           i->monitor_of_sink != PA_INVALID_INDEX ? t : "no",
-           (double) i->latency,
+           i->monitor_of_sink_name ? i->monitor_of_sink_name : _("n/a"),
+           (double) i->latency, (double) i->configured_latency,
+           i->flags & PA_SOURCE_HARDWARE ? "HARDWARE " : "",
+           i->flags & PA_SOURCE_NETWORK ? "NETWORK " : "",
+           i->flags & PA_SOURCE_HW_MUTE_CTRL ? "HW_MUTE_CTRL " : "",
            i->flags & PA_SOURCE_HW_VOLUME_CTRL ? "HW_VOLUME_CTRL " : "",
+           i->flags & PA_SOURCE_DECIBEL_VOLUME ? "DECIBEL_VOLUME " : "",
            i->flags & PA_SOURCE_LATENCY ? "LATENCY " : "",
-           i->flags & PA_SOURCE_HARDWARE ? "HARDWARE" : "");
+           pl = pa_proplist_to_string(i->proplist));
 
+    pa_xfree(pl);
 }
 
 static void get_module_info_callback(pa_context *c, const pa_module_info *i, int is_last, void *userdata) {
     char t[32];
 
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get module information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get module information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -274,23 +278,24 @@ static void get_module_info_callback(pa_context *c, const pa_module_info *i, int
 
     snprintf(t, sizeof(t), "%u", i->n_used);
 
-    printf("*** Module #%u ***\n"
+    printf(_("*** Module #%u ***\n"
            "Name: %s\n"
            "Argument: %s\n"
            "Usage counter: %s\n"
-           "Auto unload: %s\n",
+           "Auto unload: %s\n"),
            i->index,
            i->name,
            i->argument ? i->argument : "",
-           i->n_used != PA_INVALID_INDEX ? t : "n/a",
-           i->auto_unload ? "yes" : "no");
+           i->n_used != PA_INVALID_INDEX ? t : _("n/a"),
+           pa_yes_no(i->auto_unload));
 }
 
 static void get_client_info_callback(pa_context *c, const pa_client_info *i, int is_last, void *userdata) {
     char t[32];
+    char *pl;
 
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get client information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get client information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -308,21 +313,24 @@ static void get_client_info_callback(pa_context *c, const pa_client_info *i, int
 
     snprintf(t, sizeof(t), "%u", i->owner_module);
 
-    printf("*** Client #%u ***\n"
-           "Name: %s\n"
+    printf(_("*** Client #%u ***\n"
            "Driver: %s\n"
-           "Owner Module: %s\n",
+           "Owner Module: %s\n"
+           "Properties:\n%s"),
            i->index,
-           i->name,
-           i->driver,
-           i->owner_module != PA_INVALID_INDEX ? t : "n/a");
+           pa_strnull(i->driver),
+           i->owner_module != PA_INVALID_INDEX ? t : _("n/a"),
+           pl = pa_proplist_to_string(i->proplist));
+
+    pa_xfree(pl);
 }
 
 static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info *i, int is_last, void *userdata) {
     char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char *pl;
 
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get sink input information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get sink input information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -341,8 +349,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
     snprintf(t, sizeof(t), "%u", i->owner_module);
     snprintf(k, sizeof(k), "%u", i->client);
 
-    printf("*** Sink Input #%u ***\n"
-           "Name: %s\n"
+    printf(_("*** Sink Input #%u ***\n"
            "Driver: %s\n"
            "Owner Module: %s\n"
            "Client: %s\n"
@@ -352,27 +359,30 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
            "Volume: %s\n"
            "Buffer Latency: %0.0f usec\n"
            "Sink Latency: %0.0f usec\n"
-           "Resample method: %s\n",
+           "Resample method: %s\n"
+             "Properties:\n%s"),
            i->index,
-           i->name,
-           i->driver,
-           i->owner_module != PA_INVALID_INDEX ? t : "n/a",
-           i->client != PA_INVALID_INDEX ? k : "n/a",
+           pa_strnull(i->driver),
+           i->owner_module != PA_INVALID_INDEX ? t : _("n/a"),
+           i->client != PA_INVALID_INDEX ? k : _("n/a"),
            i->sink,
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
-           i->mute ? "muted" : pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
+           i->mute ? _("muted") : pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
            (double) i->buffer_usec,
            (double) i->sink_usec,
-           i->resample_method ? i->resample_method : "n/a");
-}
+           i->resample_method ? i->resample_method : _("n/a"),
+           pl = pa_proplist_to_string(i->proplist));
 
+    pa_xfree(pl);
+}
 
 static void get_source_output_info_callback(pa_context *c, const pa_source_output_info *i, int is_last, void *userdata) {
     char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char *pl;
 
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get source output information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get source output information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -392,8 +402,7 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
     snprintf(t, sizeof(t), "%u", i->owner_module);
     snprintf(k, sizeof(k), "%u", i->client);
 
-    printf("*** Source Output #%u ***\n"
-           "Name: %s\n"
+    printf(_("*** Source Output #%u ***\n"
            "Driver: %s\n"
            "Owner Module: %s\n"
            "Client: %s\n"
@@ -402,25 +411,29 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
            "Channel Map: %s\n"
            "Buffer Latency: %0.0f usec\n"
            "Source Latency: %0.0f usec\n"
-           "Resample method: %s\n",
+           "Resample method: %s\n"
+           "Properties:\n%s"),
            i->index,
-           i->name,
-           i->driver,
-           i->owner_module != PA_INVALID_INDEX ? t : "n/a",
-           i->client != PA_INVALID_INDEX ? k : "n/a",
+           pa_strnull(i->driver),
+           i->owner_module != PA_INVALID_INDEX ? t : _("n/a"),
+           i->client != PA_INVALID_INDEX ? k : _("n/a"),
            i->source,
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            (double) i->buffer_usec,
            (double) i->source_usec,
-           i->resample_method ? i->resample_method : "n/a");
+           i->resample_method ? i->resample_method : _("n/a"),
+           pl = pa_proplist_to_string(i->proplist));
+
+    pa_xfree(pl);
 }
 
 static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int is_last, void *userdata) {
     char t[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char *pl;
 
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get sample information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get sample information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -439,7 +452,7 @@ static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int
 
     pa_bytes_snprint(t, sizeof(t), i->bytes);
 
-    printf("*** Sample #%u ***\n"
+    printf(_("*** Sample #%u ***\n"
            "Name: %s\n"
            "Volume: %s\n"
            "Sample Specification: %s\n"
@@ -447,21 +460,25 @@ static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int
            "Duration: %0.1fs\n"
            "Size: %s\n"
            "Lazy: %s\n"
-           "Filename: %s\n",
+           "Filename: %s\n"
+           "Properties:\n%s"),
            i->index,
            i->name,
            pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           pa_sample_spec_valid(&i->sample_spec) ? pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec) : "n/a",
-           pa_sample_spec_valid(&i->sample_spec) ? pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map) : "n/a",
+           pa_sample_spec_valid(&i->sample_spec) ? pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec) : _("n/a"),
+           pa_sample_spec_valid(&i->sample_spec) ? pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map) : _("n/a"),
            (double) i->duration/1000000,
            t,
-           i->lazy ? "yes" : "no",
-           i->filename ? i->filename : "n/a");
+           pa_yes_no(i->lazy),
+           i->filename ? i->filename : _("n/a"),
+           pl = pa_proplist_to_string(i->proplist));
+
+    pa_xfree(pl);
 }
 
 static void get_autoload_info_callback(pa_context *c, const pa_autoload_info *i, int is_last, void *userdata) {
     if (is_last < 0) {
-        fprintf(stderr, "Failed to get autoload information: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failed to get autoload information: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -477,21 +494,21 @@ static void get_autoload_info_callback(pa_context *c, const pa_autoload_info *i,
         printf("\n");
     nl = 1;
 
-    printf("*** Autoload Entry #%u ***\n"
+    printf(_("*** Autoload Entry #%u ***\n"
            "Name: %s\n"
            "Type: %s\n"
            "Module: %s\n"
-           "Argument: %s\n",
+             "Argument: %s\n"),
            i->index,
            i->name,
-           i->type == PA_AUTOLOAD_SINK ? "sink" : "source",
+           i->type == PA_AUTOLOAD_SINK ? _("sink") : _("source"),
            i->module,
            i->argument ? i->argument : "");
 }
 
 static void simple_callback(pa_context *c, int success, void *userdata) {
     if (!success) {
-        fprintf(stderr, "Failure: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failure: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -501,7 +518,7 @@ static void simple_callback(pa_context *c, int success, void *userdata) {
 
 static void index_callback(pa_context *c, uint32_t idx, void *userdata) {
     if (idx == PA_INVALID_INDEX) {
-        fprintf(stderr, "Failure: %s\n", pa_strerror(pa_context_errno(c)));
+        fprintf(stderr, _("Failure: %s\n"), pa_strerror(pa_context_errno(c)));
         quit(1);
         return;
     }
@@ -525,7 +542,7 @@ static void stream_state_callback(pa_stream *s, void *userdata) {
 
         case PA_STREAM_FAILED:
         default:
-            fprintf(stderr, "Failed to upload sample: %s\n", pa_strerror(pa_context_errno(pa_stream_get_context(s))));
+            fprintf(stderr, _("Failed to upload sample: %s\n"), pa_strerror(pa_context_errno(pa_stream_get_context(s))));
             quit(1);
     }
 }
@@ -538,11 +555,11 @@ static void stream_write_callback(pa_stream *s, size_t length, void *userdata) {
     d = pa_xmalloc(length);
 
     assert(sample_length >= length);
-    l = length/pa_frame_size(&sample_spec);
+    l = (sf_count_t) (length/pa_frame_size(&sample_spec));
 
     if ((sf_readf_float(sndfile, d, l)) != l) {
         pa_xfree(d);
-        fprintf(stderr, "Premature end of file\n");
+        fprintf(stderr, _("Premature end of file\n"));
         quit(1);
     }
 
@@ -590,8 +607,8 @@ static void context_state_callback(pa_context *c, void *userdata) {
                     break;
 
                 case EXIT:
-                    pa_operation_unref(pa_context_exit_daemon(c, NULL, NULL));
-                    drain();
+                    pa_operation_unref(pa_context_exit_daemon(c, simple_callback, NULL));
+                    break;
 
                 case LIST:
                     actions = 8;
@@ -646,19 +663,19 @@ static void context_state_callback(pa_context *c, void *userdata) {
 
         case PA_CONTEXT_FAILED:
         default:
-            fprintf(stderr, "Connection failure: %s\n", pa_strerror(pa_context_errno(c)));
+            fprintf(stderr, _("Connection failure: %s\n"), pa_strerror(pa_context_errno(c)));
             quit(1);
     }
 }
 
 static void exit_signal_callback(pa_mainloop_api *m, pa_signal_event *e, int sig, void *userdata) {
-    fprintf(stderr, "Got SIGINT, exiting.\n");
+    fprintf(stderr, _("Got SIGINT, exiting.\n"));
     quit(0);
 }
 
 static void help(const char *argv0) {
 
-    printf("%s [options] stat\n"
+    printf(_("%s [options] stat\n"
            "%s [options] list\n"
            "%s [options] exit\n"
            "%s [options] upload-sample FILENAME [NAME]\n"
@@ -673,7 +690,7 @@ static void help(const char *argv0) {
            "  -h, --help                            Show this help\n"
            "      --version                         Show version\n\n"
            "  -s, --server=SERVER                   The name of the server to connect to\n"
-           "  -n, --client-name=NAME                How to call this client on the server\n",
+           "  -n, --client-name=NAME                How to call this client on the server\n"),
            argv0, argv0, argv0, argv0, argv0, argv0, argv0, argv0, argv0, argv0, argv0, argv0);
 }
 
@@ -693,6 +710,9 @@ int main(int argc, char *argv[]) {
         {NULL,          0, NULL, 0}
     };
 
+    setlocale(LC_ALL, "");
+    bindtextdomain(GETTEXT_PACKAGE, PULSE_LOCALEDIR);
+
     if (!(bn = strrchr(argv[0], '/')))
         bn = argv[0];
     else
@@ -706,7 +726,12 @@ int main(int argc, char *argv[]) {
                 goto quit;
 
             case ARG_VERSION:
-                printf("pactl "PACKAGE_VERSION"\nCompiled with libpulse %s\nLinked with libpulse %s\n", pa_get_headers_version(), pa_get_library_version());
+                printf(_("pactl %s\n"
+                         "Compiled with libpulse %s\n"
+                         "Linked with libpulse %s\n"),
+                       PACKAGE_VERSION,
+                       pa_get_headers_version(),
+                       pa_get_library_version());
                 ret = 0;
                 goto quit;
 
@@ -740,7 +765,7 @@ int main(int argc, char *argv[]) {
             action = UPLOAD_SAMPLE;
 
             if (optind+1 >= argc) {
-                fprintf(stderr, "Please specify a sample file to load\n");
+                fprintf(stderr, _("Please specify a sample file to load\n"));
                 goto quit;
             }
 
@@ -762,19 +787,19 @@ int main(int argc, char *argv[]) {
 
             memset(&sfinfo, 0, sizeof(sfinfo));
             if (!(sndfile = sf_open(argv[optind+1], SFM_READ, &sfinfo))) {
-                fprintf(stderr, "Failed to open sound file.\n");
+                fprintf(stderr, _("Failed to open sound file.\n"));
                 goto quit;
             }
 
-            sample_spec.format =  PA_SAMPLE_FLOAT32;
-            sample_spec.rate = sfinfo.samplerate;
-            sample_spec.channels = sfinfo.channels;
+            sample_spec.format = PA_SAMPLE_FLOAT32;
+            sample_spec.rate = (uint32_t) sfinfo.samplerate;
+            sample_spec.channels = (uint8_t) sfinfo.channels;
 
-            sample_length = sfinfo.frames*pa_frame_size(&sample_spec);
+            sample_length = (size_t)sfinfo.frames*pa_frame_size(&sample_spec);
         } else if (!strcmp(argv[optind], "play-sample")) {
             action = PLAY_SAMPLE;
             if (argc != optind+2 && argc != optind+3) {
-                fprintf(stderr, "You have to specify a sample name to play\n");
+                fprintf(stderr, _("You have to specify a sample name to play\n"));
                 goto quit;
             }
 
@@ -786,7 +811,7 @@ int main(int argc, char *argv[]) {
         } else if (!strcmp(argv[optind], "remove-sample")) {
             action = REMOVE_SAMPLE;
             if (argc != optind+2) {
-                fprintf(stderr, "You have to specify a sample name to remove\n");
+                fprintf(stderr, _("You have to specify a sample name to remove\n"));
                 goto quit;
             }
 
@@ -794,20 +819,20 @@ int main(int argc, char *argv[]) {
         } else if (!strcmp(argv[optind], "move-sink-input")) {
             action = MOVE_SINK_INPUT;
             if (argc != optind+3) {
-                fprintf(stderr, "You have to specify a sink input index and a sink\n");
+                fprintf(stderr, _("You have to specify a sink input index and a sink\n"));
                 goto quit;
             }
 
-            sink_input_idx = atoi(argv[optind+1]);
+            sink_input_idx = (uint32_t) atoi(argv[optind+1]);
             sink_name = pa_xstrdup(argv[optind+2]);
         } else if (!strcmp(argv[optind], "move-source-output")) {
             action = MOVE_SOURCE_OUTPUT;
             if (argc != optind+3) {
-                fprintf(stderr, "You have to specify a source output index and a source\n");
+                fprintf(stderr, _("You have to specify a source output index and a source\n"));
                 goto quit;
             }
 
-            source_output_idx = atoi(argv[optind+1]);
+            source_output_idx = (uint32_t) atoi(argv[optind+1]);
             source_name = pa_xstrdup(argv[optind+2]);
         } else if (!strcmp(argv[optind], "load-module")) {
             int i;
@@ -817,7 +842,7 @@ int main(int argc, char *argv[]) {
             action = LOAD_MODULE;
 
             if (argc <= optind+1) {
-                fprintf(stderr, "You have to specify a module name and arguments.\n");
+                fprintf(stderr, _("You have to specify a module name and arguments.\n"));
                 goto quit;
             }
 
@@ -827,7 +852,7 @@ int main(int argc, char *argv[]) {
                 n += strlen(argv[i])+1;
 
             if (n > 0) {
-                p = module_args = pa_xnew0(char, n);
+                p = module_args = pa_xmalloc(n);
 
                 for (i = optind+2; i < argc; i++)
                     p += sprintf(p, "%s%s", p == module_args ? "" : " ", argv[i]);
@@ -837,17 +862,17 @@ int main(int argc, char *argv[]) {
             action = UNLOAD_MODULE;
 
             if (argc != optind+2) {
-                fprintf(stderr, "You have to specify a module index\n");
+                fprintf(stderr, _("You have to specify a module index\n"));
                 goto quit;
             }
 
-            module_index = atoi(argv[optind+1]);
+            module_index = (uint32_t) atoi(argv[optind+1]);
 
         } else if (!strcmp(argv[optind], "suspend-sink")) {
             action = SUSPEND_SINK;
 
             if (argc > optind+3 || optind+1 >= argc) {
-                fprintf(stderr, "You may not specify more than one sink. You have to specify at least one boolean value.\n");
+                fprintf(stderr, _("You may not specify more than one sink. You have to specify at least one boolean value.\n"));
                 goto quit;
             }
 
@@ -860,7 +885,7 @@ int main(int argc, char *argv[]) {
             action = SUSPEND_SOURCE;
 
             if (argc > optind+3 || optind+1 >= argc) {
-                fprintf(stderr, "You may not specify more than one source. You have to specify at least one boolean value.\n");
+                fprintf(stderr, _("You may not specify more than one source. You have to specify at least one boolean value.\n"));
                 goto quit;
             }
 
@@ -868,16 +893,20 @@ int main(int argc, char *argv[]) {
 
             if (argc > optind+2)
                 source_name = pa_xstrdup(argv[optind+1]);
+        } else if (!strcmp(argv[optind], "help")) {
+            help(bn);
+            ret = 0;
+            goto quit;
         }
     }
 
     if (action == NONE) {
-        fprintf(stderr, "No valid command specified.\n");
+        fprintf(stderr, _("No valid command specified.\n"));
         goto quit;
     }
 
     if (!(m = pa_mainloop_new())) {
-        fprintf(stderr, "pa_mainloop_new() failed.\n");
+        fprintf(stderr, _("pa_mainloop_new() failed.\n"));
         goto quit;
     }
 
@@ -891,7 +920,7 @@ int main(int argc, char *argv[]) {
 #endif
 
     if (!(context = pa_context_new(mainloop_api, client_name))) {
-        fprintf(stderr, "pa_context_new() failed.\n");
+        fprintf(stderr, _("pa_context_new() failed.\n"));
         goto quit;
     }
 
@@ -899,7 +928,7 @@ int main(int argc, char *argv[]) {
     pa_context_connect(context, server, 0, NULL);
 
     if (pa_mainloop_run(m, &ret) < 0) {
-        fprintf(stderr, "pa_mainloop_run() failed.\n");
+        fprintf(stderr, _("pa_mainloop_run() failed.\n"));
         goto quit;
     }
 

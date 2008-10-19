@@ -1,5 +1,3 @@
-/* $Id: memchunk.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -49,17 +47,20 @@ pa_memchunk* pa_memchunk_make_writable(pa_memchunk *c, size_t min) {
         pa_memblock_get_length(c->memblock) >= c->index+min)
         return c;
 
-    l = c->length;
-    if (l < min)
-        l = min;
+    l = PA_MAX(c->length, min);
 
     n = pa_memblock_new(pa_memblock_get_pool(c->memblock), l);
-    tdata = pa_memblock_acquire(n);
+
     sdata = pa_memblock_acquire(c->memblock);
+    tdata = pa_memblock_acquire(n);
+
     memcpy(tdata, (uint8_t*) sdata + c->index, c->length);
-    pa_memblock_release(n);
+
     pa_memblock_release(c->memblock);
+    pa_memblock_release(n);
+
     pa_memblock_unref(c->memblock);
+
     c->memblock = n;
     c->index = 0;
 
@@ -69,8 +70,7 @@ pa_memchunk* pa_memchunk_make_writable(pa_memchunk *c, size_t min) {
 pa_memchunk* pa_memchunk_reset(pa_memchunk *c) {
     pa_assert(c);
 
-    c->memblock = NULL;
-    c->length = c->index = 0;
+    memset(c, 0, sizeof(*c));
 
     return c;
 }
@@ -89,4 +89,24 @@ pa_memchunk *pa_memchunk_will_need(const pa_memchunk *c) {
     pa_memblock_release(c->memblock);
 
     return (pa_memchunk*) c;
+}
+
+pa_memchunk* pa_memchunk_memcpy(pa_memchunk *dst, pa_memchunk *src) {
+    void *p, *q;
+
+    pa_assert(dst);
+    pa_assert(src);
+    pa_assert(dst->length == src->length);
+
+    p = pa_memblock_acquire(dst->memblock);
+    q = pa_memblock_acquire(src->memblock);
+
+    memmove((uint8_t*) p + dst->index,
+            (uint8_t*) q + src->index,
+            dst->length);
+
+    pa_memblock_release(dst->memblock);
+    pa_memblock_release(src->memblock);
+
+    return dst;
 }

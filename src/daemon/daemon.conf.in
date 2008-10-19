@@ -1,5 +1,3 @@
-# $Id: daemon.conf.in 2175 2008-03-27 23:39:10Z lennart $
-#
 # This file is part of PulseAudio.
 #
 # PulseAudio is free software; you can redistribute it and/or modify
@@ -24,9 +22,11 @@
 ; daemonize = no
 ; fail = yes
 ; disallow-module-loading = no
+; disallow-exit = no
 ; use-pid-file = yes
 ; system-instance = no
 ; disable-shm = no
+; shm-size-bytes = 0 # setting this 0 will use the system-default, usually 64 MiB
 
 ; high-priority = yes
 ; nice-level = -11
@@ -34,12 +34,13 @@
 ; realtime-scheduling = no
 ; realtime-priority = 5
 
-; exit-idle-time = -1
+; exit-idle-time = 20
 ; module-idle-time = 20
 ; scache-idle-time = 20
 
 ; dl-search-path = (depends on architecture)
 
+; load-default-script-file = yes
 ; default-script-file = @PA_DEFAULT_CONFIG_FILE@
 
 ; log-target = auto
@@ -47,19 +48,25 @@
 
 ; resample-method = speex-float-3
 ; disable-remixing = no
+; disable-lfe-remixing = yes
 
 ; no-cpu-limit = no
 
-; rlimit-as = -1
-; rlimit-core = -1
-; rlimit-data = -1
 ; rlimit-fsize = -1
-; rlimit-nofile = 256
+; rlimit-data = -1
 ; rlimit-stack = -1
+; rlimit-core = -1
+; rlimit-as = -1
+; rlimit-rss = -1
 ; rlimit-nproc = -1
+; rlimit-nofile = 256
 ; rlimit-memlock = -1
+; rlimit-locks = -1
+; rlimit-sigpending = -1
+; rlimit-msgqueue = -1
 ; rlimit-nice = 31
 ; rlimit-rtprio = 9
+; rlimit-rtttime = 1000000
 
 ; default-sample-format = s16le
 ; default-sample-rate = 44100

@@ -1,5 +1,3 @@
-/* $Id: thread-mainloop-test.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -30,8 +28,8 @@
 #include <pulse/timeval.h>
 #include <pulse/util.h>
 #include <pulse/thread-mainloop.h>
+#include <pulse/gccmacro.h>
 
-#include <pulsecore/gccmacro.h>
 #include <pulsecore/macro.h>
 
 static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, void *userdata) {
@@ -41,7 +39,7 @@ static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, v
     fprintf(stderr, "TIME EVENT END\n");
 }
 
-int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
+int main(int argc, char *argv[]) {
     pa_mainloop_api *a;
     pa_threaded_mainloop *m;
     struct timeval tv;

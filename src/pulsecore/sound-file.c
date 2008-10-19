@@ -1,5 +1,3 @@
-/* $Id: sound-file.c 2159 2008-03-27 23:29:32Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -91,7 +89,7 @@ int pa_sound_file_load(
         case SF_FORMAT_PCM_U8:
         case SF_FORMAT_PCM_S8:
             ss->format = PA_SAMPLE_S16NE;
-            readf_function = (sf_count_t (*)(SNDFILE *sndfile, void *ptr, sf_count_t frames)) sf_readf_short;
+            readf_function = (sf_count_t (*)(SNDFILE *sndfile, void *_ptr, sf_count_t frames)) sf_readf_short;
             break;
 
         case SF_FORMAT_ULAW:
@@ -106,12 +104,12 @@ int pa_sound_file_load(
         case SF_FORMAT_DOUBLE:
         default:
             ss->format = PA_SAMPLE_FLOAT32NE;
-            readf_function = (sf_count_t (*)(SNDFILE *sndfile, void *ptr, sf_count_t frames)) sf_readf_float;
+            readf_function = (sf_count_t (*)(SNDFILE *sndfile, void *_ptr, sf_count_t frames)) sf_readf_float;
             break;
     }
 
-    ss->rate = sfinfo.samplerate;
-    ss->channels = sfinfo.channels;
+    ss->rate = (uint32_t) sfinfo.samplerate;
+    ss->channels = (uint8_t) sfinfo.channels;
 
     if (!pa_sample_spec_valid(ss)) {
         pa_log("Unsupported sample format in file %s", fname);
@@ -119,12 +117,9 @@ int pa_sound_file_load(
     }
 
     if (map)
-        if (!pa_channel_map_init_auto(map, ss->channels, PA_CHANNEL_MAP_DEFAULT)) {
-            pa_log("Unsupported channel map in file %s", fname);
-            goto finish;
-        }
+        pa_channel_map_init_extend(map, ss->channels, PA_CHANNEL_MAP_DEFAULT);
 
-    if ((l = pa_frame_size(ss) * sfinfo.frames) > PA_SCACHE_ENTRY_SIZE_MAX) {
+    if ((l = pa_frame_size(ss) * (size_t) sfinfo.frames) > PA_SCACHE_ENTRY_SIZE_MAX) {
         pa_log("File too large");
         goto finish;
     }
@@ -136,7 +131,7 @@ int pa_sound_file_load(
     ptr = pa_memblock_acquire(chunk->memblock);
 
     if ((readf_function && readf_function(sf, ptr, sfinfo.frames) != sfinfo.frames) ||
-        (!readf_function && sf_read_raw(sf, ptr, l) != (sf_count_t) l)) {
+        (!readf_function && sf_read_raw(sf, ptr, (sf_count_t) l) != (sf_count_t) l)) {
         pa_log("Premature file end");
         goto finish;
     }
@@ -194,15 +189,15 @@ int pa_sound_file_too_big_to_cache(const char *fname) {
             break;
     }
 
-    ss.rate = sfinfo.samplerate;
-    ss.channels = sfinfo.channels;
+    ss.rate = (uint32_t) sfinfo.samplerate;
+    ss.channels = (uint8_t) sfinfo.channels;
 
     if (!pa_sample_spec_valid(&ss)) {
         pa_log("Unsupported sample format in file %s", fname);
         return -1;
     }
 
-    if ((pa_frame_size(&ss) * sfinfo.frames) > PA_SCACHE_ENTRY_SIZE_MAX) {
+    if ((pa_frame_size(&ss) * (size_t) sfinfo.frames) > PA_SCACHE_ENTRY_SIZE_MAX) {
         pa_log("File too large: %s", fname);
         return 1;
     }

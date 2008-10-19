@@ -1,5 +1,3 @@
-/* $Id: module-x11-xsmp.c 2043 2007-11-09 18:25:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -42,27 +40,44 @@
 #include <pulsecore/namereg.h>
 #include <pulsecore/log.h>
 #include <pulsecore/core-util.h>
+#include <pulsecore/x11wrap.h>
 
 #include "module-x11-xsmp-symdef.h"
 
 PA_MODULE_AUTHOR("Lennart Poettering");
 PA_MODULE_DESCRIPTION("X11 session management");
 PA_MODULE_VERSION(PACKAGE_VERSION);
-PA_MODULE_LOAD_ONCE(TRUE);
+PA_MODULE_LOAD_ONCE(FALSE);
+PA_MODULE_USAGE("session_manager=<session manager string> display=<X11 display>");
 
-static int ice_in_use = 0;
+static pa_bool_t ice_in_use = FALSE;
 
 static const char* const valid_modargs[] = {
+    "session_manager",
+    "display",
     NULL
 };
 
+struct userdata {
+    pa_core *core;
+    pa_module *module;
+    pa_client *client;
+    SmcConn connection;
+    pa_x11_wrapper *x11;
+};
+
 static void die_cb(SmcConn connection, SmPointer client_data){
-    pa_core *c = PA_CORE(client_data);
+    struct userdata *u = client_data;
+    pa_assert(u);
 
-    pa_log_debug("Got die message from XSM. Exiting...");
+    pa_log_debug("Got die message from XSMP.");
 
-    pa_core_assert_ref(c);
-    c->mainloop->quit(c->mainloop, 0);
+    pa_x11_wrapper_kill(u->x11);
+
+    pa_x11_wrapper_unref(u->x11);
+    u->x11 = NULL;
+
+    pa_module_unload_request(u->module, TRUE);
 }
 
 static void save_complete_cb(SmcConn connection, SmPointer client_data) {
@@ -86,12 +101,15 @@ static void ice_io_cb(pa_mainloop_api*a, pa_io_event *e, int fd, pa_io_event_fla
 }
 
 static void new_ice_connection(IceConn connection, IcePointer client_data, Bool opening, IcePointer *watch_data) {
-    pa_core *c = client_data;
-
-    pa_assert(c);
+    struct pa_core *c = client_data;
 
     if (opening)
-        *watch_data = c->mainloop->io_new(c->mainloop, IceConnectionNumber(connection), PA_IO_EVENT_INPUT, ice_io_cb, connection);
+        *watch_data = c->mainloop->io_new(
+                c->mainloop,
+                IceConnectionNumber(connection),
+                PA_IO_EVENT_INPUT,
+                ice_io_cb,
+                connection);
     else
         c->mainloop->io_free(*watch_data);
 }
@@ -99,12 +117,13 @@ static void new_ice_connection(IceConn connection, IcePointer client_data, Bool 
 int pa__init(pa_module*m) {
 
     pa_modargs *ma = NULL;
-    char t[256], *vendor, *client_id;
+    char t[256], *vendor, *client_id, *k;
     SmcCallbacks callbacks;
     SmProp prop_program, prop_user;
     SmProp *prop_list[2];
     SmPropValue val_program, val_user;
-    SmcConn connection;
+    struct userdata *u;
+    const char *e;
 
     pa_assert(m);
 
@@ -114,21 +133,33 @@ int pa__init(pa_module*m) {
     }
 
     IceAddConnectionWatch(new_ice_connection, m->core);
-    ice_in_use = 1;
+    ice_in_use = TRUE;
+
+    m->userdata = u = pa_xnew(struct userdata, 1);
+    u->core = m->core;
+    u->module = m;
+    u->client = NULL;
+    u->connection = NULL;
+    u->x11 = NULL;
 
     if (!(ma = pa_modargs_new(m->argument, valid_modargs))) {
         pa_log("Failed to parse module arguments");
         goto fail;
     }
 
-    if (!getenv("SESSION_MANAGER")) {
+    if (!(u->x11 = pa_x11_wrapper_get(m->core, pa_modargs_get_value(ma, "display", NULL))))
+        goto fail;
+
+    e = pa_modargs_get_value(ma, "session_manager", NULL);
+
+    if (!e && !getenv("SESSION_MANAGER")) {
         pa_log("X11 session manager not running.");
         goto fail;
     }
 
     memset(&callbacks, 0, sizeof(callbacks));
     callbacks.die.callback = die_cb;
-    callbacks.die.client_data = m->core;
+    callbacks.die.client_data = u;
     callbacks.save_yourself.callback = save_yourself_cb;
     callbacks.save_yourself.client_data = m->core;
     callbacks.save_complete.callback = save_complete_cb;
@@ -136,8 +167,8 @@ int pa__init(pa_module*m) {
     callbacks.shutdown_cancelled.callback = shutdown_cancelled_cb;
     callbacks.shutdown_cancelled.client_data = m->core;
 
-    if (!(m->userdata = connection = SmcOpenConnection(
-                  NULL, m->core,
+    if (!(u->connection = SmcOpenConnection(
+                  (char*) e, m->core,
                   SmProtoMajor, SmProtoMinor,
                   SmcSaveYourselfProcMask | SmcDieProcMask | SmcSaveCompleteProcMask | SmcShutdownCancelledProcMask,
                   &callbacks, NULL, &client_id,
@@ -150,7 +181,7 @@ int pa__init(pa_module*m) {
     prop_program.name = (char*) SmProgram;
     prop_program.type = (char*) SmARRAY8;
     val_program.value = (char*) PACKAGE_NAME;
-    val_program.length = strlen(val_program.value);
+    val_program.length = (int) strlen(val_program.value);
     prop_program.num_vals = 1;
     prop_program.vals = &val_program;
     prop_list[0] = &prop_program;
@@ -159,14 +190,21 @@ int pa__init(pa_module*m) {
     prop_user.type = (char*) SmARRAY8;
     pa_get_user_name(t, sizeof(t));
     val_user.value = t;
-    val_user.length = strlen(val_user.value);
+    val_user.length = (int) strlen(val_user.value);
     prop_user.num_vals = 1;
     prop_user.vals = &val_user;
     prop_list[1] = &prop_user;
 
-    SmcSetProperties(connection, PA_ELEMENTSOF(prop_list), prop_list);
+    SmcSetProperties(u->connection, PA_ELEMENTSOF(prop_list), prop_list);
 
-    pa_log_info("Connected to session manager '%s' as '%s'.", vendor = SmcVendor(connection), client_id);
+    pa_log_info("Connected to session manager '%s' as '%s'.", vendor = SmcVendor(u->connection), client_id);
+    k = pa_sprintf_malloc("XSMP Session on %s as %s", vendor, client_id);
+    u->client = pa_client_new(u->core, __FILE__, k);
+    pa_xfree(k);
+
+    pa_proplist_sets(u->client->proplist, "xsmp.vendor", vendor);
+    pa_proplist_sets(u->client->proplist, "xsmp.client.id", client_id);
+
     free(vendor);
     free(client_id);
 
@@ -184,13 +222,26 @@ fail:
 }
 
 void pa__done(pa_module*m) {
+    struct userdata *u;
+
     pa_assert(m);
 
-    if (m->userdata)
-        SmcCloseConnection(m->userdata, 0, NULL);
+    if ((u = m->userdata)) {
+
+        if (u->connection)
+            SmcCloseConnection(u->connection, 0, NULL);
+
+        if (u->client)
+            pa_client_free(u->client);
+
+        if (u->x11)
+            pa_x11_wrapper_unref(u->x11);
+
+        pa_xfree(u);
+    }
 
     if (ice_in_use) {
         IceRemoveConnectionWatch(new_ice_connection, m->core);
-        ice_in_use = 0;
+        ice_in_use = FALSE;
     }
 }

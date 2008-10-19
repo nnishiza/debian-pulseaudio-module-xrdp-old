@@ -2,8 +2,6 @@
 <!DOCTYPE manpage SYSTEM "xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="xmltoman.xsl" ?>
 
-<!-- $Id: pulse-daemon.conf.5.xml.in 2070 2007-11-21 23:03:19Z lennart $ -->
-
 <!--
 This file is part of PulseAudio.
 
@@ -33,7 +31,7 @@ USA.
 
   <description>
     <p>The PulseAudio sound server reads configuration directives from
-    a file <file>~/.pulse/daemon.conf</file> on startup, and when that
+    a file <file>~/.pulse/daemon.conf</file> on startup and when that
     file doesn't exist from
     <file>@pulseconfdir@/daemon.conf</file>. Please note that the
     server also reads a configuration script on startup
@@ -42,9 +40,9 @@ USA.
 
     <p>The configuration file is a simple collection of variable
     declarations. If the configuration file parser encounters either ;
-    or # for it ignores the rest of the line until its end.</p>
+    or # it ignores the rest of the line until its end.</p>
 
-    <p>For the settings that take a boolean argument, the values
+    <p>For the settings that take a boolean argument the values
     <opt>true</opt>, <opt>yes</opt>, <opt>on</opt> and <opt>1</opt>
     are equivalent, resp. <opt>false</opt>, <opt>no</opt>,
     <opt>off</opt>, <opt>0</opt>.</p>
@@ -79,6 +77,11 @@ USA.
     </option>
 
     <option>
+      <p><opt>disallow-exit=</opt> Disallow exit on user
+      request. Defaults to <opt>no</opt>.</p>
+    </option>
+
+    <option>
       <p><opt>resample-method=</opt> The resampling algorithm to
       use. Use one of <opt>src-sinc-best-quality</opt>,
       <opt>src-sinc-medium-quality</opt>, <opt>src-sinc-fastest</opt>,
@@ -105,6 +108,16 @@ USA.
       <p><opt>disable-remixing=</opt> Never upmix or downmix channels
       to different channel maps. Instead, do a simple name-based
       matching only.</p>
+    </option>
+
+    <option>
+      <p><opt>disable-lfe-remixing=</opt> When upmixing or downmixing
+      ignore LFE channels. When this option is on the output LFE
+      channel will only get a signal when an input LFE channel is
+      available as well. If no input LFE channel is available the
+      output LFE channel will always be 0. If no output LFE channel is
+      available the signal on the input LFE channel will be
+      ignored. Defaults to "on".</p>
     </option>
 
     <option>
@@ -141,6 +154,15 @@ USA.
       shared memory. Takes a boolean argument, defaults to
       <opt>no</opt>. The <opt>--disable-shm</opt> command line
       argument takes precedence.</p>
+    </option>
+
+    <option>
+      <p><opt>shm-size-bytes=</opt> Sets the shared memory segment
+      size for the daemon, in bytes. If left unspecified or is set to 0
+      it will default to some system-specific default, usually 64
+      MiB. Please note that usually there is no need to change this
+      value, unless you are running an OS kernel that does not do
+      memory overcommit.</p>
     </option>
 
   </section>
@@ -232,9 +254,17 @@ USA.
       default script file. The default behaviour is to load
       <file>~/.pulse/default.pa</file>, and if that file does not
       exist fall back to the system wide installed version
-      <file>@pulseconfdir@/default.pa</file>. If <opt>-n</opt> is
-      passed on the command line the default configuration script is
-      ignored.</p>
+      <file>@pulseconfdir@/default.pa</file>. If run in system-wide
+      mode the file <file>@pulseconfdir@/system.pa</file> is used
+      instead. If <opt>-n</opt> is passed on the command line
+      or <opt>default-script-file=</opt> is disabled the default
+      configuration script is ignored.</p>
+    </option>
+
+    <option>
+      <p><opt>default-script-file=</opt> Load the default
+      configuration script file as specified
+      in <opt>default-script-file=</opt>. Defaults to "yes".</p>
     </option>
 
   </section>
@@ -274,6 +304,9 @@ USA.
       <p><opt>rlimit-as</opt> Defaults to -1.</p>
     </option>
     <option>
+      <p><opt>rlimit-rss</opt> Defaults to -1.</p>
+    </option>
+    <option>
       <p><opt>rlimit-core</opt> Defaults to -1.</p>
     </option>
     <option>
@@ -290,6 +323,15 @@ USA.
     </option>
     <option>
       <p><opt>rlimit-nproc</opt> Defaults to -1.</p>
+    </option>
+    <option>
+      <p><opt>rlimit-locks</opt> Defaults to -1.</p>
+    </option>
+    <option>
+      <p><opt>rlimit-sigpending</opt> Defaults to -1.</p>
+    </option>
+    <option>
+      <p><opt>rlimit-msgqueue</opt> Defaults to -1.</p>
     </option>
     <option>
       <p><opt>rlimit-memlock</opt> Defaults to 16 KiB. Please note
@@ -309,6 +351,9 @@ USA.
       <opt>realtime-scheduling</opt> is enabled. The JACK client
       libraries require a real-time prority of 9 by default. </p>
     </option>
+    <option>
+      <p><opt>rlimit-rttime</opt> Defaults to 1000000.</p>
+    </option>
 
   </section>
 
@@ -321,9 +366,11 @@ USA.
     <option>
       <p><opt>default-sample-format=</opt> The default sampling
       format. Specify one of <opt>u8</opt>, <opt>s16le</opt>,
-      <opt>s16be</opt>, <opt>float32le</opt>, <opt>float32be</opt>,
+      <opt>s16be</opt>, <opt>s32le</opt>,
+      <opt>s32be</opt>, <opt>float32le</opt>, <opt>float32be</opt>,
       <opt>ulaw</opt>, <opt>alaw</opt>. Depending on the endianess of
-      the CPU the formats <opt>s16ne</opt>, <opt>s16re</opt>,
+      the CPU the
+      formats <opt>s16ne</opt>, <opt>s16re</opt>, <opt>s32ne</opt>, <opt>s32re</opt>,
       <opt>float32ne</opt>, <opt>float32re</opt> (for native,
       resp. reverse endian) are available as aliases.</p>
     </option>

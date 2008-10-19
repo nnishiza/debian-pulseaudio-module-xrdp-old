@@ -1,5 +1,3 @@
-/* $Id: caps.c 2193 2008-03-30 00:39:57Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -30,7 +28,13 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/types.h>
+
+#include <pulse/i18n.h>
+
 #include <pulsecore/macro.h>
+#include <pulsecore/core-error.h>
+#include <pulsecore/log.h>
+#include <pulsecore/core-util.h>
 
 #ifdef HAVE_SYS_CAPABILITY_H
 #include <sys/capability.h>
@@ -38,10 +42,6 @@
 #ifdef HAVE_SYS_PRCTL_H
 #include <sys/prctl.h>
 #endif
-
-#include <pulsecore/core-error.h>
-
-#include <pulsecore/log.h>
 
 #include "caps.h"
 
@@ -60,7 +60,7 @@ void pa_drop_root(void) {
     if (uid == 0 || geteuid() != 0)
         return;
 
-    pa_log_info("Dropping root priviliges.");
+    pa_log_info(_("Dropping root priviliges."));
 
 #if defined(HAVE_SETRESUID)
     pa_assert_se(setresuid(uid, uid, uid) >= 0);
@@ -85,55 +85,78 @@ void pa_drop_root(void) {
 #if defined(HAVE_SYS_CAPABILITY_H) && defined(HAVE_SYS_PRCTL_H)
 
 /* Limit permitted capabilities set to CAPSYS_NICE */
-int pa_limit_caps(void) {
-    int r = -1;
+void pa_limit_caps(void) {
     cap_t caps;
     cap_value_t nice_cap = CAP_SYS_NICE;
 
     pa_assert_se(caps = cap_init());
-
-    cap_clear(caps);
-    cap_set_flag(caps, CAP_EFFECTIVE, 1, &nice_cap, CAP_SET);
-    cap_set_flag(caps, CAP_PERMITTED, 1, &nice_cap, CAP_SET);
+    pa_assert_se(cap_clear(caps) == 0);
+    pa_assert_se(cap_set_flag(caps, CAP_EFFECTIVE, 1, &nice_cap, CAP_SET) == 0);
+    pa_assert_se(cap_set_flag(caps, CAP_PERMITTED, 1, &nice_cap, CAP_SET) == 0);
 
     if (cap_set_proc(caps) < 0)
-        goto fail;
+        /* Hmm, so we couldn't limit our caps, which probably means we
+         * hadn't any in the first place, so let's just make sure of
+         * that */
+        pa_drop_caps();
+    else
+        pa_log_info(_("Limited capabilities successfully to CAP_SYS_NICE."));
 
-    if (prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) < 0)
-        goto fail;
+    pa_assert_se(cap_free(caps) == 0);
 
-    pa_log_info("Dropped capabilities successfully.");
-
-    r = 1;
-
-fail:
-    cap_free(caps);
-
-    return r;
+    pa_assert_se(prctl(PR_SET_KEEPCAPS, 1, 0, 0, 0) == 0);
 }
 
 /* Drop all capabilities, effectively becoming a normal user */
 void pa_drop_caps(void) {
     cap_t caps;
 
+#ifndef __OPTIMIZE__
+    /* Valgrind doesn't not know set_caps, so we bypass it here -- but
+     * only in development builds.*/
+
+    if (pa_in_valgrind() && !pa_have_caps())
+        return;
+#endif
+
     pa_assert_se(prctl(PR_SET_KEEPCAPS, 0, 0, 0, 0) == 0);
 
     pa_assert_se(caps = cap_init());
-    cap_clear(caps);
+    pa_assert_se(cap_clear(caps) == 0);
     pa_assert_se(cap_set_proc(caps) == 0);
-    cap_free(caps);
+    pa_assert_se(cap_free(caps) == 0);
+
+    pa_assert_se(!pa_have_caps());
+}
+
+pa_bool_t pa_have_caps(void) {
+    cap_t caps;
+    cap_flag_value_t flag = CAP_CLEAR;
+
+#ifdef __OPTIMIZE__
+    pa_assert_se(caps = cap_get_proc());
+#else
+    if (!(caps = cap_get_proc()))
+        return FALSE;
+#endif
+    pa_assert_se(cap_get_flag(caps, CAP_SYS_NICE, CAP_EFFECTIVE, &flag) >= 0);
+    pa_assert_se(cap_free(caps) == 0);
+
+    return flag == CAP_SET;
 }
 
 #else
 
 /* NOOPs in case capabilities are not available. */
-int pa_limit_caps(void) {
-    return 0;
+void pa_limit_caps(void) {
 }
 
-int pa_drop_caps(void) {
+void pa_drop_caps(void) {
     pa_drop_root();
-    return 0;
+}
+
+pa_bool_t pa_have_caps(void) {
+    return FALSE;
 }
 
 #endif

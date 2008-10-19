@@ -1,5 +1,3 @@
-/* $Id: module-rescue-streams.c 2043 2007-11-09 18:25:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -75,12 +73,12 @@ static pa_hook_result_t sink_hook_callback(pa_core *c, pa_sink *sink, void* user
     }
 
     while ((i = pa_idxset_first(sink->inputs, NULL))) {
-        if (pa_sink_input_move_to(i, target, 1) < 0) {
-            pa_log_warn("Failed to move sink input %u \"%s\" to %s.", i->index, i->name, target->name);
+        if (pa_sink_input_move_to(i, target) < 0) {
+            pa_log_warn("Failed to move sink input %u \"%s\" to %s.", i->index, pa_proplist_gets(i->proplist, PA_PROP_APPLICATION_NAME), target->name);
             return PA_HOOK_OK;
         }
 
-        pa_log_info("Sucessfully moved sink input %u \"%s\" to %s.", i->index, i->name, target->name);
+        pa_log_info("Sucessfully moved sink input %u \"%s\" to %s.", i->index, pa_proplist_gets(i->proplist, PA_PROP_APPLICATION_NAME), target->name);
     }
 
 
@@ -116,11 +114,11 @@ static pa_hook_result_t source_hook_callback(pa_core *c, pa_source *source, void
 
     while ((o = pa_idxset_first(source->outputs, NULL))) {
         if (pa_source_output_move_to(o, target) < 0) {
-            pa_log_warn("Failed to move source output %u \"%s\" to %s.", o->index, o->name, target->name);
+            pa_log_warn("Failed to move source output %u \"%s\" to %s.", o->index, pa_proplist_gets(o->proplist, PA_PROP_APPLICATION_NAME), target->name);
             return PA_HOOK_OK;
         }
 
-        pa_log_info("Sucessfully moved source output %u \"%s\" to %s.", o->index, o->name, target->name);
+        pa_log_info("Sucessfully moved source output %u \"%s\" to %s.", o->index, pa_proplist_gets(o->proplist, PA_PROP_APPLICATION_NAME), target->name);
     }
 
 
@@ -139,8 +137,8 @@ int pa__init(pa_module*m) {
     }
 
     m->userdata = u = pa_xnew(struct userdata, 1);
-    u->sink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_UNLINK], (pa_hook_cb_t) sink_hook_callback, NULL);
-    u->source_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_UNLINK], (pa_hook_cb_t) source_hook_callback, NULL);
+    u->sink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_UNLINK], PA_HOOK_LATE, (pa_hook_cb_t) sink_hook_callback, NULL);
+    u->source_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_UNLINK], PA_HOOK_LATE, (pa_hook_cb_t) source_hook_callback, NULL);
 
     pa_modargs_free(ma);
     return 0;

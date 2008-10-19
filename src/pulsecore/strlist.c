@@ -1,5 +1,3 @@
-/* $Id: strlist.c 1984 2007-10-29 20:30:15Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

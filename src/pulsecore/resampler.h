@@ -1,8 +1,6 @@
 #ifndef fooresamplerhfoo
 #define fooresamplerhfoo
 
-/* $Id: resampler.h 2044 2007-11-11 02:30:59Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -46,13 +44,15 @@ typedef enum pa_resample_method {
     PA_RESAMPLER_FFMPEG,
     PA_RESAMPLER_AUTO, /* automatic select based on sample format */
     PA_RESAMPLER_COPY,
+    PA_RESAMPLER_PEAKS,
     PA_RESAMPLER_MAX
 } pa_resample_method_t;
 
 typedef enum pa_resample_flags {
-    PA_RESAMPLER_VARIABLE_RATE = 1,
-    PA_RESAMPLER_NO_REMAP = 2,  /* implies NO_REMIX */
-    PA_RESAMPLER_NO_REMIX = 4
+    PA_RESAMPLER_VARIABLE_RATE = 0x0001U,
+    PA_RESAMPLER_NO_REMAP      = 0x0002U,  /* implies NO_REMIX */
+    PA_RESAMPLER_NO_REMIX      = 0x0004U,
+    PA_RESAMPLER_NO_LFE        = 0x0008U
 } pa_resample_flags_t;
 
 pa_resampler* pa_resampler_new(
@@ -69,6 +69,9 @@ void pa_resampler_free(pa_resampler *r);
 /* Returns the size of an input memory block which is required to return the specified amount of output data */
 size_t pa_resampler_request(pa_resampler *r, size_t out_length);
 
+/* Inverse of pa_resampler_request() */
+size_t pa_resampler_result(pa_resampler *r, size_t in_length);
+
 /* Returns the maximum size of input blocks we can process without needing bounce buffers larger than the mempool tile size. */
 size_t pa_resampler_max_block_size(pa_resampler *r);
 
@@ -81,6 +84,9 @@ void pa_resampler_set_input_rate(pa_resampler *r, uint32_t rate);
 /* Change the output rate of the resampler object */
 void pa_resampler_set_output_rate(pa_resampler *r, uint32_t rate);
 
+/* Reinitialize state of the resampler, possibly due to seeking or other discontinuities */
+void pa_resampler_reset(pa_resampler *r);
+
 /* Return the resampling method of the resampler object */
 pa_resample_method_t pa_resampler_get_method(pa_resampler *r);
 
@@ -92,5 +98,6 @@ const char *pa_resample_method_to_string(pa_resample_method_t m);
 
 /* Return 1 when the specified resampling method is supported */
 int pa_resample_method_supported(pa_resample_method_t m);
+
 
 #endif

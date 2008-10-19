@@ -1,5 +1,3 @@
-/* $Id: iochannel.c 2022 2007-11-04 16:51:26Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -423,4 +421,17 @@ int pa_iochannel_get_send_fd(pa_iochannel *io) {
     pa_assert(io);
 
     return io->ofd;
+}
+
+pa_bool_t pa_iochannel_socket_is_local(pa_iochannel *io) {
+    pa_assert(io);
+
+    if (pa_socket_is_local(io->ifd))
+        return TRUE;
+
+    if (io->ifd != io->ofd)
+        if (pa_socket_is_local(io->ofd))
+            return TRUE;
+
+    return FALSE;
 }

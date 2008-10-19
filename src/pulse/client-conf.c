@@ -1,5 +1,3 @@
-/* $Id: client-conf.c 2009 2007-11-01 00:33:14Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -32,6 +30,7 @@
 #include <string.h>
 
 #include <pulse/xmalloc.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/macro.h>
 #include <pulsecore/core-error.h>
@@ -58,17 +57,18 @@ static const pa_client_conf default_conf = {
     .default_sink = NULL,
     .default_source = NULL,
     .default_server = NULL,
-    .autospawn = FALSE,
+    .autospawn = TRUE,
     .disable_shm = FALSE,
     .cookie_file = NULL,
     .cookie_valid = FALSE,
+    .shm_size = 0
 };
 
 pa_client_conf *pa_client_conf_new(void) {
     pa_client_conf *c = pa_xmemdup(&default_conf, sizeof(default_conf));
 
     c->daemon_binary = pa_xstrdup(PA_BINARY);
-    c->extra_arguments = pa_xstrdup("--log-target=syslog --exit-idle-time=5");
+    c->extra_arguments = pa_xstrdup("--log-target=syslog");
     c->cookie_file = pa_xstrdup(PA_NATIVE_COOKIE_FILE);
 
     return c;
@@ -100,6 +100,7 @@ int pa_client_conf_load(pa_client_conf *c, const char *filename) {
         { "autospawn",              pa_config_parse_bool,    NULL },
         { "cookie-file",            pa_config_parse_string,  NULL },
         { "disable-shm",            pa_config_parse_bool,    NULL },
+        { "shm-size-bytes",         pa_config_parse_size,    NULL },
         { NULL,                     NULL,                    NULL },
     };
 
@@ -111,21 +112,28 @@ int pa_client_conf_load(pa_client_conf *c, const char *filename) {
     table[5].data = &c->autospawn;
     table[6].data = &c->cookie_file;
     table[7].data = &c->disable_shm;
+    table[8].data = &c->shm_size;
 
-    f = filename ?
-        fopen((fn = pa_xstrdup(filename)), "r") :
-        pa_open_config_file(DEFAULT_CLIENT_CONFIG_FILE, DEFAULT_CLIENT_CONFIG_FILE_USER, ENV_CLIENT_CONFIG_FILE, &fn, "r");
+    if (filename) {
 
-    if (!f && errno != EINTR) {
-        pa_log_warn("Failed to open configuration file '%s': %s", fn, pa_cstrerror(errno));
-        goto finish;
+        if (!(f = fopen(filename, "r"))) {
+            pa_log(_("Failed to open configuration file '%s': %s"), fn, pa_cstrerror(errno));
+            goto finish;
+        }
+
+        fn = pa_xstrdup(fn);
+
+    } else {
+
+        if (!(f = pa_open_config_file(DEFAULT_CLIENT_CONFIG_FILE, DEFAULT_CLIENT_CONFIG_FILE_USER, ENV_CLIENT_CONFIG_FILE, &fn)))
+            if (errno != ENOENT)
+                goto finish;
     }
 
     r = f ? pa_config_parse(fn, f, table, NULL) : 0;
 
     if (!r)
         r = pa_client_conf_load_cookie(c);
-
 
 finish:
     pa_xfree(fn);
@@ -172,10 +180,10 @@ int pa_client_conf_env(pa_client_conf *c) {
 int pa_client_conf_load_cookie(pa_client_conf* c) {
     pa_assert(c);
 
-    c->cookie_valid = FALSE;
-
     if (!c->cookie_file)
         return -1;
+
+    c->cookie_valid = FALSE;
 
     if (pa_authkey_load_auto(c->cookie_file, c->cookie, sizeof(c->cookie)) < 0)
         return -1;

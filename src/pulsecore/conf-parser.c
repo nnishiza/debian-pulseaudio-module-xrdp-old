@@ -1,5 +1,3 @@
-/* $Id: conf-parser.c 2007 2007-11-01 00:31:59Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -150,7 +148,7 @@ finish:
     return r;
 }
 
-int pa_config_parse_int(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+int pa_config_parse_int(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     int *i = data;
     int32_t k;
 
@@ -168,7 +166,25 @@ int pa_config_parse_int(const char *filename, unsigned line, const char *lvalue,
     return 0;
 }
 
-int pa_config_parse_bool(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+int pa_config_parse_size(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
+    size_t *i = data;
+    uint32_t k;
+
+    pa_assert(filename);
+    pa_assert(lvalue);
+    pa_assert(rvalue);
+    pa_assert(data);
+
+    if (pa_atou(rvalue, &k) < 0) {
+        pa_log("[%s:%u] Failed to parse numeric value: %s", filename, line, rvalue);
+        return -1;
+    }
+
+    *i = (size_t) k;
+    return 0;
+}
+
+int pa_config_parse_bool(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     int k;
     pa_bool_t *b = data;
 
@@ -187,7 +203,7 @@ int pa_config_parse_bool(const char *filename, unsigned line, const char *lvalue
     return 0;
 }
 
-int pa_config_parse_string(const char *filename, PA_GCC_UNUSED unsigned line, const char *lvalue, const char *rvalue, void *data, PA_GCC_UNUSED void *userdata) {
+int pa_config_parse_string(const char *filename, unsigned line, const char *lvalue, const char *rvalue, void *data, void *userdata) {
     char **s = data;
 
     pa_assert(filename);

@@ -14,8 +14,6 @@
 
 @SET_MAKE@
 
-# $Id: Makefile.am 2029 2007-11-08 22:30:33Z lennart $
-#
 # This file is part of PulseAudio.
 #
 # PulseAudio is free software; you can redistribute it and/or modify
@@ -51,13 +49,20 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@am__append_1 = \
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	$(man_MANS)
+@BUILD_MANPAGES_TRUE@am__append_1 = \
+@BUILD_MANPAGES_TRUE@	$(dist_man_MANS)
 
 subdir = man
-DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in
+DIST_COMMON = $(dist_man_MANS) $(srcdir)/Makefile.am \
+	$(srcdir)/Makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/acinclude.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
+	$(top_srcdir)/m4/acx_lirc.m4 $(top_srcdir)/m4/acx_pthread.m4 \
+	$(top_srcdir)/m4/attributes.m4 \
+	$(top_srcdir)/m4/check_define.m4 $(top_srcdir)/m4/iconv.m4 \
+	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/lib-ld.m4 \
+	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/tls.m4 \
 	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
@@ -70,10 +75,12 @@ man1dir = $(mandir)/man1
 am__installdirs = "$(DESTDIR)$(man1dir)" "$(DESTDIR)$(man5dir)"
 man5dir = $(mandir)/man5
 NROFF = nroff
-MANS = $(man_MANS)
+MANS = $(dist_man_MANS)
 DATA = $(noinst_DATA)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
+ALLOCA = @ALLOCA@
+ALL_LINGUAS = @ALL_LINGUAS@
 AMTAR = @AMTAR@
 AR = @AR@
 AS = @AS@
@@ -87,6 +94,8 @@ AVAHI_LIBS = @AVAHI_LIBS@
 AWK = @AWK@
 BLUEZ_CFLAGS = @BLUEZ_CFLAGS@
 BLUEZ_LIBS = @BLUEZ_LIBS@
+CATALOGS = @CATALOGS@
+CATOBJEXT = @CATOBJEXT@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -97,11 +106,13 @@ CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
+DATADIRNAME = @DATADIRNAME@
 DBUS_CFLAGS = @DBUS_CFLAGS@
 DBUS_LIBS = @DBUS_LIBS@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
 DLLTOOL = @DLLTOOL@
+DSYMUTIL = @DSYMUTIL@
 ECHO = @ECHO@
 ECHO_C = @ECHO_C@
 ECHO_N = @ECHO_N@
@@ -112,8 +123,11 @@ F77 = @F77@
 FFLAGS = @FFLAGS@
 GCONF_CFLAGS = @GCONF_CFLAGS@
 GCONF_LIBS = @GCONF_LIBS@
+GETTEXT_PACKAGE = @GETTEXT_PACKAGE@
 GLIB20_CFLAGS = @GLIB20_CFLAGS@
 GLIB20_LIBS = @GLIB20_LIBS@
+GMOFILES = @GMOFILES@
+GMSGFMT = @GMSGFMT@
 GREP = @GREP@
 HAL_CFLAGS = @HAL_CFLAGS@
 HAL_LIBS = @HAL_LIBS@
@@ -136,6 +150,31 @@ INSTALL_DATA = @INSTALL_DATA@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
 INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
+INSTOBJEXT = @INSTOBJEXT@
+INTLLIBS = @INTLLIBS@
+INTLTOOL_CAVES_RULE = @INTLTOOL_CAVES_RULE@
+INTLTOOL_DESKTOP_RULE = @INTLTOOL_DESKTOP_RULE@
+INTLTOOL_DIRECTORY_RULE = @INTLTOOL_DIRECTORY_RULE@
+INTLTOOL_EXTRACT = @INTLTOOL_EXTRACT@
+INTLTOOL_KBD_RULE = @INTLTOOL_KBD_RULE@
+INTLTOOL_KEYS_RULE = @INTLTOOL_KEYS_RULE@
+INTLTOOL_MERGE = @INTLTOOL_MERGE@
+INTLTOOL_OAF_RULE = @INTLTOOL_OAF_RULE@
+INTLTOOL_PERL = @INTLTOOL_PERL@
+INTLTOOL_POLICY_RULE = @INTLTOOL_POLICY_RULE@
+INTLTOOL_PONG_RULE = @INTLTOOL_PONG_RULE@
+INTLTOOL_PROP_RULE = @INTLTOOL_PROP_RULE@
+INTLTOOL_SCHEMAS_RULE = @INTLTOOL_SCHEMAS_RULE@
+INTLTOOL_SERVER_RULE = @INTLTOOL_SERVER_RULE@
+INTLTOOL_SERVICE_RULE = @INTLTOOL_SERVICE_RULE@
+INTLTOOL_SHEET_RULE = @INTLTOOL_SHEET_RULE@
+INTLTOOL_SOUNDLIST_RULE = @INTLTOOL_SOUNDLIST_RULE@
+INTLTOOL_THEME_RULE = @INTLTOOL_THEME_RULE@
+INTLTOOL_UI_RULE = @INTLTOOL_UI_RULE@
+INTLTOOL_UPDATE = @INTLTOOL_UPDATE@
+INTLTOOL_XAM_RULE = @INTLTOOL_XAM_RULE@
+INTLTOOL_XML_NOMERGE_RULE = @INTLTOOL_XML_NOMERGE_RULE@
+INTLTOOL_XML_RULE = @INTLTOOL_XML_RULE@
 JACK_CFLAGS = @JACK_CFLAGS@
 JACK_LIBS = @JACK_LIBS@
 LDFLAGS = @LDFLAGS@
@@ -156,6 +195,8 @@ LIBSAMPLERATE_CFLAGS = @LIBSAMPLERATE_CFLAGS@
 LIBSAMPLERATE_LIBS = @LIBSAMPLERATE_LIBS@
 LIBSNDFILE_CFLAGS = @LIBSNDFILE_CFLAGS@
 LIBSNDFILE_LIBS = @LIBSNDFILE_LIBS@
+LIBSPEEX_CFLAGS = @LIBSPEEX_CFLAGS@
+LIBSPEEX_LIBS = @LIBSPEEX_LIBS@
 LIBTOOL = @LIBTOOL@
 LIBWRAP_LIBS = @LIBWRAP_LIBS@
 LIRC_CFLAGS = @LIRC_CFLAGS@
@@ -167,6 +208,11 @@ LTLIBOBJS = @LTLIBOBJS@
 M4 = @M4@
 MAKEINFO = @MAKEINFO@
 MKDIR_P = @MKDIR_P@
+MKINSTALLDIRS = @MKINSTALLDIRS@
+MSGFMT = @MSGFMT@
+MSGFMT_OPTS = @MSGFMT_OPTS@
+MSGMERGE = @MSGMERGE@
+NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 PACKAGE = @PACKAGE@
@@ -182,12 +228,18 @@ PA_API_VERSION = @PA_API_VERSION@
 PA_MAJORMINOR = @PA_MAJORMINOR@
 PA_PROTOCOL_VERSION = @PA_PROTOCOL_VERSION@
 PA_REALTIME_GROUP = @PA_REALTIME_GROUP@
+PA_SYSTEM_CONFIG_PATH = @PA_SYSTEM_CONFIG_PATH@
 PA_SYSTEM_GROUP = @PA_SYSTEM_GROUP@
 PA_SYSTEM_RUNTIME_PATH = @PA_SYSTEM_RUNTIME_PATH@
+PA_SYSTEM_STATE_PATH = @PA_SYSTEM_STATE_PATH@
 PA_SYSTEM_USER = @PA_SYSTEM_USER@
 PKG_CONFIG = @PKG_CONFIG@
+POFILES = @POFILES@
 POLKIT_CFLAGS = @POLKIT_CFLAGS@
 POLKIT_LIBS = @POLKIT_LIBS@
+POSUB = @POSUB@
+PO_IN_DATADIR_FALSE = @PO_IN_DATADIR_FALSE@
+PO_IN_DATADIR_TRUE = @PO_IN_DATADIR_TRUE@
 PREOPEN_MODS = @PREOPEN_MODS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
@@ -197,7 +249,9 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+USE_NLS = @USE_NLS@
 VERSION = @VERSION@
+XGETTEXT = @XGETTEXT@
 XMKMF = @XMKMF@
 X_CFLAGS = @X_CFLAGS@
 X_EXTRA_LIBS = @X_EXTRA_LIBS@
@@ -229,7 +283,6 @@ docdir = @docdir@
 dvidir = @dvidir@
 exec_prefix = @exec_prefix@
 have_pkg_config = @have_pkg_config@
-have_xmltoman = @have_xmltoman@
 host = @host@
 host_alias = @host_alias@
 host_cpu = @host_cpu@
@@ -252,48 +305,49 @@ policydir = @policydir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+pulselocaledir = @pulselocaledir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 subdirs = @subdirs@
 sysconfdir = @sysconfdir@
 target_alias = @target_alias@
+top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pulseconfdir = $(sysconfdir)/pulse
-@BUILD_MANPAGES_TRUE@man_MANS = \
-@BUILD_MANPAGES_TRUE@	pulseaudio.1 \
-@BUILD_MANPAGES_TRUE@	esdcompat.1 \
-@BUILD_MANPAGES_TRUE@	pax11publish.1 \
-@BUILD_MANPAGES_TRUE@	paplay.1 \
-@BUILD_MANPAGES_TRUE@	pacat.1 \
-@BUILD_MANPAGES_TRUE@	pacmd.1 \
-@BUILD_MANPAGES_TRUE@	pactl.1 \
-@BUILD_MANPAGES_TRUE@	pasuspender.1 \
-@BUILD_MANPAGES_TRUE@	padsp.1 \
-@BUILD_MANPAGES_TRUE@	pabrowse.1 \
-@BUILD_MANPAGES_TRUE@	pulse-daemon.conf.5 \
-@BUILD_MANPAGES_TRUE@	pulse-client.conf.5 \
-@BUILD_MANPAGES_TRUE@	default.pa.5
+CLEANFILES = $(noinst_DATA) $(am__append_1)
+dist_man_MANS = \
+	pulseaudio.1 \
+	esdcompat.1 \
+	pax11publish.1 \
+	paplay.1 \
+	pacat.1 \
+	pacmd.1 \
+	pactl.1 \
+	pasuspender.1 \
+	padsp.1 \
+	pabrowse.1 \
+	pulse-daemon.conf.5 \
+	pulse-client.conf.5 \
+	default.pa.5
 
-@BUILD_MANPAGES_TRUE@noinst_DATA = \
-@BUILD_MANPAGES_TRUE@	pulseaudio.1.xml \
-@BUILD_MANPAGES_TRUE@	esdcompat.1.xml \
-@BUILD_MANPAGES_TRUE@	pax11publish.1.xml \
-@BUILD_MANPAGES_TRUE@	paplay.1.xml \
-@BUILD_MANPAGES_TRUE@	pacat.1.xml \
-@BUILD_MANPAGES_TRUE@	pacmd.1.xml \
-@BUILD_MANPAGES_TRUE@	pactl.1.xml \
-@BUILD_MANPAGES_TRUE@	pasuspender.1.xml \
-@BUILD_MANPAGES_TRUE@	padsp.1.xml \
-@BUILD_MANPAGES_TRUE@	pabrowse.1.xml \
-@BUILD_MANPAGES_TRUE@	pulse-daemon.conf.5.xml \
-@BUILD_MANPAGES_TRUE@	pulse-client.conf.5.xml \
-@BUILD_MANPAGES_TRUE@	default.pa.5.xml
+noinst_DATA = \
+	pulseaudio.1.xml \
+	esdcompat.1.xml \
+	pax11publish.1.xml \
+	paplay.1.xml \
+	pacat.1.xml \
+	pacmd.1.xml \
+	pactl.1.xml \
+	pasuspender.1.xml \
+	padsp.1.xml \
+	pabrowse.1.xml \
+	pulse-daemon.conf.5.xml \
+	pulse-client.conf.5.xml \
+	default.pa.5.xml
 
-@BUILD_MANPAGES_TRUE@CLEANFILES = $(noinst_DATA) $(am__append_1)
 EXTRA_DIST = \
-	$(man_MANS) \
 	pulseaudio.1.xml.in \
 	esdcompat.1.xml.in \
 	pax11publish.1.xml.in \
@@ -307,6 +361,7 @@ EXTRA_DIST = \
 	pulse-daemon.conf.5.xml.in \
 	pulse-client.conf.5.xml.in \
 	default.pa.5.xml.in \
+	xmltoman \
 	xmltoman.css \
 	xmltoman.xsl \
 	xmltoman.dtd
@@ -576,114 +631,18 @@ uninstall-man: uninstall-man1 uninstall-man5
 	uninstall-man5
 
 
-@BUILD_MANPAGES_TRUE@pulseaudio.1.xml: pulseaudio.1.xml.in Makefile
+@BUILD_MANPAGES_TRUE@%.xml: %.xml.in Makefile
 @BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
 @BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
 @BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
 
-@BUILD_MANPAGES_TRUE@esdcompat.1.xml: esdcompat.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
+@BUILD_MANPAGES_TRUE@%: %.xml Makefile
+@BUILD_MANPAGES_TRUE@	perl $(srcdir)/xmltoman $< > $@ || rm -f $@
 
-@BUILD_MANPAGES_TRUE@pax11publish.1.xml: pax11publish.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@paplay.1.xml: paplay.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@pacat.1.xml: pacat.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@pacmd.1.xml: pacmd.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@pactl.1.xml: pactl.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@pasuspender.1.xml: pasuspender.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@padsp.1.xml: padsp.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@pabrowse.1.xml: pabrowse.1.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@pulse-daemon.conf.5.xml: pulse-daemon.conf.5.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@pulse-client.conf.5.xml: pulse-client.conf.5.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@default.pa.5.xml: default.pa.5.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulseaudio.1: pulseaudio.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@esdcompat.1: esdcompat.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pax11publish.1: pax11publish.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@paplay.1: paplay.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pacat.1: pacat.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pacmd.1: pacmd.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pactl.1: pactl.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pasuspender.1: pasuspender.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@padsp.1: padsp.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pabrowse.1: pabrowse.1.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulse-daemon.conf.5: pulse-daemon.conf.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@pulse-client.conf.5: pulse-client.conf.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@default.pa.5: default.pa.5.xml Makefile
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	xmltoman $< > $@
-
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@xmllint: $(noinst_DATA)
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	for f in $(noinst_DATA) ; do \
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@			xmllint --noout --valid "$$f" || exit 1 ; \
-@BUILD_MANPAGES_TRUE@@USE_XMLTOMAN_TRUE@	done
+@BUILD_MANPAGES_TRUE@xmllint: $(noinst_DATA)
+@BUILD_MANPAGES_TRUE@	for f in $(noinst_DATA) ; do \
+@BUILD_MANPAGES_TRUE@			xmllint --noout --valid "$$f" || exit 1 ; \
+@BUILD_MANPAGES_TRUE@	done
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
 .NOEXPORT:

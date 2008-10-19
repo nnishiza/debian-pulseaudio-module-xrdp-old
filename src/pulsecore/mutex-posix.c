@@ -1,5 +1,3 @@
-/* $Id: mutex-posix.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -90,6 +88,18 @@ void pa_mutex_lock(pa_mutex *m) {
     pa_assert(m);
 
     pa_assert_se(pthread_mutex_lock(&m->mutex) == 0);
+}
+
+pa_bool_t pa_mutex_try_lock(pa_mutex *m) {
+    int r;
+    pa_assert(m);
+
+    if ((r = pthread_mutex_trylock(&m->mutex)) != 0) {
+        pa_assert(r == EBUSY);
+        return FALSE;
+    }
+
+    return TRUE;
 }
 
 void pa_mutex_unlock(pa_mutex *m) {

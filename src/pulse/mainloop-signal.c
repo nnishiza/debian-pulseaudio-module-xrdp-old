@@ -1,9 +1,7 @@
-/* $Id: mainloop-signal.c 2004 2007-10-30 18:35:08Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
-  Copyright 2004-2006 Lennart Poettering
+  Copyright 2004-2008 Lennart Poettering
   Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
 
   PulseAudio is free software; you can redistribute it and/or modify
@@ -39,11 +37,12 @@
 #endif
 
 #include <pulse/xmalloc.h>
+#include <pulse/gccmacro.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
-#include <pulsecore/gccmacro.h>
 #include <pulsecore/macro.h>
 
 #include "mainloop-signal.h"
@@ -55,9 +54,9 @@ struct pa_signal_event {
 #else
     void (*saved_handler)(int sig);
 #endif
-    void (*callback) (pa_mainloop_api*a, pa_signal_event *e, int sig, void *userdata);
     void *userdata;
-    void (*destroy_callback) (pa_mainloop_api*a, pa_signal_event*e, void *userdata);
+    pa_signal_cb_t callback;
+    pa_signal_destroy_cb_t destroy_callback;
     pa_signal_event *previous, *next;
 };
 
@@ -74,6 +73,7 @@ static void signal_handler(int sig) {
 #ifndef HAVE_SIGACTION
     signal(sig, signal_handler);
 #endif
+
     pa_write(signal_pipe[1], &sig, sizeof(sig), NULL);
 
     errno = saved_errno;
@@ -90,7 +90,7 @@ static void dispatch(pa_mainloop_api*a, int sig) {
         }
 }
 
-static void callback(pa_mainloop_api*a, pa_io_event*e, int fd, pa_io_event_flags_t f, PA_GCC_UNUSED void *userdata) {
+static void callback(pa_mainloop_api*a, pa_io_event*e, int fd, pa_io_event_flags_t f, void *userdata) {
     ssize_t r;
     int sig;
 
@@ -142,23 +142,21 @@ int pa_signal_init(pa_mainloop_api *a) {
 }
 
 void pa_signal_done(void) {
-    pa_assert(api);
-    pa_assert(signal_pipe[0] >= 0);
-    pa_assert(signal_pipe[1] >= 0);
-    pa_assert(io_event);
-
     while (signals)
         pa_signal_free(signals);
 
-    api->io_free(io_event);
-    io_event = NULL;
+    if (io_event) {
+        pa_assert(api);
+        api->io_free(io_event);
+        io_event = NULL;
+    }
 
     pa_close_pipe(signal_pipe);
 
     api = NULL;
 }
 
-pa_signal_event* pa_signal_new(int sig, void (*_callback) (pa_mainloop_api *api, pa_signal_event*e, int sig, void *userdata), void *userdata) {
+pa_signal_event* pa_signal_new(int sig, pa_signal_cb_t _callback, void *userdata) {
     pa_signal_event *e = NULL;
 
 #ifdef HAVE_SIGACTION
@@ -167,6 +165,8 @@ pa_signal_event* pa_signal_new(int sig, void (*_callback) (pa_mainloop_api *api,
 
     pa_assert(sig > 0);
     pa_assert(_callback);
+
+    pa_init_i18n();
 
     for (e = signals; e; e = e->next)
         if (e->sig == sig)
@@ -223,7 +223,7 @@ void pa_signal_free(pa_signal_event *e) {
     pa_xfree(e);
 }
 
-void pa_signal_set_destroy(pa_signal_event *e, void (*_callback) (pa_mainloop_api *api, pa_signal_event*e, void *userdata)) {
+void pa_signal_set_destroy(pa_signal_event *e, pa_signal_destroy_cb_t _callback) {
     pa_assert(e);
 
     e->destroy_callback = _callback;

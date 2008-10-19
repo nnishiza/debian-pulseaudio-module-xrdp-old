@@ -1,12 +1,10 @@
 #ifndef foopulseflisthfoo
 #define foopulseflisthfoo
 
-/* $Id: flist.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
-  Copyright 2006 Lennart Poettering
+  Copyright 2006-2008 Lennart Poettering
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
@@ -25,9 +23,10 @@
 ***/
 
 #include <pulse/def.h>
+#include <pulse/gccmacro.h>
 
 #include <pulsecore/once.h>
-#include <pulsecore/gccmacro.h>
+#include <pulsecore/core-util.h>
 
 /* A multiple-reader multipler-write lock-free free list implementation */
 
@@ -58,6 +57,8 @@ void* pa_flist_pop(pa_flist*l);
     }                                                                   \
     static void name##_flist_destructor(void) PA_GCC_DESTRUCTOR;        \
     static void name##_flist_destructor(void) {                         \
+        if (!pa_in_valgrind())                                          \
+            return;                                                     \
         if (name##_flist.flist)                                         \
             pa_flist_free(name##_flist.flist, (free_cb));               \
     }                                                                   \

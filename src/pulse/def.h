@@ -1,8 +1,6 @@
 #ifndef foodefhfoo
 #define foodefhfoo
 
-/* $Id: def.h 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -48,14 +46,30 @@ typedef enum pa_context_state {
     PA_CONTEXT_TERMINATED      /**< The connection was terminated cleanly */
 } pa_context_state_t;
 
+/** Return non-zero if the passed state is one of the connected states */
+static inline int PA_CONTEXT_IS_GOOD(pa_context_state_t x) {
+    return
+        x == PA_CONTEXT_CONNECTING ||
+        x == PA_CONTEXT_AUTHORIZING ||
+        x == PA_CONTEXT_SETTING_NAME ||
+        x == PA_CONTEXT_READY;
+}
+
 /** The state of a stream */
 typedef enum pa_stream_state {
-    PA_STREAM_UNCONNECTED, /**< The stream is not yet connected to any sink or source */
+    PA_STREAM_UNCONNECTED,  /**< The stream is not yet connected to any sink or source */
     PA_STREAM_CREATING,     /**< The stream is being created */
     PA_STREAM_READY,        /**< The stream is established, you may pass audio data to it now */
     PA_STREAM_FAILED,       /**< An error occured that made the stream invalid */
     PA_STREAM_TERMINATED    /**< The stream has been terminated cleanly */
 } pa_stream_state_t;
+
+/** Return non-zero if the passed state is one of the connected states */
+static inline int PA_STREAM_IS_GOOD(pa_stream_state_t x) {
+    return
+        x == PA_STREAM_CREATING ||
+        x == PA_STREAM_READY;
+}
 
 /** The state of an operation */
 typedef enum pa_operation_state {
@@ -67,10 +81,16 @@ typedef enum pa_operation_state {
 /** An invalid index */
 #define PA_INVALID_INDEX ((uint32_t) -1)
 
-/** Some special flags for contexts. \since 0.8 */
+/** Some special flags for contexts. */
 typedef enum pa_context_flags {
-    PA_CONTEXT_NOAUTOSPAWN = 1 /**< Disabled autospawning of the PulseAudio daemon if required */
+    PA_CONTEXT_NOAUTOSPAWN = 1
+    /**< Disabled autospawning of the PulseAudio daemon if required */
 } pa_context_flags_t;
+
+/** \cond fulldocs */
+/* Allow clients to check with #ifdef for those flags */
+#define PA_CONTEXT_NOAUTOSPAWN PA_CONTEXT_NOAUTOSPAWN
+/** \endcond */
 
 /** The direction of a pa_stream object */
 typedef enum pa_stream_direction {
@@ -80,144 +100,212 @@ typedef enum pa_stream_direction {
     PA_STREAM_UPLOAD         /**< Sample upload stream */
 } pa_stream_direction_t;
 
-/** Some special flags for stream connections. \since 0.6 */
+/** Some special flags for stream connections. */
 typedef enum pa_stream_flags {
-    PA_STREAM_START_CORKED = 1,       /**< Create the stream corked, requiring an explicit pa_stream_cork() call to uncork it. */
-    PA_STREAM_INTERPOLATE_TIMING = 2, /**< Interpolate the latency for
-                                       * this stream. When enabled,
-                                       * pa_stream_get_latency() and
-                                       * pa_stream_get_time() will try
-                                       * to estimate the current
-                                       * record/playback time based on
-                                       * the local time that passed
-                                       * since the last timing info
-                                       * update.  Using this option
-                                       * has the advantage of not
-                                       * requiring a whole roundtrip
-                                       * when the current
-                                       * playback/recording time is
-                                       * needed. Consider using this
-                                       * option when requesting
-                                       * latency information
-                                       * frequently. This is
-                                       * especially useful on long
-                                       * latency network
-                                       * connections. It makes a lot
-                                       * of sense to combine this
-                                       * option with
-                                       * PA_STREAM_AUTO_TIMING_UPDATE. */
-    PA_STREAM_NOT_MONOTONOUS = 4,    /**< Don't force the time to
-                                      * increase monotonically. If
-                                      * this option is enabled,
-                                      * pa_stream_get_time() will not
-                                      * necessarily return always
-                                      * monotonically increasing time
-                                      * values on each call. This may
-                                      * confuse applications which
-                                      * cannot deal with time going
-                                      * 'backwards', but has the
-                                      * advantage that bad transport
-                                      * latency estimations that
-                                      * caused the time to to jump
-                                      * ahead can be corrected
-                                      * quickly, without the need to
-                                      * wait. */
-    PA_STREAM_AUTO_TIMING_UPDATE = 8, /**< If set timing update requests
-                                       * are issued periodically
-                                       * automatically. Combined with
-                                       * PA_STREAM_INTERPOLATE_TIMING
-                                       * you will be able to query the
-                                       * current time and latency with
-                                       * pa_stream_get_time() and
-                                       * pa_stream_get_latency() at
-                                       * all times without a packet
-                                       * round trip.*/
-    PA_STREAM_NO_REMAP_CHANNELS = 16, /**< Don't remap channels by
-                                       * their name, instead map them
-                                       * simply by their
-                                       * index. Implies
-                                       * PA_STREAM_NO_REMIX_CHANNELS. Only
-                                       * supported when the server is
-                                       * at least PA 0.9.8. It is
-                                       * ignored on older
-                                       * servers.\since 0.9.8 */
-    PA_STREAM_NO_REMIX_CHANNELS = 32, /**< When remapping channels by
-                                       * name, don't upmix or downmix
-                                       * them to related
-                                       * channels. Copy them into
-                                       * matching channels of the
-                                       * device 1:1. Only supported
-                                       * when the server is at least
-                                       * PA 0.9.8. It is ignored on
-                                       * older servers. \since
-                                       * 0.9.8 */
-    PA_STREAM_FIX_FORMAT = 64, /**< Use the sample format of the
-                                * sink/device this stream is being
-                                * connected to, and possibly ignore
-                                * the format the sample spec contains
-                                * -- but you still have to pass a
-                                * valid value in it as a hint to
-                                * PulseAudio what would suit your
-                                * stream best. If this is used you
-                                * should query the used sample format
-                                * after creating the stream by using
-                                * pa_stream_get_sample_spec(). Also,
-                                * if you specified manual buffer
-                                * metrics it is recommended to update
-                                * them with
-                                * pa_stream_set_buffer_attr() to
-                                * compensate for the changed frame
-                                * sizes. Only supported when the
-                                * server is at least PA 0.9.8. It is
-                                * ignored on older servers. \since
-                                * 0.9.8 */
 
-    PA_STREAM_FIX_RATE = 128, /**< Use the sample rate of the sink,
-                               * and possibly ignore the rate the
-                               * sample spec contains. Usage similar
-                               * to PA_STREAM_FIX_FORMAT.Only
-                               * supported when the server is at least
-                               * PA 0.9.8. It is ignored on older
-                               * servers. \since 0.9.8 */
+    PA_STREAM_START_CORKED = 0x0001U,
+    /**< Create the stream corked, requiring an explicit
+     * pa_stream_cork() call to uncork it. */
 
-    PA_STREAM_FIX_CHANNELS = 256, /**< Use the number of channels and
-                               * the channel map of the sink, and
-                               * possibly ignore the number of
-                               * channels and the map the sample spec
-                               * and the passed channel map
-                               * contains. Usage similar to
-                               * PA_STREAM_FIX_FORMAT. Only supported
-                               * when the server is at least PA
-                               * 0.9.8. It is ignored on older
-                               * servers. \since 0.9.8 */
-    PA_STREAM_DONT_MOVE = 512, /**< Don't allow moving of this stream to
-                              * another sink/device. Useful if you use
-                              * any of the PA_STREAM_FIX_ flags and
-                              * want to make sure that resampling
-                              * never takes place -- which might
-                              * happen if the stream is moved to
-                              * another sink/source whith a different
-                              * sample spec/channel map. Only
-                              * supported when the server is at least
-                              * PA 0.9.8. It is ignored on older
-                              * servers. \since 0.9.8 */
-    PA_STREAM_VARIABLE_RATE = 1024, /**< Allow dynamic changing of the
-                                     * sampling rate during playback
-                                     * with
-                                     * pa_stream_update_sample_rate(). Only
-                                     * supported when the server is at
-                                     * least PA 0.9.8. It is ignored
-                                     * on older servers. \since
-                                     * 0.9.8 */
+    PA_STREAM_INTERPOLATE_TIMING = 0x0002U,
+    /**< Interpolate the latency for this stream. When enabled,
+     * pa_stream_get_latency() and pa_stream_get_time() will try to
+     * estimate the current record/playback time based on the local
+     * time that passed since the last timing info update.  Using this
+     * option has the advantage of not requiring a whole roundtrip
+     * when the current playback/recording time is needed. Consider
+     * using this option when requesting latency information
+     * frequently. This is especially useful on long latency network
+     * connections. It makes a lot of sense to combine this option
+     * with PA_STREAM_AUTO_TIMING_UPDATE. */
+
+    PA_STREAM_NOT_MONOTONIC = 0x0004U,
+    /**< Don't force the time to increase monotonically. If this
+     * option is enabled, pa_stream_get_time() will not necessarily
+     * return always monotonically increasing time values on each
+     * call. This may confuse applications which cannot deal with time
+     * going 'backwards', but has the advantage that bad transport
+     * latency estimations that caused the time to to jump ahead can
+     * be corrected quickly, without the need to wait. (Please note
+     * that this flag was named PA_STREAM_NOT_MONOTONOUS in releases
+     * prior to 0.9.11. The old name is still defined too, for
+     * compatibility reasons. */
+
+    PA_STREAM_AUTO_TIMING_UPDATE = 0x0008U,
+    /**< If set timing update requests are issued periodically
+     * automatically. Combined with PA_STREAM_INTERPOLATE_TIMING you
+     * will be able to query the current time and latency with
+     * pa_stream_get_time() and pa_stream_get_latency() at all times
+     * without a packet round trip.*/
+
+    PA_STREAM_NO_REMAP_CHANNELS = 0x0010U,
+    /**< Don't remap channels by their name, instead map them simply
+     * by their index. Implies PA_STREAM_NO_REMIX_CHANNELS. Only
+     * supported when the server is at least PA 0.9.8. It is ignored
+     * on older servers.\since 0.9.8 */
+
+    PA_STREAM_NO_REMIX_CHANNELS = 0x0020U,
+    /**< When remapping channels by name, don't upmix or downmix them
+     * to related channels. Copy them into matching channels of the
+     * device 1:1. Only supported when the server is at least PA
+     * 0.9.8. It is ignored on older servers. \since 0.9.8 */
+
+    PA_STREAM_FIX_FORMAT = 0x0040U,
+    /**< Use the sample format of the sink/device this stream is being
+     * connected to, and possibly ignore the format the sample spec
+     * contains -- but you still have to pass a valid value in it as a
+     * hint to PulseAudio what would suit your stream best. If this is
+     * used you should query the used sample format after creating the
+     * stream by using pa_stream_get_sample_spec(). Also, if you
+     * specified manual buffer metrics it is recommended to update
+     * them with pa_stream_set_buffer_attr() to compensate for the
+     * changed frame sizes. Only supported when the server is at least
+     * PA 0.9.8. It is ignored on older servers. \since 0.9.8 */
+
+    PA_STREAM_FIX_RATE = 0x0080U,
+    /**< Use the sample rate of the sink, and possibly ignore the rate
+     * the sample spec contains. Usage similar to
+     * PA_STREAM_FIX_FORMAT.Only supported when the server is at least
+     * PA 0.9.8. It is ignored on older servers. \since 0.9.8 */
+
+    PA_STREAM_FIX_CHANNELS = 0x0100,
+    /**< Use the number of channels and the channel map of the sink,
+     * and possibly ignore the number of channels and the map the
+     * sample spec and the passed channel map contains. Usage similar
+     * to PA_STREAM_FIX_FORMAT. Only supported when the server is at
+     * least PA 0.9.8. It is ignored on older servers. \since 0.9.8 */
+
+    PA_STREAM_DONT_MOVE = 0x0200U,
+    /**< Don't allow moving of this stream to another
+     * sink/device. Useful if you use any of the PA_STREAM_FIX_ flags
+     * and want to make sure that resampling never takes place --
+     * which might happen if the stream is moved to another
+     * sink/source whith a different sample spec/channel map. Only
+     * supported when the server is at least PA 0.9.8. It is ignored
+     * on older servers. \since 0.9.8 */
+
+    PA_STREAM_VARIABLE_RATE = 0x0400U,
+    /**< Allow dynamic changing of the sampling rate during playback
+     * with pa_stream_update_sample_rate(). Only supported when the
+     * server is at least PA 0.9.8. It is ignored on older
+     * servers. \since 0.9.8 */
+
+    PA_STREAM_PEAK_DETECT = 0x0800U,
+    /**< Find peaks instead of resampling. \since 0.9.11 */
+
+    PA_STREAM_START_MUTED = 0x1000U,
+    /**< Create in muted state. \since 0.9.11 */
+
+    PA_STREAM_ADJUST_LATENCY = 0x2000U,
+    /**< Try to adjust the latency of the sink/source based on the
+     * requested buffer metrics and adjust buffer metrics
+     * accordingly. Also see pa_buffer_attr. This option may not be
+     * specified at the same time as PA_STREAM_EARLY_REQUESTS. \since
+     * 0.9.11 */
+
+    PA_STREAM_EARLY_REQUESTS = 0x4000U
+    /**< Enable compatibility mode for legacy clients that rely on a
+     * "classic" hardware device fragment-style playback model. If
+     * this option is set, the minreq value of the buffer metrics gets
+     * a new meaning: instead of just specifying that no requests
+     * asking for less new data than this value will be made to the
+     * client it will also guarantee that requests are generated as
+     * early as this limit is reached. This flag should only be set in
+     * very few situations where compatiblity with a fragment-based
+     * playback model needs to be kept and the client applications
+     * cannot deal with data requests that are delayed to the latest
+     * moment possible. (Usually these are programs that use usleep()
+     * or a similar call in their playback loops instead of sleeping
+     * on the device itself.) Also see pa_buffer_attr. This option may
+     * not be specified at the same time as
+     * PA_STREAM_ADJUST_LATENCY. \since 0.9.12 */
+
 } pa_stream_flags_t;
+
+/** \cond fulldocs */
+
+/* English is an evil language */
+#define PA_STREAM_NOT_MONOTONOUS PA_STREAM_NOT_MONOTONIC
+
+/* Allow clients to check with #ifdef for those flags */
+#define PA_STREAM_START_CORKED PA_STREAM_START_CORKED
+#define PA_STREAM_INTERPOLATE_TIMING PA_STREAM_INTERPOLATE_TIMING
+#define PA_STREAM_NOT_MONOTONIC PA_STREAM_NOT_MONOTONIC
+#define PA_STREAM_AUTO_TIMING_UPDATE PA_STREAM_AUTO_TIMING_UPDATE
+#define PA_STREAM_NO_REMAP_CHANNELS PA_STREAM_NO_REMAP_CHANNELS
+#define PA_STREAM_NO_REMIX_CHANNELS PA_STREAM_NO_REMIX_CHANNELS
+#define PA_STREAM_FIX_FORMAT PA_STREAM_FIX_FORMAT
+#define PA_STREAM_FIX_RATE PA_STREAM_FIX_RATE
+#define PA_STREAM_FIX_CHANNELS PA_STREAM_FIX_CHANNELS
+#define PA_STREAM_DONT_MOVE PA_STREAM_DONT_MOVE
+#define PA_STREAM_VARIABLE_RATE PA_STREAM_VARIABLE_RATE
+#define PA_STREAM_PEAK_DETECT PA_STREAM_PEAK_DETECT
+#define PA_STREAM_START_MUTED PA_STREAM_START_MUTED
+#define PA_STREAM_ADJUST_LATENCY PA_STREAM_ADJUST_LATENCY
+#define PA_STREAM_EARLY_REQUESTS PA_STREAM_EARLY_REQUESTS
+
+/** \endcond */
 
 /** Playback and record buffer metrics */
 typedef struct pa_buffer_attr {
-    uint32_t maxlength;      /**< Maximum length of the buffer */
-    uint32_t tlength;        /**< Playback only: target length of the buffer. The server tries to assure that at least tlength bytes are always available in the buffer */
-    uint32_t prebuf;         /**< Playback only: pre-buffering. The server does not start with playback before at least prebug bytes are available in the buffer */
-    uint32_t minreq;         /**< Playback only: minimum request. The server does not request less than minreq bytes from the client, instead waints until the buffer is free enough to request more bytes at once */
-    uint32_t fragsize;       /**< Recording only: fragment size. The server sends data in blocks of fragsize bytes size. Large values deminish interactivity with other operations on the connection context but decrease control overhead. */
+    uint32_t maxlength;
+    /**< Maximum length of the buffer. Setting this to (uint32_t) -1
+     * will initialize this to the maximum value supported by server,
+     * which is recommended. */
+
+    uint32_t tlength;
+    /**< Playback only: target length of the buffer. The server tries
+     * to assure that at least tlength bytes are always available in
+     * the per-stream server-side playback buffer. It is recommended
+     * to set this to (uint32_t) -1, which will initialize this to a
+     * value that is deemed sensible by the server. However, this
+     * value will default to something like 2s, i.e. for applications
+     * that have specific latency requirements this value should be
+     * set to the maximum latency that the application can deal
+     * with. When PA_STREAM_ADJUST_LATENCY is not set this value will
+     * influence only the per-stream playback buffer size. When
+     * PA_STREAM_ADJUST_LATENCY is set the overall latency of the sink
+     * plus the playback buffer size is configured to this value. Set
+     * PA_STREAM_ADJUST_LATENCY if you are interested in adjusting the
+     * overall latency. Don't set it if you are interested in
+     * configuring the server-sider per-stream playback buffer
+     * size. */
+
+    uint32_t prebuf;
+    /**< Playback only: pre-buffering. The server does not start with
+     * playback before at least prebug bytes are available in the
+     * buffer. It is recommended to set this to (uint32_t) -1, which
+     * will initialize this to the same value as tlength, whatever
+     * that may be. Initialize to 0 to enable manual start/stop
+     * control of the stream. This means that playback will not stop
+     * on underrun and playback will not start automatically. Instead
+     * pa_stream_corked() needs to be called explicitly. If you set
+     * this value to 0 you should also set PA_STREAM_START_CORKED. */
+
+    uint32_t minreq;
+    /**< Playback only: minimum request. The server does not request
+     * less than minreq bytes from the client, instead waits until the
+     * buffer is free enough to request more bytes at once. It is
+     * recommended to set this to (uint32_t) -1, which will initialize
+     * this to a value that is deemed sensible by the server. This
+     * should be set to a value that gives PulseAudio enough time to
+     * move the data from the per-stream playback buffer into the
+     * hardware playback buffer. */
+
+    uint32_t fragsize;
+    /**< Recording only: fragment size. The server sends data in
+     * blocks of fragsize bytes size. Large values deminish
+     * interactivity with other operations on the connection context
+     * but decrease control overhead. It is recommended to set this to
+     * (uint32_t) -1, which will initialize this to a value that is
+     * deemed sensible by the server. However, this value will default
+     * to something like 2s, i.e. for applications that have specific
+     * latency requirements this value should be set to the maximum
+     * latency that the application can deal with. If
+     * PA_STREAM_ADJUST_LATENCY is set the overall source latency will
+     * be adjusted according to this value. If it is not set the
+     * source latency is left unmodified. */
+
 } pa_buffer_attr;
 
 /** Error values as used by pa_context_errno(). Use pa_strerror() to convert these values to human readable strings */
@@ -239,44 +327,94 @@ enum {
     PA_ERR_MODINITFAILED,          /**< Module initialization failed */
     PA_ERR_BADSTATE,               /**< Bad state */
     PA_ERR_NODATA,                 /**< No data */
-    PA_ERR_VERSION,                /**< Incompatible protocol version \since 0.8 */
-    PA_ERR_TOOLARGE,               /**< Data too large \since 0.8.1 */
+    PA_ERR_VERSION,                /**< Incompatible protocol version */
+    PA_ERR_TOOLARGE,               /**< Data too large */
     PA_ERR_NOTSUPPORTED,           /**< Operation not supported \since 0.9.5 */
+    PA_ERR_UNKNOWN,                /**< The error code was unknown to the client */
+    PA_ERR_NOEXTENSION,            /**< Extension does not exist. \since 0.9.12 */
     PA_ERR_MAX                     /**< Not really an error but the first invalid error code */
 };
 
 /** Subscription event mask, as used by pa_context_subscribe() */
 typedef enum pa_subscription_mask {
-    PA_SUBSCRIPTION_MASK_NULL = 0,               /**< No events */
-    PA_SUBSCRIPTION_MASK_SINK = 1,               /**< Sink events */
-    PA_SUBSCRIPTION_MASK_SOURCE = 2,             /**< Source events */
-    PA_SUBSCRIPTION_MASK_SINK_INPUT = 4,         /**< Sink input events */
-    PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT = 8,      /**< Source output events */
-    PA_SUBSCRIPTION_MASK_MODULE = 16,            /**< Module events */
-    PA_SUBSCRIPTION_MASK_CLIENT = 32,            /**< Client events */
-    PA_SUBSCRIPTION_MASK_SAMPLE_CACHE = 64,      /**< Sample cache events */
-    PA_SUBSCRIPTION_MASK_SERVER = 128,           /**< Other global server changes. \since 0.4 */
-    PA_SUBSCRIPTION_MASK_AUTOLOAD = 256,         /**< Autoload table events. \since 0.5 */
-    PA_SUBSCRIPTION_MASK_ALL = 511               /**< Catch all events \since 0.8 */
+    PA_SUBSCRIPTION_MASK_NULL = 0x0000U,
+    /**< No events */
+
+    PA_SUBSCRIPTION_MASK_SINK = 0x0001U,
+    /**< Sink events */
+
+    PA_SUBSCRIPTION_MASK_SOURCE = 0x0002U,
+    /**< Source events */
+
+    PA_SUBSCRIPTION_MASK_SINK_INPUT = 0x0004U,
+    /**< Sink input events */
+
+    PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT = 0x0008U,
+    /**< Source output events */
+
+    PA_SUBSCRIPTION_MASK_MODULE = 0x0010U,
+    /**< Module events */
+
+    PA_SUBSCRIPTION_MASK_CLIENT = 0x0020U,
+    /**< Client events */
+
+    PA_SUBSCRIPTION_MASK_SAMPLE_CACHE = 0x0040U,
+    /**< Sample cache events */
+
+    PA_SUBSCRIPTION_MASK_SERVER = 0x0080U,
+    /**< Other global server changes. */
+
+    PA_SUBSCRIPTION_MASK_AUTOLOAD = 0x0100U,
+    /**< Autoload table events. */
+
+    PA_SUBSCRIPTION_MASK_ALL = 0x01ffU
+    /**< Catch all events */
 } pa_subscription_mask_t;
 
 /** Subscription event types, as used by pa_context_subscribe() */
 typedef enum pa_subscription_event_type {
-    PA_SUBSCRIPTION_EVENT_SINK = 0,           /**< Event type: Sink */
-    PA_SUBSCRIPTION_EVENT_SOURCE = 1,         /**< Event type: Source */
-    PA_SUBSCRIPTION_EVENT_SINK_INPUT = 2,     /**< Event type: Sink input */
-    PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT = 3,  /**< Event type: Source output */
-    PA_SUBSCRIPTION_EVENT_MODULE = 4,         /**< Event type: Module */
-    PA_SUBSCRIPTION_EVENT_CLIENT = 5,         /**< Event type: Client */
-    PA_SUBSCRIPTION_EVENT_SAMPLE_CACHE = 6,   /**< Event type: Sample cache item */
-    PA_SUBSCRIPTION_EVENT_SERVER = 7,         /**< Event type: Global server change, only occuring with PA_SUBSCRIPTION_EVENT_CHANGE. \since 0.4  */
-    PA_SUBSCRIPTION_EVENT_AUTOLOAD = 8,       /**< Event type: Autoload table changes. \since 0.5 */
-    PA_SUBSCRIPTION_EVENT_FACILITY_MASK = 15, /**< A mask to extract the event type from an event value */
+    PA_SUBSCRIPTION_EVENT_SINK = 0x0000U,
+    /**< Event type: Sink */
 
-    PA_SUBSCRIPTION_EVENT_NEW = 0,            /**< A new object was created */
-    PA_SUBSCRIPTION_EVENT_CHANGE = 16,        /**< A property of the object was modified */
-    PA_SUBSCRIPTION_EVENT_REMOVE = 32,        /**< An object was removed */
-    PA_SUBSCRIPTION_EVENT_TYPE_MASK = 16+32   /**< A mask to extract the event operation from an event value */
+    PA_SUBSCRIPTION_EVENT_SOURCE = 0x0001U,
+    /**< Event type: Source */
+
+    PA_SUBSCRIPTION_EVENT_SINK_INPUT = 0x0002U,
+    /**< Event type: Sink input */
+
+    PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT = 0x0003U,
+    /**< Event type: Source output */
+
+    PA_SUBSCRIPTION_EVENT_MODULE = 0x0004U,
+    /**< Event type: Module */
+
+    PA_SUBSCRIPTION_EVENT_CLIENT = 0x0005U,
+    /**< Event type: Client */
+
+    PA_SUBSCRIPTION_EVENT_SAMPLE_CACHE = 0x0006U,
+    /**< Event type: Sample cache item */
+
+    PA_SUBSCRIPTION_EVENT_SERVER = 0x0007U,
+    /**< Event type: Global server change, only occuring with PA_SUBSCRIPTION_EVENT_CHANGE. */
+
+    PA_SUBSCRIPTION_EVENT_AUTOLOAD = 0x0008U,
+    /**< Event type: Autoload table changes. */
+
+    PA_SUBSCRIPTION_EVENT_FACILITY_MASK = 0x000FU,
+    /**< A mask to extract the event type from an event value */
+
+    PA_SUBSCRIPTION_EVENT_NEW = 0x0000U,
+    /**< A new object was created */
+
+    PA_SUBSCRIPTION_EVENT_CHANGE = 0x0010U,
+    /**< A property of the object was modified */
+
+    PA_SUBSCRIPTION_EVENT_REMOVE = 0x0020U,
+    /**< An object was removed */
+
+    PA_SUBSCRIPTION_EVENT_TYPE_MASK = 0x0030U,
+    /**< A mask to extract the event operation from an event value */
+
 } pa_subscription_event_type_t;
 
 /** Return one if an event type t matches an event mask bitfield */
@@ -297,53 +435,76 @@ typedef enum pa_subscription_event_type {
  * source_usec+buffer_usec+transport_usec-sink_usec. (Take care of
  * sign issues!) When connected to a monitor source sink_usec contains
  * the latency of the owning sink. The two latency estimations
- * described here are implemented in pa_stream_get_latency().*/
+ * described here are implemented in pa_stream_get_latency(). Please
+ * note that this structure can be extended as part of evolutionary
+ * API updates at any time in any new release.*/
 typedef struct pa_timing_info {
-    struct timeval timestamp; /**< The time when this timing info structure was current */
-    int synchronized_clocks;  /**< Non-zero if the local and the
-                               * remote machine have synchronized
-                               * clocks. If synchronized clocks are
-                               * detected transport_usec becomes much
-                               * more reliable. However, the code that
-                               * detects synchronized clocks is very
-                               * limited und unreliable itself. \since
-                               * 0.5 */
+    struct timeval timestamp;
+    /**< The time when this timing info structure was current */
 
-    pa_usec_t sink_usec;      /**< Time in usecs a sample takes to be played on the sink. For playback streams and record streams connected to a monitor source. */
-    pa_usec_t source_usec;    /**< Time in usecs a sample takes from being recorded to being delivered to the application. Only for record streams. \since 0.5*/
-    pa_usec_t transport_usec; /**< Estimated time in usecs a sample takes to be transferred to/from the daemon. For both playback and record streams. \since 0.5 */
+    int synchronized_clocks;
+    /**< Non-zero if the local and the remote machine have
+     * synchronized clocks. If synchronized clocks are detected
+     * transport_usec becomes much more reliable. However, the code
+     * that detects synchronized clocks is very limited und unreliable
+     * itself. */
 
-    int playing;              /**< Non-zero when the stream is currently playing. Only for playback streams. */
+    pa_usec_t sink_usec;
+    /**< Time in usecs a sample takes to be played on the sink. For
+     * playback streams and record streams connected to a monitor
+     * source. */
 
-    int write_index_corrupt;  /**< Non-zero if write_index is not
-                               * up-to-date because a local write
-                               * command that corrupted it has been
-                               * issued in the time since this latency
-                               * info was current . Only write
-                               * commands with SEEK_RELATIVE_ON_READ
-                               * and SEEK_RELATIVE_END can corrupt
-                               * write_index. \since 0.8 */
-    int64_t write_index;      /**< Current write index into the
-                               * playback buffer in bytes. Think twice before
-                               * using this for seeking purposes: it
-                               * might be out of date a the time you
-                               * want to use it. Consider using
-                               * PA_SEEK_RELATIVE instead. \since
-                               * 0.8 */
+    pa_usec_t source_usec;
+    /**< Time in usecs a sample takes from being recorded to being
+     * delivered to the application. Only for record streams. */
 
-    int read_index_corrupt;   /**< Non-zero if read_index is not
-                               * up-to-date because a local pause or
-                               * flush request that corrupted it has
-                               * been issued in the time since this
-                               * latency info was current. \since 0.8  */
+    pa_usec_t transport_usec;
+    /**< Estimated time in usecs a sample takes to be transferred
+     * to/from the daemon. For both playback and record streams. */
 
-    int64_t read_index;       /**< Current read index into the
-                               * playback buffer in bytes. Think twice before
-                               * using this for seeking purposes: it
-                               * might be out of date a the time you
-                               * want to use it. Consider using
-                               * PA_SEEK_RELATIVE_ON_READ
-                               * instead. \since 0.8 */
+    int playing;
+    /**< Non-zero when the stream is currently not underrun and data
+     * is being passed on to the device. Only for playback
+     * streams. This field does not say whether the data is actually
+     * already being played. To determine this check whether
+     * since_underrun (converted to usec) is larger than sink_usec.*/
+
+    int write_index_corrupt;
+    /**< Non-zero if write_index is not up-to-date because a local
+     * write command that corrupted it has been issued in the time
+     * since this latency info was current . Only write commands with
+     * SEEK_RELATIVE_ON_READ and SEEK_RELATIVE_END can corrupt
+     * write_index. */
+
+    int64_t write_index;
+    /**< Current write index into the playback buffer in bytes. Think
+     * twice before using this for seeking purposes: it might be out
+     * of date a the time you want to use it. Consider using
+     * PA_SEEK_RELATIVE instead. */
+
+    int read_index_corrupt;
+    /**< Non-zero if read_index is not up-to-date because a local
+     * pause or flush request that corrupted it has been issued in the
+     * time since this latency info was current. */
+
+    int64_t read_index;
+    /**< Current read index into the playback buffer in bytes. Think
+     * twice before using this for seeking purposes: it might be out
+     * of date a the time you want to use it. Consider using
+     * PA_SEEK_RELATIVE_ON_READ instead. */
+
+    pa_usec_t configured_sink_usec;
+    /**< The configured latency for the sink. \since 0.9.11 */
+
+    pa_usec_t configured_source_usec;
+    /**< The configured latency for * the source. \since 0.9.11 */
+
+    int64_t since_underrun;
+    /**< Bytes that were handed to the sink since the last underrun
+     * happened, or since playback started again after the last
+     * underrun. playing will tell you which case it is. \since
+     * 0.9.11 */
+
 } pa_timing_info;
 
 /** A structure for the spawn api. This may be used to integrate auto
@@ -352,42 +513,102 @@ typedef struct pa_timing_info {
  * waitpid() is used on the child's PID. The spawn routine will not
  * block or ignore SIGCHLD signals, since this cannot be done in a
  * thread compatible way. You might have to do this in
- * prefork/postfork. \since 0.4 */
+ * prefork/postfork. */
 typedef struct pa_spawn_api {
-    void (*prefork)(void);     /**< Is called just before the fork in the parent process. May be NULL. */
-    void (*postfork)(void);    /**< Is called immediately after the fork in the parent process. May be NULL.*/
-    void (*atfork)(void);      /**< Is called immediately after the
-                                * fork in the child process. May be
-                                * NULL. It is not safe to close all
-                                * file descriptors in this function
-                                * unconditionally, since a UNIX socket
-                                * (created using socketpair()) is
-                                * passed to the new process. */
+    void (*prefork)(void);
+    /**< Is called just before the fork in the parent process. May be
+     * NULL. */
+
+    void (*postfork)(void);
+    /**< Is called immediately after the fork in the parent
+     * process. May be NULL.*/
+
+    void (*atfork)(void);
+    /**< Is called immediately after the fork in the child
+     * process. May be NULL. It is not safe to close all file
+     * descriptors in this function unconditionally, since a UNIX
+     * socket (created using socketpair()) is passed to the new
+     * process. */
 } pa_spawn_api;
 
-/** Seek type for pa_stream_write(). \since 0.8*/
+/** Seek type for pa_stream_write(). */
 typedef enum pa_seek_mode {
-    PA_SEEK_RELATIVE = 0,           /**< Seek relatively to the write index */
-    PA_SEEK_ABSOLUTE = 1,           /**< Seek relatively to the start of the buffer queue */
-    PA_SEEK_RELATIVE_ON_READ = 2,   /**< Seek relatively to the read index.  */
-    PA_SEEK_RELATIVE_END = 3        /**< Seek relatively to the current end of the buffer queue. */
+    PA_SEEK_RELATIVE = 0,
+    /**< Seek relatively to the write index */
+
+    PA_SEEK_ABSOLUTE = 1,
+    /**< Seek relatively to the start of the buffer queue */
+
+    PA_SEEK_RELATIVE_ON_READ = 2,
+    /**< Seek relatively to the read index.  */
+
+    PA_SEEK_RELATIVE_END = 3
+    /**< Seek relatively to the current end of the buffer queue. */
 } pa_seek_mode_t;
 
-/** Special sink flags. \since 0.8  */
+/** Special sink flags. */
 typedef enum pa_sink_flags {
-    PA_SINK_HW_VOLUME_CTRL = 1,   /**< Supports hardware volume control */
-    PA_SINK_LATENCY = 2,          /**< Supports latency querying */
-    PA_SINK_HARDWARE = 4,         /**< Is a hardware sink of some kind, in contrast to "virtual"/software sinks \since 0.9.3 */
-    PA_SINK_NETWORK = 8           /**< Is a networked sink of some kind. \since 0.9.7 */
+    PA_SINK_HW_VOLUME_CTRL = 0x0001U,
+    /**< Supports hardware volume control */
+
+    PA_SINK_LATENCY = 0x0002U,
+    /**< Supports latency querying */
+
+    PA_SINK_HARDWARE = 0x0004U,
+    /**< Is a hardware sink of some kind, in contrast to
+     * "virtual"/software sinks \since 0.9.3 */
+
+    PA_SINK_NETWORK = 0x0008U,
+    /**< Is a networked sink of some kind. \since 0.9.7 */
+
+    PA_SINK_HW_MUTE_CTRL = 0x0010U,
+    /**< Supports hardware mute control \since 0.9.11 */
+
+    PA_SINK_DECIBEL_VOLUME = 0x0020U
+    /**< Volume can be translated to dB with pa_sw_volume_to_dB()
+     * \since 0.9.11 */
 } pa_sink_flags_t;
 
-/** Special source flags. \since 0.8  */
+/** \cond fulldocs */
+#define PA_SINK_HW_VOLUME_CTRL PA_SINK_HW_VOLUME_CTRL
+#define PA_SINK_LATENCY PA_SINK_LATENCY
+#define PA_SINK_HARDWARE PA_SINK_HARDWARE
+#define PA_SINK_NETWORK PA_SINK_NETWORK
+#define PA_SINK_HW_VOLUME_CTRL PA_SINK_HW_VOLUME_CTRL
+#define PA_SINK_DECIBEL_VOLUME PA_SINK_DECIBEL_VOLUME
+/** \endcond */
+
+/** Special source flags.  */
 typedef enum pa_source_flags {
-    PA_SOURCE_HW_VOLUME_CTRL = 1,  /**< Supports hardware volume control */
-    PA_SOURCE_LATENCY = 2,         /**< Supports latency querying */
-    PA_SOURCE_HARDWARE = 4,        /**< Is a hardware source of some kind, in contrast to "virtual"/software source \since 0.9.3 */
-    PA_SOURCE_NETWORK = 8          /**< Is a networked sink of some kind. \since 0.9.7 */
+    PA_SOURCE_HW_VOLUME_CTRL = 0x0001U,
+    /**< Supports hardware volume control */
+
+    PA_SOURCE_LATENCY = 0x0002U,
+    /**< Supports latency querying */
+
+    PA_SOURCE_HARDWARE = 0x0004U,
+    /**< Is a hardware source of some kind, in contrast to
+     * "virtual"/software source \since 0.9.3 */
+
+    PA_SOURCE_NETWORK = 0x0008U,
+    /**< Is a networked sink of some kind. \since 0.9.7 */
+
+    PA_SOURCE_HW_MUTE_CTRL = 0x0010U,
+    /**< Supports hardware mute control \since 0.9.11 */
+
+    PA_SOURCE_DECIBEL_VOLUME = 0x0020U
+    /**< Volume can be translated to dB with pa_sw_volume_to_dB()
+     * \since 0.9.11 */
 } pa_source_flags_t;
+
+/** \cond fulldocs */
+#define PA_SOURCE_HW_VOLUME_CTRL PA_SOURCE_HW_VOLUME_CTRL
+#define PA_SOURCE_LATENCY PA_SOURCE_LATENCY
+#define PA_SOURCE_HARDWARE PA_SOURCE_HARDWARE
+#define PA_SOURCE_NETWORK PA_SOURCE_NETWORK
+#define PA_SOURCE_HW_VOLUME_CTRL PA_SOURCE_HW_VOLUME_CTRL
+#define PA_SOURCE_DECIBEL_VOLUME PA_SOURCE_DECIBEL_VOLUME
+/** \endcond */
 
 /** A generic free() like callback prototype */
 typedef void (*pa_free_cb_t)(void *p);

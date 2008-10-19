@@ -7,11 +7,11 @@ pulse-daemon.conf \- PulseAudio daemon configuration file
 \fI/etc/pulse/daemon.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a file \fI~/.pulse/daemon.conf\f1 on startup, and when that file doesn't exist from \fI/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
+The PulseAudio sound server reads configuration directives from a file \fI~/.pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
 
-The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # for it ignores the rest of the line until its end.
+The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
-For the settings that take a boolean argument, the values \fBtrue\f1, \fByes\f1, \fBon\f1 and \fB1\f1 are equivalent, resp. \fBfalse\f1, \fBno\f1, \fBoff\f1, \fB0\f1.
+For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, \fBon\f1 and \fB1\f1 are equivalent, resp. \fBfalse\f1, \fBno\f1, \fBoff\f1, \fB0\f1.
 .SH GENERAL DIRECTIVES
 .TP
 \fBdaemonize= \f1 Daemonize after startup. Takes a boolean value, defaults to "no". The \fB--daemonize\f1 command line option takes precedence.
@@ -20,9 +20,13 @@ For the settings that take a boolean argument, the values \fBtrue\f1, \fByes\f1,
 .TP
 \fBdisallow-module-loading=\f1 Disallow module loading after startup. This is a security feature that makes sure that no further modules may be loaded into the PulseAudio server after startup completed. It is recommended to enable this when \fBsystem-instance\f1 is enabled. Please note that certain features like automatic hot-plug support will not work if this option is enabled. Takes a boolean argument, defaults to \fBno\f1. The \fB--disallow-module-loading\f1 command line option takes precedence.
 .TP
+\fBdisallow-exit=\f1 Disallow exit on user request. Defaults to \fBno\f1.
+.TP
 \fBresample-method=\f1 The resampling algorithm to use. Use one of \fBsrc-sinc-best-quality\f1, \fBsrc-sinc-medium-quality\f1, \fBsrc-sinc-fastest\f1, \fBsrc-zero-order-hold\f1, \fBsrc-linear\f1, \fBtrivial\f1, \fBspeex-float-N\f1, \fBspeex-fixed-N\f1, \fBffmpeg\f1. See the documentation of libsamplerate for an explanation for the different src- methods. The method \fBtrivial\f1 is the most basic algorithm implemented. If you're tight on CPU consider using this. On the other hand it has the worst quality of them all. The Speex resamplers take an integer quality setting in the range 0..9 (bad...good). They exist in two flavours: \fBfixed\f1 and \fBfloat\f1. The former uses fixed point numbers, the latter relies on floating point numbers. On most desktop CPUs the float point resmampler is a lot faster, and it also offers slightly better quality. See the output of \fBdump-resample-methods\f1 for a complete list of all available resamplers. Defaults to \fBspeex-float-3\f1. The \fB--resample-method\f1 command line option takes precedence. Note that some modules overwrite or allow overwriting of the resampler to use.
 .TP
 \fBdisable-remixing=\f1 Never upmix or downmix channels to different channel maps. Instead, do a simple name-based matching only.
+.TP
+\fBdisable-lfe-remixing=\f1 When upmixing or downmixing ignore LFE channels. When this option is on the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to "on".
 .TP
 \fBuse-pid-file=\f1 Create a PID file in \fI/tmp/pulse-$USER/pid\f1. Of this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--no-cpu-limit\f1 command line option takes precedence.
 .TP
@@ -31,6 +35,8 @@ For the settings that take a boolean argument, the values \fBtrue\f1, \fByes\f1,
 \fBsystem-instance=\f1 Run the daemon as system-wide instance, requires root priviliges. Takes a boolean argument, defaults to \fBno\f1. The \fB--system\f1 command line argument takes precedence.
 .TP
 \fBdisable-shm=\f1 Disable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fBno\f1. The \fB--disable-shm\f1 command line argument takes precedence.
+.TP
+\fBshm-size-bytes=\f1 Sets the shared memory segment size for the daemon, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
 .SH SCHEDULING
 .TP
 \fBhigh-priority=\f1 Renice the daemon after startup to become a high-priority process. This a good idea if you experience drop-outs during playback. However, this is a certain security issue, since it works when called SUID root only, or RLIMIT_NICE is used. root is dropped immediately after gaining the nice level on startup, thus it is presumably safe. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to "yes". The \fB--high-priority\f1 command line option takes precedence.
@@ -51,7 +57,9 @@ For the settings that take a boolean argument, the values \fBtrue\f1, \fByes\f1,
 .TP
 \fBdl-search-path=\f1 The path were to look for dynamic shared objects (DSOs/plugins). You may specify more than one path seperated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
 .TP
-\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/etc/pulse/default.pa\f1. If \fB-n\f1 is passed on the command line the default configuration script is ignored.
+\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
+.TP
+\fBdefault-script-file=\f1 Load the default configuration script file as specified in \fBdefault-script-file=\f1. Defaults to "yes".
 .SH LOGGING
 .TP
 \fBlog-target=\f1 The default log target. Use either \fBstderr\f1, \fBsyslog\f1 or \fBauto\f1. The latter is equivalent to \fBsylog\f1 in case \fBdaemonize\f1 is enabled, otherwise to \fBstderr\f1. Defaults to \fBauto\f1. The \fB--log-target\f1 command line option takes precedence.
@@ -61,6 +69,8 @@ For the settings that take a boolean argument, the values \fBtrue\f1, \fByes\f1,
 See \fBgetrlimit(2)\f1 for more information. Set to -1 if PulseAudio shall not touch the resource limit. Not all resource limits are available on all operating systems.
 .TP
 \fBrlimit-as\f1 Defaults to -1.
+.TP
+\fBrlimit-rss\f1 Defaults to -1.
 .TP
 \fBrlimit-core\f1 Defaults to -1.
 .TP
@@ -74,15 +84,23 @@ See \fBgetrlimit(2)\f1 for more information. Set to -1 if PulseAudio shall not t
 .TP
 \fBrlimit-nproc\f1 Defaults to -1.
 .TP
+\fBrlimit-locks\f1 Defaults to -1.
+.TP
+\fBrlimit-sigpending\f1 Defaults to -1.
+.TP
+\fBrlimit-msgqueue\f1 Defaults to -1.
+.TP
 \fBrlimit-memlock\f1 Defaults to 16 KiB. Please note that the JACK client libraries may require more locked memory.
 .TP
 \fBrlimit-nice\f1 Defaults to 31. Please make sure that the default nice level as configured with \fBnice-level\f1 fits in this resource limit, if \fBhigh-priority\f1 is enabled.
 .TP
 \fBrlimit-rtprio\f1 Defaults to 9. Please make sure that the default real-time priority level as configured with \fBrealtime-priority=\f1 fits in this resource limit, if \fBrealtime-scheduling\f1 is enabled. The JACK client libraries require a real-time prority of 9 by default. 
+.TP
+\fBrlimit-rttime\f1 Defaults to 1000000.
 .SH DEFAULT DEVICE SETTINGS
 Most drivers try to open the audio device with these settings and then fall back to lower settings. The default settings are CD quality: 16bit native endian, 2 channels, 44100 Hz sampling.
 .TP
-\fBdefault-sample-format=\f1 The default sampling format. Specify one of \fBu8\f1, \fBs16le\f1, \fBs16be\f1, \fBfloat32le\f1, \fBfloat32be\f1, \fBulaw\f1, \fBalaw\f1. Depending on the endianess of the CPU the formats \fBs16ne\f1, \fBs16re\f1, \fBfloat32ne\f1, \fBfloat32re\f1 (for native, resp. reverse endian) are available as aliases.
+\fBdefault-sample-format=\f1 The default sampling format. Specify one of \fBu8\f1, \fBs16le\f1, \fBs16be\f1, \fBs32le\f1, \fBs32be\f1, \fBfloat32le\f1, \fBfloat32be\f1, \fBulaw\f1, \fBalaw\f1. Depending on the endianess of the CPU the formats \fBs16ne\f1, \fBs16re\f1, \fBs32ne\f1, \fBs32re\f1, \fBfloat32ne\f1, \fBfloat32re\f1 (for native, resp. reverse endian) are available as aliases.
 .TP
 \fBdefault-sample-rate=\f1 The default sample frequency.
 .TP

@@ -1,5 +1,3 @@
-/* $Id: random.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -39,7 +37,7 @@
 
 #include "random.h"
 
-static int has_whined = 0;
+static pa_bool_t has_whined = TRUE;
 
 static const char * const devices[] = { "/dev/urandom", "/dev/random", NULL };
 
@@ -64,7 +62,11 @@ static int random_proper(void *ret_data, size_t length) {
     while (*device) {
         ret = 0;
 
-        if ((fd = open(*device, O_RDONLY)) >= 0) {
+        if ((fd = open(*device, O_RDONLY
+#ifdef O_NOCTTY
+                       | O_NOCTTY
+#endif
+             )) >= 0) {
 
             if ((r = pa_loop_read(fd, ret_data, length, NULL)) < 0 || (size_t) r != length)
                 ret = -1;
@@ -75,6 +77,8 @@ static int random_proper(void *ret_data, size_t length) {
 
         if (ret == 0)
             break;
+
+        device++;
     }
 
     return ret;
@@ -85,9 +89,11 @@ void pa_random_seed(void) {
     unsigned int seed;
 
     if (random_proper(&seed, sizeof(unsigned int)) < 0) {
-        if (!has_whined)
+
+        if (!has_whined) {
             pa_log_warn("Failed to get proper entropy. Falling back to seeding with current time.");
-        has_whined = 1;
+            has_whined = TRUE;
+        }
 
         seed = (unsigned int) time(NULL);
     }
@@ -105,9 +111,10 @@ void pa_random(void *ret_data, size_t length) {
     if (random_proper(ret_data, length) >= 0)
         return;
 
-    if (!has_whined)
+    if (!has_whined) {
         pa_log_warn("Failed to get proper entropy. Falling back to unsecure pseudo RNG.");
-    has_whined = 1;
+        has_whined = TRUE;
+    }
 
     for (p = ret_data, l = length; l > 0; p++, l--)
         *p = (uint8_t) rand();

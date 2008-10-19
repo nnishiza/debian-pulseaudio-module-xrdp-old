@@ -1,5 +1,3 @@
-/* $Id: parec-simple.c 1418 2007-01-04 13:43:45Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -30,7 +28,7 @@
 
 #include <pulse/simple.h>
 #include <pulse/error.h>
-#include <pulsecore/gccmacro.h>
+#include <pulse/gccmacro.h>
 
 #define BUFSIZE 1024
 
@@ -49,13 +47,13 @@ static ssize_t loop_write(int fd, const void*data, size_t size) {
 
         ret += r;
         data = (const uint8_t*) data + r;
-        size -= r;
+        size -= (size_t) r;
     }
 
     return ret;
 }
 
-int main(PA_GCC_UNUSED int argc, char*argv[]) {
+int main(int argc, char*argv[]) {
     /* The sample type to use */
     static const pa_sample_spec ss = {
         .format = PA_SAMPLE_S16LE,
@@ -74,7 +72,6 @@ int main(PA_GCC_UNUSED int argc, char*argv[]) {
 
     for (;;) {
         uint8_t buf[BUFSIZE];
-        ssize_t r;
 
         /* Record some data ... */
         if (pa_simple_read(s, buf, sizeof(buf), &error) < 0) {
@@ -83,7 +80,7 @@ int main(PA_GCC_UNUSED int argc, char*argv[]) {
         }
 
         /* And write it to STDOUT */
-        if ((r = loop_write(STDOUT_FILENO, buf, sizeof(buf))) <= 0) {
+        if (loop_write(STDOUT_FILENO, buf, sizeof(buf)) != sizeof(buf)) {
             fprintf(stderr, __FILE__": write() failed: %s\n", strerror(errno));
             goto finish;
         }

@@ -1,5 +1,3 @@
-/* $Id: remix-test.c 2044 2007-11-11 02:30:59Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -60,7 +58,7 @@ int main(int argc, char *argv[]) {
     oil_init();
     pa_log_set_maximal_level(PA_LOG_DEBUG);
 
-    pa_assert_se(pool = pa_mempool_new(FALSE));
+    pa_assert_se(pool = pa_mempool_new(FALSE, 0));
 
     for (i = 0; maps[i].channels > 0; i++)
         for (j = 0; maps[j].channels > 0; j++) {

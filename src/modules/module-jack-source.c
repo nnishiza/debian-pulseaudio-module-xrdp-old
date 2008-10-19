@@ -1,5 +1,3 @@
-/* $Id: module-jack-source.c 2159 2008-03-27 23:29:32Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -118,7 +116,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
             if (u->source->thread_info.state == PA_SOURCE_RUNNING)
                 pa_source_post(u->source, chunk);
 
-            u->saved_frame_time = offset;
+            u->saved_frame_time = (jack_nframes_t) offset;
             u->saved_frame_time_valid = TRUE;
 
             return 0;
@@ -253,7 +251,7 @@ int pa__init(pa_module*m) {
     pa_bool_t do_connect = TRUE;
     unsigned i;
     const char **ports = NULL, **p;
-    char *t;
+    pa_source_new_data data;
 
     pa_assert(m);
 
@@ -278,12 +276,11 @@ int pa__init(pa_module*m) {
     m->userdata = u;
     u->saved_frame_time_valid = FALSE;
 
-    pa_thread_mq_init(&u->thread_mq, m->core->mainloop);
     u->rtpoll = pa_rtpoll_new();
-    pa_rtpoll_item_new_asyncmsgq(u->rtpoll, PA_RTPOLL_EARLY, u->thread_mq.inq);
+    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
     u->jack_msgq = pa_asyncmsgq_new(0);
-    u->rtpoll_item = pa_rtpoll_item_new_asyncmsgq(u->rtpoll, PA_RTPOLL_EARLY-1, u->jack_msgq);
+    u->rtpoll_item = pa_rtpoll_item_new_asyncmsgq_read(u->rtpoll, PA_RTPOLL_EARLY-1, u->jack_msgq);
 
     if (!(u->client = jack_client_open(client_name, server_name ? JackServerName : JackNullOption, &status, server_name))) {
         pa_log("jack_client_open() failed.");
@@ -304,8 +301,7 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    pa_assert_se(pa_channel_map_init_auto(&map, channels, PA_CHANNEL_MAP_AUX));
-    pa_channel_map_init_auto(&map, channels, PA_CHANNEL_MAP_ALSA);
+    pa_channel_map_init_extend(&map, channels, PA_CHANNEL_MAP_ALSA);
     if (pa_modargs_get_channel_map(ma, NULL, &map) < 0 || map.channels != channels) {
         pa_log("failed to parse channel_map= argument.");
         goto fail;
@@ -313,7 +309,7 @@ int pa__init(pa_module*m) {
 
     pa_log_info("Successfully connected as '%s'", jack_get_client_name(u->client));
 
-    ss.channels = u->channels = channels;
+    u->channels = ss.channels = (uint8_t) channels;
     ss.rate = jack_get_sample_rate(u->client);
     ss.format = PA_SAMPLE_FLOAT32NE;
 
@@ -326,20 +322,31 @@ int pa__init(pa_module*m) {
         }
     }
 
-    if (!(u->source = pa_source_new(m->core, __FILE__, pa_modargs_get_value(ma, "source_name", DEFAULT_SOURCE_NAME), 0, &ss, &map))) {
-        pa_log("failed to create source.");
+    pa_source_new_data_init(&data);
+    data.driver = __FILE__;
+    data.module = m;
+    pa_source_new_data_set_name(&data, pa_modargs_get_value(ma, "source_name", DEFAULT_SOURCE_NAME));
+    pa_source_new_data_set_sample_spec(&data, &ss);
+    pa_source_new_data_set_channel_map(&data, &map);
+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_API, "jack");
+    if (server_name)
+        pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, server_name);
+    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Jack source (%s)", jack_get_client_name(u->client));
+    pa_proplist_sets(data.proplist, "jack.client_name", jack_get_client_name(u->client));
+
+    u->source = pa_source_new(m->core, &data, PA_SOURCE_LATENCY);
+    pa_source_new_data_done(&data);
+
+    if (!u->source) {
+        pa_log("Failed to create source.");
         goto fail;
     }
 
     u->source->parent.process_msg = source_process_msg;
     u->source->userdata = u;
-    u->source->flags = PA_SOURCE_LATENCY;
 
-    pa_source_set_module(u->source, m);
     pa_source_set_asyncmsgq(u->source, u->thread_mq.inq);
     pa_source_set_rtpoll(u->source, u->rtpoll);
-    pa_source_set_description(u->source, t = pa_sprintf_malloc("Jack source (%s)", jack_get_client_name(u->client)));
-    pa_xfree(t);
 
     jack_set_process_callback(u->client, jack_process, u);
     jack_on_shutdown(u->client, jack_shutdown, u);

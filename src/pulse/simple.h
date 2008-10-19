@@ -1,8 +1,6 @@
 #ifndef foosimplehfoo
 #define foosimplehfoo
 
-/* $Id: simple.h 1999 2007-10-30 14:17:41Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -138,10 +136,10 @@ int pa_simple_drain(pa_simple *s, int *error);
 /** Read some data from the server */
 int pa_simple_read(pa_simple *s, void*data, size_t bytes, int *error);
 
-/** Return the playback latency. \since 0.5 */
+/** Return the playback latency. */
 pa_usec_t pa_simple_get_latency(pa_simple *s, int *error);
 
-/** Flush the playback buffer. \since 0.5 */
+/** Flush the playback buffer. */
 int pa_simple_flush(pa_simple *s, int *error);
 
 PA_C_DECL_END

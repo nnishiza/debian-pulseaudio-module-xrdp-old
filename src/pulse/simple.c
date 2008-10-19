@@ -1,6 +1,4 @@
 
-/* $Id: simple.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -274,7 +272,7 @@ int pa_simple_write(pa_simple *p, const void*data, size_t length, int *rerror) {
         if (l > length)
             l = length;
 
-        r = pa_stream_write(p->stream, data, l, NULL, 0, PA_SEEK_RELATIVE);
+        r = pa_stream_write(p->stream, data, l, NULL, 0LL, PA_SEEK_RELATIVE);
         CHECK_SUCCESS_GOTO(p, rerror, r >= 0, unlock_and_fail);
 
         data = (const uint8_t*) data + l;
@@ -455,4 +453,3 @@ unlock_and_fail:
     pa_threaded_mainloop_unlock(p->mainloop);
     return (pa_usec_t) -1;
 }
-

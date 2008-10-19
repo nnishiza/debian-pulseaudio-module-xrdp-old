@@ -1,8 +1,6 @@
 #ifndef fooutf8hfoo
 #define fooutf8hfoo
 
-/* $Id: utf8.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -26,6 +24,7 @@
 ***/
 
 #include <pulse/cdecl.h>
+#include <pulse/gccmacro.h>
 
 /** \file
  * UTF8 Validation functions

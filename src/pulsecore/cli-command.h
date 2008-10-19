@@ -1,8 +1,6 @@
 #ifndef fooclicommandhfoo
 #define fooclicommandhfoo
 
-/* $Id: cli-command.h 2008 2007-11-01 00:32:45Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -35,6 +33,9 @@ int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, pa_bo
 
 /* Execute a whole file of CLI commands */
 int pa_cli_command_execute_file(pa_core *c, const char *fn, pa_strbuf *buf, pa_bool_t *fail);
+
+/* Execute a whole file of CLI commands */
+int pa_cli_command_execute_file_stream(pa_core *c, FILE *f, pa_strbuf *buf, pa_bool_t *fail);
 
 /* Split the specified string into lines and run pa_cli_command_execute_line() for each. */
 int pa_cli_command_execute(pa_core *c, const char *s, pa_strbuf *buf, pa_bool_t *fail);

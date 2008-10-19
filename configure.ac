@@ -1,8 +1,6 @@
 # -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 
-# $Id: configure.ac 2190 2008-03-29 22:09:52Z lennart $
-
 # This file is part of PulseAudio.
 #
 # Copyright 2004-2008 Lennart Poettering
@@ -22,30 +20,31 @@
 # along with PulseAudio; if not, write to the Free Software Foundation,
 # Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
 
-AC_PREREQ(2.60)
+AC_PREREQ(2.62)
 
 m4_define(PA_MAJOR, [0])
 m4_define(PA_MINOR, [9])
-m4_define(PA_MICRO, [10])
+m4_define(PA_MICRO, [13])
 
-AC_INIT([pulseaudio], PA_MAJOR.PA_MINOR.PA_MICRO,[mzchyfrnhqvb (at) 0pointer (dot) net])
+AC_INIT([pulseaudio],[PA_MAJOR.PA_MINOR.PA_MICRO],[mzchyfrnhqvb (at) 0pointer (dot) net])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
+AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([foreign -Wall])
+AM_INIT_AUTOMAKE([foreign 1.10 -Wall])
 
 AC_SUBST(PA_MAJORMINOR, "PA_MAJOR.PA_MINOR")
 AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
 
-AC_SUBST(PA_API_VERSION, 11)
-AC_SUBST(PA_PROTOCOL_VERSION, 12)
+AC_SUBST(PA_API_VERSION, 12)
+AC_SUBST(PA_PROTOCOL_VERSION, 14)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [4:1:4])
+AC_SUBST(LIBPULSE_VERSION_INFO, [7:0:7])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
-AC_SUBST(LIBPULSE_SIMPLE_VERSION_INFO, [0:1:0])
+AC_SUBST(LIBPULSE_SIMPLE_VERSION_INFO, [0:2:0])
 
 # The ABI-stable network browsing interface for client applications,
 # for the version info x:y:z always will hold y=z
@@ -53,14 +52,15 @@ AC_SUBST(LIBPULSE_BROWSE_VERSION_INFO, [1:1:1])
 
 # The ABI-stable GLib adapter for client applications, for the version
 # info x:y:z always will hold y=z
-AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:3:0])
+AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:4:0])
 
 # An internally used, ABI-unstable library that contains the
 # PulseAudio core, SONAMEs are bumped on every release, version info
 # suffix will always be 0:0
-AC_SUBST(LIBPULSECORE_VERSION_INFO, [5:1:0])
+AC_SUBST(LIBPULSECORE_VERSION_INFO, [8:0:0])
 
 AC_CANONICAL_HOST
+AC_DEFINE_UNQUOTED([CANONICAL_HOST], "$host", [Canonical host string.])
 
 if type -p stow > /dev/null && test -d /usr/local/stow ; then
    AC_MSG_NOTICE([*** Found /usr/local/stow: default install prefix set to /usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION} ***])
@@ -86,9 +86,10 @@ AC_PROG_MKDIR_P
 # CC
 
 AC_PROG_CC
+AC_PROG_CC_C99
 AM_PROG_CC_C_O
 AC_PROG_GCC_TRADITIONAL
-AC_GNU_SOURCE
+AC_USE_SYSTEM_EXTENSIONS
 
 # M4
 
@@ -97,37 +98,16 @@ if test "x$M4" = xno ; then
    AC_MSG_ERROR([m4 missing])
 fi
 
-# GCC flags
+dnl Compiler flags
+DESIRED_FLAGS="-Wall -W -Wextra -pedantic -pipe -Wno-long-long -Wvla -Wno-overlength-strings -Wconversion -Wundef -Wformat -Wlogical-op -Wpacked -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wdeclaration-after-statement -Wfloat-equal -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-noreturn -Wshadow -Wendif-labels -Wpointer-arith -Wcast-align -Wwrite-strings -Wno-unused-parameter -ffast-math"
 
-test_gcc_flag() {
-    AC_LANG_CONFTEST([int main(int argc, char*argv[]) {}])
-    $CC -c conftest.c $CFLAGS -o conftest.o > /dev/null 2> /dev/null
-    ret=$?
-    rm -f conftest.o
-    return $ret
-}
-
-# If using GCC specify some additional parameters
-if test "x$GCC" = "xyes" ; then
-
-    # We use gnu99 instead of c99 because many have interpreted the standard
-    # in a way that int64_t isn't defined on non-64 bit platforms.
-    DESIRED_FLAGS="-std=gnu99 -Wall -W -Wextra -pedantic -pipe -Wformat -Wold-style-definition -Wdeclaration-after-statement -Wfloat-equal -Wmissing-declarations -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-noreturn -Wshadow -Wendif-labels -Wpointer-arith -Wcast-align -Wwrite-strings -Winline -Wno-unused-parameter -ffast-math"
-
-    for flag in $DESIRED_FLAGS ; do
-        AC_MSG_CHECKING([whether $CC accepts $flag])
-        if test_gcc_flag $flag ; then
-           CFLAGS="$CFLAGS $flag"
-           AC_MSG_RESULT([yes])
-        else
-           AC_MSG_RESULT([no])
-        fi
-    done
-fi
+for flag in $DESIRED_FLAGS ; do
+  CC_CHECK_CFLAGS([$flag], [CFLAGS="$CFLAGS $flag"])
+done
 
 # Native atomic operation support
 AC_ARG_ENABLE([atomic-arm-linux-helpers],
-    AC_HELP_STRING([--disable-atomic-arm-linux-helpers], [use inline asm or libatomic_ops instead]),
+    AS_HELP_STRING([--disable-atomic-arm-linux-helpers],[use inline asm or libatomic_ops instead]),
         [
             case "${enableval}" in
                 yes) atomic_arm_linux_helpers=yes ;;
@@ -138,7 +118,7 @@ AC_ARG_ENABLE([atomic-arm-linux-helpers],
         [atomic_arm_linux_helpers=auto])
 
 AC_ARG_ENABLE([atomic-arm-memory-barrier],
-    AC_HELP_STRING([--enable-atomic-arm-memory-barrier], [only really needed in SMP arm systems]),
+    AS_HELP_STRING([--enable-atomic-arm-memory-barrier],[only really needed in SMP arm systems]),
         [
             case "${enableval}" in
                 yes) AC_DEFINE_UNQUOTED(ATOMIC_ARM_MEMORY_BARRIER_ENABLED, 1, [Enable memory barriers]) ;;
@@ -162,17 +142,18 @@ esac
 # If everything else fails use libatomic_ops
 need_libatomic_ops=yes
 
-AC_MSG_CHECKING([whether $CC knows __sync_bool_compare_and_swap()])
-AC_LANG_CONFTEST([int main() { int a = 4; __sync_bool_compare_and_swap(&a, 4, 5); }])
-$CC conftest.c $CFLAGS -o conftest > /dev/null 2> /dev/null
-ret=$?
-rm -f conftest.o conftest
-if test $ret -eq 0 ; then
+AC_CACHE_CHECK([whether $CC knows __sync_bool_compare_and_swap()],
+  pulseaudio_cv_sync_bool_compare_and_swap,
+  [AC_LINK_IFELSE(
+     AC_LANG_PROGRAM([], [[int a = 4; __sync_bool_compare_and_swap(&a, 4, 5);]]),
+     [pulseaudio_cv_sync_bool_compare_and_swap=yes],
+     [pulseaudio_cv_sync_bool_compare_and_swap=no])
+  ])
+
+if test "$pulseaudio_cv_sync_bool_compare_and_swap" = "yes" ; then
     AC_DEFINE([HAVE_ATOMIC_BUILTINS], 1, [Have __sync_bool_compare_and_swap() and friends.])
-    AC_MSG_RESULT([yes])
     need_libatomic_ops=no
 else
-    AC_MSG_RESULT([no])
     # HW specific atomic ops stuff
     AC_MSG_CHECKING([architecture for native atomic operations])
     case $host_cpu in
@@ -188,29 +169,27 @@ else
     		need_libatomic_ops=no
 	    else
 	       AC_MSG_RESULT([no])
-	       AC_MSG_CHECKING([compiler support for arm inline asm atomic operations])
-	       AC_LANG_CONFTEST([[int main()
-	       {
-                   volatile int a=0;
-	           int o=0, n=1, r;
-	           asm volatile ("ldrex	%0, [%1]\n"
-			 	 "subs	%0, %0, %2\n"
-			 	 "strexeq %0, %3, [%1]\n"
-			 	 : "=&r" (r)
-			 	 : "r" (&a), "Ir" (o), "r" (n)
-			 	 : "cc");
-                   return (a==1 ? 0 : -1);
-	       }]])
-	       $CC conftest.c $CFLAGS -o conftest > /dev/null 2>&1
-	       ret=$?
-	       rm -f conftest.o conftest
-	       if test $ret -eq 0 ; then
+	       AC_CACHE_CHECK([compiler support for arm inline asm atomic operations],
+	         pulseaudio_cv_support_arm_atomic_ops,
+		 [AC_COMPILE_IFELSE(
+		    AC_LANG_PROGRAM([],
+		      [[volatile int a=0;
+	                int o=0, n=1, r;
+	                asm volatile ("ldrex	%0, [%1]\n"
+		        	 	 "subs	%0, %0, %2\n"
+		        	 	 "strexeq %0, %3, [%1]\n"
+		        	 	 : "=&r" (r)
+		        	 	 : "r" (&a), "Ir" (o), "r" (n)
+		        	 	 : "cc");
+                        return (a==1 ? 0 : -1);
+		      ]]),
+		    [pulseaudio_cv_support_arm_atomic_ops=yes],
+		    [pulseaudio_cv_support_arm_atomic_ops=no])
+		 ])
+	       AS_IF([test "$pulseaudio_cv_support_arm_atomic_ops" = "yes"], [
 	       	   AC_DEFINE([ATOMIC_ARM_INLINE_ASM], 1, [Have ARMv6 instructions.])
-	    	   AC_MSG_RESULT([yes])
 		   need_libatomic_ops=no
-	       else
-	    	   AC_MSG_RESULT([no])
-               fi
+	         ])
 	   fi
       	;;
         *)
@@ -219,29 +198,19 @@ else
     esac
 fi
 
-AC_MSG_CHECKING([whether $CC knows __thread])
-AC_LANG_CONFTEST([static __thread int a = 6; int main() { a = 5; }])
-$CC conftest.c $CFLAGS -o conftest > /dev/null 2> /dev/null
-ret=$?
-rm -f conftest.o conftest
-if test $ret -eq 0 ; then
-    AC_DEFINE([HAVE_TLS_BUILTIN], 1, [Have __thread().])
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-fi
+CC_CHECK_TLS
 
-AC_MSG_CHECKING([whether $CC knows _Bool])
-AC_LANG_CONFTEST([int main() { _Bool b; }])
-$CC conftest.c $CFLAGS -o conftest > /dev/null 2> /dev/null
-ret=$?
-rm -f conftest.o conftest
-if test $ret -eq 0 ; then
+AC_CACHE_CHECK([whether $CC knows _Bool],
+  pulseaudio_cv__Bool,
+  [AC_COMPILE_IFELSE(
+     AC_LANG_PROGRAM([], [[_Bool b;]]),
+     [pulseaudio_cv__Bool=yes],
+     [pulseaudio_cv__Bool=no])
+  ])
+
+AS_IF([test "$pulseaudio_cv__Bool" = "yes"], [
     AC_DEFINE([HAVE_STD_BOOL], 1, [Have _Bool.])
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-fi
+  ])
 
 #### libtool stuff ####
 
@@ -327,6 +296,7 @@ AC_CHECK_HEADERS([windows.h winsock2.h ws2tcpip.h])
 AC_CHECK_HEADERS([sys/ioctl.h])
 AC_CHECK_HEADERS([byteswap.h])
 AC_CHECK_HEADERS([sys/syscall.h])
+AC_CHECK_HEADERS([sys/eventfd.h])
 
 #### Typdefs, structures, etc. ####
 
@@ -339,6 +309,7 @@ AC_CHECK_TYPES(ssize_t, , [AC_DEFINE([ssize_t], [signed long],
 AC_TYPE_OFF_T
 AC_TYPE_SIGNAL
 AC_TYPE_UID_T
+AC_CHECK_DECLS(environ)
 
 AC_CHECK_DEFINE([SIGXCPU], [signal.h], [
 HAVE_SIGXCPU=1
@@ -376,6 +347,9 @@ AC_SEARCH_LIBS([connect], [socket])
 # build, disabling its ability to make dlls.
 AC_CHECK_FUNCS([getopt_long], [], [AC_CHECK_LIB([iberty], [getopt_long])])
 
+AC_CHECK_LIB(gdbm, gdbm_open)
+AC_CHECK_HEADERS(gdbm.h, [], [AC_MSG_ERROR([gdbm.h not found])])
+
 #### Check for functions ####
 
 # ISO
@@ -409,20 +383,31 @@ AC_CHECK_FUNCS([lstat])
 
 AC_CHECK_FUNCS([setresuid setresgid setreuid setregid seteuid setegid ppoll strsignal sig2str strtof_l])
 
-AC_MSG_CHECKING([for PTHREAD_PRIO_INHERIT])
-AC_LANG_CONFTEST([AC_LANG_SOURCE([[
-#include <pthread.h>
-int main() { int i = PTHREAD_PRIO_INHERIT; }]])])
-$PTHREAD_CC conftest.c $PTHREAD_CFLAGS $CFLAGS $PTHREAD_LIBS -o conftest > /dev/null 2> /dev/null
-ret=$?
-rm -f conftest.o conftest
+AC_FUNC_ALLOCA
 
-if test $ret -eq 0 ; then
+AC_CACHE_CHECK([for PTHREAD_PRIO_INHERIT],
+  pulseaudio_cv_PTHREAD_PRIO_INHERIT,
+  [save_CC=$CC; CC=$PTHREAD_CC
+   save_CFLAGS=$CFLAGS; CFLAGS=$PTHREAD_CFLAGS
+   save_LIBS=$LIBS; LIBS=$PTHREAD_LIBS
+   AC_LINK_IFELSE(
+     AC_LANG_PROGRAM(
+       [[
+         #include <pthread.h>
+       ]],
+       [[int i = PTHREAD_PRIO_INHERIT;]]),
+     [pulseaudio_cv_PTHREAD_PRIO_INHERIT=yes],
+     [pulseaudio_cv_PTHREAD_PRIO_INHERIT=no])
+   CC=$save_CC
+   CFLAGS=$save_CFLAGS
+   LIBS=$save_LIBS
+  ])
+
+AS_IF([test "$pulseaudio_cv_PTHREAD_PRIO_INHERIT" = "yes"], [
     AC_DEFINE([HAVE_PTHREAD_PRIO_INHERIT], 1, [Have PTHREAD_PRIO_INHERIT.])
-    AC_MSG_RESULT([yes])
-else
-    AC_MSG_RESULT([no])
-fi
+  ])
+
+AC_DEFINE_UNQUOTED(PA_CFLAGS,"$CFLAGS", [The CFLAGS used during compilation])
 
 #### Large File-Support (LFS) ####
 
@@ -434,6 +419,15 @@ AC_CHECK_FUNCS([open64])
 #### [lib]iconv ####
 
 AM_ICONV
+
+IT_PROG_INTLTOOL([0.35.0])
+GETTEXT_PACKAGE=pulseaudio
+AC_SUBST([GETTEXT_PACKAGE])
+AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE],["$GETTEXT_PACKAGE"],[Gettext package])
+AM_GLIB_GNU_GETTEXT
+
+pulselocaledir='${prefix}/${DATADIRNAME}/locale'
+AC_SUBST(pulselocaledir)
 
 ###################################
 #      External libraries         #
@@ -461,7 +455,7 @@ CAP_LIBS=''
 
 AC_ARG_WITH(
         [caps],
-        AC_HELP_STRING([--without-caps],[Omit support for POSIX capabilities.]))
+        AS_HELP_STRING([--without-caps],[Omit support for POSIX capabilities.]))
 
 if test "x${with_caps}" != "xno"; then
     AC_SEARCH_LIBS([cap_init], [cap], [], [
@@ -473,6 +467,10 @@ if test "x${with_caps}" != "xno"; then
                         AC_MSG_ERROR([*** POSIX caps headers not found])
                     fi])
 fi
+
+#### Valgrind (optional) ####
+
+AC_CHECK_HEADERS([valgrind/memcheck.h])
 
 #### pkg-config ####
 
@@ -491,6 +489,10 @@ PKG_PROG_PKG_CONFIG
 PKG_CHECK_MODULES(LIBSNDFILE, [ sndfile >= 1.0.10 ])
 AC_SUBST(LIBSNDFILE_CFLAGS)
 AC_SUBST(LIBSNDFILE_LIBS)
+
+PKG_CHECK_MODULES(LIBSPEEX, [ speexdsp >= 1.2 ])
+AC_SUBST(LIBSPEEX_CFLAGS)
+AC_SUBST(LIBSPEEX_LIBS)
 
 #### atomic-ops ###
 
@@ -512,7 +514,7 @@ fi
 #### Libsamplerate support (optional) ####
 
 AC_ARG_ENABLE([samplerate],
-    AC_HELP_STRING([--disable-samplerate], [Disable optional libsamplerate support]),
+    AS_HELP_STRING([--disable-samplerate],[Disable optional libsamplerate support]),
         [
             case "${enableval}" in
                 yes) samplerate=yes ;;
@@ -547,7 +549,7 @@ AM_CONDITIONAL([HAVE_LIBSAMPLERATE], [test "x$HAVE_LIBSAMPLERATE" = x1])
 #### OSS support (optional) ####
 
 AC_ARG_ENABLE([oss],
-    AC_HELP_STRING([--disable-oss], [Disable optional OSS support]),
+    AS_HELP_STRING([--disable-oss],[Disable optional OSS support]),
         [
             case "${enableval}" in
                 yes) oss=yes ;;
@@ -580,7 +582,7 @@ AM_CONDITIONAL([HAVE_OSS], [test "x$HAVE_OSS" = x1])
 #### ALSA support (optional) ####
 
 AC_ARG_ENABLE([alsa],
-    AC_HELP_STRING([--disable-alsa], [Disable optional ALSA support]),
+    AS_HELP_STRING([--disable-alsa],[Disable optional ALSA support]),
         [
             case "${enableval}" in
                 yes) alsa=yes ;;
@@ -591,7 +593,7 @@ AC_ARG_ENABLE([alsa],
         [alsa=auto])
 
 if test "x${alsa}" != xno ; then
-    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.0 ],
+    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.17 ],
         [
             HAVE_ALSA=1
             AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?])
@@ -599,7 +601,7 @@ if test "x${alsa}" != xno ; then
         [
             HAVE_ALSA=0
             if test "x$alsa" = xyes ; then
-                AC_MSG_ERROR([*** ALSA support not found])
+                AC_MSG_ERROR([*** Needed alsa >= 1.0.17 support not found])
             fi
         ])
 else
@@ -614,7 +616,7 @@ AM_CONDITIONAL([HAVE_ALSA], [test "x$HAVE_ALSA" = x1])
 #### Solaris audio support (optional) ####
 
 AC_ARG_ENABLE([solaris],
-    AC_HELP_STRING([--disable-solaris], [Disable optional Solaris audio support]),
+    AS_HELP_STRING([--disable-solaris],[Disable optional Solaris audio support]),
         [
             case "${enableval}" in
                 yes) solaris=yes ;;
@@ -646,7 +648,7 @@ AM_CONDITIONAL([HAVE_SOLARIS], [test "x$HAVE_SOLARIS" = x1])
 #### GLib 2 support (optional) ####
 
 AC_ARG_ENABLE([glib2],
-    AC_HELP_STRING([--disable-glib2], [Disable optional GLib 2 support]),
+    AS_HELP_STRING([--disable-glib2],[Disable optional GLib 2 support]),
         [
             case "${enableval}" in
                 yes) glib2=yes ;;
@@ -677,7 +679,7 @@ AM_CONDITIONAL([HAVE_GLIB20], [test "x$HAVE_GLIB20" = x1])
 #### GConf support (optional) ####
 
 AC_ARG_ENABLE([gconf],
-    AC_HELP_STRING([--disable-gconf], [Disable optional GConf support]),
+    AS_HELP_STRING([--disable-gconf],[Disable optional GConf support]),
         [
             case "${enableval}" in
                 yes) gconf=yes ;;
@@ -685,7 +687,7 @@ AC_ARG_ENABLE([gconf],
                 *) AC_MSG_ERROR(bad value ${enableval} for --disable-gconf) ;;
             esac
         ],
-        [glib=auto])
+        [gconf=auto])
 
 if test "x${gconf}" != xno ; then
     PKG_CHECK_MODULES(GCONF, [ gconf-2.0 >= 2.4.0 ],
@@ -708,7 +710,7 @@ AM_CONDITIONAL([HAVE_GCONF], [test "x$HAVE_GCONF" = x1])
 #### Avahi support (optional) ####
 
 AC_ARG_ENABLE([avahi],
-    AC_HELP_STRING([--disable-avahi], [Disable optional Avahi support]),
+    AS_HELP_STRING([--disable-avahi],[Disable optional Avahi support]),
         [
             case "${enableval}" in
                 yes) avahi=yes ;;
@@ -745,7 +747,7 @@ AC_SUBST(LIBOIL_LIBS)
 ### JACK (optional) ####
 
 AC_ARG_ENABLE([jack],
-    AC_HELP_STRING([--disable-jack], [Disable optional JACK support]),
+    AS_HELP_STRING([--disable-jack],[Disable optional JACK support]),
         [
             case "${enableval}" in
                 yes) jack=yes ;;
@@ -776,7 +778,7 @@ AM_CONDITIONAL([HAVE_JACK], [test "x$HAVE_JACK" = x1])
 #### Async DNS support (optional) ####
 
 AC_ARG_ENABLE([asyncns],
-    AC_HELP_STRING([--disable-asyncns], [Disable optional Async DNS support]),
+    AS_HELP_STRING([--disable-asyncns],[Disable optional Async DNS support]),
         [
             case "${enableval}" in
                 yes) asyncns=yes ;;
@@ -811,7 +813,7 @@ fi
 #### TCP wrappers (optional) ####
 
 AC_ARG_ENABLE([tcpwrap],
-    AC_HELP_STRING([--disable-tcpwrap], [Disable optional TCP wrappers support]),
+    AS_HELP_STRING([--disable-tcpwrap],[Disable optional TCP wrappers support]),
         [
             case "${enableval}" in
                 yes) tcpwrap=yes ;;
@@ -835,7 +837,7 @@ AC_SUBST(LIBWRAP_LIBS)
 #### LIRC support (optional) ####
 
 AC_ARG_ENABLE([lirc],
-    AC_HELP_STRING([--disable-lirc], [Disable optional LIRC support]),
+    AS_HELP_STRING([--disable-lirc],[Disable optional LIRC support]),
         [
             case "${enableval}" in
                 yes) lirc=yes ;;
@@ -861,7 +863,7 @@ AM_CONDITIONAL([HAVE_LIRC], [test "x$HAVE_LIRC" = x1])
 #### HAL support (optional) ####
 
 AC_ARG_ENABLE([hal],
-    AC_HELP_STRING([--disable-hal], [Disable optional HAL support]),
+    AS_HELP_STRING([--disable-hal],[Disable optional HAL support]),
         [
             case "${enableval}" in
                 yes) hal=yes ;;
@@ -891,7 +893,7 @@ AM_CONDITIONAL([HAVE_HAL], [test "x$HAVE_HAL" = x1])
 #### BlueZ support (optional) ####
 
 AC_ARG_ENABLE([bluez],
-    AC_HELP_STRING([--disable-bluez], [Disable optional BlueZ support]),
+    AS_HELP_STRING([--disable-bluez],[Disable optional BlueZ support]),
         [
             case "${enableval}" in
                 yes) bluez=yes ;;
@@ -921,7 +923,7 @@ AM_CONDITIONAL([HAVE_BLUEZ], [test "x$HAVE_BLUEZ" = x1])
 #### D-Bus support (optional) ####
 
 AC_ARG_ENABLE([dbus],
-    AC_HELP_STRING([--disable-dbus], [Disable optional D-Bus support]),
+    AS_HELP_STRING([--disable-dbus],[Disable optional D-Bus support]),
         [
             case "${enableval}" in
                 yes) dbus=yes ;;
@@ -964,7 +966,7 @@ AM_CONDITIONAL([HAVE_DBUS], [test "x$HAVE_DBUS" = x1])
 #### PolicyKit support (optional) ####
 
 AC_ARG_ENABLE([polkit],
-    AC_HELP_STRING([--disable-polkit], [Disable optional PolicyKit support]),
+    AS_HELP_STRING([--disable-polkit],[Disable optional PolicyKit support]),
         [
             case "${enableval}" in
                 yes) polkit=yes ;;
@@ -1007,32 +1009,6 @@ AC_ARG_ENABLE(manpages,
   *) AC_MSG_ERROR([bad value ${enableval} for --disable-manpages]) ;;
 esac],[manpages=yes])
 
-if test x$manpages = xyes ; then
-    #
-    # XMLTOMAN manpage generation
-    #
-    AC_ARG_ENABLE(xmltoman,
-    AS_HELP_STRING([--disable-xmltoman],[Enable rebuilding of man pages with xmltoman]),
-    [case "${enableval}" in
-      yes) xmltoman=yes ;;
-      no)  xmltoman=no ;;
-      *) AC_MSG_ERROR([bad value ${enableval} for --disable-xmltoman]) ;;
-    esac],[xmltoman=yes])
-
-    if test x$xmltoman = xyes ; then
-        AC_CHECK_PROG(have_xmltoman, xmltoman, yes, no)
-    fi
-
-    if test x$have_xmltoman = xno -o x$xmltoman = xno; then
-        if ! test -e man/pulseaudio.1 ; then
-            AC_MSG_ERROR([*** xmltoman was not found or was disabled, it is required to build the manpages as they have not been pre-built, install xmltoman, pass --disable-manpages or dont pass --disable-xmltoman])
-            exit 1
-        fi
-        AC_MSG_WARN([*** Not rebuilding man pages as xmltoman is not found ***])
-        xmltoman=no
-    fi
-fi
-AM_CONDITIONAL([USE_XMLTOMAN], [test "x$xmltoman" = xyes])
 AM_CONDITIONAL([BUILD_MANPAGES], [test "x$manpages" = xyes])
 
 #### PulseAudio system group & user  #####
@@ -1075,7 +1051,7 @@ AC_DEFINE_UNQUOTED(PA_ACCESS_GROUP,"$PA_ACCESS_GROUP", [Access group])
 
 AC_ARG_ENABLE(
         per_user_esound_socket,
-        AS_HELP_STRING([--disable-per-user-esound-socket], [Use per-user esound socket directory, like /tmp/.esd-UID/socket.]),
+        AS_HELP_STRING([--disable-per-user-esound-socket], [Use global esound socket directory /tmp/.esd/socket.]),
         [
             case "${enableval}" in
                 yes) per_user_esound_socket=1 ;;
@@ -1092,6 +1068,10 @@ fi
 #### PulseAudio system runtime dir ####
 PA_SYSTEM_RUNTIME_PATH="${localstatedir}/run/pulse"
 AC_SUBST(PA_SYSTEM_RUNTIME_PATH)
+PA_SYSTEM_CONFIG_PATH="${localstatedir}/lib/pulse"
+AC_SUBST(PA_SYSTEM_CONFIG_PATH)
+PA_SYSTEM_STATE_PATH="${localstatedir}/lib/pulse"
+AC_SUBST(PA_SYSTEM_STATE_PATH)
 
 ###################################
 #            Output               #
@@ -1099,13 +1079,13 @@ AC_SUBST(PA_SYSTEM_RUNTIME_PATH)
 
 AC_ARG_ENABLE(
         [static-bins],
-        AC_HELP_STRING([--enable-static-bins],[Statically link executables.]),
+        AS_HELP_STRING([--enable-static-bins],[Statically link executables.]),
         [STATIC_BINS=1], [STATIC_BINS=0])
 AM_CONDITIONAL([STATIC_BINS], [test "x$STATIC_BINS" = "x1"])
 
 AC_ARG_WITH(
         [preopen-mods],
-        AC_HELP_STRING([--with-preopen-mods],[Modules to preopen in daemon (default: all).]),
+        AS_HELP_STRING([--with-preopen-mods],[Modules to preopen in daemon (default: all).]),
         [PREOPEN_MODS=$withval], [PREOPEN_MODS="all"])
 AM_CONDITIONAL([PREOPEN_MODS], [test "x$PREOPEN_MODS" != "xall"])
 if test "x$PREOPEN_MODS" != "xall" ; then
@@ -1119,14 +1099,14 @@ fi
 
 AC_ARG_WITH(
         [module-dir],
-        AC_HELP_STRING([--with-module-dir],[Directory where to install the modules to (defaults to ${libdir}/pulse-${PA_MAJORMINOR}/modules/]),
+        AS_HELP_STRING([--with-module-dir],[Directory where to install the modules to (defaults to ${libdir}/pulse-${PA_MAJORMINOR}/modules/]),
         [modlibexecdir=$withval], [modlibexecdir="${libdir}/pulse-${PA_MAJORMINOR}/modules/"])
 
 AC_SUBST(modlibexecdir)
 
 AC_ARG_ENABLE(
         [force-preopen],
-        AC_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]),
+        AS_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]),
         [FORCE_PREOPEN=1], [FORCE_PREOPEN=0])
 AM_CONDITIONAL([FORCE_PREOPEN], [test "x$FORCE_PREOPEN" = "x1"])
 
@@ -1141,6 +1121,7 @@ libpulse-mainloop-glib.pc
 doxygen/Makefile
 doxygen/doxygen.conf
 src/pulse/version.h
+po/Makefile.in
 ])
 AC_OUTPUT
 
@@ -1232,6 +1213,8 @@ echo "
     sysconfdir:                    ${sysconfdir}
     localstatedir:                 ${localstatedir}
     System Runtime Path:           ${PA_SYSTEM_RUNTIME_PATH}
+    System State Path:             ${PA_SYSTEM_STATE_PATH}
+    System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
     Compiler:                      ${CC}
     CFLAGS:                        ${CFLAGS}
     Have X11:                      ${ENABLE_X11}

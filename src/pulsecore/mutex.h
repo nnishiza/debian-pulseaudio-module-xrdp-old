@@ -1,8 +1,6 @@
 #ifndef foopulsemutexhfoo
 #define foopulsemutexhfoo
 
-/* $Id: mutex.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -37,6 +35,7 @@ pa_mutex* pa_mutex_new(pa_bool_t recursive, pa_bool_t inherit_priority);
 
 void pa_mutex_free(pa_mutex *m);
 void pa_mutex_lock(pa_mutex *m);
+pa_bool_t pa_mutex_try_lock(pa_mutex *m);
 void pa_mutex_unlock(pa_mutex *m);
 
 typedef struct pa_cond pa_cond;

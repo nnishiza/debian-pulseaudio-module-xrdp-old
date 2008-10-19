@@ -1,8 +1,6 @@
 #ifndef foocapshfoo
 #define foocapshfoo
 
-/* $Id: caps.h 2193 2008-03-30 00:39:57Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -24,8 +22,11 @@
   USA.
 ***/
 
+#include <pulsecore/macro.h>
+
 void pa_drop_root(void);
 void pa_drop_caps(void);
-int pa_limit_caps(void);
+void pa_limit_caps(void);
+pa_bool_t pa_have_caps(void);
 
 #endif

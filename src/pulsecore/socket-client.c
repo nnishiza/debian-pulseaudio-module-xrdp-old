@@ -1,5 +1,3 @@
-/* $Id: socket-client.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
     This file is part of PulseAudio.
 
@@ -61,6 +59,7 @@
 #include <pulsecore/core-error.h>
 #include <pulsecore/socket-util.h>
 #include <pulsecore/core-util.h>
+#include <pulsecore/socket-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/parseaddr.h>
 #include <pulsecore/macro.h>
@@ -77,9 +76,9 @@ struct pa_socket_client {
     pa_io_event *io_event;
     pa_time_event *timeout_event;
     pa_defer_event *defer_event;
-    void (*callback)(pa_socket_client*c, pa_iochannel *io, void *userdata);
+    pa_socket_client_cb_t callback;
     void *userdata;
-    int local;
+    pa_bool_t local;
 #ifdef HAVE_LIBASYNCNS
     asyncns_t *asyncns;
     asyncns_query_t * asyncns_query;
@@ -87,7 +86,7 @@ struct pa_socket_client {
 #endif
 };
 
-static pa_socket_client*pa_socket_client_new(pa_mainloop_api *m) {
+static pa_socket_client* socket_client_new(pa_mainloop_api *m) {
     pa_socket_client *c;
     pa_assert(m);
 
@@ -96,11 +95,11 @@ static pa_socket_client*pa_socket_client_new(pa_mainloop_api *m) {
     c->mainloop = m;
     c->fd = -1;
     c->io_event = NULL;
-    c->defer_event = NULL;
     c->timeout_event = NULL;
+    c->defer_event = NULL;
     c->callback = NULL;
     c->userdata = NULL;
-    c->local = 0;
+    c->local = FALSE;
 
 #ifdef HAVE_LIBASYNCNS
     c->asyncns = NULL;
@@ -119,14 +118,14 @@ static void free_events(pa_socket_client *c) {
         c->io_event = NULL;
     }
 
-    if (c->defer_event) {
-        c->mainloop->defer_free(c->defer_event);
-        c->defer_event = NULL;
-    }
-
     if (c->timeout_event) {
         c->mainloop->time_free(c->timeout_event);
         c->timeout_event = NULL;
+    }
+
+    if (c->defer_event) {
+        c->mainloop->defer_free(c->defer_event);
+        c->defer_event = NULL;
     }
 }
 
@@ -177,7 +176,7 @@ finish:
     pa_socket_client_unref(c);
 }
 
-static void connect_fixed_cb(pa_mainloop_api *m, pa_defer_event *e, void *userdata) {
+static void connect_defer_cb(pa_mainloop_api *m, pa_defer_event *e, void *userdata) {
     pa_socket_client *c = userdata;
 
     pa_assert(m);
@@ -188,7 +187,7 @@ static void connect_fixed_cb(pa_mainloop_api *m, pa_defer_event *e, void *userda
     do_call(c);
 }
 
-static void connect_io_cb(pa_mainloop_api*m, pa_io_event *e, int fd, PA_GCC_UNUSED pa_io_event_flags_t f, void *userdata) {
+static void connect_io_cb(pa_mainloop_api*m, pa_io_event *e, int fd, pa_io_event_flags_t f, void *userdata) {
     pa_socket_client *c = userdata;
 
     pa_assert(m);
@@ -223,7 +222,7 @@ static int do_connect(pa_socket_client *c, const struct sockaddr *sa, socklen_t 
 
         pa_assert_se(c->io_event = c->mainloop->io_new(c->mainloop, c->fd, PA_IO_EVENT_OUTPUT, connect_io_cb, c));
     } else
-        pa_assert_se(c->defer_event = c->mainloop->defer_new(c->mainloop, connect_fixed_cb, c));
+        pa_assert_se(c->defer_event = c->mainloop->defer_new(c->mainloop, connect_defer_cb, c));
 
     return 0;
 }
@@ -252,8 +251,7 @@ pa_socket_client* pa_socket_client_new_unix(pa_mainloop_api *m, const char *file
 
     memset(&sa, 0, sizeof(sa));
     sa.sun_family = AF_UNIX;
-    strncpy(sa.sun_path, filename, sizeof(sa.sun_path)-1);
-    sa.sun_path[sizeof(sa.sun_path) - 1] = 0;
+    pa_strlcpy(sa.sun_path, filename, sizeof(sa.sun_path));
 
     return pa_socket_client_new_sockaddr(m, (struct sockaddr*) &sa, sizeof(sa));
 }
@@ -271,22 +269,7 @@ static int sockaddr_prepare(pa_socket_client *c, const struct sockaddr *sa, size
     pa_assert(sa);
     pa_assert(salen);
 
-    switch (sa->sa_family) {
-        case AF_UNIX:
-            c->local = 1;
-            break;
-
-        case AF_INET:
-            c->local = ((const struct sockaddr_in*) sa)->sin_addr.s_addr == INADDR_LOOPBACK;
-            break;
-
-        case AF_INET6:
-            c->local = memcmp(&((const struct sockaddr_in6*) sa)->sin6_addr, &in6addr_loopback, sizeof(struct in6_addr)) == 0;
-            break;
-
-        default:
-            c->local = 0;
-    }
+    c->local = pa_socket_address_is_local(sa);
 
     if ((c->fd = socket(sa->sa_family, SOCK_STREAM, 0)) < 0) {
         pa_log("socket(): %s", pa_cstrerror(errno));
@@ -294,12 +277,13 @@ static int sockaddr_prepare(pa_socket_client *c, const struct sockaddr *sa, size
     }
 
     pa_make_fd_cloexec(c->fd);
+
     if (sa->sa_family == AF_INET || sa->sa_family == AF_INET6)
         pa_make_tcp_socket_low_delay(c->fd);
     else
         pa_make_socket_low_delay(c->fd);
 
-    if (do_connect(c, sa, salen) < 0)
+    if (do_connect(c, sa, (socklen_t) salen) < 0)
         return -1;
 
     return 0;
@@ -312,7 +296,7 @@ pa_socket_client* pa_socket_client_new_sockaddr(pa_mainloop_api *m, const struct
     pa_assert(sa);
     pa_assert(salen > 0);
 
-    pa_assert_se(c = pa_socket_client_new(m));
+    pa_assert_se(c = socket_client_new(m));
 
     if (sockaddr_prepare(c, sa, salen) < 0)
         goto fail;
@@ -361,7 +345,7 @@ pa_socket_client* pa_socket_client_ref(pa_socket_client *c) {
     return c;
 }
 
-void pa_socket_client_set_callback(pa_socket_client *c, void (*on_connection)(pa_socket_client *c, pa_iochannel*io, void *userdata), void *userdata) {
+void pa_socket_client_set_callback(pa_socket_client *c, pa_socket_client_cb_t on_connection, void *userdata) {
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
@@ -386,7 +370,7 @@ pa_socket_client* pa_socket_client_new_ipv6(pa_mainloop_api *m, uint8_t address[
 
 #ifdef HAVE_LIBASYNCNS
 
-static void asyncns_cb(pa_mainloop_api*m, pa_io_event *e, int fd, PA_GCC_UNUSED pa_io_event_flags_t f, void *userdata) {
+static void asyncns_cb(pa_mainloop_api*m, pa_io_event *e, int fd, pa_io_event_flags_t f, void *userdata) {
     pa_socket_client *c = userdata;
     struct addrinfo *res = NULL;
     int ret;
@@ -453,7 +437,7 @@ static void start_timeout(pa_socket_client *c) {
     pa_assert(!c->timeout_event);
 
     pa_gettimeofday(&tv);
-    pa_timeval_add(&tv, CONNECT_TIMEOUT * 1000000);
+    pa_timeval_add(&tv, CONNECT_TIMEOUT * PA_USEC_PER_SEC);
     c->timeout_event = c->mainloop->time_new(c->mainloop, &tv, timeout_cb, c);
 }
 
@@ -489,23 +473,22 @@ pa_socket_client* pa_socket_client_new_string(pa_mainloop_api *m, const char*nam
             hints.ai_family = a.type == PA_PARSED_ADDRESS_TCP4 ? PF_INET : (a.type == PA_PARSED_ADDRESS_TCP6 ? PF_INET6 : PF_UNSPEC);
             hints.ai_socktype = SOCK_STREAM;
 
-#ifdef HAVE_LIBASYNCNS
+#if defined(HAVE_LIBASYNCNS)
             {
                 asyncns_t *asyncns;
 
                 if (!(asyncns = asyncns_new(1)))
                     goto finish;
 
-                c = pa_socket_client_new(m);
+                pa_assert_se(c = socket_client_new(m));
                 c->asyncns = asyncns;
                 c->asyncns_io_event = m->io_new(m, asyncns_fd(c->asyncns), PA_IO_EVENT_INPUT, asyncns_cb, c);
                 c->asyncns_query = asyncns_getaddrinfo(c->asyncns, a.path_or_host, port, &hints);
                 pa_assert(c->asyncns_query);
                 start_timeout(c);
             }
-#else /* HAVE_LIBASYNCNS */
+#elif defined(HAVE_GETADDRINFO)
             {
-#ifdef HAVE_GETADDRINFO
                 int ret;
                 struct addrinfo *res = NULL;
 
@@ -520,7 +503,9 @@ pa_socket_client* pa_socket_client_new_string(pa_mainloop_api *m, const char*nam
                 }
 
                 freeaddrinfo(res);
-#else /* HAVE_GETADDRINFO */
+            }
+#else
+            {
                 struct hostent *host = NULL;
                 struct sockaddr_in s;
 
@@ -546,7 +531,6 @@ pa_socket_client* pa_socket_client_new_string(pa_mainloop_api *m, const char*nam
 
                 if ((c = pa_socket_client_new_sockaddr(m, (struct sockaddr*)&s, sizeof(s))))
                     start_timeout(c);
-#endif /* HAVE_GETADDRINFO */
             }
 #endif /* HAVE_LIBASYNCNS */
         }
@@ -561,7 +545,7 @@ finish:
 /* Return non-zero when the target sockaddr is considered
    local. "local" means UNIX socket or TCP socket on localhost. Other
    local IP addresses are not considered local. */
-int pa_socket_client_is_local(pa_socket_client *c) {
+pa_bool_t pa_socket_client_is_local(pa_socket_client *c) {
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 

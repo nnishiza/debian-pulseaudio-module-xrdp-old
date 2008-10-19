@@ -1,8 +1,6 @@
 #ifndef foopulsertclockhfoo
 #define foopulsertclockhfoo
 
-/* $Id$ */
-
 /***
   This file is part of PulseAudio.
 
@@ -25,6 +23,7 @@
 ***/
 
 #include <pulsecore/macro.h>
+#include <pulse/sample.h>
 
 struct timeval;
 
@@ -39,5 +38,7 @@ pa_bool_t pa_rtclock_hrtimer(void);
 
 /* timer with a resolution better than this are considered high-resolution */
 #define PA_HRTIMER_THRESHOLD_USEC 10
+
+struct timeval* pa_rtclock_from_wallclock(struct timeval *tv);
 
 #endif

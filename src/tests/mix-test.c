@@ -1,5 +1,3 @@
-/* $Id: resampler-test.c 2037 2007-11-09 02:45:07Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -168,16 +166,16 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
         case PA_SAMPLE_FLOAT32RE: {
             float *u = d;
 
-            u[0] = 0.0;
-            u[1] = -1.0;
-            u[2] = 1.0;
-            u[3] = 4711;
-            u[4] = 0.222;
-            u[5] = 0.33;
-            u[6] = -.3;
-            u[7] = 99;
-            u[8] = -0.555;
-            u[9] = -.123;
+            u[0] = 0.0f;
+            u[1] = -1.0f;
+            u[2] = 1.0f;
+            u[3] = 4711.0f;
+            u[4] = 0.222f;
+            u[5] = 0.33f;
+            u[6] = -.3f;
+            u[7] = 99.0f;
+            u[8] = -0.555f;
+            u[9] = -.123f;
 
             if (ss->format == PA_SAMPLE_FLOAT32RE)
                 for (i = 0; i < 10; i++)
@@ -203,7 +201,7 @@ int main(int argc, char *argv[]) {
     oil_init();
     pa_log_set_maximal_level(PA_LOG_DEBUG);
 
-    pa_assert_se(pool = pa_mempool_new(FALSE));
+    pa_assert_se(pool = pa_mempool_new(FALSE, 0));
 
     a.channels = 1;
     a.rate = 44100;
@@ -223,6 +221,8 @@ int main(int argc, char *argv[]) {
         i.length = pa_memblock_get_length(i.memblock);
         i.index = 0;
 
+        dump_block(&a, &i);
+
         /* Make a copy */
         j = i;
         pa_memblock_ref(j.memblock);
@@ -230,6 +230,8 @@ int main(int argc, char *argv[]) {
 
         /* Adjust volume of the copy */
         pa_volume_memchunk(&j, &a, &v);
+
+        dump_block(&a, &j);
 
         m[0].chunk = i;
         m[0].volume.values[0] = PA_VOLUME_NORM;
@@ -246,8 +248,6 @@ int main(int argc, char *argv[]) {
         pa_mix(m, 2, ptr, k.length, &a, NULL, FALSE);
         pa_memblock_release(k.memblock);
 
-        dump_block(&a, &i);
-        dump_block(&a, &j);
         dump_block(&a, &k);
 
         pa_memblock_unref(i.memblock);

@@ -1,5 +1,3 @@
-/* $Id: queue-test.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -39,12 +37,12 @@ int main(int argc, char *argv[]) {
 
     pa_assert_se(q = pa_queue_new());
 
-    pa_assert(pa_queue_is_empty(q));
+    pa_assert(pa_queue_isempty(q));
 
     pa_queue_push(q, (void*) "eins");
     pa_log("%s\n", (char*) pa_queue_pop(q));
 
-    pa_assert(pa_queue_is_empty(q));
+    pa_assert(pa_queue_isempty(q));
 
     pa_queue_push(q, (void*) "zwei");
     pa_queue_push(q, (void*) "drei");
@@ -58,7 +56,7 @@ int main(int argc, char *argv[]) {
     pa_log("%s\n", (char*) pa_queue_pop(q));
     pa_log("%s\n", (char*) pa_queue_pop(q));
 
-    pa_assert(pa_queue_is_empty(q));
+    pa_assert(pa_queue_isempty(q));
 
     pa_queue_push(q, (void*) "sechs");
     pa_queue_push(q, (void*) "sieben");
