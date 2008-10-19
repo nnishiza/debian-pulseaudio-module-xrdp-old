@@ -32,8 +32,9 @@ pulseaudio (0.9.13-1) UNRELEASED; urgency=low
   * debian/pulseaudio.install: Install the new pulseaudio xdg autostart file
   * debian/control: add a depend on consolekit. Might be downgrade to a
     recommend later
+  * debian/control: Set the maintainer to the pkg-pulseaudio mailinglist
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 17:43:49 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 21:01:26 +0100
 
 pulseaudio (0.9.10-3) unstable; urgency=low
 
