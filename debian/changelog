@@ -1,5 +1,13 @@
 pulseaudio (0.9.13-1) UNRELEASED; urgency=low
 
+  [ Bas Zoetekouw ]
+  * debian/control: Build-Depend on libasound2-dev (>= 1.0.17)
+  * debian/pulseaudio-module-x11.install: No longer install an xdg autostart
+    file
+  * debian/pulseaudio.install: Install system.pa config file and various new
+    pulseaudio modules
+  * debian/rules: Add --disable-per-user-esound-socket to configure flags
+
   [ Sjoerd Simons ]
   * New Upstream Version
   * Fixes FTBTS on GNU/kFreeBSD (Closes: #497624)

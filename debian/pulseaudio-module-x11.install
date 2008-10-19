@@ -4,4 +4,3 @@ usr/lib/pulse-*/modules/module-x11-bell.so
 usr/lib/pulse-*/modules/module-x11-publish.so
 usr/lib/pulse-*/modules/module-x11-xsmp.so
 usr/share/lintian/overrides/pulseaudio-module-x11
-etc/xdg/autostart/pulseaudio-module-xsmp.desktop

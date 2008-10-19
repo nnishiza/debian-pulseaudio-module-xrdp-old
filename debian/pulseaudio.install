@@ -1,9 +1,10 @@
 etc/pulse/default.pa
+etc/pulse/system.pa
 etc/pulse/daemon.conf
 usr/bin/pulseaudio
 usr/lib/pulse-*/modules/libalsa-util.so
-usr/lib/pulse-*/modules/libauthkey-prop.so
 usr/lib/pulse-*/modules/libauthkey.so
+usr/lib/pulse-*/modules/libauth-cookie.so
 usr/lib/pulse-*/modules/libcli.so
 usr/lib/pulse-*/modules/libiochannel.so
 usr/lib/pulse-*/modules/libioline.so
@@ -26,6 +27,7 @@ usr/lib/pulse-*/modules/libstrlist.so
 usr/lib/pulse-*/modules/libtagstruct.so
 usr/lib/pulse-*/modules/module-alsa-sink.so
 usr/lib/pulse-*/modules/module-alsa-source.so
+usr/lib/pulse-*/modules/module-always-sink.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
 usr/lib/pulse-*/modules/module-cli.so
@@ -46,6 +48,7 @@ usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-oss.so
 usr/lib/pulse-*/modules/module-pipe-sink.so
 usr/lib/pulse-*/modules/module-pipe-source.so
+usr/lib/pulse-*/modules/module-position-event-sounds.so
 usr/lib/pulse-*/modules/module-remap-sink.so
 usr/lib/pulse-*/modules/module-rescue-streams.so
 usr/lib/pulse-*/modules/module-rtp-recv.so

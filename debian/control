@@ -8,7 +8,7 @@ Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl3-dev,
     libsndfile1-dev (>= 1.0.10) | libsndfile-dev, libx11-dev,
     x11proto-core-dev, libxt-dev, libglib2.0-dev,
     libcap-dev [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
-    libasound-dev [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
+    libasound2-dev (>= 1.0.17) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
     libavahi-client-dev, libjack0.100.0-dev, libwrap0-dev,
     liblircclient-dev, libgconf2-dev, libhal-dev, libasyncns-dev,
     libatomic-ops-dev
