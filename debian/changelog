@@ -24,7 +24,7 @@ pulseaudio (0.9.13-1) UNRELEASED; urgency=low
   * 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
     - Dropped, not necessary anymore, the --disable-per-user-esound-socket
       configure flag now has the same result
-  * debian/control: Add libspeexdsp-dev (>= 1.2) to Build-Depends
+  * debian/control: Add libspeexdsp-dev (>= 1.2rc1) to Build-Depends
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 14:10:34 +0100
 
