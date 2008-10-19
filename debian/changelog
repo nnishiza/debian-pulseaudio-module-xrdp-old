@@ -1,13 +1,16 @@
 pulseaudio (0.9.13-1) UNRELEASED; urgency=low
 
-  [ CJ van den Berg ]
-  * debian/patches/0007-fix-FTBFS-on-GNU-kFreeBSD.patch
-    - Added. Fix FTBTS on GNU/kFreeBSD. (Closes: #497624)
-
   [ Sjoerd Simons ]
   * New Upstream Version
+  * Fixes FTBTS on GNU/kFreeBSD (Closes: #497624)
+  * Dropped patches for things that have been fixed upstream:
+    - debian/patches/0003-Define-PULSE_INTERNAL.patch
+    - debian/patches/0005-Reduce-RT-prio-logging-severity.patch
+    - debian/patches/0006-fix-iteration-over-random-devices.patch
+  * rename debian/patches/0004-load-module-gconf-earlier.patch to
+    debian/patches/0003-load-module-gconf-earlier.patch
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 12:47:56 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 13:40:50 +0100
 
 pulseaudio (0.9.10-3) unstable; urgency=low
 
