@@ -34,6 +34,7 @@ pulseaudio (0.9.13-1) experimental; urgency=low
     recommend later
   * debian/control: Set the maintainer to the pkg-pulseaudio mailinglist
   * debian/control: Add libgdbm-dev to build-depends
+  * debian/control: Add intltool to build-depends
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 21:05:13 +0100
 
