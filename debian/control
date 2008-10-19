@@ -11,7 +11,7 @@ Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl3-dev,
     libasound2-dev (>= 1.0.17) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
     libavahi-client-dev, libjack0.100.0-dev, libwrap0-dev,
     liblircclient-dev, libgconf2-dev, libhal-dev, libasyncns-dev,
-    libatomic-ops-dev
+    libatomic-ops-dev, libspeexdsp-dev (>= 1.2)
 Standards-Version: 3.7.3
 Vcs-Git: git://git.debian.org/git/pkg-pulseaudio/pulseaudio.git
 Vcs-Browser: http://git.debian.org/?p=pkg-pulseaudio/pulseaudio.git
