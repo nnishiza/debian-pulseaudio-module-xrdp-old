@@ -28,7 +28,7 @@ pulseaudio (0.9.13-1) UNRELEASED; urgency=low
   * debian/control: Add Build-Depends on libpolkit-dbus-dev and
     libbluetooth-dev
   * debian/pulseaudio.install: Install various new modules. Including bluetooth
-    and polkit, which will move into a seperate package later.
+    and polkit, which will move into a separate package later.
   * debian/pulseaudio.install: Install the new pulseaudio xdg autostart file
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 16:38:44 +0100
