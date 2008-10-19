@@ -1,5 +1,3 @@
-/* $Id: log.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -30,6 +28,7 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <errno.h>
 
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
@@ -38,19 +37,23 @@
 #include <pulse/utf8.h>
 #include <pulse/xmalloc.h>
 #include <pulse/util.h>
+#include <pulse/timeval.h>
 
 #include <pulsecore/macro.h>
 #include <pulsecore/core-util.h>
+#include <pulsecore/rtclock.h>
+#include <pulsecore/once.h>
 
 #include "log.h"
 
 #define ENV_LOGLEVEL "PULSE_LOG"
 #define ENV_LOGMETA "PULSE_LOG_META"
+#define ENV_LOGTIME "PULSE_LOG_TIME"
 
 static char *log_ident = NULL, *log_ident_local = NULL;
 static pa_log_target_t log_target = PA_LOG_STDERR;
-static void (*user_log_func)(pa_log_level_t l, const char *s) = NULL;
-static pa_log_level_t maximal_level = PA_LOG_NOTICE;
+static pa_log_func_t user_log_func = NULL;
+static pa_log_level_t maximal_level = PA_LOG_ERROR;
 
 #ifdef HAVE_SYSLOG_H
 static const int level_to_syslog[] = {
@@ -82,6 +85,9 @@ void pa_log_set_ident(const char *p) {
 /* To make valgrind shut up. */
 static void ident_destructor(void) PA_GCC_DESTRUCTOR;
 static void ident_destructor(void) {
+    if (!pa_in_valgrind())
+        return;
+
     pa_xfree(log_ident);
     pa_xfree(log_ident_local);
 }
@@ -92,7 +98,7 @@ void pa_log_set_maximal_level(pa_log_level_t l) {
     maximal_level = l;
 }
 
-void pa_log_set_target(pa_log_target_t t, void (*func)(pa_log_level_t l, const char*s)) {
+void pa_log_set_target(pa_log_target_t t, pa_log_func_t func) {
     pa_assert(t == PA_LOG_USER || !func);
 
     log_target = t;
@@ -108,7 +114,12 @@ void pa_log_levelv_meta(
         va_list ap) {
 
     const char *e;
-    char *text, *t, *n, *location;
+    char *t, *n;
+    int saved_errno = errno;
+
+    /* We don't use dynamic memory allocation here to minimize the hit
+     * in RT threads */
+    char text[1024], location[128], timestamp[32];
 
     pa_assert(level < PA_LOG_LEVEL_MAX);
     pa_assert(format);
@@ -116,17 +127,46 @@ void pa_log_levelv_meta(
     if ((e = getenv(ENV_LOGLEVEL)))
         maximal_level = atoi(e);
 
-    if (level > maximal_level)
+    if (level > maximal_level) {
+        errno = saved_errno;
         return;
+    }
 
-    text = pa_vsprintf_malloc(format, ap);
+    pa_vsnprintf(text, sizeof(text), format, ap);
 
     if (getenv(ENV_LOGMETA) && file && line > 0 && func)
-        location = pa_sprintf_malloc("[%s:%i %s()] ", file, line, func);
+        pa_snprintf(location, sizeof(location), "[%s:%i %s()] ", file, line, func);
     else if (file)
-        location = pa_sprintf_malloc("%s: ", pa_path_get_filename(file));
+        pa_snprintf(location, sizeof(location), "%s: ", pa_path_get_filename(file));
     else
-        location = pa_xstrdup("");
+        location[0] = 0;
+
+    if (getenv(ENV_LOGTIME)) {
+        static pa_usec_t start, last;
+        pa_usec_t u, a, r;
+
+        u = pa_rtclock_usec();
+
+        PA_ONCE_BEGIN {
+            start = u;
+            last = u;
+        } PA_ONCE_END;
+
+        r = u - last;
+        a = u - start;
+
+        /* This is not thread safe, but this is a debugging tool only
+         * anyway. */
+        last = u;
+
+        pa_snprintf(timestamp, sizeof(timestamp), "(%4llu.%03llu|%4llu.%03llu) ",
+                    (unsigned long long) (a / PA_USEC_PER_SEC),
+                    (unsigned long long) (((a / PA_USEC_PER_MSEC)) % 1000),
+                    (unsigned long long) (r / PA_USEC_PER_SEC),
+                    (unsigned long long) (((r / PA_USEC_PER_MSEC)) % 1000));
+
+    } else
+        timestamp[0] = 0;
 
     if (!pa_utf8_valid(text))
         pa_log_level(level, __FILE__": invalid UTF-8 string following below:");
@@ -158,11 +198,13 @@ void pa_log_levelv_meta(
                 }
 #endif
 
+                /* We shouldn't be using dynamic allocation here to
+                 * minimize the hit in RT threads */
                 local_t = pa_utf8_to_locale(t);
                 if (!local_t)
-                    fprintf(stderr, "%c: %s%s%s%s\n", level_to_char[level], location, prefix, t, suffix);
+                    fprintf(stderr, "%s%c: %s%s%s%s\n", timestamp, level_to_char[level], location, prefix, t, suffix);
                 else {
-                    fprintf(stderr, "%c: %s%s%s%s\n", level_to_char[level], location, prefix, local_t, suffix);
+                    fprintf(stderr, "%s%c: %s%s%s%s\n", timestamp, level_to_char[level], location, prefix, local_t, suffix);
                     pa_xfree(local_t);
                 }
 
@@ -177,9 +219,9 @@ void pa_log_levelv_meta(
 
                 local_t = pa_utf8_to_locale(t);
                 if (!local_t)
-                    syslog(level_to_syslog[level], "%s%s", location, t);
+                    syslog(level_to_syslog[level], "%s%s%s", timestamp, location, t);
                 else {
-                    syslog(level_to_syslog[level], "%s%s", location, local_t);
+                    syslog(level_to_syslog[level], "%s%s%s", timestamp, location, local_t);
                     pa_xfree(local_t);
                 }
 
@@ -189,11 +231,10 @@ void pa_log_levelv_meta(
 #endif
 
             case PA_LOG_USER: {
-                char *x;
+                char x[1024];
 
-                x = pa_sprintf_malloc("%s%s", location, t);
+                pa_snprintf(x, sizeof(x), "%s%s%s", timestamp, location, t);
                 user_log_func(level, x);
-                pa_xfree(x);
 
                 break;
             }
@@ -204,8 +245,7 @@ void pa_log_levelv_meta(
         }
     }
 
-    pa_xfree(text);
-    pa_xfree(location);
+    errno = saved_errno;
 }
 
 void pa_log_level_meta(

@@ -1,5 +1,3 @@
-/* $Id: client-conf-x11.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -31,6 +29,7 @@
 #include <X11/Xatom.h>
 
 #include <pulse/xmalloc.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/x11prop.h>
 #include <pulsecore/log.h>
@@ -46,11 +45,14 @@ int pa_client_conf_from_x11(pa_client_conf *c, const char *dname) {
 
     pa_assert(c);
 
-    if (!dname && (!(dname = getenv("DISPLAY")) || *dname == '\0'))
+    if (!dname && !(dname = getenv("DISPLAY")))
+        goto finish;
+
+    if (*dname == 0)
         goto finish;
 
     if (!(d = XOpenDisplay(dname))) {
-        pa_log("XOpenDisplay() failed");
+        pa_log(_("XOpenDisplay() failed"));
         goto finish;
     }
 
@@ -73,14 +75,14 @@ int pa_client_conf_from_x11(pa_client_conf *c, const char *dname) {
         uint8_t cookie[PA_NATIVE_COOKIE_LENGTH];
 
         if (pa_parsehex(t, cookie, sizeof(cookie)) != sizeof(cookie)) {
-            pa_log("failed to parse cookie data");
+            pa_log(_("Failed to parse cookie data"));
             goto finish;
         }
 
         pa_assert(sizeof(cookie) == sizeof(c->cookie));
         memcpy(c->cookie, cookie, sizeof(cookie));
 
-        c->cookie_valid = 1;
+        c->cookie_valid = TRUE;
 
         pa_xfree(c->cookie_file);
         c->cookie_file = NULL;

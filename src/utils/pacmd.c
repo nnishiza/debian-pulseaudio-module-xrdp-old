@@ -1,5 +1,3 @@
-/* $Id: pacmd.c 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -33,15 +31,18 @@
 #include <errno.h>
 #include <string.h>
 #include <sys/un.h>
+#include <locale.h>
 
 #include <pulse/error.h>
 #include <pulse/util.h>
+#include <pulse/xmalloc.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/pid.h>
 
-int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
+int main(int argc, char*argv[]) {
     pid_t pid ;
     int fd = -1;
     int ret = 1, i;
@@ -49,26 +50,35 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
     char ibuf[256], obuf[256];
     size_t ibuf_index, ibuf_length, obuf_index, obuf_length;
     fd_set ifds, ofds;
+    char *cli;
+
+    setlocale(LC_ALL, "");
+    bindtextdomain(GETTEXT_PACKAGE, PULSE_LOCALEDIR);
 
     if (pa_pid_file_check_running(&pid, "pulseaudio") < 0) {
-        pa_log("no PulseAudio daemon running");
+        pa_log("No PulseAudio daemon running");
         goto fail;
     }
 
     if ((fd = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
-        pa_log("socket(PF_UNIX, SOCK_STREAM, 0): %s", strerror(errno));
+        pa_log(_("socket(PF_UNIX, SOCK_STREAM, 0): %s"), strerror(errno));
         goto fail;
     }
 
     memset(&sa, 0, sizeof(sa));
     sa.sun_family = AF_UNIX;
-    pa_runtime_path("cli", sa.sun_path, sizeof(sa.sun_path));
+
+    if (!(cli = pa_runtime_path("cli")))
+        goto fail;
+
+    pa_strlcpy(sa.sun_path, cli, sizeof(sa.sun_path));
+    pa_xfree(cli);
 
     for (i = 0; i < 5; i++) {
         int r;
 
         if ((r = connect(fd, (struct sockaddr*) &sa, sizeof(sa))) < 0 && (errno != ECONNREFUSED && errno != ENOENT)) {
-            pa_log("connect(): %s", strerror(errno));
+            pa_log(_("connect(): %s"), strerror(errno));
             goto fail;
         }
 
@@ -76,7 +86,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
             break;
 
         if (pa_pid_file_kill(SIGUSR2, NULL, "pulseaudio") < 0) {
-            pa_log("failed to kill PulseAudio daemon.");
+            pa_log(_("Failed to kill PulseAudio daemon."));
             goto fail;
         }
 
@@ -84,7 +94,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
     }
 
     if (i >= 5) {
-        pa_log("daemon not responding.");
+        pa_log(_("Daemon not responding."));
         goto fail;
     }
 
@@ -99,7 +109,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
 
     for (;;) {
         if (select(FD_SETSIZE, &ifds, &ofds, NULL, NULL) < 0) {
-            pa_log("select(): %s", strerror(errno));
+            pa_log(_("select(): %s"), strerror(errno));
             goto fail;
         }
 
@@ -111,7 +121,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
                 if (r == 0)
                     break;
 
-                pa_log("read(): %s", strerror(errno));
+                pa_log(_("read(): %s"), strerror(errno));
                 goto fail;
             }
 
@@ -127,7 +137,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
                 if (r == 0)
                     break;
 
-                pa_log("read(): %s", strerror(errno));
+                pa_log(_("read(): %s"), strerror(errno));
                 goto fail;
             }
 
@@ -140,7 +150,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
             assert(obuf_length);
 
             if ((r = write(1, obuf + obuf_index, obuf_length)) < 0) {
-                pa_log("write(): %s", strerror(errno));
+                pa_log(_("write(): %s"), strerror(errno));
                 goto fail;
             }
 
@@ -154,7 +164,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
             assert(ibuf_length);
 
             if ((r = write(fd, ibuf + ibuf_index, ibuf_length)) < 0) {
-                pa_log("write(): %s", strerror(errno));
+                pa_log(_("write(): %s"), strerror(errno));
                 goto fail;
             }
 
@@ -176,7 +186,6 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char*argv[]) {
         else
             FD_SET(fd, &ofds);
     }
-
 
     ret = 0;
 

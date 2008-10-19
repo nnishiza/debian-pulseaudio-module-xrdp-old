@@ -1,5 +1,3 @@
-/* $Id: oss-util.c 2037 2007-11-09 02:45:07Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -206,10 +204,10 @@ int pa_oss_auto_format(int fd, pa_sample_spec *ss) {
 
     if (ss->channels != channels) {
         pa_log_warn("device doesn't support %i channels, using %i channels.", ss->channels, channels);
-        ss->channels = channels;
+        ss->channels = (uint8_t) channels;
     }
 
-    speed = ss->rate;
+    speed = (int) ss->rate;
     if (ioctl(fd, SNDCTL_DSP_SPEED, &speed) < 0) {
         pa_log("SNDCTL_DSP_SPEED: %s", pa_cstrerror(errno));
         return -1;
@@ -221,7 +219,7 @@ int pa_oss_auto_format(int fd, pa_sample_spec *ss) {
 
         /* If the sample rate deviates too much, we need to resample */
         if (speed < ss->rate*.95 || speed > ss->rate*1.05)
-            ss->rate = speed;
+            ss->rate = (uint32_t) speed;
     }
 
     return 0;
@@ -251,7 +249,7 @@ int pa_oss_set_fragments(int fd, int nfrags, int frag_size) {
     return 0;
 }
 
-int pa_oss_get_volume(int fd, int mixer, const pa_sample_spec *ss, pa_cvolume *volume) {
+int pa_oss_get_volume(int fd, unsigned long mixer, const pa_sample_spec *ss, pa_cvolume *volume) {
     char cv[PA_CVOLUME_SNPRINT_MAX];
     unsigned vol;
 
@@ -273,7 +271,7 @@ int pa_oss_get_volume(int fd, int mixer, const pa_sample_spec *ss, pa_cvolume *v
     return 0;
 }
 
-int pa_oss_set_volume(int fd, long mixer, const pa_sample_spec *ss, const pa_cvolume *volume) {
+int pa_oss_set_volume(int fd, unsigned long mixer, const pa_sample_spec *ss, const pa_cvolume *volume) {
     char cv[PA_CVOLUME_SNPRINT_MAX];
     unsigned vol;
     pa_volume_t l, r;

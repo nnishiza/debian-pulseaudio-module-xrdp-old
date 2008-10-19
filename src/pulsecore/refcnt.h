@@ -1,8 +1,6 @@
 #ifndef foopulserefcnthfoo
 #define foopulserefcnthfoo
 
-/* $Id: refcnt.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -31,6 +29,9 @@
 
 #define PA_REFCNT_INIT(p) \
     pa_atomic_store(&(p)->_ref, 1)
+
+#define PA_REFCNT_INIT_ZERO(p) \
+    pa_atomic_store(&(p)->_ref, 0)
 
 #define PA_REFCNT_INC(p) \
     pa_atomic_inc(&(p)->_ref)

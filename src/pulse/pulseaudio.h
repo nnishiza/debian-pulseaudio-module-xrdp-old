@@ -1,8 +1,6 @@
 #ifndef foopulseaudiohfoo
 #define foopulseaudiohfoo
 
-/* $Id: pulseaudio.h 1426 2007-02-13 15:35:19Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -45,6 +43,7 @@
 #include <pulse/mainloop-signal.h>
 #include <pulse/util.h>
 #include <pulse/timeval.h>
+#include <pulse/proplist.h>
 
 /** \file
  * Include all libpulse header files at once. The following
@@ -52,7 +51,7 @@
  * \ref context.h, \ref stream.h, \ref introspect.h, \ref subscribe.h,
  * \ref scache.h, \ref version.h, \ref error.h, \ref channelmap.h,
  * \ref operation.h,\ref volume.h, \ref xmalloc.h, \ref utf8.h, \ref
- * thread-mainloop.h, \ref mainloop.h, \ref util.h, \ref timeval.h and
+ * thread-mainloop.h, \ref mainloop.h, \ref util.h, \ref proplist.h, \ref timeval.h and
  * \ref mainloop-signal.h at once */
 
 /** \mainpage
@@ -90,17 +89,17 @@
  *
  * \section thread_sec Threads
  *
- * The PulseAudio client libraries are not designed to be used in a
- * heavily threaded environment. They are however designed to be reentrant
- * safe.
+ * The PulseAudio client libraries are not designed to be directly
+ * thread-safe. They are however designed to be reentrant and
+ * threads-aware.
  *
- * To use a the libraries in a threaded environment, you must assure that
+ * To use the libraries in a threaded environment, you must assure that
  * all objects are only used in one thread at a time. Normally, this means
  * that all objects belonging to a single context must be accessed from the
  * same thread.
  *
  * The included main loop implementation is also not thread safe. Take care
- * to make sure event lists are not manipulated when any other code is
+ * to make sure event objects are not manipulated when any other code is
  * using the main loop.
  *
  * \section pkgconfig pkg-config

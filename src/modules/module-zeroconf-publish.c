@@ -1,5 +1,3 @@
-/* $Id: module-zeroconf-publish.c 2043 2007-11-09 18:25:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -115,7 +113,7 @@ static void get_service_data(struct service *s, pa_sample_spec *ret_ss, pa_chann
         *ret_ss = sink->sample_spec;
         *ret_map = sink->channel_map;
         *ret_name = sink->name;
-        *ret_description = sink->description;
+        *ret_description = pa_strnull(pa_proplist_gets(sink->proplist, PA_PROP_DEVICE_DESCRIPTION));
         *ret_subtype = sink->flags & PA_SINK_HARDWARE ? SUBTYPE_HARDWARE : SUBTYPE_VIRTUAL;
 
     } else if (pa_source_isinstance(s->device)) {
@@ -124,7 +122,7 @@ static void get_service_data(struct service *s, pa_sample_spec *ret_ss, pa_chann
         *ret_ss = source->sample_spec;
         *ret_map = source->channel_map;
         *ret_name = source->name;
-        *ret_description = source->description;
+        *ret_description = pa_strnull(pa_proplist_gets(source->proplist, PA_PROP_DEVICE_DESCRIPTION));
         *ret_subtype = source->monitor_of ? SUBTYPE_MONITOR : (source->flags & PA_SOURCE_HARDWARE ? SUBTYPE_HARDWARE : SUBTYPE_VIRTUAL);
 
     } else
@@ -304,10 +302,10 @@ static struct service *get_service(struct userdata *u, pa_object *device) {
     s->device = device;
 
     if (pa_sink_isinstance(device)) {
-        if (!(n = PA_SINK(device)->description))
+        if (!(n = pa_proplist_gets(PA_SINK(device)->proplist, PA_PROP_DEVICE_DESCRIPTION)))
             n = PA_SINK(device)->name;
     } else {
-        if (!(n = PA_SOURCE(device)->description))
+        if (!(n = pa_proplist_gets(PA_SOURCE(device)->proplist, PA_PROP_DEVICE_DESCRIPTION)))
             n = PA_SOURCE(device)->name;
     }
 
@@ -541,7 +539,7 @@ static void client_callback(AvahiClient *c, AvahiClientState state, void *userda
 
                 if (!(u->client = avahi_client_new(u->avahi_poll, AVAHI_CLIENT_NO_FAIL, client_callback, u, &error))) {
                     pa_log("avahi_client_new() failed: %s", avahi_strerror(error));
-                    pa_module_unload_request(u->module);
+                    pa_module_unload_request(u->module, TRUE);
                 }
             }
 
@@ -578,12 +576,12 @@ int pa__init(pa_module*m) {
 
     u->services = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
 
-    u->sink_new_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_NEW_POST], (pa_hook_cb_t) device_new_or_changed_cb, u);
-    u->sink_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_DESCRIPTION_CHANGED], (pa_hook_cb_t) device_new_or_changed_cb, u);
-    u->sink_unlink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_UNLINK], (pa_hook_cb_t) device_unlink_cb, u);
-    u->source_new_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_NEW_POST], (pa_hook_cb_t) device_new_or_changed_cb, u);
-    u->source_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_DESCRIPTION_CHANGED], (pa_hook_cb_t) device_new_or_changed_cb, u);
-    u->source_unlink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_UNLINK], (pa_hook_cb_t) device_unlink_cb, u);
+    u->sink_new_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PUT], PA_HOOK_LATE, (pa_hook_cb_t) device_new_or_changed_cb, u);
+    u->sink_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PROPLIST_CHANGED], PA_HOOK_LATE, (pa_hook_cb_t) device_new_or_changed_cb, u);
+    u->sink_unlink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_UNLINK], PA_HOOK_LATE, (pa_hook_cb_t) device_unlink_cb, u);
+    u->source_new_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_PUT], PA_HOOK_LATE, (pa_hook_cb_t) device_new_or_changed_cb, u);
+    u->source_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_PROPLIST_CHANGED], PA_HOOK_LATE, (pa_hook_cb_t) device_new_or_changed_cb, u);
+    u->source_unlink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_UNLINK], PA_HOOK_LATE, (pa_hook_cb_t) device_unlink_cb, u);
 
     u->main_entry_group = NULL;
 
@@ -617,7 +615,7 @@ void pa__done(pa_module*m) {
     if (u->services) {
         struct service *s;
 
-        while ((s = pa_hashmap_get_first(u->services)))
+        while ((s = pa_hashmap_first(u->services)))
             service_free(s);
 
         pa_hashmap_free(u->services, NULL, NULL);

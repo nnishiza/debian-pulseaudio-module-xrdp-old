@@ -1,5 +1,3 @@
-/* $Id: sync-playback.c 1418 2007-01-04 13:43:45Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -56,9 +54,10 @@ static const pa_sample_spec sample_spec = {
 
 static const pa_buffer_attr buffer_attr = {
     .maxlength = SAMPLE_HZ*sizeof(float)*NSTREAMS, /* exactly space for the entire play time */
-    .tlength = 0,
+    .tlength = (uint32_t) -1,
     .prebuf = 0, /* Setting prebuf to 0 guarantees us the the streams will run synchronously, no matter what */
-    .minreq = 0
+    .minreq = (uint32_t) -1,
+    .fragsize = 0
 };
 
 static void nop_free_cb(void *p) {}
@@ -90,7 +89,7 @@ static void stream_state_callback(pa_stream *s, void *userdata) {
 
             fprintf(stderr, "Writing data to stream %i.\n", i);
 
-            r = pa_stream_write(s, data, sizeof(data), nop_free_cb, sizeof(data) * i, PA_SEEK_ABSOLUTE);
+            r = pa_stream_write(s, data, sizeof(data), nop_free_cb, (int64_t) sizeof(data) * (int64_t) i, PA_SEEK_ABSOLUTE);
             assert(r == 0);
 
             /* Be notified when this stream is drained */

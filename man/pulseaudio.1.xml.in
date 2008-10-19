@@ -2,8 +2,6 @@
 <!DOCTYPE manpage SYSTEM "xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="xmltoman.xsl" ?>
 
-<!-- $Id: pulseaudio.1.xml.in 2024 2007-11-05 23:56:00Z lennart $ -->
-
 <!--
 This file is part of PulseAudio.
 
@@ -33,6 +31,7 @@ USA.
     <cmd>pulseaudio <opt>--dump-modules</opt></cmd>
     <cmd>pulseaudio <opt>--dump-resample-methods</opt></cmd>
     <cmd>pulseaudio <opt>--cleanup-shm</opt></cmd>
+    <cmd>pulseaudio <opt>--start</opt></cmd>
     <cmd>pulseaudio <opt>--kill</opt></cmd>
     <cmd>pulseaudio <opt>--check</opt></cmd>
   </synopsis>
@@ -91,6 +90,16 @@ USA.
     </option>
 
     <option>
+      <p><opt>--start</opt></p>
+
+      <optdesc><p>Start PulseAudio if it is not running yet. This is
+      different from starting PulseAudio without <opt>--start</opt>
+      which would fail if PA is already running. PulseAudio is
+      guaranteed to be fully initialized when this call
+      returns. Implies <opt>--daemon</opt>.</p></optdesc>
+    </option>
+
+    <option>
       <p><opt>-k | --kill</opt></p>
 
       <optdesc><p>Kill an already running PulseAudio daemon of the
@@ -109,7 +118,7 @@ USA.
       <p><opt>--system</opt><arg>[=BOOL]</arg></p>
 
       <optdesc><p>Run as system-wide instance instead of
-      per-user. Please not that this disables certain features of
+      per-user. Please note that this disables certain features of
       PulseAudio and is generally not recommended unless the system
       knows no local users (e.g. is a thin client). This feature needs
       special configuration and a dedicated UNIX user set up. It is
@@ -118,7 +127,7 @@ USA.
     </option>
 
     <option>
-      <p><opt>-D | --daemon</opt><arg>[=BOOL]</arg></p>
+      <p><opt>-D | --daemonize</opt><arg>[=BOOL]</arg></p>
 
       <optdesc><p>Daemonize after startup, i.e. detach from the
       terminal.</p></optdesc>

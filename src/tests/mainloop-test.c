@@ -1,5 +1,3 @@
-/* $Id: mainloop-test.c 1418 2007-01-04 13:43:45Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -29,9 +27,9 @@
 #include <assert.h>
 
 #include <pulse/timeval.h>
+#include <pulse/gccmacro.h>
 
 #include <pulsecore/core-util.h>
-#include <pulsecore/gccmacro.h>
 
 #ifdef GLIB_MAIN_LOOP
 
@@ -68,7 +66,7 @@ static void tcb(pa_mainloop_api*a, pa_time_event *e, const struct timeval *tv, v
 #endif
 }
 
-int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
+int main(int argc, char *argv[]) {
     pa_mainloop_api *a;
     pa_io_event *ioe;
     pa_time_event *te;

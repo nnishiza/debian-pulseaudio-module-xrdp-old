@@ -1,8 +1,6 @@
 #ifndef foomodulehfoo
 #define foomodulehfoo
 
-/* $Id: module.h 2043 2007-11-09 18:25:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -45,20 +43,22 @@ struct pa_module {
     void *userdata;
 
     int n_used;
-    int auto_unload;
-    time_t last_used_time;
 
-    int unload_requested;
+    pa_bool_t auto_unload:1;
+    pa_bool_t load_once:1;
+    pa_bool_t unload_requested:1;
+
+    time_t last_used_time;
 };
 
 pa_module* pa_module_load(pa_core *c, const char *name, const char*argument);
-void pa_module_unload(pa_core *c, pa_module *m);
-void pa_module_unload_by_index(pa_core *c, uint32_t idx);
+void pa_module_unload(pa_core *c, pa_module *m, pa_bool_t force);
+void pa_module_unload_by_index(pa_core *c, uint32_t idx, pa_bool_t force);
 
 void pa_module_unload_all(pa_core *c);
 void pa_module_unload_unused(pa_core *c);
 
-void pa_module_unload_request(pa_module *m);
+void pa_module_unload_request(pa_module *m, pa_bool_t force);
 
 void pa_module_set_used(pa_module*m, int used);
 

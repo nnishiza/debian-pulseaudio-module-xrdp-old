@@ -1,5 +1,3 @@
-/* $Id: tagstruct.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -42,12 +40,14 @@
 
 #include "tagstruct.h"
 
+#define MAX_TAG_SIZE (64*1024)
+
 struct pa_tagstruct {
     uint8_t *data;
     size_t length, allocated;
     size_t rindex;
 
-    int dynamic;
+    pa_bool_t dynamic;
 };
 
 pa_tagstruct *pa_tagstruct_new(const uint8_t* data, size_t length) {
@@ -154,18 +154,18 @@ void pa_tagstruct_put_arbitrary(pa_tagstruct *t, const void *p, size_t length) {
 
     extend(t, 5+length);
     t->data[t->length] = PA_TAG_ARBITRARY;
-    tmp = htonl(length);
+    tmp = htonl((uint32_t) length);
     memcpy(t->data+t->length+1, &tmp, 4);
     if (length)
         memcpy(t->data+t->length+5, p, length);
     t->length += 5+length;
 }
 
-void pa_tagstruct_put_boolean(pa_tagstruct*t, int b) {
+void pa_tagstruct_put_boolean(pa_tagstruct*t, pa_bool_t b) {
     pa_assert(t);
 
     extend(t, 1);
-    t->data[t->length] = b ? PA_TAG_BOOLEAN_TRUE : PA_TAG_BOOLEAN_FALSE;
+    t->data[t->length] = (uint8_t) (b ? PA_TAG_BOOLEAN_TRUE : PA_TAG_BOOLEAN_FALSE);
     t->length += 1;
 }
 
@@ -175,9 +175,9 @@ void pa_tagstruct_put_timeval(pa_tagstruct*t, const struct timeval *tv) {
 
     extend(t, 9);
     t->data[t->length] = PA_TAG_TIMEVAL;
-    tmp = htonl(tv->tv_sec);
+    tmp = htonl((uint32_t) tv->tv_sec);
     memcpy(t->data+t->length+1, &tmp, 4);
-    tmp = htonl(tv->tv_usec);
+    tmp = htonl((uint32_t) tv->tv_usec);
     memcpy(t->data+t->length+5, &tmp, 4);
     t->length += 9;
 }
@@ -228,7 +228,7 @@ void pa_tagstruct_put_channel_map(pa_tagstruct *t, const pa_channel_map *map) {
     unsigned i;
 
     pa_assert(t);
-    extend(t, 2 + map->channels);
+    extend(t, 2 + (size_t) map->channels);
 
     t->data[t->length++] = PA_TAG_CHANNEL_MAP;
     t->data[t->length++] = map->channels;
@@ -252,6 +252,32 @@ void pa_tagstruct_put_cvolume(pa_tagstruct *t, const pa_cvolume *cvolume) {
         memcpy(t->data + t->length, &vol, sizeof(pa_volume_t));
         t->length += sizeof(pa_volume_t);
     }
+}
+
+void pa_tagstruct_put_proplist(pa_tagstruct *t, pa_proplist *p) {
+    void *state = NULL;
+    pa_assert(t);
+    pa_assert(p);
+
+    extend(t, 1);
+
+    t->data[t->length++] = PA_TAG_PROPLIST;
+
+    for (;;) {
+        const char *k;
+        const void *d;
+        size_t l;
+
+        if (!(k = pa_proplist_iterate(p, &state)))
+            break;
+
+        pa_tagstruct_puts(t, k);
+        pa_assert_se(pa_proplist_get(p, k, &d, &l) >= 0);
+        pa_tagstruct_putu32(t, (uint32_t) l);
+        pa_tagstruct_put_arbitrary(t, d, l);
+    }
+
+    pa_tagstruct_puts(t, NULL);
 }
 
 int pa_tagstruct_gets(pa_tagstruct*t, const char **s) {
@@ -379,7 +405,7 @@ const uint8_t* pa_tagstruct_data(pa_tagstruct*t, size_t *l) {
     return t->data;
 }
 
-int pa_tagstruct_get_boolean(pa_tagstruct*t, int *b) {
+int pa_tagstruct_get_boolean(pa_tagstruct*t, pa_bool_t *b) {
     pa_assert(t);
     pa_assert(b);
 
@@ -387,9 +413,9 @@ int pa_tagstruct_get_boolean(pa_tagstruct*t, int *b) {
         return -1;
 
     if (t->data[t->rindex] == PA_TAG_BOOLEAN_TRUE)
-        *b = 1;
+        *b = TRUE;
     else if (t->data[t->rindex] == PA_TAG_BOOLEAN_FALSE)
-        *b = 0;
+        *b = FALSE;
     else
         return -1;
 
@@ -409,9 +435,9 @@ int pa_tagstruct_get_timeval(pa_tagstruct*t, struct timeval *tv) {
         return -1;
 
     memcpy(&tv->tv_sec, t->data+t->rindex+1, 4);
-    tv->tv_sec = ntohl(tv->tv_sec);
+    tv->tv_sec = (time_t) ntohl((uint32_t) tv->tv_sec);
     memcpy(&tv->tv_usec, t->data+t->rindex+5, 4);
-    tv->tv_usec = ntohl(tv->tv_usec);
+    tv->tv_usec = (suseconds_t) ntohl((uint32_t) tv->tv_usec);
     t->rindex += 9;
     return 0;
 }
@@ -497,7 +523,7 @@ int pa_tagstruct_get_channel_map(pa_tagstruct *t, pa_channel_map *map) {
     for (i = 0; i < map->channels; i ++)
         map->map[i] = (int8_t) t->data[t->rindex + 2 + i];
 
-    t->rindex += 2 + map->channels;
+    t->rindex += 2 + (size_t) map->channels;
     return 0;
 }
 
@@ -527,6 +553,52 @@ int pa_tagstruct_get_cvolume(pa_tagstruct *t, pa_cvolume *cvolume) {
 
     t->rindex += 2 + cvolume->channels * sizeof(pa_volume_t);
     return 0;
+}
+
+int pa_tagstruct_get_proplist(pa_tagstruct *t, pa_proplist *p) {
+    size_t saved_rindex;
+
+    pa_assert(t);
+    pa_assert(p);
+
+    if (t->rindex+1 > t->length)
+        return -1;
+
+    if (t->data[t->rindex] != PA_TAG_PROPLIST)
+        return -1;
+
+    saved_rindex = t->rindex;
+    t->rindex++;
+
+    for (;;) {
+        const char *k;
+        const void *d;
+        uint32_t length;
+
+        if (pa_tagstruct_gets(t, &k) < 0)
+            goto fail;
+
+        if (!k)
+            break;
+
+        if (pa_tagstruct_getu32(t, &length) < 0)
+            goto fail;
+
+        if (length > MAX_TAG_SIZE)
+            goto fail;
+
+        if (pa_tagstruct_get_arbitrary(t, &d, length) < 0)
+            goto fail;
+
+        if (pa_proplist_set(p, k, d, length) < 0)
+            goto fail;
+    }
+
+    return 0;
+
+fail:
+    t->rindex = saved_rindex;
+    return -1;
 }
 
 void pa_tagstruct_put(pa_tagstruct *t, ...) {
@@ -591,6 +663,10 @@ void pa_tagstruct_put(pa_tagstruct *t, ...) {
                 pa_tagstruct_put_cvolume(t, va_arg(va, pa_cvolume *));
                 break;
 
+            case PA_TAG_PROPLIST:
+                pa_tagstruct_put_proplist(t, va_arg(va, pa_proplist *));
+                break;
+
             default:
                 pa_assert_not_reached();
         }
@@ -643,7 +719,7 @@ int pa_tagstruct_get(pa_tagstruct *t, ...) {
 
             case PA_TAG_BOOLEAN_TRUE:
             case PA_TAG_BOOLEAN_FALSE:
-                ret = pa_tagstruct_get_boolean(t, va_arg(va, int*));
+                ret = pa_tagstruct_get_boolean(t, va_arg(va, pa_bool_t*));
                 break;
 
             case PA_TAG_TIMEVAL:
@@ -660,6 +736,10 @@ int pa_tagstruct_get(pa_tagstruct *t, ...) {
 
             case PA_TAG_CVOLUME:
                 ret = pa_tagstruct_get_cvolume(t, va_arg(va, pa_cvolume *));
+                break;
+
+            case PA_TAG_PROPLIST:
+                ret = pa_tagstruct_get_proplist(t, va_arg(va, pa_proplist *));
                 break;
 
             default:

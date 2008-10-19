@@ -1,5 +1,3 @@
-/* $Id: thread-test.c 1621 2007-08-10 22:00:22Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -67,7 +65,7 @@ int main(int argc, char *argv[]) {
     pa_rtpoll_item_set_before_callback(w, worker);
 
     pa_rtpoll_install(p);
-    pa_rtpoll_set_timer_periodic(p, 10000000); /* 10 s */
+    pa_rtpoll_set_timer_relative(p, 10000000); /* 10 s */
 
     pa_rtpoll_run(p, 1);
 

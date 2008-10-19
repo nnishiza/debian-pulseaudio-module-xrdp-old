@@ -16,6 +16,8 @@ pulseaudio --dump-resample-methods\fB
 
 pulseaudio --cleanup-shm\fB
 
+pulseaudio --start\fB
+
 pulseaudio --kill\fB
 
 pulseaudio --check\fB
@@ -42,6 +44,9 @@ List available audio resamplers.
 \fB--cleanup-shm\f1
 Identify stale PulseAudio POSIX shared memory segments in \fI/dev/shm\f1 and remove them if possible. This is done implicitly whenever a new daemon starts up or a client tries to connect to a daemon. It should normally not be necessary to issue this command by hand. Only available on systems with POSIX shared memory segments implemented via a virtual file system mounted to \fI/dev/shm\f1 (e.g. Linux).
 .TP
+\fB--start\f1
+Start PulseAudio if it is not running yet. This is different from starting PulseAudio without \fB--start\f1 which would fail if PA is already running. PulseAudio is guaranteed to be fully initialized when this call returns. Implies \fB--daemon\f1.
+.TP
 \fB-k | --kill\f1
 Kill an already running PulseAudio daemon of the calling user (Equivalent to sending a SIGTERM).
 .TP
@@ -49,9 +54,9 @@ Kill an already running PulseAudio daemon of the calling user (Equivalent to sen
 Return 0 as return code when the PulseAudio daemon is already running for the calling user.
 .TP
 \fB--system\f1\fI[=BOOL]\f1
-Run as system-wide instance instead of per-user. Please not that this disables certain features of PulseAudio and is generally not recommended unless the system knows no local users (e.g. is a thin client). This feature needs special configuration and a dedicated UNIX user set up. It is highly recommended to combine this with \fB--disallow-module-loading\f1 (see below).
+Run as system-wide instance instead of per-user. Please note that this disables certain features of PulseAudio and is generally not recommended unless the system knows no local users (e.g. is a thin client). This feature needs special configuration and a dedicated UNIX user set up. It is highly recommended to combine this with \fB--disallow-module-loading\f1 (see below).
 .TP
-\fB-D | --daemon\f1\fI[=BOOL]\f1
+\fB-D | --daemonize\f1\fI[=BOOL]\f1
 Daemonize after startup, i.e. detach from the terminal.
 .TP
 \fB--fail\f1\fI[=BOOL]\f1

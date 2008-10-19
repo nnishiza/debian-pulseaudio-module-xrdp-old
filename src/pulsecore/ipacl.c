@@ -1,5 +1,3 @@
-/* $Id: ipacl.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -124,7 +122,7 @@ pa_ip_acl* pa_ip_acl_new(const char *s) {
             if (e.bits < 128) {
                 int t = 0, i;
 
-                for (i = 0, bits = e.bits; i < 16; i++) {
+                for (i = 0, bits = (uint32_t) e.bits; i < 16; i++) {
 
                     if (bits >= 8)
                         bits -= 8;

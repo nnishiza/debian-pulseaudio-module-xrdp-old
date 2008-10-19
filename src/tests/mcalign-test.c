@@ -1,5 +1,3 @@
-/* $Id: mcalign-test.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -31,24 +29,25 @@
 #include <stdlib.h>
 #include <time.h>
 
+#include <pulse/gccmacro.h>
+
 #include <pulsecore/core-util.h>
 #include <pulsecore/mcalign.h>
-#include <pulsecore/gccmacro.h>
 
 /* A simple program for testing pa_mcalign */
 
-int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
+int main(int argc, char *argv[]) {
     pa_mempool *p;
     pa_mcalign *a;
     pa_memchunk c;
 
-    p = pa_mempool_new(0);
+    p = pa_mempool_new(FALSE, 0);
 
     a = pa_mcalign_new(11);
 
     pa_memchunk_reset(&c);
 
-    srand(time(NULL));
+    srand((unsigned) time(NULL));
 
     for (;;) {
         ssize_t r;
@@ -63,7 +62,7 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
 
         l = pa_memblock_get_length(c.memblock) - c.index;
 
-        l = l <= 1 ? l : rand() % (l-1) +1 ;
+        l = l <= 1 ? l : (size_t) rand() % (l-1) +1;
 
         p = pa_memblock_acquire(c.memblock);
 
@@ -75,11 +74,11 @@ int main(PA_GCC_UNUSED int argc, PA_GCC_UNUSED char *argv[]) {
 
         pa_memblock_release(c.memblock);
 
-        c.length = r;
+        c.length = (size_t) r;
         pa_mcalign_push(a, &c);
         fprintf(stderr, "Read %ld bytes\n", (long)r);
 
-        c.index += r;
+        c.index += (size_t) r;
 
         if (c.index >= pa_memblock_get_length(c.memblock)) {
             pa_memblock_unref(c.memblock);

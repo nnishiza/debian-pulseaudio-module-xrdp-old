@@ -1,8 +1,6 @@
 #ifndef fooprotocolclihfoo
 #define fooprotocolclihfoo
 
-/* $Id: protocol-cli.h 1426 2007-02-13 15:35:19Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -29,9 +27,12 @@
 #include <pulsecore/module.h>
 #include <pulsecore/modargs.h>
 
-typedef struct pa_protocol_cli pa_protocol_cli;
+typedef struct pa_cli_protocol pa_cli_protocol;
 
-pa_protocol_cli* pa_protocol_cli_new(pa_core *core, pa_socket_server *server, pa_module *m, pa_modargs *ma);
-void pa_protocol_cli_free(pa_protocol_cli *n);
+pa_cli_protocol* pa_cli_protocol_get(pa_core *core);
+pa_cli_protocol* pa_cli_protocol_ref(pa_cli_protocol *p);
+void pa_cli_protocol_unref(pa_cli_protocol *p);
+void pa_cli_protocol_connect(pa_cli_protocol *p, pa_iochannel *io, pa_module *m);
+void pa_cli_protocol_disconnect(pa_cli_protocol *o, pa_module *m);
 
 #endif

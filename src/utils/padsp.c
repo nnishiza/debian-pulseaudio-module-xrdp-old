@@ -1,5 +1,3 @@
-/* $Id: padsp.c 2183 2008-03-28 00:51:36Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -53,8 +51,8 @@
 #endif
 
 #include <pulse/pulseaudio.h>
+#include <pulse/gccmacro.h>
 #include <pulsecore/llist.h>
-#include <pulsecore/gccmacro.h>
 
 /* On some systems SIOCINQ isn't defined, but FIONREAD is just an alias */
 #if !defined(SIOCINQ) && defined(FIONREAD)
@@ -302,7 +300,6 @@ static int padsp_disabled(void) {
     if (!sym_resolved) {
         sym = (int*) dlsym(RTLD_DEFAULT, "__padsp_disabled__");
         sym_resolved = 1;
-
     }
     pthread_mutex_unlock(&func_mutex);
 
@@ -316,7 +313,7 @@ static int dsp_cloak_enable(void) {
     if (padsp_disabled() & 1)
         return 0;
 
-    if (getenv("PADSP_NO_DSP"))
+    if (getenv("PADSP_NO_DSP") || getenv("PULSE_INTERNAL"))
         return 0;
 
     return 1;
@@ -326,7 +323,7 @@ static int sndstat_cloak_enable(void) {
     if (padsp_disabled() & 2)
         return 0;
 
-    if (getenv("PADSP_NO_SNDSTAT"))
+    if (getenv("PADSP_NO_SNDSTAT") || getenv("PULSE_INTERNAL"))
         return 0;
 
     return 1;
@@ -336,7 +333,7 @@ static int mixer_cloak_enable(void) {
     if (padsp_disabled() & 4)
         return 0;
 
-    if (getenv("PADSP_NO_MIXER"))
+    if (getenv("PADSP_NO_MIXER") || getenv("PULSE_INTERNAL"))
         return 0;
 
     return 1;
@@ -425,7 +422,7 @@ static void fd_info_unref(fd_info *i) {
     pthread_mutex_lock(&i->mutex);
     assert(i->ref >= 1);
     r = --i->ref;
-        debug(DEBUG_LEVEL_VERBOSE, __FILE__": ref--, now %i\n", i->ref);
+    debug(DEBUG_LEVEL_VERBOSE, __FILE__": ref--, now %i\n", i->ref);
     pthread_mutex_unlock(&i->mutex);
 
     if (r <= 0)
@@ -501,7 +498,6 @@ static void atfork_prepare(void) {
 
     pthread_mutex_lock(&func_mutex);
 
-
     debug(DEBUG_LEVEL_NORMAL, __FILE__": atfork_prepare() exit\n");
 }
 
@@ -553,12 +549,14 @@ static void atfork_child(void) {
         }
 
         if (i->app_fd >= 0) {
-            close(i->app_fd);
+            LOAD_CLOSE_FUNC();
+            _close(i->app_fd);
             i->app_fd = -1;
         }
 
         if (i->thread_fd >= 0) {
-            close(i->thread_fd);
+            LOAD_CLOSE_FUNC();
+            _close(i->thread_fd);
             i->thread_fd = -1;
         }
 
@@ -751,7 +749,7 @@ static void fix_metrics(fd_info *i) {
     /* Number of fragments set? */
     if (i->n_fragments < 2) {
         if (i->fragment_size > 0) {
-            i->n_fragments = pa_bytes_per_second(&i->sample_spec) / 2 / i->fragment_size;
+            i->n_fragments = (unsigned) (pa_bytes_per_second(&i->sample_spec) / 2 / i->fragment_size);
             if (i->n_fragments < 2)
                 i->n_fragments = 2;
         } else
@@ -867,7 +865,7 @@ static int fd_info_copy_data(fd_info *i, int force) {
                 return -1;
             }
 
-            if (pa_stream_write(i->play_stream, i->buf, r, free, 0, PA_SEEK_RELATIVE) < 0) {
+            if (pa_stream_write(i->play_stream, i->buf, (size_t) r, free, 0LL, PA_SEEK_RELATIVE) < 0) {
                 debug(DEBUG_LEVEL_NORMAL, __FILE__": pa_stream_write(): %s\n", pa_strerror(pa_context_errno(i->context)));
                 return -1;
             }
@@ -875,7 +873,7 @@ static int fd_info_copy_data(fd_info *i, int force) {
             i->buf = NULL;
 
             assert(n >= (size_t) r);
-            n -= r;
+            n -= (size_t) r;
         }
 
         if (n >= i->fragment_size)
@@ -919,7 +917,7 @@ static int fd_info_copy_data(fd_info *i, int force) {
             }
 
             assert((size_t)r <= len - i->rec_offset);
-            i->rec_offset += r;
+            i->rec_offset += (size_t) r;
 
             if (i->rec_offset == len) {
                 if (pa_stream_drop(i->rec_stream) < 0) {
@@ -930,7 +928,7 @@ static int fd_info_copy_data(fd_info *i, int force) {
             }
 
             assert(n >= (size_t) r);
-            n -= r;
+            n -= (size_t) r;
         }
 
         if (n >= i->fragment_size)
@@ -945,6 +943,10 @@ static int fd_info_copy_data(fd_info *i, int force) {
         api = pa_threaded_mainloop_get_api(i->mainloop);
         api->io_enable(i->io_event, i->io_flags);
     }
+
+    /* So, we emptied the socket now, let's tell dsp_empty_socket()
+     * about this */
+    pa_threaded_mainloop_signal(i->mainloop, 0);
 
     return 0;
 }
@@ -1001,12 +1003,12 @@ static int create_playback_stream(fd_info *i) {
     pa_stream_set_latency_update_callback(i->play_stream, stream_latency_update_cb, i);
 
     memset(&attr, 0, sizeof(attr));
-    attr.maxlength = i->fragment_size * (i->n_fragments+1);
-    attr.tlength = i->fragment_size * i->n_fragments;
-    attr.prebuf = i->fragment_size;
-    attr.minreq = i->fragment_size;
+    attr.maxlength = (uint32_t) (i->fragment_size * (i->n_fragments+1));
+    attr.tlength = (uint32_t) (i->fragment_size * i->n_fragments);
+    attr.prebuf = (uint32_t) i->fragment_size;
+    attr.minreq = (uint32_t) i->fragment_size;
 
-    flags = PA_STREAM_INTERPOLATE_TIMING|PA_STREAM_AUTO_TIMING_UPDATE;
+    flags = PA_STREAM_INTERPOLATE_TIMING|PA_STREAM_AUTO_TIMING_UPDATE|PA_STREAM_EARLY_REQUESTS;
     if (i->play_precork) {
         flags |= PA_STREAM_START_CORKED;
         debug(DEBUG_LEVEL_NORMAL, __FILE__": creating stream corked\n");
@@ -1016,9 +1018,9 @@ static int create_playback_stream(fd_info *i) {
         goto fail;
     }
 
-    n = i->fragment_size;
+    n = (int) i->fragment_size;
     setsockopt(i->app_fd, SOL_SOCKET, SO_SNDBUF, &n, sizeof(n));
-    n = i->fragment_size;
+    n = (int) i->fragment_size;
     setsockopt(i->thread_fd, SOL_SOCKET, SO_RCVBUF, &n, sizeof(n));
 
     return 0;
@@ -1045,8 +1047,8 @@ static int create_record_stream(fd_info *i) {
     pa_stream_set_latency_update_callback(i->rec_stream, stream_latency_update_cb, i);
 
     memset(&attr, 0, sizeof(attr));
-    attr.maxlength = i->fragment_size * (i->n_fragments+1);
-    attr.fragsize = i->fragment_size;
+    attr.maxlength = (uint32_t) (i->fragment_size * (i->n_fragments+1));
+    attr.fragsize = (uint32_t) i->fragment_size;
 
     flags = PA_STREAM_INTERPOLATE_TIMING|PA_STREAM_AUTO_TIMING_UPDATE;
     if (i->rec_precork) {
@@ -1058,9 +1060,9 @@ static int create_record_stream(fd_info *i) {
         goto fail;
     }
 
-    n = i->fragment_size;
+    n = (int) i->fragment_size;
     setsockopt(i->app_fd, SOL_SOCKET, SO_RCVBUF, &n, sizeof(n));
-    n = i->fragment_size;
+    n = (int) i->fragment_size;
     setsockopt(i->thread_fd, SOL_SOCKET, SO_SNDBUF, &n, sizeof(n));
 
     return 0;
@@ -1477,7 +1479,7 @@ int open(const char *filename, int flags, ...) {
     if (flags & O_CREAT) {
         va_start(args, flags);
         if (sizeof(mode_t) < sizeof(int))
-            mode = va_arg(args, int);
+            mode = (mode_t) va_arg(args, int);
         else
             mode = va_arg(args, mode_t);
         va_end(args);
@@ -2253,7 +2255,7 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno) 
             for (;;) {
                 pa_usec_t usec;
 
-                PLAYBACK_STREAM_CHECK_DEAD_GOTO(i, exit_loop);
+                PLAYBACK_STREAM_CHECK_DEAD_GOTO(i, exit_loop2);
 
                 if (pa_stream_get_time(i->play_stream, &usec) >= 0) {
                     size_t k = pa_usec_to_bytes(usec, &i->sample_spec);
@@ -2274,6 +2276,8 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno) 
 
                 pa_threaded_mainloop_wait(i->mainloop);
             }
+
+        exit_loop2:
 
             pa_threaded_mainloop_unlock(i->mainloop);
 

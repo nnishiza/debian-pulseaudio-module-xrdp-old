@@ -1,5 +1,3 @@
-/* $Id: pacat.c 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -35,14 +33,14 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <fcntl.h>
+#include <locale.h>
 
+#include <pulse/i18n.h>
 #include <pulse/pulseaudio.h>
 
 #define TIME_EVENT_USEC 50000
 
-#if PA_API_VERSION < 10
-#error Invalid PulseAudio API version
-#endif
+#define CLEAR_LINE "\x1B[K"
 
 static enum { RECORD, PLAYBACK } mode = PLAYBACK;
 
@@ -71,6 +69,8 @@ static int channel_map_set = 0;
 
 static pa_stream_flags_t flags = 0;
 
+static size_t latency = 0, process_time=0;
+
 /* A shortcut for terminating the application */
 static void quit(int ret) {
     assert(mainloop_api);
@@ -90,7 +90,7 @@ static void do_stream_write(size_t length) {
         l = buffer_length;
 
     if (pa_stream_write(stream, (uint8_t*) buffer + buffer_index, l, NULL, 0, PA_SEEK_RELATIVE) < 0) {
-        fprintf(stderr, "pa_stream_write() failed: %s\n", pa_strerror(pa_context_errno(context)));
+        fprintf(stderr, _("pa_stream_write() failed: %s\n"), pa_strerror(pa_context_errno(context)));
         quit(1);
         return;
     }
@@ -129,7 +129,7 @@ static void stream_read_callback(pa_stream *s, size_t length, void *userdata) {
         mainloop_api->io_enable(stdio_event, PA_IO_EVENT_OUTPUT);
 
     if (pa_stream_peek(s, &data, &length) < 0) {
-        fprintf(stderr, "pa_stream_peek() failed: %s\n", pa_strerror(pa_context_errno(context)));
+        fprintf(stderr, _("pa_stream_peek() failed: %s\n"), pa_strerror(pa_context_errno(context)));
         quit(1);
         return;
     }
@@ -138,9 +138,9 @@ static void stream_read_callback(pa_stream *s, size_t length, void *userdata) {
     assert(length > 0);
 
     if (buffer) {
-        fprintf(stderr, "Buffer overrun, dropping incoming data\n");
+        fprintf(stderr, _("Buffer overrun, dropping incoming data\n"));
         if (pa_stream_drop(s) < 0) {
-            fprintf(stderr, "pa_stream_drop() failed: %s\n", pa_strerror(pa_context_errno(context)));
+            fprintf(stderr, _("pa_stream_drop() failed: %s\n"), pa_strerror(pa_context_errno(context)));
             quit(1);
         }
         return;
@@ -166,25 +166,25 @@ static void stream_state_callback(pa_stream *s, void *userdata) {
                 const pa_buffer_attr *a;
                 char cmt[PA_CHANNEL_MAP_SNPRINT_MAX], sst[PA_SAMPLE_SPEC_SNPRINT_MAX];
 
-                fprintf(stderr, "Stream successfully created.\n");
+                fprintf(stderr, _("Stream successfully created.\n"));
 
                 if (!(a = pa_stream_get_buffer_attr(s)))
-                    fprintf(stderr, "pa_stream_get_buffer_attr() failed: %s\n", pa_strerror(pa_context_errno(pa_stream_get_context(s))));
+                    fprintf(stderr, _("pa_stream_get_buffer_attr() failed: %s\n"), pa_strerror(pa_context_errno(pa_stream_get_context(s))));
                 else {
 
                     if (mode == PLAYBACK)
-                        fprintf(stderr, "Buffer metrics: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u\n", a->maxlength, a->tlength, a->prebuf, a->minreq);
+                        fprintf(stderr, _("Buffer metrics: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u\n"), a->maxlength, a->tlength, a->prebuf, a->minreq);
                     else {
                         assert(mode == RECORD);
-                        fprintf(stderr, "Buffer metrics: maxlength=%u, fragsize=%u\n", a->maxlength, a->fragsize);
+                        fprintf(stderr, _("Buffer metrics: maxlength=%u, fragsize=%u\n"), a->maxlength, a->fragsize);
                     }
                 }
 
-                fprintf(stderr, "Using sample spec '%s', channel map '%s'.\n",
+                fprintf(stderr, _("Using sample spec '%s', channel map '%s'.\n"),
                         pa_sample_spec_snprint(sst, sizeof(sst), pa_stream_get_sample_spec(s)),
                         pa_channel_map_snprint(cmt, sizeof(cmt), pa_stream_get_channel_map(s)));
 
-                fprintf(stderr, "Connected to device %s (%u, %ssuspended).\n",
+                fprintf(stderr, _("Connected to device %s (%u, %ssuspended).\n"),
                         pa_stream_get_device_name(s),
                         pa_stream_get_device_index(s),
                         pa_stream_is_suspended(s) ? "" : "not ");
@@ -194,7 +194,7 @@ static void stream_state_callback(pa_stream *s, void *userdata) {
 
         case PA_STREAM_FAILED:
         default:
-            fprintf(stderr, "Stream error: %s\n", pa_strerror(pa_context_errno(pa_stream_get_context(s))));
+            fprintf(stderr, _("Stream error: %s\n"), pa_strerror(pa_context_errno(pa_stream_get_context(s))));
             quit(1);
     }
 }
@@ -204,17 +204,38 @@ static void stream_suspended_callback(pa_stream *s, void *userdata) {
 
     if (verbose) {
         if (pa_stream_is_suspended(s))
-            fprintf(stderr, "Stream device suspended.\n");
+            fprintf(stderr, _("Stream device suspended.%s \n"), CLEAR_LINE);
         else
-            fprintf(stderr, "Stream device resumed.\n");
+            fprintf(stderr, _("Stream device resumed.%s \n"), CLEAR_LINE);
     }
+}
+
+static void stream_underflow_callback(pa_stream *s, void *userdata) {
+    assert(s);
+
+    if (verbose)
+        fprintf(stderr, _("Stream underrun.%s \n"),  CLEAR_LINE);
+}
+
+static void stream_overflow_callback(pa_stream *s, void *userdata) {
+    assert(s);
+
+    if (verbose)
+        fprintf(stderr, _("Stream overrun.%s \n"), CLEAR_LINE);
+}
+
+static void stream_started_callback(pa_stream *s, void *userdata) {
+    assert(s);
+
+    if (verbose)
+        fprintf(stderr, _("Stream started.%s \n"), CLEAR_LINE);
 }
 
 static void stream_moved_callback(pa_stream *s, void *userdata) {
     assert(s);
 
     if (verbose)
-        fprintf(stderr, "Stream moved to device %s (%u, %ssuspended).\n", pa_stream_get_device_name(s), pa_stream_get_device_index(s), pa_stream_is_suspended(s) ? "" : "not ");
+        fprintf(stderr, _("Stream moved to device %s (%u, %ssuspended).%s \n"), pa_stream_get_device_name(s), pa_stream_get_device_index(s), pa_stream_is_suspended(s) ? "" : _("not "),  CLEAR_LINE);
 }
 
 /* This is called whenever the context status changes */
@@ -229,15 +250,16 @@ static void context_state_callback(pa_context *c, void *userdata) {
 
         case PA_CONTEXT_READY: {
             int r;
+            pa_buffer_attr buffer_attr;
 
             assert(c);
             assert(!stream);
 
             if (verbose)
-                fprintf(stderr, "Connection established.\n");
+                fprintf(stderr, _("Connection established.%s \n"), CLEAR_LINE);
 
             if (!(stream = pa_stream_new(c, stream_name, &sample_spec, channel_map_set ? &channel_map : NULL))) {
-                fprintf(stderr, "pa_stream_new() failed: %s\n", pa_strerror(pa_context_errno(c)));
+                fprintf(stderr, _("pa_stream_new() failed: %s\n"), pa_strerror(pa_context_errno(c)));
                 goto fail;
             }
 
@@ -246,17 +268,29 @@ static void context_state_callback(pa_context *c, void *userdata) {
             pa_stream_set_read_callback(stream, stream_read_callback, NULL);
             pa_stream_set_suspended_callback(stream, stream_suspended_callback, NULL);
             pa_stream_set_moved_callback(stream, stream_moved_callback, NULL);
+            pa_stream_set_underflow_callback(stream, stream_underflow_callback, NULL);
+            pa_stream_set_overflow_callback(stream, stream_overflow_callback, NULL);
+            pa_stream_set_started_callback(stream, stream_started_callback, NULL);
+
+            if (latency > 0) {
+                memset(&buffer_attr, 0, sizeof(buffer_attr));
+                buffer_attr.tlength = (uint32_t) latency;
+                buffer_attr.minreq = (uint32_t) process_time;
+                buffer_attr.maxlength = (uint32_t) -1;
+                buffer_attr.prebuf = (uint32_t) -1;
+                flags |= PA_STREAM_ADJUST_LATENCY;
+            }
 
             if (mode == PLAYBACK) {
                 pa_cvolume cv;
-                if ((r = pa_stream_connect_playback(stream, device, NULL, flags, pa_cvolume_set(&cv, sample_spec.channels, volume), NULL)) < 0) {
-                    fprintf(stderr, "pa_stream_connect_playback() failed: %s\n", pa_strerror(pa_context_errno(c)));
+                if ((r = pa_stream_connect_playback(stream, device, latency > 0 ? &buffer_attr : NULL, flags, pa_cvolume_set(&cv, sample_spec.channels, volume), NULL)) < 0) {
+                    fprintf(stderr, _("pa_stream_connect_playback() failed: %s\n"), pa_strerror(pa_context_errno(c)));
                     goto fail;
                 }
 
             } else {
-                if ((r = pa_stream_connect_record(stream, device, NULL, flags)) < 0) {
-                    fprintf(stderr, "pa_stream_connect_record() failed: %s\n", pa_strerror(pa_context_errno(c)));
+                if ((r = pa_stream_connect_record(stream, device, latency > 0 ? &buffer_attr : NULL, flags)) < 0) {
+                    fprintf(stderr, _("pa_stream_connect_record() failed: %s\n"), pa_strerror(pa_context_errno(c)));
                     goto fail;
                 }
             }
@@ -270,7 +304,7 @@ static void context_state_callback(pa_context *c, void *userdata) {
 
         case PA_CONTEXT_FAILED:
         default:
-            fprintf(stderr, "Connection failure: %s\n", pa_strerror(pa_context_errno(c)));
+            fprintf(stderr, _("Connection failure: %s\n"), pa_strerror(pa_context_errno(c)));
             goto fail;
     }
 
@@ -291,12 +325,12 @@ static void stream_drain_complete(pa_stream*s, int success, void *userdata) {
     pa_operation *o;
 
     if (!success) {
-        fprintf(stderr, "Failed to drain stream: %s\n", pa_strerror(pa_context_errno(context)));
+        fprintf(stderr, _("Failed to drain stream: %s\n"), pa_strerror(pa_context_errno(context)));
         quit(1);
     }
 
     if (verbose)
-        fprintf(stderr, "Playback stream drained.\n");
+        fprintf(stderr, _("Playback stream drained.\n"));
 
     pa_stream_disconnect(stream);
     pa_stream_unref(stream);
@@ -306,7 +340,7 @@ static void stream_drain_complete(pa_stream*s, int success, void *userdata) {
         pa_context_disconnect(context);
     else {
         if (verbose)
-            fprintf(stderr, "Draining connection to server.\n");
+            fprintf(stderr, _("Draining connection to server.\n"));
     }
 }
 
@@ -332,13 +366,13 @@ static void stdin_callback(pa_mainloop_api*a, pa_io_event *e, int fd, pa_io_even
     if ((r = read(fd, buffer, l)) <= 0) {
         if (r == 0) {
             if (verbose)
-                fprintf(stderr, "Got EOF.\n");
+                fprintf(stderr, _("Got EOF.\n"));
 
             if (stream) {
                 pa_operation *o;
 
                 if (!(o = pa_stream_drain(stream, stream_drain_complete, NULL))) {
-                    fprintf(stderr, "pa_stream_drain(): %s\n", pa_strerror(pa_context_errno(context)));
+                    fprintf(stderr, _("pa_stream_drain(): %s\n"), pa_strerror(pa_context_errno(context)));
                     quit(1);
                     return;
                 }
@@ -348,7 +382,7 @@ static void stdin_callback(pa_mainloop_api*a, pa_io_event *e, int fd, pa_io_even
                 quit(0);
 
         } else {
-            fprintf(stderr, "read() failed: %s\n", strerror(errno));
+            fprintf(stderr, _("read() failed: %s\n"), strerror(errno));
             quit(1);
         }
 
@@ -357,7 +391,7 @@ static void stdin_callback(pa_mainloop_api*a, pa_io_event *e, int fd, pa_io_even
         return;
     }
 
-    buffer_length = r;
+    buffer_length = (uint32_t) r;
     buffer_index = 0;
 
     if (w)
@@ -380,7 +414,7 @@ static void stdout_callback(pa_mainloop_api*a, pa_io_event *e, int fd, pa_io_eve
     assert(buffer_length);
 
     if ((r = write(fd, (uint8_t*) buffer+buffer_index, buffer_length)) <= 0) {
-        fprintf(stderr, "write() failed: %s\n", strerror(errno));
+        fprintf(stderr, _("write() failed: %s\n"), strerror(errno));
         quit(1);
 
         mainloop_api->io_free(stdio_event);
@@ -388,8 +422,8 @@ static void stdout_callback(pa_mainloop_api*a, pa_io_event *e, int fd, pa_io_eve
         return;
     }
 
-    buffer_length -= r;
-    buffer_index += r;
+    buffer_length -= (uint32_t) r;
+    buffer_index += (uint32_t) r;
 
     if (!buffer_length) {
         pa_xfree(buffer);
@@ -401,28 +435,28 @@ static void stdout_callback(pa_mainloop_api*a, pa_io_event *e, int fd, pa_io_eve
 /* UNIX signal to quit recieved */
 static void exit_signal_callback(pa_mainloop_api*m, pa_signal_event *e, int sig, void *userdata) {
     if (verbose)
-        fprintf(stderr, "Got signal, exiting.\n");
+        fprintf(stderr, _("Got signal, exiting.\n"));
     quit(0);
 }
 
 /* Show the current latency */
 static void stream_update_timing_callback(pa_stream *s, int success, void *userdata) {
-    pa_usec_t latency, usec;
+    pa_usec_t l, usec;
     int negative = 0;
 
     assert(s);
 
     if (!success ||
         pa_stream_get_time(s, &usec) < 0 ||
-        pa_stream_get_latency(s, &latency, &negative) < 0) {
-        fprintf(stderr, "Failed to get latency: %s\n", pa_strerror(pa_context_errno(context)));
+        pa_stream_get_latency(s, &l, &negative) < 0) {
+        fprintf(stderr, _("Failed to get latency: %s\n"), pa_strerror(pa_context_errno(context)));
         quit(1);
         return;
     }
 
-    fprintf(stderr, "Time: %0.3f sec; Latency: %0.0f usec.  \r",
+    fprintf(stderr, _("Time: %0.3f sec; Latency: %0.0f usec.  \r"),
             (float) usec / 1000000,
-            (float) latency * (negative?-1:1));
+            (float) l * (negative?-1.0f:1.0f));
 }
 
 /* Someone requested that the latency is shown */
@@ -440,7 +474,7 @@ static void time_event_callback(pa_mainloop_api*m, pa_time_event *e, const struc
     if (stream && pa_stream_get_state(stream) == PA_STREAM_READY) {
         pa_operation *o;
         if (!(o = pa_stream_update_timing_info(stream, stream_update_timing_callback, NULL)))
-            fprintf(stderr, "pa_stream_update_timing_info() failed: %s\n", pa_strerror(pa_context_errno(context)));
+            fprintf(stderr, _("pa_stream_update_timing_info() failed: %s\n"), pa_strerror(pa_context_errno(context)));
         else
             pa_operation_unref(o);
     }
@@ -453,7 +487,7 @@ static void time_event_callback(pa_mainloop_api*m, pa_time_event *e, const struc
 
 static void help(const char *argv0) {
 
-    printf("%s [options]\n\n"
+    printf(_("%s [options]\n\n"
            "  -h, --help                            Show this help\n"
            "      --version                         Show version\n\n"
            "  -r, --record                          Create a connection for recording\n"
@@ -466,7 +500,7 @@ static void help(const char *argv0) {
            "      --volume=VOLUME                   Specify the initial (linear) volume in range 0...65536\n"
            "      --rate=SAMPLERATE                 The sample rate in Hz (defaults to 44100)\n"
            "      --format=SAMPLEFORMAT             The sample type, one of s16le, s16be, u8, float32le,\n"
-           "                                        float32be, ulaw, alaw (defaults to s16ne)\n"
+           "                                        float32be, ulaw, alaw, s32le, s32be (defaults to s16ne)\n"
            "      --channels=CHANNELS               The number of channels, 1 for mono, 2 for stereo\n"
            "                                        (defaults to 2)\n"
            "      --channel-map=CHANNELMAP          Channel map to use instead of the default\n"
@@ -478,6 +512,8 @@ static void help(const char *argv0) {
            "                                        from the sink the stream is being connected to.\n"
            "      --no-remix                        Don't upmix or downmix channels.\n"
            "      --no-remap                        Map channels by index instead of name.\n"
+           "      --latency=BYTES                   Request the specified latency in bytes.\n"
+           "      --process-time=BYTES              Request the specified process time per request in bytes.\n")
            ,
            argv0);
 }
@@ -494,7 +530,9 @@ enum {
     ARG_FIX_RATE,
     ARG_FIX_CHANNELS,
     ARG_NO_REMAP,
-    ARG_NO_REMIX
+    ARG_NO_REMIX,
+    ARG_LATENCY,
+    ARG_PROCESS_TIME
 };
 
 int main(int argc, char *argv[]) {
@@ -504,27 +542,32 @@ int main(int argc, char *argv[]) {
     pa_time_event *time_event = NULL;
 
     static const struct option long_options[] = {
-        {"record",      0, NULL, 'r'},
-        {"playback",    0, NULL, 'p'},
-        {"device",      1, NULL, 'd'},
-        {"server",      1, NULL, 's'},
-        {"client-name", 1, NULL, 'n'},
-        {"stream-name", 1, NULL, ARG_STREAM_NAME},
-        {"version",     0, NULL, ARG_VERSION},
-        {"help",        0, NULL, 'h'},
-        {"verbose",     0, NULL, 'v'},
-        {"volume",      1, NULL, ARG_VOLUME},
-        {"rate",        1, NULL, ARG_SAMPLERATE},
-        {"format",      1, NULL, ARG_SAMPLEFORMAT},
-        {"channels",    1, NULL, ARG_CHANNELS},
-        {"channel-map", 1, NULL, ARG_CHANNELMAP},
-        {"fix-format",  0, NULL, ARG_FIX_FORMAT},
-        {"fix-rate",    0, NULL, ARG_FIX_RATE},
-        {"fix-channels",0, NULL, ARG_FIX_CHANNELS},
-        {"no-remap",    0, NULL, ARG_NO_REMAP},
-        {"no-remix",    0, NULL, ARG_NO_REMIX},
-        {NULL,          0, NULL, 0}
+        {"record",       0, NULL, 'r'},
+        {"playback",     0, NULL, 'p'},
+        {"device",       1, NULL, 'd'},
+        {"server",       1, NULL, 's'},
+        {"client-name",  1, NULL, 'n'},
+        {"stream-name",  1, NULL, ARG_STREAM_NAME},
+        {"version",      0, NULL, ARG_VERSION},
+        {"help",         0, NULL, 'h'},
+        {"verbose",      0, NULL, 'v'},
+        {"volume",       1, NULL, ARG_VOLUME},
+        {"rate",         1, NULL, ARG_SAMPLERATE},
+        {"format",       1, NULL, ARG_SAMPLEFORMAT},
+        {"channels",     1, NULL, ARG_CHANNELS},
+        {"channel-map",  1, NULL, ARG_CHANNELMAP},
+        {"fix-format",   0, NULL, ARG_FIX_FORMAT},
+        {"fix-rate",     0, NULL, ARG_FIX_RATE},
+        {"fix-channels", 0, NULL, ARG_FIX_CHANNELS},
+        {"no-remap",     0, NULL, ARG_NO_REMAP},
+        {"no-remix",     0, NULL, ARG_NO_REMIX},
+        {"latency",      1, NULL, ARG_LATENCY},
+        {"process-time", 1, NULL, ARG_PROCESS_TIME},
+        {NULL,           0, NULL, 0}
     };
+
+    setlocale(LC_ALL, "");
+    bindtextdomain(GETTEXT_PACKAGE, PULSE_LOCALEDIR);
 
     if (!(bn = strrchr(argv[0], '/')))
         bn = argv[0];
@@ -545,7 +588,7 @@ int main(int argc, char *argv[]) {
                 goto quit;
 
             case ARG_VERSION:
-                printf("pacat "PACKAGE_VERSION"\nCompiled with libpulse %s\nLinked with libpulse %s\n", pa_get_headers_version(), pa_get_library_version());
+                printf(_("pacat %s\nCompiled with libpulse %s\nLinked with libpulse %s\n"), PACKAGE_VERSION, pa_get_headers_version(), pa_get_library_version());
                 ret = 0;
                 goto quit;
 
@@ -583,12 +626,12 @@ int main(int argc, char *argv[]) {
 
             case ARG_VOLUME: {
                 int v = atoi(optarg);
-                volume = v < 0 ? 0 : v;
+                volume = v < 0 ? 0U : (pa_volume_t) v;
                 break;
             }
 
             case ARG_CHANNELS:
-                sample_spec.channels = atoi(optarg);
+                sample_spec.channels = (uint8_t) atoi(optarg);
                 break;
 
             case ARG_SAMPLEFORMAT:
@@ -596,12 +639,12 @@ int main(int argc, char *argv[]) {
                 break;
 
             case ARG_SAMPLERATE:
-                sample_spec.rate = atoi(optarg);
+                sample_spec.rate = (uint32_t) atoi(optarg);
                 break;
 
             case ARG_CHANNELMAP:
                 if (!pa_channel_map_parse(&channel_map, optarg)) {
-                    fprintf(stderr, "Invalid channel map\n");
+                    fprintf(stderr, _("Invalid channel map '%s'\n"), optarg);
                     goto quit;
                 }
 
@@ -628,25 +671,39 @@ int main(int argc, char *argv[]) {
                 flags |= PA_STREAM_NO_REMAP_CHANNELS;
                 break;
 
+            case ARG_LATENCY:
+                if (((latency = (size_t) atoi(optarg))) <= 0) {
+                    fprintf(stderr, _("Invalid latency specification '%s'\n"), optarg);
+                    goto quit;
+                }
+                break;
+
+            case ARG_PROCESS_TIME:
+                if (((process_time = (size_t) atoi(optarg))) <= 0) {
+                    fprintf(stderr, _("Invalid process time specification '%s'\n"), optarg);
+                    goto quit;
+                }
+                break;
+
             default:
                 goto quit;
         }
     }
 
     if (!pa_sample_spec_valid(&sample_spec)) {
-        fprintf(stderr, "Invalid sample specification\n");
+        fprintf(stderr, _("Invalid sample specification\n"));
         goto quit;
     }
 
-    if (channel_map_set && channel_map.channels != sample_spec.channels) {
-        fprintf(stderr, "Channel map doesn't match sample specification\n");
+    if (channel_map_set && pa_channel_map_compatible(&channel_map, &sample_spec)) {
+        fprintf(stderr, _("Channel map doesn't match sample specification\n"));
         goto quit;
     }
 
     if (verbose) {
         char t[PA_SAMPLE_SPEC_SNPRINT_MAX];
         pa_sample_spec_snprint(t, sizeof(t), &sample_spec);
-        fprintf(stderr, "Opening a %s stream with sample specification '%s'.\n", mode == RECORD ? "recording" : "playback", t);
+        fprintf(stderr, _("Opening a %s stream with sample specification '%s'.\n"), mode == RECORD ? _("recording") : _("playback"), t);
     }
 
     if (!(optind >= argc)) {
@@ -654,12 +711,12 @@ int main(int argc, char *argv[]) {
             int fd;
 
             if ((fd = open(argv[optind], mode == PLAYBACK ? O_RDONLY : O_WRONLY|O_TRUNC|O_CREAT, 0666)) < 0) {
-                fprintf(stderr, "open(): %s\n", strerror(errno));
+                fprintf(stderr, _("open(): %s\n"), strerror(errno));
                 goto quit;
             }
 
             if (dup2(fd, mode == PLAYBACK ? 0 : 1) < 0) {
-                fprintf(stderr, "dup2(): %s\n", strerror(errno));
+                fprintf(stderr, _("dup2(): %s\n"), strerror(errno));
                 goto quit;
             }
 
@@ -669,7 +726,7 @@ int main(int argc, char *argv[]) {
                 stream_name = pa_xstrdup(argv[optind]);
 
         } else {
-            fprintf(stderr, "Too many arguments.\n");
+            fprintf(stderr, _("Too many arguments.\n"));
             goto quit;
         }
     }
@@ -682,7 +739,7 @@ int main(int argc, char *argv[]) {
 
     /* Set up a new main loop */
     if (!(m = pa_mainloop_new())) {
-        fprintf(stderr, "pa_mainloop_new() failed.\n");
+        fprintf(stderr, _("pa_mainloop_new() failed.\n"));
         goto quit;
     }
 
@@ -703,20 +760,23 @@ int main(int argc, char *argv[]) {
                                              mode == PLAYBACK ? STDIN_FILENO : STDOUT_FILENO,
                                              mode == PLAYBACK ? PA_IO_EVENT_INPUT : PA_IO_EVENT_OUTPUT,
                                              mode == PLAYBACK ? stdin_callback : stdout_callback, NULL))) {
-        fprintf(stderr, "io_new() failed.\n");
+        fprintf(stderr, _("io_new() failed.\n"));
         goto quit;
     }
 
     /* Create a new connection context */
     if (!(context = pa_context_new(mainloop_api, client_name))) {
-        fprintf(stderr, "pa_context_new() failed.\n");
+        fprintf(stderr, _("pa_context_new() failed.\n"));
         goto quit;
     }
 
     pa_context_set_state_callback(context, context_state_callback, NULL);
 
     /* Connect the context */
-    pa_context_connect(context, server, 0, NULL);
+    if (pa_context_connect(context, server, 0, NULL) < 0) {
+        fprintf(stderr, _("pa_context_connect() failed: %s"), pa_strerror(pa_context_errno(context)));
+        goto quit;
+    }
 
     if (verbose) {
         struct timeval tv;
@@ -725,14 +785,14 @@ int main(int argc, char *argv[]) {
         pa_timeval_add(&tv, TIME_EVENT_USEC);
 
         if (!(time_event = mainloop_api->time_new(mainloop_api, &tv, time_event_callback, NULL))) {
-            fprintf(stderr, "time_new() failed.\n");
+            fprintf(stderr, _("time_new() failed.\n"));
             goto quit;
         }
     }
 
     /* Run the main loop */
     if (pa_mainloop_run(m, &ret) < 0) {
-        fprintf(stderr, "pa_mainloop_run() failed.\n");
+        fprintf(stderr, _("pa_mainloop_run() failed.\n"));
         goto quit;
     }
 

@@ -1,5 +1,3 @@
-/* $Id: sample.c 2037 2007-11-09 02:45:07Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -29,6 +27,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <string.h>
+
+#include <pulse/timeval.h>
+#include <pulse/i18n.h>
 
 #include <pulsecore/core-util.h>
 #include <pulsecore/macro.h>
@@ -70,13 +71,23 @@ size_t pa_bytes_per_second(const pa_sample_spec *spec) {
 pa_usec_t pa_bytes_to_usec(uint64_t length, const pa_sample_spec *spec) {
     pa_assert(spec);
 
-    return (pa_usec_t) (((double) length/pa_frame_size(spec)*1000000)/spec->rate);
+    return (((pa_usec_t) (length / pa_frame_size(spec)) * PA_USEC_PER_SEC) / spec->rate);
 }
 
 size_t pa_usec_to_bytes(pa_usec_t t, const pa_sample_spec *spec) {
     pa_assert(spec);
 
-    return (size_t) (((double) t * spec->rate / 1000000))*pa_frame_size(spec);
+    return (size_t) (((t * spec->rate) / PA_USEC_PER_SEC)) * pa_frame_size(spec);
+}
+
+pa_sample_spec* pa_sample_spec_init(pa_sample_spec *spec) {
+    pa_assert(spec);
+
+    spec->format = PA_SAMPLE_INVALID;
+    spec->rate = 0;
+    spec->channels = 0;
+
+    return spec;
 }
 
 int pa_sample_spec_valid(const pa_sample_spec *spec) {
@@ -97,7 +108,10 @@ int pa_sample_spec_equal(const pa_sample_spec*a, const pa_sample_spec*b) {
     pa_assert(a);
     pa_assert(b);
 
-    return (a->format == b->format) && (a->rate == b->rate) && (a->channels == b->channels);
+    return
+        (a->format == b->format) &&
+        (a->rate == b->rate) &&
+        (a->channels == b->channels);
 }
 
 const char *pa_sample_format_to_string(pa_sample_format_t f) {
@@ -124,8 +138,10 @@ char *pa_sample_spec_snprint(char *s, size_t l, const pa_sample_spec *spec) {
     pa_assert(l);
     pa_assert(spec);
 
+    pa_init_i18n();
+
     if (!pa_sample_spec_valid(spec))
-        pa_snprintf(s, l, "Invalid");
+        pa_snprintf(s, l, _("(invalid)"));
     else
         pa_snprintf(s, l, "%s %uch %uHz", pa_sample_format_to_string(spec->format), spec->channels, spec->rate);
 

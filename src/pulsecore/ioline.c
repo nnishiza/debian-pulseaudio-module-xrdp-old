@@ -1,5 +1,3 @@
-/* $Id: ioline.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -49,7 +47,6 @@ struct pa_ioline {
     pa_iochannel *io;
     pa_defer_event *defer_event;
     pa_mainloop_api *mainloop;
-    int dead;
 
     char *wbuf;
     size_t wbuf_length, wbuf_index, wbuf_valid_length;
@@ -57,10 +54,11 @@ struct pa_ioline {
     char *rbuf;
     size_t rbuf_length, rbuf_index, rbuf_valid_length;
 
-    void (*callback)(pa_ioline*io, const char *s, void *userdata);
+    pa_ioline_cb_t callback;
     void *userdata;
 
-    int defer_close;
+    pa_bool_t dead:1;
+    pa_bool_t defer_close:1;
 };
 
 static void io_callback(pa_iochannel*io, void *userdata);
@@ -73,7 +71,6 @@ pa_ioline* pa_ioline_new(pa_iochannel *io) {
     l = pa_xnew(pa_ioline, 1);
     PA_REFCNT_INIT(l);
     l->io = io;
-    l->dead = 0;
 
     l->wbuf = NULL;
     l->wbuf_length = l->wbuf_index = l->wbuf_valid_length = 0;
@@ -89,7 +86,8 @@ pa_ioline* pa_ioline_new(pa_iochannel *io) {
     l->defer_event = l->mainloop->defer_new(l->mainloop, defer_callback, l);
     l->mainloop->defer_enable(l->defer_event, 0);
 
-    l->defer_close = 0;
+    l->dead = FALSE;
+    l->defer_close = FALSE;
 
     pa_iochannel_set_callback(io, io_callback, l);
 
@@ -130,7 +128,7 @@ void pa_ioline_close(pa_ioline *l) {
     pa_assert(l);
     pa_assert(PA_REFCNT_VALUE(l) >= 1);
 
-    l->dead = 1;
+    l->dead = TRUE;
 
     if (l->io) {
         pa_iochannel_free(l->io);
@@ -166,11 +164,13 @@ void pa_ioline_puts(pa_ioline *l, const char *c) {
         /* In case the allocated buffer is too small, enlarge it. */
         if (l->wbuf_valid_length + len > l->wbuf_length) {
             size_t n = l->wbuf_valid_length+len;
-            char *new = pa_xmalloc(n);
+            char *new = pa_xnew(char, (unsigned) n);
+
             if (l->wbuf) {
                 memcpy(new, l->wbuf+l->wbuf_index, l->wbuf_valid_length);
                 pa_xfree(l->wbuf);
             }
+
             l->wbuf = new;
             l->wbuf_length = n;
             l->wbuf_index = 0;
@@ -191,15 +191,18 @@ void pa_ioline_puts(pa_ioline *l, const char *c) {
     }
 }
 
-void pa_ioline_set_callback(pa_ioline*l, void (*callback)(pa_ioline*io, const char *s, void *userdata), void *userdata) {
+void pa_ioline_set_callback(pa_ioline*l, pa_ioline_cb_t callback, void *userdata) {
     pa_assert(l);
     pa_assert(PA_REFCNT_VALUE(l) >= 1);
+
+    if (l->dead)
+        return;
 
     l->callback = callback;
     l->userdata = userdata;
 }
 
-static void failure(pa_ioline *l, int process_leftover) {
+static void failure(pa_ioline *l, pa_bool_t process_leftover) {
     pa_assert(l);
     pa_assert(PA_REFCNT_VALUE(l) >= 1);
     pa_assert(!l->dead);
@@ -247,7 +250,7 @@ static void scan_for_lines(pa_ioline *l, size_t skip) {
             l->rbuf_index = 0;
 
         if (l->callback)
-            l->callback(l, p, l->userdata);
+            l->callback(l, pa_strip_nl(p), l->userdata);
 
         skip = 0;
     }
@@ -282,7 +285,7 @@ static int do_read(pa_ioline *l) {
                     memmove(l->rbuf, l->rbuf+l->rbuf_index, l->rbuf_valid_length);
             } else {
                 /* Enlarge the buffer */
-                char *new = pa_xmalloc(n);
+                char *new = pa_xnew(char, (unsigned) n);
                 if (l->rbuf_valid_length)
                     memcpy(new, l->rbuf+l->rbuf_index, l->rbuf_valid_length);
                 pa_xfree(l->rbuf);
@@ -299,19 +302,23 @@ static int do_read(pa_ioline *l) {
 
         /* Read some data */
         if ((r = pa_iochannel_read(l->io, l->rbuf+l->rbuf_index+l->rbuf_valid_length, len)) <= 0) {
+
+            if (r < 0 && errno == EAGAIN)
+                return 0;
+
             if (r < 0 && errno != ECONNRESET) {
                 pa_log("read(): %s", pa_cstrerror(errno));
-                failure(l, 0);
+                failure(l, FALSE);
             } else
-                failure(l, 1);
+                failure(l, TRUE);
 
             return -1;
         }
 
-        l->rbuf_valid_length += r;
+        l->rbuf_valid_length += (size_t) r;
 
         /* Look if a line has been terminated in the newly read data */
-        scan_for_lines(l, l->rbuf_valid_length - r);
+        scan_for_lines(l, l->rbuf_valid_length - (size_t) r);
     }
 
     return 0;
@@ -328,16 +335,19 @@ static int do_write(pa_ioline *l) {
 
         if ((r = pa_iochannel_write(l->io, l->wbuf+l->wbuf_index, l->wbuf_valid_length)) <= 0) {
 
+            if (r < 0 && errno == EAGAIN)
+                return 0;
+
             if (r < 0 && errno != EPIPE)
                 pa_log("write(): %s", pa_cstrerror(errno));
 
-            failure(l, 0);
+            failure(l, FALSE);
 
             return -1;
         }
 
-        l->wbuf_index += r;
-        l->wbuf_valid_length -= r;
+        l->wbuf_index += (size_t) r;
+        l->wbuf_valid_length -= (size_t) r;
 
         /* A shortcut for the next time */
         if (l->wbuf_valid_length == 0)
@@ -363,7 +373,7 @@ static void do_work(pa_ioline *l) {
         do_write(l);
 
     if (l->defer_close && !l->wbuf_valid_length)
-        failure(l, 1);
+        failure(l, TRUE);
 
     pa_ioline_unref(l);
 }
@@ -393,7 +403,7 @@ void pa_ioline_defer_close(pa_ioline *l) {
     pa_assert(l);
     pa_assert(PA_REFCNT_VALUE(l) >= 1);
 
-    l->defer_close = 1;
+    l->defer_close = TRUE;
 
     if (!l->wbuf_valid_length)
         l->mainloop->defer_enable(l->defer_event, 1);

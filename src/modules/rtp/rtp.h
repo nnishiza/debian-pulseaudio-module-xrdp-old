@@ -1,8 +1,6 @@
 #ifndef foortphfoo
 #define foortphfoo
 
-/* $Id: rtp.h 1465 2007-05-29 17:24:48Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -37,6 +35,8 @@ typedef struct pa_rtp_context {
     uint32_t ssrc;
     uint8_t payload;
     size_t frame_size;
+
+    pa_memchunk memchunk;
 } pa_rtp_context;
 
 pa_rtp_context* pa_rtp_context_init_send(pa_rtp_context *c, int fd, uint32_t ssrc, uint8_t payload, size_t frame_size);

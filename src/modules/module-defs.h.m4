@@ -1,4 +1,3 @@
-dnl $Id: module-defs.h.m4 2043 2007-11-09 18:25:40Z lennart $
 changecom(`/*', `*/')dnl
 define(`module_name', patsubst(patsubst(patsubst(fname, `-symdef.h$'), `^.*/'), `[^0-9a-zA-Z]', `_'))dnl
 define(`c_symbol', patsubst(module_name, `[^0-9a-zA-Z]', `_'))dnl

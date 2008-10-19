@@ -1,5 +1,3 @@
-/* $Id: module-solaris.c 1986 2007-10-29 20:32:53Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 

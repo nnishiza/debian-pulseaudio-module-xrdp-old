@@ -1,5 +1,3 @@
-/* $Id: asyncq-test.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -44,7 +42,7 @@ static void producer(void *_q) {
         pa_asyncq_push(q, PA_UINT_TO_PTR(i+1), 1);
     }
 
-    pa_asyncq_push(q, PA_UINT_TO_PTR(-1), 1);
+    pa_asyncq_push(q, PA_UINT_TO_PTR(-1), TRUE);
     printf("pushed end\n");
 }
 
@@ -56,7 +54,7 @@ static void consumer(void *_q) {
     sleep(1);
 
     for (i = 0;; i++) {
-        p = pa_asyncq_pop(q, 1);
+        p = pa_asyncq_pop(q, TRUE);
 
         if (p == PA_UINT_TO_PTR(-1))
             break;

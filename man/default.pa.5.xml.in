@@ -2,8 +2,6 @@
 <!DOCTYPE manpage SYSTEM "xmltoman.dtd">
 <?xml-stylesheet type="text/xsl" href="xmltoman.xsl" ?>
 
-<!-- $Id: default.pa.5.xml.in 2029 2007-11-08 22:30:33Z lennart $ -->
-
 <!--
 This file is part of PulseAudio.
 

@@ -1,5 +1,3 @@
-/* $Id: module-cli.c 2050 2007-11-13 17:37:44Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -55,7 +53,7 @@ static void eof_and_unload_cb(pa_cli*c, void *userdata) {
     pa_assert(c);
     pa_assert(m);
 
-    pa_module_unload_request(m);
+    pa_module_unload_request(m, TRUE);
 }
 
 static void eof_and_exit_cb(pa_cli*c, void *userdata) {
@@ -64,7 +62,7 @@ static void eof_and_exit_cb(pa_cli*c, void *userdata) {
     pa_assert(c);
     pa_assert(m);
 
-    m->core->mainloop->quit(m->core->mainloop, 0);
+    pa_core_exit(m->core, FALSE, 0);
 }
 
 int pa__init(pa_module*m) {

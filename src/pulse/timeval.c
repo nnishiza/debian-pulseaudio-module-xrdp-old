@@ -1,5 +1,3 @@
-/* $Id: timeval.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -92,13 +90,13 @@ pa_usec_t pa_timeval_diff(const struct timeval *a, const struct timeval *b) {
     }
 
     /* Calculate the second difference*/
-    r = ((pa_usec_t) a->tv_sec - b->tv_sec) * PA_USEC_PER_SEC;
+    r = ((pa_usec_t) a->tv_sec - (pa_usec_t) b->tv_sec) * PA_USEC_PER_SEC;
 
     /* Calculate the microsecond difference */
     if (a->tv_usec > b->tv_usec)
-        r += ((pa_usec_t) a->tv_usec - b->tv_usec);
+        r += ((pa_usec_t) a->tv_usec - (pa_usec_t) b->tv_usec);
     else if (a->tv_usec < b->tv_usec)
-        r -= ((pa_usec_t) b->tv_usec - a->tv_usec);
+        r -= ((pa_usec_t) b->tv_usec - (pa_usec_t) a->tv_usec);
 
     return r;
 }
@@ -134,15 +132,33 @@ struct timeval* pa_timeval_add(struct timeval *tv, pa_usec_t v) {
     pa_assert(tv);
 
     secs = (unsigned long) (v/PA_USEC_PER_SEC);
-    tv->tv_sec += secs;
+    tv->tv_sec += (time_t) secs;
     v -= ((pa_usec_t) secs) * PA_USEC_PER_SEC;
 
     tv->tv_usec += (suseconds_t) v;
 
     /* Normalize */
-    while (tv->tv_usec >= PA_USEC_PER_SEC) {
+    while ((unsigned) tv->tv_usec >= PA_USEC_PER_SEC) {
         tv->tv_sec++;
-        tv->tv_usec -= PA_USEC_PER_SEC;
+        tv->tv_usec -= (suseconds_t) PA_USEC_PER_SEC;
+    }
+
+    return tv;
+}
+
+struct timeval* pa_timeval_sub(struct timeval *tv, pa_usec_t v) {
+    unsigned long secs;
+    pa_assert(tv);
+
+    secs = (unsigned long) (v/PA_USEC_PER_SEC);
+    tv->tv_sec -= (time_t) secs;
+    v -= ((pa_usec_t) secs) * PA_USEC_PER_SEC;
+
+    if (tv->tv_usec >= (suseconds_t) v)
+        tv->tv_usec -= (suseconds_t) v;
+    else {
+        tv->tv_sec --;
+        tv->tv_usec += (suseconds_t) (PA_USEC_PER_SEC - v);
     }
 
     return tv;
@@ -151,8 +167,8 @@ struct timeval* pa_timeval_add(struct timeval *tv, pa_usec_t v) {
 struct timeval* pa_timeval_store(struct timeval *tv, pa_usec_t v) {
     pa_assert(tv);
 
-    tv->tv_sec = v / PA_USEC_PER_SEC;
-    tv->tv_usec = v % PA_USEC_PER_SEC;
+    tv->tv_sec = (time_t) (v / PA_USEC_PER_SEC);
+    tv->tv_usec = (suseconds_t) (v % PA_USEC_PER_SEC);
 
     return tv;
 }

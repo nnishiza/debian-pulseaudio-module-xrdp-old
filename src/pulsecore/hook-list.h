@@ -1,8 +1,6 @@
 #ifndef foohooklistfoo
 #define foohooklistfoo
 
-/* $Id: hook-list.h 1426 2007-02-13 15:35:19Z ossman $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -24,9 +22,10 @@
   USA.
 ***/
 
-#include <pulsecore/llist.h>
 #include <pulse/xmalloc.h>
-#include <pulsecore/gccmacro.h>
+#include <pulse/gccmacro.h>
+
+#include <pulsecore/llist.h>
 
 typedef struct pa_hook_slot pa_hook_slot;
 typedef struct pa_hook pa_hook;
@@ -37,14 +36,21 @@ typedef enum pa_hook_result {
     PA_HOOK_CANCEL = -1
 } pa_hook_result_t;
 
+typedef enum pa_hook_priority {
+    PA_HOOK_EARLY = -100,
+    PA_HOOK_NORMAL = 0,
+    PA_HOOK_LATE = 100
+} pa_hook_priority_t;
+
 typedef pa_hook_result_t (*pa_hook_cb_t)(
         void *hook_data,
         void *call_data,
         void *slot_data);
 
 struct pa_hook_slot {
-    int dead;
+    pa_bool_t dead;
     pa_hook *hook;
+    pa_hook_priority_t priority;
     pa_hook_cb_t callback;
     void *data;
     PA_LLIST_FIELDS(pa_hook_slot);
@@ -52,16 +58,15 @@ struct pa_hook_slot {
 
 struct pa_hook {
     PA_LLIST_HEAD(pa_hook_slot, slots);
-    pa_hook_slot *last;
-    int firing, n_dead;
+    int n_firing, n_dead;
 
     void *data;
 };
 
 void pa_hook_init(pa_hook *hook, void *data);
-void pa_hook_free(pa_hook *hook);
+void pa_hook_done(pa_hook *hook);
 
-pa_hook_slot* pa_hook_connect(pa_hook *hook, pa_hook_cb_t, void *data);
+pa_hook_slot* pa_hook_connect(pa_hook *hook, pa_hook_priority_t prio, pa_hook_cb_t cb, void *data);
 void pa_hook_slot_free(pa_hook_slot *slot);
 
 pa_hook_result_t pa_hook_fire(pa_hook *hook, void *data);

@@ -1,8 +1,6 @@
 #ifndef foostreamhfoo
 #define foostreamhfoo
 
-/* $Id: stream.h 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -72,35 +70,85 @@
  *
  * \subsection bufattr_subsec Buffer Attributes
  *
- * Playback and record streams always have a server side buffer as
- * part of the data flow.  The size of this buffer strikes a
- * compromise between low latency and sensitivity for buffer
+ * Playback and record streams always have a server-side buffer as
+ * part of the data flow.  The size of this buffer needs to be chosen
+ * in a compromise between low latency and sensitivity for buffer
  * overflows/underruns.
  *
  * The buffer metrics may be controlled by the application. They are
  * described with a pa_buffer_attr structure which contains a number
  * of fields:
  *
- * \li maxlength - The absolute maximum number of bytes that can be stored in
- *                 the buffer. If this value is exceeded then data will be
- *                 lost.
- * \li tlength - The target length of a playback buffer. The server will only
- *               send requests for more data as long as the buffer has less
- *               than this number of bytes of data.
- * \li prebuf - Number of bytes that need to be in the buffer before
- * playback will commence. Start of playback can be forced using
- * pa_stream_trigger() even though the prebuffer size hasn't been
- * reached. If a buffer underrun occurs, this prebuffering will be
- * again enabled. If the playback shall never stop in case of a buffer
- * underrun, this value should be set to 0. In that case the read
- * index of the output buffer overtakes the write index, and hence the
- * fill level of the buffer is negative.
- * \li minreq - Minimum free number of the bytes in the playback buffer before
- *              the server will request more data.
- * \li fragsize - Maximum number of bytes that the server will push in one
- *                chunk for record streams.
+ * \li maxlength - The absolute maximum number of bytes that can be
+ *                 stored in the buffer. If this value is exceeded
+ *                 then data will be lost. It is recommended to pass
+ *                 (uint32_t) -1 here which will cause the server to
+ *                 fill in the maximum possible value.
  *
- * The server side playback buffers are indexed by a write and a read
+ * \li tlength - The target fill level of the playback buffer. The
+ *               server will only send requests for more data as long
+ *               as the buffer has less than this number of bytes of
+ *               data. If you pass (uint32_t) -1 (which is
+ *               recommended) here the server will choose the longest
+ *               target buffer fill level possible to minimize the
+ *               number of necessary wakeups and maximize drop-out
+ *               safety. This can exceed 2s of buffering. For
+ *               low-latency applications or applications where
+ *               latency matters you should pass a proper value here.
+ *
+ * \li prebuf - Number of bytes that need to be in the buffer before
+ *              playback will commence. Start of playback can be
+ *              forced using pa_stream_trigger() even though the
+ *              prebuffer size hasn't been reached. If a buffer
+ *              underrun occurs, this prebuffering will be again
+ *              enabled. If the playback shall never stop in case of a
+ *              buffer underrun, this value should be set to 0. In
+ *              that case the read index of the output buffer
+ *              overtakes the write index, and hence the fill level of
+ *              the buffer is negative. If you pass (uint32_t) -1 here
+ *              (which is recommended) the server will choose the same
+ *              value as tlength here.
+ *
+ * \li minreq - Minimum free number of the bytes in the playback
+ *              buffer before the server will request more data. It is
+ *              recommended to fill in (uint32_t) -1 here. This value
+ *              influences how much time the sound server has to move
+ *              data from the per-stream server-side playback buffer
+ *              to the hardware playback buffer.
+ *
+ * \li fragsize - Maximum number of bytes that the server will push in
+ *                one chunk for record streams. If you pass (uint32_t)
+ *                -1 (which is recommended) here, the server will
+ *                choose the longest fragment setting possible to
+ *                minimize the number of necessary wakeups and
+ *                maximize drop-out safety. This can exceed 2s of
+ *                buffering. For low-latency applications or
+ *                applications where latency matters you should pass a
+ *                proper value here.
+ *
+ * If PA_STREAM_ADJUST_LATENCY is set, then the tlength/fragsize
+ * parameters will be interpreted slightly differently than described
+ * above when passed to pa_stream_connect_record() and
+ * pa_stream_connect_playback(): the overall latency that is comprised
+ * of both the server side playback buffer length, the hardware
+ * playback buffer length and additional latencies will be adjusted in
+ * a way that it matches tlength resp. fragsize. Set
+ * PA_STREAM_ADJUST_LATENCY if you want to control the overall
+ * playback latency for your stream. Unset it if you want to control
+ * only the latency induced by the server-side, rewritable playback
+ * buffer. The server will try to fulfill the clients latency requests
+ * as good as possible. However if the underlying hardware cannot
+ * change the hardware buffer length or only in a limited range, the
+ * actually resulting latency might be different from what the client
+ * requested. Thus, for synchronization clients always need to check
+ * the actual measured latency via pa_stream_get_latency() or a
+ * similar call, and not make any assumptions. about the latency
+ * available. The function pa_stream_get_buffer_attr() will always
+ * return the actual size of the server-side per-stream buffer in
+ * tlength/fragsize, regardless whether PA_STREAM_ADJUST_LATENCY is
+ * set or not.
+ *
+ * The server-side per-stream playback buffers are indexed by a write and a read
  * index. The application writes to the write index and the sound
  * device reads from the read index. The read index is increased
  * monotonically, while the write index may be freely controlled by
@@ -198,10 +246,10 @@
  * accordingly.
  *
  * The raw timing data in the pa_timing_info structure is usually hard
- * to deal with. Therefore a more simplistic interface is available:
+ * to deal with. Therefore a simpler interface is available:
  * you can call pa_stream_get_time() or pa_stream_get_latency(). The
  * former will return the current playback time of the hardware since
- * the stream has been started. The latter returns the time a sample
+ * the stream has been started. The latter returns the overall time a sample
  * that you write now takes to be played by the hardware. These two
  * functions base their calculations on the same data that is returned
  * by pa_stream_get_timing_info(). Hence the same rules for keeping
@@ -276,12 +324,24 @@ typedef void (*pa_stream_request_cb_t)(pa_stream *p, size_t bytes, void *userdat
 /** A generic notification callback */
 typedef void (*pa_stream_notify_cb_t)(pa_stream *p, void *userdata);
 
-/** Create a new, unconnected stream with the specified name and sample type */
+/** Create a new, unconnected stream with the specified name and
+ * sample type. It is recommended to use pa_stream_new_with_proplist()
+ * instead and specify some initial properties. */
 pa_stream* pa_stream_new(
         pa_context *c                     /**< The context to create this stream in */,
         const char *name                  /**< A name for this stream */,
         const pa_sample_spec *ss          /**< The desired sample format */,
         const pa_channel_map *map         /**< The desired channel map, or NULL for default */);
+
+/** Create a new, unconnected stream with the specified name and
+ * sample type, and specify the the initial stream property
+ * list. \since 0.9.11 */
+pa_stream* pa_stream_new_with_proplist(
+        pa_context *c                     /**< The context to create this stream in */,
+        const char *name                  /**< A name for this stream */,
+        const pa_sample_spec *ss          /**< The desired sample format */,
+        const pa_channel_map *map         /**< The desired channel map, or NULL for default */,
+        pa_proplist *p                    /**< The initial property list */);
 
 /** Decrease the reference counter by one */
 void pa_stream_unref(pa_stream *s);
@@ -327,6 +387,10 @@ const char *pa_stream_get_device_name(pa_stream *s);
  * server is older than 0.9.8. \since 0.9.8 */
 int pa_stream_is_suspended(pa_stream *s);
 
+/** Return 1 if the this stream has been corked. This will return 0 if
+ * not, and negative on error. \since 0.9.11 */
+int pa_stream_is_corked(pa_stream *s);
+
 /** Connect the stream to a sink */
 int pa_stream_connect_playback(
         pa_stream *s                  /**< The stream to connect to a sink */,
@@ -356,7 +420,7 @@ int pa_stream_disconnect(pa_stream *s);
 int pa_stream_write(
         pa_stream *p             /**< The stream to use */,
         const void *data         /**< The data to write */,
-        size_t bytes             /**< The length of the data to write in bytes*/,
+        size_t nbytes            /**< The length of the data to write in bytes*/,
         pa_free_cb_t free_cb     /**< A cleanup routine for the data or NULL to request an internal copy */,
         int64_t offset,          /**< Offset for seeking, must be 0 for upload streams */
         pa_seek_mode_t seek      /**< Seek mode, must be PA_SEEK_RELATIVE for upload streams */);
@@ -365,20 +429,20 @@ int pa_stream_write(
  * data will point to the actual data and length will contain the size
  * of the data in bytes (which can be less than a complete framgnet).
  * Use pa_stream_drop() to actually remove the data from the
- * buffer. If no data is available will return a NULL pointer  \since 0.8 */
+ * buffer. If no data is available will return a NULL pointer */
 int pa_stream_peek(
         pa_stream *p                 /**< The stream to use */,
         const void **data            /**< Pointer to pointer that will point to data */,
-        size_t *bytes                /**< The length of the data read in bytes */);
+        size_t *nbytes               /**< The length of the data read in bytes */);
 
 /** Remove the current fragment on record streams. It is invalid to do this without first
- * calling pa_stream_peek(). \since 0.8 */
+ * calling pa_stream_peek(). */
 int pa_stream_drop(pa_stream *p);
 
 /** Return the number of bytes that may be written using pa_stream_write() */
 size_t pa_stream_writable_size(pa_stream *p);
 
-/** Return the number of bytes that may be read using pa_stream_read() \since 0.8 */
+/** Return the number of bytes that may be read using pa_stream_peek()*/
 size_t pa_stream_readable_size(pa_stream *p);
 
 /** Drain a playback stream. Use this for notification when the buffer is empty */
@@ -398,18 +462,25 @@ void pa_stream_set_state_callback(pa_stream *s, pa_stream_notify_cb_t cb, void *
 void pa_stream_set_write_callback(pa_stream *p, pa_stream_request_cb_t cb, void *userdata);
 
 /** Set the callback function that is called when new data is available from the stream.
- * Return the number of bytes read. \since 0.8 */
+ * Return the number of bytes read.*/
 void pa_stream_set_read_callback(pa_stream *p, pa_stream_request_cb_t cb, void *userdata);
 
-/** Set the callback function that is called when a buffer overflow happens. (Only for playback streams) \since 0.8 */
+/** Set the callback function that is called when a buffer overflow happens. (Only for playback streams) */
 void pa_stream_set_overflow_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *userdata);
 
-/** Set the callback function that is called when a buffer underflow happens. (Only for playback streams) \since 0.8 */
+/** Set the callback function that is called when a buffer underflow happens. (Only for playback streams) */
 void pa_stream_set_underflow_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *userdata);
+
+/** Set the callback function that is called when a the server starts
+ * playback after an underrun or on initial startup. This only informs
+ * that audio is flowing again, it is no indication that audio started
+ * to reach the speakers already. (Only for playback streams). \since
+ * 0.9.11 */
+void pa_stream_set_started_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *userdata);
 
 /** Set the callback function that is called whenever a latency
  * information update happens. Useful on PA_STREAM_AUTO_TIMING_UPDATE
- * streams only. (Only for playback streams) \since 0.8.2 */
+ * streams only. (Only for playback streams) */
 void pa_stream_set_latency_update_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *userdata);
 
 /** Set the callback function that is called whenever the stream is
@@ -429,24 +500,25 @@ void pa_stream_set_moved_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *
  * 0.9.8. \since 0.9.8 */
 void pa_stream_set_suspended_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *userdata);
 
-/** Pause (or resume) playback of this stream temporarily. Available on both playback and recording streams. \since 0.3 */
+/** Pause (or resume) playback of this stream temporarily. Available on both playback and recording streams. */
 pa_operation* pa_stream_cork(pa_stream *s, int b, pa_stream_success_cb_t cb, void *userdata);
 
 /** Flush the playback buffer of this stream. Most of the time you're
- * better off using the parameter delta of pa_stream_write() instead of this
- * function. Available on both playback and recording streams. \since 0.3 */
+ * better off using the parameter delta of pa_stream_write() instead
+ * of this function. Available on both playback and recording
+ * streams. */
 pa_operation* pa_stream_flush(pa_stream *s, pa_stream_success_cb_t cb, void *userdata);
 
 /** Reenable prebuffering as specified in the pa_buffer_attr
- * structure. Available for playback streams only. \since 0.6 */
+ * structure. Available for playback streams only. */
 pa_operation* pa_stream_prebuf(pa_stream *s, pa_stream_success_cb_t cb, void *userdata);
 
 /** Request immediate start of playback on this stream. This disables
- * prebuffering as specified in the pa_buffer_attr
- * structure, temporarily. Available for playback streams only. \since 0.3 */
+ * prebuffering as specified in the pa_buffer_attr structure,
+ * temporarily. Available for playback streams only. */
 pa_operation* pa_stream_trigger(pa_stream *s, pa_stream_success_cb_t cb, void *userdata);
 
-/** Rename the stream. \since 0.5 */
+/** Rename the stream. */
 pa_operation* pa_stream_set_name(pa_stream *s, const char *name, pa_stream_success_cb_t cb, void *userdata);
 
 /** Return the current playback/recording time. This is based on the
@@ -463,13 +535,13 @@ pa_operation* pa_stream_set_name(pa_stream *s, const char *name, pa_stream_succe
  * be disabled by using PA_STREAM_NOT_MONOTONOUS. This may be
  * desirable to deal better with bad estimations of transport
  * latencies, but may have strange effects if the application is not
- * able to deal with time going 'backwards'. \since 0.6 */
+ * able to deal with time going 'backwards'. */
 int pa_stream_get_time(pa_stream *s, pa_usec_t *r_usec);
 
 /** Return the total stream latency. This function is based on
  * pa_stream_get_time(). In case the stream is a monitoring stream the
  * result can be negative, i.e. the captured samples are not yet
- * played. In this case *negative is set to 1. \since 0.6 */
+ * played. In this case *negative is set to 1. */
 int pa_stream_get_latency(pa_stream *s, pa_usec_t *r_usec, int *negative);
 
 /** Return the latest raw timing data structure. The returned pointer
@@ -481,18 +553,23 @@ int pa_stream_get_latency(pa_stream *s, pa_usec_t *r_usec, int *negative);
  * function will fail with PA_ERR_NODATA. Please note that the
  * write_index member field (and only this field) is updated on each
  * pa_stream_write() call, not just when a timing update has been
- * recieved. \since 0.8 */
+ * recieved. */
 const pa_timing_info* pa_stream_get_timing_info(pa_stream *s);
 
-/** Return a pointer to the stream's sample specification. \since 0.6 */
+/** Return a pointer to the stream's sample specification. */
 const pa_sample_spec* pa_stream_get_sample_spec(pa_stream *s);
 
-/** Return a pointer to the stream's channel map. \since 0.8 */
+/** Return a pointer to the stream's channel map. */
 const pa_channel_map* pa_stream_get_channel_map(pa_stream *s);
 
-/** Return the buffer metrics of the stream. Only valid after the
- * stream has been connected successfuly and if the server is at least
- * PulseAudio 0.9. \since 0.9.0 */
+/** Return the per-stream server-side buffer metrics of the
+ * stream. Only valid after the stream has been connected successfuly
+ * and if the server is at least PulseAudio 0.9. This will return the
+ * actual configured buffering metrics, which may differ from what was
+ * requested during pa_stream_connect_record() or
+ * pa_stream_connect_playback(). This call will always return the
+ * actually per-stream server-side buffer metrics, regardless whether
+ * PA_STREAM_ADJUST_LATENCY is set or not. \since 0.9.0 */
 const pa_buffer_attr* pa_stream_get_buffer_attr(pa_stream *s);
 
 /** Change the buffer metrics of the stream during playback. The
@@ -500,15 +577,39 @@ const pa_buffer_attr* pa_stream_get_buffer_attr(pa_stream *s);
  * requested. The selected metrics may be queried with
  * pa_stream_get_buffer_attr() as soon as the callback is called. Only
  * valid after the stream has been connected successfully and if the
- * server is at least PulseAudio 0.9.8. \since 0.9.8 */
+ * server is at least PulseAudio 0.9.8. Please be aware of the
+ * slightly different semantics of the call depending whether
+ * PA_STREAM_ADJUST_LATENCY is set or not. \since 0.9.8 */
 pa_operation *pa_stream_set_buffer_attr(pa_stream *s, const pa_buffer_attr *attr, pa_stream_success_cb_t cb, void *userdata);
 
-/* Change the stream sampling rate during playback. You need to pass
+/** Change the stream sampling rate during playback. You need to pass
  * PA_STREAM_VARIABLE_RATE in the flags parameter of
  * pa_stream_connect() if you plan to use this function. Only valid
  * after the stream has been connected successfully and if the server
  * is at least PulseAudio 0.9.8. \since 0.9.8 */
 pa_operation *pa_stream_update_sample_rate(pa_stream *s, uint32_t rate, pa_stream_success_cb_t cb, void *userdata);
+
+/** Update the property list of the sink input/source output of this
+ * stream, adding new entries. Please note that it is highly
+ * recommended to set as much properties initially via
+ * pa_stream_new_with_proplist() as possible instead a posteriori with
+ * this function, since that information may then be used to route
+ * this stream to the right device. \since 0.9.11 */
+pa_operation *pa_stream_proplist_update(pa_stream *s, pa_update_mode_t mode, pa_proplist *p, pa_stream_success_cb_t cb, void *userdata);
+
+/** Update the property list of the sink input/source output of this
+ * stream, remove entries. \since 0.9.11 */
+pa_operation *pa_stream_proplist_remove(pa_stream *s, const char *const keys[], pa_stream_success_cb_t cb, void *userdata);
+
+/** For record streams connected to a monitor source: monitor only a
+ * very specific sink input of the sink. Thus function needs to be
+ * called before pa_stream_connect_record() is called. \since
+ * 0.9.11 */
+int pa_stream_set_monitor_stream(pa_stream *s, uint32_t sink_input_idx);
+
+/** Return what has been set with pa_stream_set_monitor_stream()
+ * ebfore. \since 0.9.11 */
+uint32_t pa_stream_get_monitor_stream(pa_stream *s);
 
 PA_C_DECL_END
 

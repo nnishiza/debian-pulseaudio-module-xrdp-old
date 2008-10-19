@@ -1,8 +1,6 @@
 #ifndef foointernalhfoo
 #define foointernalhfoo
 
-/* $Id: internal.h 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -30,6 +28,7 @@
 #include <pulse/stream.h>
 #include <pulse/operation.h>
 #include <pulse/subscribe.h>
+#include <pulse/ext-stream-restore.h>
 
 #include <pulsecore/socket-client.h>
 #include <pulsecore/pstream.h>
@@ -42,6 +41,7 @@
 #include <pulsecore/memblockq.h>
 #include <pulsecore/hashmap.h>
 #include <pulsecore/refcnt.h>
+#include <pulsecore/time-smoother.h>
 
 #include "client-conf.h"
 
@@ -50,7 +50,7 @@
 struct pa_context {
     PA_REFCNT_DECLARE;
 
-    char *name;
+    pa_proplist *proplist;
     pa_mainloop_api* mainloop;
 
     pa_socket_client *client;
@@ -64,20 +64,20 @@ struct pa_context {
     uint32_t version;
     uint32_t ctag;
     uint32_t csyncid;
-    uint32_t error;
+    int error;
     pa_context_state_t state;
 
     pa_context_notify_cb_t state_callback;
     void *state_userdata;
-
     pa_context_subscribe_cb_t subscribe_callback;
     void *subscribe_userdata;
 
     pa_mempool *mempool;
 
-    int is_local;
-    int do_autospawn;
-    int autospawn_lock_fd;
+    pa_bool_t is_local:1;
+    pa_bool_t do_shm:1;
+
+    pa_bool_t do_autospawn:1;
     pa_spawn_api spawn_api;
 
     pa_strlist *server_list;
@@ -85,52 +85,66 @@ struct pa_context {
     char *server;
 
     pa_client_conf *conf;
+
+    uint32_t client_index;
+
+    /* Extension specific data */
+    struct {
+        pa_ext_stream_restore_subscribe_cb_t callback;
+        void *userdata;
+    } ext_stream_restore;
 };
 
-#define PA_MAX_WRITE_INDEX_CORRECTIONS 10
+#define PA_MAX_WRITE_INDEX_CORRECTIONS 32
 
 typedef struct pa_index_correction {
     uint32_t tag;
-    int valid;
     int64_t value;
-    int absolute, corrupt;
+    pa_bool_t valid:1;
+    pa_bool_t absolute:1;
+    pa_bool_t corrupt:1;
 } pa_index_correction;
 
 struct pa_stream {
     PA_REFCNT_DECLARE;
-    pa_context *context;
-    pa_mainloop_api *mainloop;
     PA_LLIST_FIELDS(pa_stream);
 
-    char *name;
-    pa_bool_t manual_buffer_attr;
-    pa_buffer_attr buffer_attr;
-    pa_sample_spec sample_spec;
-    pa_channel_map channel_map;
-    pa_stream_flags_t flags;
-    uint32_t channel;
-    uint32_t syncid;
-    int channel_valid;
-    uint32_t stream_index;
+    pa_context *context;
+    pa_mainloop_api *mainloop;
+
+    uint32_t direct_on_input;
+
     pa_stream_direction_t direction;
     pa_stream_state_t state;
-    pa_bool_t buffer_attr_not_ready, timing_info_not_ready;
+    pa_stream_flags_t flags;
+
+    pa_sample_spec sample_spec;
+    pa_channel_map channel_map;
+
+    pa_proplist *proplist;
+
+    pa_bool_t channel_valid:1;
+    pa_bool_t suspended:1;
+    pa_bool_t corked:1;
+    pa_bool_t timing_info_valid:1;
+    pa_bool_t auto_timing_update_requested:1;
+
+    uint32_t channel;
+    uint32_t syncid;
+    uint32_t stream_index;
 
     uint32_t requested_bytes;
+    pa_buffer_attr buffer_attr;
 
     uint32_t device_index;
     char *device_name;
-    pa_bool_t suspended;
 
     pa_memchunk peek_memchunk;
     void *peek_data;
     pa_memblockq *record_memblockq;
 
-    int corked;
-
     /* Store latest latency info */
     pa_timing_info timing_info;
-    int timing_info_valid;
 
     /* Use to make sure that time advances monotonically */
     pa_usec_t previous_time;
@@ -145,10 +159,8 @@ struct pa_stream {
 
     /* Latency interpolation stuff */
     pa_time_event *auto_timing_update_event;
-    int auto_timing_update_requested;
 
-    pa_usec_t cached_time;
-    int cached_time_valid;
+    pa_smoother *smoother;
 
     /* Callbacks */
     pa_stream_notify_cb_t state_callback;
@@ -167,6 +179,8 @@ struct pa_stream {
     void *moved_userdata;
     pa_stream_notify_cb_t suspended_callback;
     void *suspended_userdata;
+    pa_stream_notify_cb_t started_callback;
+    void *started_userdata;
 };
 
 typedef void (*pa_operation_cb_t)(void);
@@ -192,7 +206,7 @@ void pa_command_subscribe_event(pa_pdispatch *pd, uint32_t command, uint32_t tag
 void pa_command_overflow_or_underflow(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 void pa_command_stream_suspended(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 void pa_command_stream_moved(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-
+void pa_command_stream_started(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 pa_operation *pa_operation_new(pa_context *c, pa_stream *s, pa_operation_cb_t callback, void *userdata);
 void pa_operation_done(pa_operation *o);
 
@@ -204,7 +218,7 @@ void pa_stream_simple_ack_callback(pa_pdispatch *pd, uint32_t command, uint32_t 
 void pa_context_fail(pa_context *c, int error);
 int pa_context_set_error(pa_context *c, int error);
 void pa_context_set_state(pa_context *c, pa_context_state_t st);
-int pa_context_handle_error(pa_context *c, uint32_t command, pa_tagstruct *t);
+int pa_context_handle_error(pa_context *c, uint32_t command, pa_tagstruct *t, pa_bool_t fail);
 pa_operation* pa_context_send_simple_command(pa_context *c, uint32_t command, void (*internal_callback)(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata), void (*cb)(void), void *userdata);
 
 void pa_stream_set_state(pa_stream *s, pa_stream_state_t st);
@@ -226,5 +240,6 @@ pa_tagstruct *pa_tagstruct_command(pa_context *c, uint32_t command, uint32_t *ta
 
 #define PA_CHECK_VALIDITY_RETURN_NULL(context, expression, error) PA_CHECK_VALIDITY_RETURN_ANY(context, expression, error, NULL)
 
+void pa_ext_stream_restore_command(pa_context *c, uint32_t tag, pa_tagstruct *t);
 
 #endif

@@ -1,5 +1,3 @@
-/* $Id: protocol-esound.c 2176 2008-03-27 23:40:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -54,6 +52,7 @@
 #include <pulsecore/ipacl.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/thread-mq.h>
+#include <pulsecore/shared.h>
 
 #include "endianmacros.h"
 
@@ -70,9 +69,11 @@
 #define PLAYBACK_BUFFER_SECONDS (.25)
 #define PLAYBACK_BUFFER_FRAGMENTS (10)
 #define RECORD_BUFFER_SECONDS (5)
-#define RECORD_BUFFER_FRAGMENTS (100)
 
 #define MAX_CACHE_SAMPLE_SIZE (2048000)
+
+#define DEFAULT_SINK_LATENCY (150*PA_USEC_PER_MSEC)
+#define DEFAULT_SOURCE_LATENCY (150*PA_USEC_PER_MSEC)
 
 #define SCACHE_PREFIX "esound."
 
@@ -83,7 +84,8 @@ typedef struct connection {
 
     uint32_t index;
     pa_bool_t dead;
-    pa_protocol_esound *protocol;
+    pa_esound_protocol *protocol;
+    pa_esound_options *options;
     pa_iochannel *io;
     pa_client *client;
     pa_bool_t authorized, swap_byte_order;
@@ -102,8 +104,9 @@ typedef struct connection {
 
     struct {
         pa_memblock *current_memblock;
-        size_t memblock_index, fragment_size;
+        size_t memblock_index;
         pa_atomic_t missing;
+        pa_bool_t underrun;
     } playback;
 
     struct {
@@ -119,17 +122,12 @@ PA_DECLARE_CLASS(connection);
 #define CONNECTION(o) (connection_cast(o))
 static PA_DEFINE_CHECK_TYPE(connection, pa_msgobject);
 
-struct pa_protocol_esound {
-    pa_module *module;
-    pa_core *core;
-    int public;
-    pa_socket_server *server;
-    pa_idxset *connections;
+struct pa_esound_protocol {
+    PA_REFCNT_DECLARE;
 
-    char *sink_name, *source_name;
+    pa_core *core;
+    pa_idxset *connections;
     unsigned n_player;
-    uint8_t esd_key[ESD_KEY_LEN];
-    pa_ip_acl *auth_ip_acl;
 };
 
 enum {
@@ -149,8 +147,9 @@ typedef struct proto_handler {
     const char *description;
 } esd_proto_handler_info_t;
 
-static void sink_input_drop_cb(pa_sink_input *i, size_t length);
-static int sink_input_peek_cb(pa_sink_input *i, size_t length, pa_memchunk *chunk);
+static int sink_input_pop_cb(pa_sink_input *i, size_t length, pa_memchunk *chunk);
+static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes);
+static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes);
 static void sink_input_kill_cb(pa_sink_input *i);
 static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offset, pa_memchunk *chunk);
 static pa_usec_t source_output_get_latency_cb(pa_source_output *o);
@@ -185,7 +184,7 @@ static struct proto_handler proto_map[ESD_PROTO_MAX] = {
     { sizeof(int),                    esd_proto_sample_free_or_play, "sample play" },                /* 8 */
     { sizeof(int),                    NULL, "sample loop" },
     { sizeof(int),                    NULL, "sample stop" },
-    { -1,                             NULL, "TODO: sample kill" },
+    { (size_t) -1,                    NULL, "TODO: sample kill" },
 
     { ESD_KEY_LEN + sizeof(int),      esd_proto_standby_or_resume, "standby" },  /* NOOP! */
     { ESD_KEY_LEN + sizeof(int),      esd_proto_standby_or_resume, "resume" },   /* NOOP! */         /* 13 */
@@ -195,8 +194,8 @@ static struct proto_handler proto_map[ESD_PROTO_MAX] = {
 
     { sizeof(int),                    esd_proto_server_info, "server info" },
     { sizeof(int),                    esd_proto_all_info, "all info" },
-    { -1,                             NULL, "TODO: subscribe" },
-    { -1,                             NULL, "TODO: unsubscribe" },
+    { (size_t) -1,                    NULL, "TODO: subscribe" },
+    { (size_t) -1,                    NULL, "TODO: unsubscribe" },
 
     { 3 * sizeof(int),                esd_proto_stream_pan, "stream pan"},
     { 3 * sizeof(int),                NULL, "sample pan" },
@@ -210,6 +209,11 @@ static void connection_unlink(connection *c) {
 
     if (!c->protocol)
         return;
+
+    if (c->options) {
+        pa_esound_options_unref(c->options);
+        c->options = NULL;
+    }
 
     if (c->sink_input) {
         pa_sink_input_unlink(c->sink_input);
@@ -305,7 +309,7 @@ static void connection_write(connection *c, const void *data, size_t length) {
 static void format_esd2native(int format, pa_bool_t swap_bytes, pa_sample_spec *ss) {
     pa_assert(ss);
 
-    ss->channels = ((format & ESD_MASK_CHAN) == ESD_STEREO) ? 2 : 1;
+    ss->channels = (uint8_t) (((format & ESD_MASK_CHAN) == ESD_STEREO) ? 2 : 1);
     if ((format & ESD_MASK_BITS) == ESD_BITS16)
         ss->format = swap_bytes ? PA_SAMPLE_S16RE : PA_SAMPLE_S16NE;
     else
@@ -330,7 +334,7 @@ static int format_native2esd(pa_sample_spec *ss) {
 
 /*** esound commands ***/
 
-static int esd_proto_connect(connection *c, PA_GCC_UNUSED esd_proto_t request, const void *data, size_t length) {
+static int esd_proto_connect(connection *c, esd_proto_t request, const void *data, size_t length) {
     uint32_t ekey;
     int ok;
 
@@ -338,17 +342,22 @@ static int esd_proto_connect(connection *c, PA_GCC_UNUSED esd_proto_t request, c
     pa_assert(data);
     pa_assert(length == (ESD_KEY_LEN + sizeof(uint32_t)));
 
-    if (!c->authorized) {
-        if (memcmp(data, c->protocol->esd_key, ESD_KEY_LEN) != 0) {
-            pa_log("kicked client with invalid authorization key.");
-            return -1;
-        }
+    if (!c->authorized && c->options->auth_cookie) {
+        const uint8_t*key;
 
-        c->authorized = TRUE;
-        if (c->auth_timeout_event) {
-            c->protocol->core->mainloop->time_free(c->auth_timeout_event);
-            c->auth_timeout_event = NULL;
-        }
+        if ((key = pa_auth_cookie_read(c->options->auth_cookie, ESD_KEY_LEN)))
+            if (memcmp(data, key, ESD_KEY_LEN) == 0)
+                c->authorized = TRUE;
+    }
+
+    if (!c->authorized) {
+        pa_log("Kicked client with invalid authorization key.");
+        return -1;
+    }
+
+    if (c->auth_timeout_event) {
+        c->protocol->core->mainloop->time_free(c->auth_timeout_event);
+        c->auth_timeout_event = NULL;
     }
 
     data = (const char*)data + ESD_KEY_LEN;
@@ -368,7 +377,7 @@ static int esd_proto_connect(connection *c, PA_GCC_UNUSED esd_proto_t request, c
     return 0;
 }
 
-static int esd_proto_stream_play(connection *c, PA_GCC_UNUSED esd_proto_t request, const void *data, size_t length) {
+static int esd_proto_stream_play(connection *c, esd_proto_t request, const void *data, size_t length) {
     char name[ESD_NAME_MAX], *utf8_name;
     int32_t format, rate;
     pa_sample_spec ss;
@@ -388,18 +397,17 @@ static int esd_proto_stream_play(connection *c, PA_GCC_UNUSED esd_proto_t reques
     rate = PA_MAYBE_INT32_SWAP(c->swap_byte_order, rate);
     data = (const char*) data + sizeof(int32_t);
 
-    ss.rate = rate;
+    ss.rate = (uint32_t) rate;
     format_esd2native(format, c->swap_byte_order, &ss);
 
     CHECK_VALIDITY(pa_sample_spec_valid(&ss), "Invalid sample specification");
 
-    if (c->protocol->sink_name) {
-        sink = pa_namereg_get(c->protocol->core, c->protocol->sink_name, PA_NAMEREG_SINK, 1);
-        CHECK_VALIDITY(sink, "No such sink: %s", c->protocol->sink_name);
+    if (c->options->default_sink) {
+        sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1);
+        CHECK_VALIDITY(sink, "No such sink: %s", c->options->default_sink);
     }
 
-    strncpy(name, data, sizeof(name));
-    name[sizeof(name)-1] = 0;
+    pa_strlcpy(name, data, sizeof(name));
 
     utf8_name = pa_utf8_filter(name);
     pa_client_set_name(c->client, utf8_name);
@@ -410,39 +418,44 @@ static int esd_proto_stream_play(connection *c, PA_GCC_UNUSED esd_proto_t reques
     pa_assert(!c->sink_input && !c->input_memblockq);
 
     pa_sink_input_new_data_init(&sdata);
-    sdata.sink = sink;
     sdata.driver = __FILE__;
-    sdata.name = c->client->name;
-    pa_sink_input_new_data_set_sample_spec(&sdata, &ss);
-    sdata.module = c->protocol->module;
+    sdata.module = c->options->module;
     sdata.client = c->client;
+    sdata.sink = sink;
+    pa_proplist_update(sdata.proplist, PA_UPDATE_MERGE, c->client->proplist);
+    pa_sink_input_new_data_set_sample_spec(&sdata, &ss);
 
     c->sink_input = pa_sink_input_new(c->protocol->core, &sdata, 0);
+    pa_sink_input_new_data_done(&sdata);
+
     CHECK_VALIDITY(c->sink_input, "Failed to create sink input.");
 
-    l = (size_t) (pa_bytes_per_second(&ss)*PLAYBACK_BUFFER_SECONDS);
+    l = (size_t) ((double) pa_bytes_per_second(&ss)*PLAYBACK_BUFFER_SECONDS);
     c->input_memblockq = pa_memblockq_new(
             0,
             l,
-            0,
+            l,
             pa_frame_size(&ss),
             (size_t) -1,
             l/PLAYBACK_BUFFER_FRAGMENTS,
+            0,
             NULL);
-    pa_iochannel_socket_set_rcvbuf(c->io, l/PLAYBACK_BUFFER_FRAGMENTS*2);
-    c->playback.fragment_size = l/PLAYBACK_BUFFER_FRAGMENTS;
+    pa_iochannel_socket_set_rcvbuf(c->io, l);
 
     c->sink_input->parent.process_msg = sink_input_process_msg;
-    c->sink_input->peek = sink_input_peek_cb;
-    c->sink_input->drop = sink_input_drop_cb;
+    c->sink_input->pop = sink_input_pop_cb;
+    c->sink_input->process_rewind = sink_input_process_rewind_cb;
+    c->sink_input->update_max_rewind = sink_input_update_max_rewind_cb;
     c->sink_input->kill = sink_input_kill_cb;
     c->sink_input->userdata = c;
+
+    pa_sink_input_set_requested_latency(c->sink_input, DEFAULT_SINK_LATENCY);
 
     c->state = ESD_STREAMING_DATA;
 
     c->protocol->n_player++;
 
-    pa_atomic_store(&c->playback.missing, pa_memblockq_missing(c->input_memblockq));
+    pa_atomic_store(&c->playback.missing, (int) pa_memblockq_missing(c->input_memblockq));
 
     pa_sink_input_put(c->sink_input);
 
@@ -469,7 +482,7 @@ static int esd_proto_stream_record(connection *c, esd_proto_t request, const voi
     rate = PA_MAYBE_INT32_SWAP(c->swap_byte_order, rate);
     data = (const char*) data + sizeof(int32_t);
 
-    ss.rate = rate;
+    ss.rate = (uint32_t) rate;
     format_esd2native(format, c->swap_byte_order, &ss);
 
     CHECK_VALIDITY(pa_sample_spec_valid(&ss), "Invalid sample specification.");
@@ -477,7 +490,7 @@ static int esd_proto_stream_record(connection *c, esd_proto_t request, const voi
     if (request == ESD_PROTO_STREAM_MON) {
         pa_sink* sink;
 
-        if (!(sink = pa_namereg_get(c->protocol->core, c->protocol->sink_name, PA_NAMEREG_SINK, 1))) {
+        if (!(sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1))) {
             pa_log("no such sink.");
             return -1;
         }
@@ -489,16 +502,15 @@ static int esd_proto_stream_record(connection *c, esd_proto_t request, const voi
     } else {
         pa_assert(request == ESD_PROTO_STREAM_REC);
 
-        if (c->protocol->source_name) {
-            if (!(source = pa_namereg_get(c->protocol->core, c->protocol->source_name, PA_NAMEREG_SOURCE, 1))) {
+        if (c->options->default_source) {
+            if (!(source = pa_namereg_get(c->protocol->core, c->options->default_source, PA_NAMEREG_SOURCE, 1))) {
                 pa_log("no such source.");
                 return -1;
             }
         }
     }
 
-    strncpy(name, data, sizeof(name));
-    name[sizeof(name)-1] = 0;
+    pa_strlcpy(name, data, sizeof(name));
 
     utf8_name = pa_utf8_filter(name);
     pa_client_set_name(c->client, utf8_name);
@@ -509,31 +521,36 @@ static int esd_proto_stream_record(connection *c, esd_proto_t request, const voi
     pa_assert(!c->output_memblockq && !c->source_output);
 
     pa_source_output_new_data_init(&sdata);
-    sdata.source = source;
     sdata.driver = __FILE__;
-    sdata.name = c->client->name;
-    pa_source_output_new_data_set_sample_spec(&sdata, &ss);
-    sdata.module = c->protocol->module;
+    sdata.module = c->options->module;
     sdata.client = c->client;
+    sdata.source = source;
+    pa_proplist_update(sdata.proplist, PA_UPDATE_MERGE, c->client->proplist);
+    pa_source_output_new_data_set_sample_spec(&sdata, &ss);
 
-    c->source_output = pa_source_output_new(c->protocol->core, &sdata, 9);
-    CHECK_VALIDITY(c->source_output, "Failed to create source_output.");
+    c->source_output = pa_source_output_new(c->protocol->core, &sdata, 0);
+    pa_source_output_new_data_done(&sdata);
+
+    CHECK_VALIDITY(c->source_output, "Failed to create source output.");
 
     l = (size_t) (pa_bytes_per_second(&ss)*RECORD_BUFFER_SECONDS);
     c->output_memblockq = pa_memblockq_new(
             0,
             l,
-            0,
+            l,
             pa_frame_size(&ss),
             1,
             0,
+            0,
             NULL);
-    pa_iochannel_socket_set_sndbuf(c->io, l/RECORD_BUFFER_FRAGMENTS*2);
+    pa_iochannel_socket_set_sndbuf(c->io, l);
 
     c->source_output->push = source_output_push_cb;
     c->source_output->kill = source_output_kill_cb;
     c->source_output->get_latency = source_output_get_latency_cb;
     c->source_output->userdata = c;
+
+    pa_source_output_set_requested_latency(c->source_output, DEFAULT_SOURCE_LATENCY);
 
     c->state = ESD_STREAMING_DATA;
 
@@ -544,7 +561,7 @@ static int esd_proto_stream_record(connection *c, esd_proto_t request, const voi
     return 0;
 }
 
-static int esd_proto_get_latency(connection *c, PA_GCC_UNUSED esd_proto_t request, const void *data, size_t length) {
+static int esd_proto_get_latency(connection *c, esd_proto_t request, const void *data, size_t length) {
     pa_sink *sink;
     int32_t latency;
 
@@ -552,10 +569,10 @@ static int esd_proto_get_latency(connection *c, PA_GCC_UNUSED esd_proto_t reques
     pa_assert(!data);
     pa_assert(length == 0);
 
-    if (!(sink = pa_namereg_get(c->protocol->core, c->protocol->sink_name, PA_NAMEREG_SINK, 1)))
+    if (!(sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1)))
         latency = 0;
     else {
-        double usec = pa_sink_get_latency(sink);
+        double usec = (double) pa_sink_get_latency(sink);
         latency = (int) ((usec*44100)/1000000);
     }
 
@@ -564,7 +581,7 @@ static int esd_proto_get_latency(connection *c, PA_GCC_UNUSED esd_proto_t reques
     return 0;
 }
 
-static int esd_proto_server_info(connection *c, PA_GCC_UNUSED esd_proto_t request, const void *data, size_t length) {
+static int esd_proto_server_info(connection *c, esd_proto_t request, const void *data, size_t length) {
     int32_t rate = 44100, format = ESD_STEREO|ESD_BITS16;
     int32_t response;
     pa_sink *sink;
@@ -573,8 +590,8 @@ static int esd_proto_server_info(connection *c, PA_GCC_UNUSED esd_proto_t reques
     pa_assert(data);
     pa_assert(length == sizeof(int32_t));
 
-    if ((sink = pa_namereg_get(c->protocol->core, c->protocol->sink_name, PA_NAMEREG_SINK, 1))) {
-        rate = sink->sample_spec.rate;
+    if ((sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1))) {
+        rate = (int32_t) sink->sample_spec.rate;
         format = format_native2esd(&sink->sample_spec);
     }
 
@@ -624,9 +641,9 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
 
         if (conn->sink_input) {
             pa_cvolume volume = *pa_sink_input_get_volume(conn->sink_input);
-            rate = conn->sink_input->sample_spec.rate;
-            lvolume = (volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM;
-            rvolume = (volume.values[1]*ESD_VOLUME_BASE)/PA_VOLUME_NORM;
+            rate = (int32_t) conn->sink_input->sample_spec.rate;
+            lvolume = (int32_t) ((volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM);
+            rvolume = (int32_t) ((volume.values[1]*ESD_VOLUME_BASE)/PA_VOLUME_NORM);
             format = format_native2esd(&conn->sink_input->sample_spec);
         }
 
@@ -638,8 +655,8 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
         memset(name, 0, ESD_NAME_MAX); /* don't leak old data */
         if (conn->original_name)
             strncpy(name, conn->original_name, ESD_NAME_MAX);
-        else if (conn->client && conn->client->name)
-            strncpy(name, conn->client->name, ESD_NAME_MAX);
+        else if (conn->client && pa_proplist_gets(conn->client->proplist, PA_PROP_APPLICATION_NAME))
+            strncpy(name, pa_proplist_gets(conn->client->proplist, PA_PROP_APPLICATION_NAME), ESD_NAME_MAX);
         connection_write(c, name, ESD_NAME_MAX);
 
         /* rate */
@@ -689,15 +706,15 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
             connection_write(c, name, ESD_NAME_MAX);
 
             /* rate */
-            rate = PA_MAYBE_UINT32_SWAP(c->swap_byte_order, ce->sample_spec.rate);
+            rate = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ce->sample_spec.rate);
             connection_write(c, &rate, sizeof(int32_t));
 
             /* left */
-            lvolume = PA_MAYBE_UINT32_SWAP(c->swap_byte_order, (ce->volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM);
+            lvolume = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ((ce->volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM));
             connection_write(c, &lvolume, sizeof(int32_t));
 
             /*right*/
-            rvolume = PA_MAYBE_UINT32_SWAP(c->swap_byte_order, (ce->volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM);
+            rvolume = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ((ce->volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM));
             connection_write(c, &rvolume, sizeof(int32_t));
 
             /*format*/
@@ -719,7 +736,7 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
     return 0;
 }
 
-static int esd_proto_stream_pan(connection *c, PA_GCC_UNUSED esd_proto_t request, const void *data, size_t length) {
+static int esd_proto_stream_pan(connection *c, esd_proto_t request, const void *data, size_t length) {
     int32_t ok;
     uint32_t idx, lvolume, rvolume;
     connection *conn;
@@ -755,7 +772,7 @@ static int esd_proto_stream_pan(connection *c, PA_GCC_UNUSED esd_proto_t request
     return 0;
 }
 
-static int esd_proto_sample_cache(connection *c, PA_GCC_UNUSED esd_proto_t request, const void *data, size_t length) {
+static int esd_proto_sample_cache(connection *c, esd_proto_t request, const void *data, size_t length) {
     pa_sample_spec ss;
     int32_t format, rate, sc_length;
     uint32_t idx;
@@ -773,7 +790,7 @@ static int esd_proto_sample_cache(connection *c, PA_GCC_UNUSED esd_proto_t reque
     rate = PA_MAYBE_INT32_SWAP(c->swap_byte_order, rate);
     data = (const char*)data + sizeof(int32_t);
 
-    ss.rate = rate;
+    ss.rate = (uint32_t) rate;
     format_esd2native(format, c->swap_byte_order, &ss);
 
     CHECK_VALIDITY(pa_sample_spec_valid(&ss), "Invalid sample specification.");
@@ -785,22 +802,21 @@ static int esd_proto_sample_cache(connection *c, PA_GCC_UNUSED esd_proto_t reque
     CHECK_VALIDITY(sc_length <= MAX_CACHE_SAMPLE_SIZE, "Sample too large (%d bytes).", (int)sc_length);
 
     strcpy(name, SCACHE_PREFIX);
-    strncpy(name+sizeof(SCACHE_PREFIX)-1, data, ESD_NAME_MAX);
-    name[sizeof(name)-1] = 0;
+    pa_strlcpy(name+sizeof(SCACHE_PREFIX)-1, data, ESD_NAME_MAX);
 
     CHECK_VALIDITY(pa_utf8_valid(name), "Invalid UTF8 in sample name.");
 
     pa_assert(!c->scache.memchunk.memblock);
-    c->scache.memchunk.memblock = pa_memblock_new(c->protocol->core->mempool, sc_length);
+    c->scache.memchunk.memblock = pa_memblock_new(c->protocol->core->mempool, (size_t) sc_length);
     c->scache.memchunk.index = 0;
-    c->scache.memchunk.length = sc_length;
+    c->scache.memchunk.length = (size_t) sc_length;
     c->scache.sample_spec = ss;
     pa_assert(!c->scache.name);
     c->scache.name = pa_xstrdup(name);
 
     c->state = ESD_CACHING_SAMPLE;
 
-    pa_scache_add_item(c->protocol->core, c->scache.name, NULL, NULL, NULL, &idx);
+    pa_scache_add_item(c->protocol->core, c->scache.name, NULL, NULL, NULL, c->client->proplist, &idx);
 
     idx += 1;
     connection_write(c, &idx, sizeof(uint32_t));
@@ -808,7 +824,7 @@ static int esd_proto_sample_cache(connection *c, PA_GCC_UNUSED esd_proto_t reque
     return 0;
 }
 
-static int esd_proto_sample_get_id(connection *c, PA_GCC_UNUSED esd_proto_t request, const void *data, size_t length) {
+static int esd_proto_sample_get_id(connection *c, esd_proto_t request, const void *data, size_t length) {
     int32_t ok;
     uint32_t idx;
     char name[ESD_NAME_MAX+sizeof(SCACHE_PREFIX)-1];
@@ -818,14 +834,13 @@ static int esd_proto_sample_get_id(connection *c, PA_GCC_UNUSED esd_proto_t requ
     pa_assert(length == ESD_NAME_MAX);
 
     strcpy(name, SCACHE_PREFIX);
-    strncpy(name+sizeof(SCACHE_PREFIX)-1, data, ESD_NAME_MAX);
-    name[sizeof(name)-1] = 0;
+    pa_strlcpy(name+sizeof(SCACHE_PREFIX)-1, data, ESD_NAME_MAX);
 
     CHECK_VALIDITY(pa_utf8_valid(name), "Invalid UTF8 in sample name.");
 
     ok = -1;
     if ((idx = pa_scache_get_id_by_name(c->protocol->core, name)) != PA_IDXSET_INVALID)
-        ok = idx + 1;
+        ok = (int32_t) idx + 1;
 
     connection_write(c, &ok, sizeof(int32_t));
 
@@ -850,14 +865,14 @@ static int esd_proto_sample_free_or_play(connection *c, esd_proto_t request, con
         if (request == ESD_PROTO_SAMPLE_PLAY) {
             pa_sink *sink;
 
-            if ((sink = pa_namereg_get(c->protocol->core, c->protocol->sink_name, PA_NAMEREG_SINK, 1)))
-                if (pa_scache_play_item(c->protocol->core, name, sink, PA_VOLUME_NORM) >= 0)
-                    ok = idx + 1;
+            if ((sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1)))
+                if (pa_scache_play_item(c->protocol->core, name, sink, PA_VOLUME_NORM, c->client->proplist, NULL) >= 0)
+                    ok = (int32_t) idx + 1;
         } else {
             pa_assert(request == ESD_PROTO_SAMPLE_FREE);
 
             if (pa_scache_remove_item(c->protocol->core, name) >= 0)
-                ok = idx + 1;
+                ok = (int32_t) idx + 1;
         }
     }
 
@@ -866,7 +881,7 @@ static int esd_proto_sample_free_or_play(connection *c, esd_proto_t request, con
     return 0;
 }
 
-static int esd_proto_standby_or_resume(connection *c, PA_GCC_UNUSED esd_proto_t request, PA_GCC_UNUSED const void *data, PA_GCC_UNUSED size_t length) {
+static int esd_proto_standby_or_resume(connection *c, esd_proto_t request, const void *data, size_t length) {
     int32_t ok;
 
     connection_assert_ref(c);
@@ -904,7 +919,9 @@ static int do_read(connection *c) {
             return -1;
         }
 
-        if ((c->read_data_length+= r) >= sizeof(c->request)) {
+        c->read_data_length += (size_t) r;
+
+        if (c->read_data_length >= sizeof(c->request)) {
             struct proto_handler *handler;
 
             c->request = PA_MAYBE_INT32_SWAP(c->swap_byte_order, c->request);
@@ -955,7 +972,8 @@ static int do_read(connection *c) {
             return -1;
         }
 
-        if ((c->read_data_length += r) >= handler->data_length) {
+        c->read_data_length += (size_t) r;
+        if (c->read_data_length >= handler->data_length) {
             size_t l = c->read_data_length;
             pa_assert(handler->proc);
 
@@ -985,14 +1003,14 @@ static int do_read(connection *c) {
             return -1;
         }
 
-        c->scache.memchunk.index += r;
+        c->scache.memchunk.index += (size_t) r;
         pa_assert(c->scache.memchunk.index <= c->scache.memchunk.length);
 
         if (c->scache.memchunk.index == c->scache.memchunk.length) {
             uint32_t idx;
 
             c->scache.memchunk.index = 0;
-            pa_scache_add_item(c->protocol->core, c->scache.name, &c->scache.sample_spec, NULL, &c->scache.memchunk, &idx);
+            pa_scache_add_item(c->protocol->core, c->scache.name, &c->scache.sample_spec, NULL, &c->scache.memchunk, c->client->proplist, &idx);
 
             pa_memblock_unref(c->scache.memchunk.memblock);
             c->scache.memchunk.memblock = NULL;
@@ -1012,28 +1030,34 @@ static int do_read(connection *c) {
         ssize_t r;
         size_t l;
         void *p;
+        size_t space;
 
         pa_assert(c->input_memblockq);
 
 /*         pa_log("STREAMING_DATA"); */
 
-        if (!(l = pa_atomic_load(&c->playback.missing)))
+        if (!(l = (size_t) pa_atomic_load(&c->playback.missing)))
             return 0;
 
-        if (l > c->playback.fragment_size)
-            l = c->playback.fragment_size;
+        if (c->playback.current_memblock) {
 
-        if (c->playback.current_memblock)
-            if (pa_memblock_get_length(c->playback.current_memblock) - c->playback.memblock_index < l) {
+            space = pa_memblock_get_length(c->playback.current_memblock) - c->playback.memblock_index;
+
+            if (space <= 0) {
                 pa_memblock_unref(c->playback.current_memblock);
                 c->playback.current_memblock = NULL;
-                c->playback.memblock_index = 0;
             }
+        }
 
         if (!c->playback.current_memblock) {
-            pa_assert_se(c->playback.current_memblock = pa_memblock_new(c->protocol->core->mempool, c->playback.fragment_size*2));
+            pa_assert_se(c->playback.current_memblock = pa_memblock_new(c->protocol->core->mempool, (size_t) -1));
             c->playback.memblock_index = 0;
+
+            space = pa_memblock_get_length(c->playback.current_memblock);
         }
+
+        if (l > space)
+            l = space;
 
         p = pa_memblock_acquire(c->playback.current_memblock);
         r = pa_iochannel_read(c->io, (uint8_t*) p+c->playback.memblock_index, l);
@@ -1050,12 +1074,12 @@ static int do_read(connection *c) {
 
         chunk.memblock = c->playback.current_memblock;
         chunk.index = c->playback.memblock_index;
-        chunk.length = r;
+        chunk.length = (size_t) r;
 
-        c->playback.memblock_index += r;
+        c->playback.memblock_index += (size_t) r;
 
         pa_asyncmsgq_post(c->sink_input->sink->asyncmsgq, PA_MSGOBJECT(c->sink_input), SINK_INPUT_MESSAGE_POST_DATA, NULL, 0, &chunk, NULL);
-        pa_atomic_sub(&c->playback.missing, r);
+        pa_atomic_sub(&c->playback.missing, (int) r);
     }
 
     return 0;
@@ -1079,7 +1103,8 @@ static int do_write(connection *c) {
             return -1;
         }
 
-        if ((c->write_data_index +=r) >= c->write_data_length)
+        c->write_data_index += (size_t) r;
+        if (c->write_data_index >= c->write_data_length)
             c->write_data_length = c->write_data_index = 0;
 
     } else if (c->state == ESD_STREAMING_DATA && c->source_output) {
@@ -1108,7 +1133,7 @@ static int do_write(connection *c) {
             return -1;
         }
 
-        pa_memblockq_drop(c->output_memblockq, r);
+        pa_memblockq_drop(c->output_memblockq, (size_t) r);
     }
 
     return 0;
@@ -1122,12 +1147,11 @@ static void do_work(connection *c) {
     if (c->dead)
         return;
 
-    if (pa_iochannel_is_readable(c->io)) {
+    if (pa_iochannel_is_readable(c->io))
         if (do_read(c) < 0)
             goto fail;
-    }
 
-    if (c->state == ESD_STREAMING_DATA && c->source_output && pa_iochannel_is_hungup(c->io))
+    if (c->state == ESD_STREAMING_DATA && !c->sink_input && pa_iochannel_is_hungup(c->io))
         /* In case we are in capture mode we will never call read()
          * on the socket, hence we need to detect the hangup manually
          * here, instead of simply waiting for read() to return 0. */
@@ -1212,15 +1236,19 @@ static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int
             /* New data from the main loop */
             pa_memblockq_push_align(c->input_memblockq, chunk);
 
+            if (pa_memblockq_is_readable(c->input_memblockq) && c->playback.underrun) {
+                pa_log_debug("Requesting rewind due to end of underrun.");
+                pa_sink_input_request_rewind(c->sink_input, 0, FALSE, TRUE);
+            }
+
 /*             pa_log("got data, %u", pa_memblockq_get_length(c->input_memblockq)); */
 
             return 0;
         }
 
-        case SINK_INPUT_MESSAGE_DISABLE_PREBUF: {
+        case SINK_INPUT_MESSAGE_DISABLE_PREBUF:
             pa_memblockq_prebuf_disable(c->input_memblockq);
             return 0;
-        }
 
         case PA_SINK_INPUT_MESSAGE_GET_LATENCY: {
             pa_usec_t *r = userdata;
@@ -1237,41 +1265,64 @@ static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int
 }
 
 /* Called from thread context */
-static int sink_input_peek_cb(pa_sink_input *i, size_t length, pa_memchunk *chunk) {
+static int sink_input_pop_cb(pa_sink_input *i, size_t length, pa_memchunk *chunk) {
     connection*c;
-    int r;
 
-    pa_assert(i);
+    pa_sink_input_assert_ref(i);
     c = CONNECTION(i->userdata);
     connection_assert_ref(c);
     pa_assert(chunk);
 
-    if ((r = pa_memblockq_peek(c->input_memblockq, chunk)) < 0 && c->dead)
-        pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(c), CONNECTION_MESSAGE_UNLINK_CONNECTION, NULL, 0, NULL, NULL);
+    if (pa_memblockq_peek(c->input_memblockq, chunk) < 0) {
 
-    return r;
+        c->playback.underrun = TRUE;
+
+        if (c->dead && pa_sink_input_safe_to_remove(i))
+            pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(c), CONNECTION_MESSAGE_UNLINK_CONNECTION, NULL, 0, NULL, NULL);
+
+        return -1;
+    } else {
+        size_t m;
+
+        chunk->length = PA_MIN(length, chunk->length);
+
+        c->playback.underrun = FALSE;
+
+        pa_memblockq_drop(c->input_memblockq, chunk->length);
+        m = pa_memblockq_pop_missing(c->input_memblockq);
+
+        if (m > 0)
+            if (pa_atomic_add(&c->playback.missing, (int) m) <= 0)
+                pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(c), CONNECTION_MESSAGE_REQUEST_DATA, NULL, 0, NULL, NULL);
+
+        return 0;
+    }
 }
 
 /* Called from thread context */
-static void sink_input_drop_cb(pa_sink_input *i, size_t length) {
-    connection*c;
-    size_t old, new;
+static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes) {
+    connection *c;
 
-    pa_assert(i);
+    pa_sink_input_assert_ref(i);
     c = CONNECTION(i->userdata);
     connection_assert_ref(c);
-    pa_assert(length);
 
-    /*     pa_log("DROP"); */
+    /* If we are in an underrun, then we don't rewind */
+    if (i->thread_info.underrun_for > 0)
+        return;
 
-    old = pa_memblockq_missing(c->input_memblockq);
-    pa_memblockq_drop(c->input_memblockq, length);
-    new = pa_memblockq_missing(c->input_memblockq);
+    pa_memblockq_rewind(c->input_memblockq, nbytes);
+}
 
-    if (new > old) {
-        if (pa_atomic_add(&c->playback.missing, new - old) <= 0)
-            pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(c), CONNECTION_MESSAGE_REQUEST_DATA, NULL, 0, NULL, NULL);
-    }
+/* Called from thread context */
+static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
+    connection *c;
+
+    pa_sink_input_assert_ref(i);
+    c = CONNECTION(i->userdata);
+    connection_assert_ref(c);
+
+    pa_memblockq_set_maxrewind(c->input_memblockq, nbytes);
 }
 
 static void sink_input_kill_cb(pa_sink_input *i) {
@@ -1286,7 +1337,7 @@ static void sink_input_kill_cb(pa_sink_input *i) {
 static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk) {
     connection *c;
 
-    pa_assert(o);
+    pa_source_output_assert_ref(o);
     c = CONNECTION(o->userdata);
     pa_assert(c);
     pa_assert(chunk);
@@ -1303,14 +1354,14 @@ static void source_output_kill_cb(pa_source_output *o) {
 static pa_usec_t source_output_get_latency_cb(pa_source_output *o) {
     connection*c;
 
-    pa_assert(o);
+    pa_source_output_assert_ref(o);
     c = CONNECTION(o->userdata);
     pa_assert(c);
 
     return pa_bytes_to_usec(pa_memblockq_get_length(c->output_memblockq), &c->source_output->sample_spec);
 }
 
-/*** socket server callback ***/
+/*** entry points ***/
 
 static void auth_timeout(pa_mainloop_api*m, pa_time_event *e, const struct timeval *tv, void *userdata) {
     connection *c = CONNECTION(userdata);
@@ -1324,14 +1375,13 @@ static void auth_timeout(pa_mainloop_api*m, pa_time_event *e, const struct timev
         connection_unlink(c);
 }
 
-static void on_connection(pa_socket_server*s, pa_iochannel *io, void *userdata) {
+void pa_esound_protocol_connect(pa_esound_protocol *p, pa_iochannel *io, pa_esound_options *o) {
     connection *c;
-    pa_protocol_esound *p = userdata;
     char cname[256], pname[128];
 
-    pa_assert(s);
-    pa_assert(io);
     pa_assert(p);
+    pa_assert(io);
+    pa_assert(o);
 
     if (pa_idxset_size(p->connections)+1 > MAX_CONNECTIONS) {
         pa_log("Warning! Too many connections (%u), dropping incoming connection.", MAX_CONNECTIONS);
@@ -1349,11 +1399,13 @@ static void on_connection(pa_socket_server*s, pa_iochannel *io, void *userdata) 
     pa_iochannel_socket_peer_to_string(io, pname, sizeof(pname));
     pa_snprintf(cname, sizeof(cname), "EsounD client (%s)", pname);
     c->client = pa_client_new(p->core, __FILE__, cname);
-    c->client->owner = p->module;
+    pa_proplist_sets(c->client->proplist, "esound-protocol.peer", pname);
+    c->client->module = o->module;
     c->client->kill = client_kill_cb;
     c->client->userdata = c;
 
-    c->authorized = !!p->public;
+    c->options = pa_esound_options_ref(o);
+    c->authorized = FALSE;
     c->swap_byte_order = FALSE;
     c->dead = FALSE;
 
@@ -1374,16 +1426,23 @@ static void on_connection(pa_socket_server*s, pa_iochannel *io, void *userdata) 
 
     c->playback.current_memblock = NULL;
     c->playback.memblock_index = 0;
-    c->playback.fragment_size = 0;
+    c->playback.underrun = TRUE;
     pa_atomic_store(&c->playback.missing, 0);
 
-    c->scache.memchunk.length = c->scache.memchunk.index = 0;
-    c->scache.memchunk.memblock = NULL;
+    pa_memchunk_reset(&c->scache.memchunk);
     c->scache.name = NULL;
 
     c->original_name = NULL;
 
-    if (!c->authorized && p->auth_ip_acl && pa_ip_acl_check(p->auth_ip_acl, pa_iochannel_get_recv_fd(io)) > 0) {
+    if (o->auth_anonymous) {
+        pa_log_info("Client authenticated anonymously.");
+        c->authorized = TRUE;
+    }
+
+    if (!c->authorized &&
+        o->auth_ip_acl &&
+        pa_ip_acl_check(o->auth_ip_acl, pa_iochannel_get_recv_fd(io)) > 0) {
+
         pa_log_info("Client authenticated by IP ACL.");
         c->authorized = TRUE;
     }
@@ -1402,70 +1461,163 @@ static void on_connection(pa_socket_server*s, pa_iochannel *io, void *userdata) 
     pa_idxset_put(p->connections, c, &c->index);
 }
 
-/*** entry points ***/
+void pa_esound_protocol_disconnect(pa_esound_protocol *p, pa_module *m) {
+    connection *c;
+    void *state = NULL;
 
-pa_protocol_esound* pa_protocol_esound_new(pa_core*core, pa_socket_server *server, pa_module *m, pa_modargs *ma) {
-    pa_protocol_esound *p = NULL;
-    pa_bool_t public = FALSE;
-    const char *acl;
-
-    pa_assert(core);
-    pa_assert(server);
+    pa_assert(p);
     pa_assert(m);
-    pa_assert(ma);
 
-    if (pa_modargs_get_value_boolean(ma, "auth-anonymous", &public) < 0) {
-        pa_log("auth-anonymous= expects a boolean argument.");
-        goto fail;
-    }
-
-    p = pa_xnew(pa_protocol_esound, 1);
-
-    if (pa_authkey_load_auto(pa_modargs_get_value(ma, "cookie", DEFAULT_COOKIE_FILE), p->esd_key, sizeof(p->esd_key)) < 0)
-        goto fail;
-
-    if ((acl = pa_modargs_get_value(ma, "auth-ip-acl", NULL))) {
-
-        if (!(p->auth_ip_acl = pa_ip_acl_new(acl))) {
-            pa_log("Failed to parse IP ACL '%s'", acl);
-            goto fail;
-        }
-    } else
-        p->auth_ip_acl = NULL;
-
-    p->core = core;
-    p->module = m;
-    p->public = public;
-    p->server = server;
-    pa_socket_server_set_callback(p->server, on_connection, p);
-    p->connections = pa_idxset_new(NULL, NULL);
-
-    p->sink_name = pa_xstrdup(pa_modargs_get_value(ma, "sink", NULL));
-    p->source_name = pa_xstrdup(pa_modargs_get_value(ma, "source", NULL));
-    p->n_player = 0;
-
-    return p;
-
-fail:
-    pa_xfree(p);
-    return NULL;
+    while ((c = pa_idxset_iterate(p->connections, &state, NULL)))
+        if (c->options->module == m)
+            connection_unlink(c);
 }
 
-void pa_protocol_esound_free(pa_protocol_esound *p) {
+static pa_esound_protocol* esound_protocol_new(pa_core *c) {
+    pa_esound_protocol *p;
+
+    pa_assert(c);
+
+    p = pa_xnew(pa_esound_protocol, 1);
+    PA_REFCNT_INIT(p);
+    p->core = c;
+    p->connections = pa_idxset_new(NULL, NULL);
+    p->n_player = 0;
+
+    pa_assert_se(pa_shared_set(c, "esound-protocol", p) >= 0);
+
+    return p;
+}
+
+pa_esound_protocol* pa_esound_protocol_get(pa_core *c) {
+    pa_esound_protocol *p;
+
+    if ((p = pa_shared_get(c, "esound-protocol")))
+        return pa_esound_protocol_ref(p);
+
+    return esound_protocol_new(c);
+}
+
+pa_esound_protocol* pa_esound_protocol_ref(pa_esound_protocol *p) {
+    pa_assert(p);
+    pa_assert(PA_REFCNT_VALUE(p) >= 1);
+
+    PA_REFCNT_INC(p);
+
+    return p;
+}
+
+void pa_esound_protocol_unref(pa_esound_protocol *p) {
     connection *c;
     pa_assert(p);
+    pa_assert(PA_REFCNT_VALUE(p) >= 1);
+
+    if (PA_REFCNT_DEC(p) > 0)
+        return;
 
     while ((c = pa_idxset_first(p->connections, NULL)))
         connection_unlink(c);
+
     pa_idxset_free(p->connections, NULL, NULL);
 
-    pa_socket_server_unref(p->server);
-
-    if (p->auth_ip_acl)
-        pa_ip_acl_free(p->auth_ip_acl);
-
-    pa_xfree(p->sink_name);
-    pa_xfree(p->source_name);
+    pa_assert_se(pa_shared_remove(p->core, "esound-protocol") >= 0);
 
     pa_xfree(p);
+}
+
+pa_esound_options* pa_esound_options_new(void) {
+    pa_esound_options *o;
+
+    o = pa_xnew0(pa_esound_options, 1);
+    PA_REFCNT_INIT(o);
+
+    return o;
+}
+
+pa_esound_options* pa_esound_options_ref(pa_esound_options *o) {
+    pa_assert(o);
+    pa_assert(PA_REFCNT_VALUE(o) >= 1);
+
+    PA_REFCNT_INC(o);
+
+    return o;
+}
+
+void pa_esound_options_unref(pa_esound_options *o) {
+    pa_assert(o);
+    pa_assert(PA_REFCNT_VALUE(o) >= 1);
+
+    if (PA_REFCNT_DEC(o) > 0)
+        return;
+
+    if (o->auth_ip_acl)
+        pa_ip_acl_free(o->auth_ip_acl);
+
+    if (o->auth_cookie)
+        pa_auth_cookie_unref(o->auth_cookie);
+
+    pa_xfree(o->default_sink);
+    pa_xfree(o->default_source);
+
+    pa_xfree(o);
+}
+
+int pa_esound_options_parse(pa_esound_options *o, pa_core *c, pa_modargs *ma) {
+    pa_bool_t enabled;
+    const char *acl;
+
+    pa_assert(o);
+    pa_assert(PA_REFCNT_VALUE(o) >= 1);
+    pa_assert(ma);
+
+    if (pa_modargs_get_value_boolean(ma, "auth-anonymous", &o->auth_anonymous) < 0) {
+        pa_log("auth-anonymous= expects a boolean argument.");
+        return -1;
+    }
+
+    if ((acl = pa_modargs_get_value(ma, "auth-ip-acl", NULL))) {
+        pa_ip_acl *ipa;
+
+        if (!(ipa = pa_ip_acl_new(acl))) {
+            pa_log("Failed to parse IP ACL '%s'", acl);
+            return -1;
+        }
+
+        if (o->auth_ip_acl)
+            pa_ip_acl_free(o->auth_ip_acl);
+
+        o->auth_ip_acl = ipa;
+    }
+
+    enabled = TRUE;
+    if (pa_modargs_get_value_boolean(ma, "auth-cookie-enabled", &enabled) < 0) {
+        pa_log("auth-cookie-enabled= expects a boolean argument.");
+        return -1;
+    }
+
+    if (o->auth_cookie)
+        pa_auth_cookie_unref(o->auth_cookie);
+
+    if (enabled) {
+        const char *cn;
+
+        /* The new name for this is 'auth-cookie', for compat reasons
+         * we check the old name too */
+        if (!(cn = pa_modargs_get_value(ma, "auth-cookie", NULL)))
+            if (!(cn = pa_modargs_get_value(ma, "cookie", NULL)))
+                cn = DEFAULT_COOKIE_FILE;
+
+        if (!(o->auth_cookie = pa_auth_cookie_get(c, cn, ESD_KEY_LEN)))
+            return -1;
+
+    } else
+        o->auth_cookie = NULL;
+
+    pa_xfree(o->default_sink);
+    o->default_sink = pa_xstrdup(pa_modargs_get_value(ma, "sink", NULL));
+
+    pa_xfree(o->default_source);
+    o->default_source = pa_xstrdup(pa_modargs_get_value(ma, "source", NULL));
+
+    return 0;
 }

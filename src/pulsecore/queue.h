@@ -1,12 +1,10 @@
-#ifndef fooqueuehfoo
-#define fooqueuehfoo
-
-/* $Id: queue.h 1426 2007-02-13 15:35:19Z ossman $ */
+#ifndef foopulsecorequeuehfoo
+#define foopulsecorequeuehfoo
 
 /***
   This file is part of PulseAudio.
 
-  Copyright 2004-2006 Lennart Poettering
+  Copyright 2004-2008 Lennart Poettering
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
@@ -24,6 +22,8 @@
   USA.
 ***/
 
+#include <pulsecore/idxset.h>
+
 typedef struct pa_queue pa_queue;
 
 /* A simple implementation of the abstract data type queue. Stores
@@ -31,12 +31,13 @@ typedef struct pa_queue pa_queue;
 
 pa_queue* pa_queue_new(void);
 
-/* Free the queue and run the specified callback function for every remaining entry. The callback function may be NULL. */
-void pa_queue_free(pa_queue* q, void (*destroy)(void *p, void *userdata), void *userdata);
+/* Free the queue and run the specified callback function for every
+ * remaining entry. The callback function may be NULL. */
+void pa_queue_free(pa_queue* q, pa_free2_cb_t free_func, void *userdata);
 
 void pa_queue_push(pa_queue *q, void *p);
 void* pa_queue_pop(pa_queue *q);
 
-int pa_queue_is_empty(pa_queue *q);
+int pa_queue_isempty(pa_queue *q);
 
 #endif

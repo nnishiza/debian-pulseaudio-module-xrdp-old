@@ -1,5 +1,3 @@
-/* $Id: x11wrap.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -31,7 +29,7 @@
 
 #include <pulsecore/llist.h>
 #include <pulsecore/log.h>
-#include <pulsecore/props.h>
+#include <pulsecore/shared.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/macro.h>
 
@@ -63,7 +61,8 @@ struct pa_x11_wrapper {
 struct pa_x11_client {
     PA_LLIST_FIELDS(pa_x11_client);
     pa_x11_wrapper *wrapper;
-    int (*callback)(pa_x11_wrapper *w, XEvent *e, void *userdata);
+    pa_x11_event_cb_t event_cb;
+    pa_x11_kill_cb_t kill_cb;
     void *userdata;
 };
 
@@ -72,21 +71,27 @@ static void work(pa_x11_wrapper *w) {
     pa_assert(w);
     pa_assert(PA_REFCNT_VALUE(w) >= 1);
 
+    pa_x11_wrapper_ref(w);
+
     while (XPending(w->display)) {
-        pa_x11_client *c;
+        pa_x11_client *c, *n;
         XEvent e;
         XNextEvent(w->display, &e);
 
-        for (c = w->clients; c; c = c->next) {
-            pa_assert(c->callback);
-            if (c->callback(w, &e, c->userdata) != 0)
-                break;
+        for (c = w->clients; c; c = n) {
+            n = c->next;
+
+            if (c->event_cb)
+                if (c->event_cb(w, &e, c->userdata) != 0)
+                    break;
         }
     }
+
+    pa_x11_wrapper_unref(w);
 }
 
 /* IO notification event for the X11 display connection */
-static void display_io_event(pa_mainloop_api *m, pa_io_event *e, int fd, PA_GCC_UNUSED pa_io_event_flags_t f, void *userdata) {
+static void display_io_event(pa_mainloop_api *m, pa_io_event *e, int fd, pa_io_event_flags_t f, void *userdata) {
     pa_x11_wrapper *w = userdata;
 
     pa_assert(m);
@@ -113,7 +118,7 @@ static void defer_event(pa_mainloop_api *m, pa_defer_event *e, void *userdata) {
 }
 
 /* IO notification event for X11 internal connections */
-static void internal_io_event(pa_mainloop_api *m, pa_io_event *e, int fd, PA_GCC_UNUSED pa_io_event_flags_t f, void *userdata) {
+static void internal_io_event(pa_mainloop_api *m, pa_io_event *e, int fd, pa_io_event_flags_t f, void *userdata) {
     pa_x11_wrapper *w = userdata;
 
     pa_assert(m);
@@ -187,7 +192,7 @@ static pa_x11_wrapper* x11_wrapper_new(pa_core *c, const char *name, const char 
 
     XAddConnectionWatch(d, x11_watch, (XPointer) w);
 
-    pa_assert_se(pa_property_set(c, w->property_name, w) >= 0);
+    pa_assert_se(pa_shared_set(c, w->property_name, w) >= 0);
 
     return w;
 }
@@ -195,7 +200,7 @@ static pa_x11_wrapper* x11_wrapper_new(pa_core *c, const char *name, const char 
 static void x11_wrapper_free(pa_x11_wrapper*w) {
     pa_assert(w);
 
-    pa_assert_se(pa_property_remove(w->core, w->property_name) >= 0);
+    pa_assert_se(pa_shared_remove(w->core, w->property_name) >= 0);
 
     pa_assert(!w->clients);
 
@@ -218,8 +223,9 @@ pa_x11_wrapper* pa_x11_wrapper_get(pa_core *c, const char *name) {
 
     pa_core_assert_ref(c);
 
-    pa_snprintf(t, sizeof(t), "x11-wrapper%s%s", name ? "-" : "", name ? name : "");
-    if ((w = pa_property_get(c, t)))
+    pa_snprintf(t, sizeof(t), "x11-wrapper%s%s", name ? "@" : "", name ? name : "");
+
+    if ((w = pa_shared_get(c, t)))
         return pa_x11_wrapper_ref(w);
 
     return x11_wrapper_new(c, name, t);
@@ -237,8 +243,10 @@ void pa_x11_wrapper_unref(pa_x11_wrapper* w) {
     pa_assert(w);
     pa_assert(PA_REFCNT_VALUE(w) >= 1);
 
-    if (PA_REFCNT_DEC(w) <= 0)
-        x11_wrapper_free(w);
+    if (PA_REFCNT_DEC(w) > 0)
+        return;
+
+    x11_wrapper_free(w);
 }
 
 Display *pa_x11_wrapper_get_display(pa_x11_wrapper *w) {
@@ -251,7 +259,24 @@ Display *pa_x11_wrapper_get_display(pa_x11_wrapper *w) {
     return w->display;
 }
 
-pa_x11_client* pa_x11_client_new(pa_x11_wrapper *w, int (*cb)(pa_x11_wrapper *w, XEvent *e, void *userdata), void *userdata) {
+void pa_x11_wrapper_kill(pa_x11_wrapper *w) {
+    pa_x11_client *c, *n;
+
+    pa_assert(w);
+
+    pa_x11_wrapper_ref(w);
+
+    for (c = w->clients; c; c = n) {
+        n = c->next;
+
+        if (c->kill_cb)
+            c->kill_cb(w, c->userdata);
+    }
+
+    pa_x11_wrapper_unref(w);
+}
+
+pa_x11_client* pa_x11_client_new(pa_x11_wrapper *w, pa_x11_event_cb_t event_cb, pa_x11_kill_cb_t kill_cb, void *userdata) {
     pa_x11_client *c;
 
     pa_assert(w);
@@ -259,7 +284,8 @@ pa_x11_client* pa_x11_client_new(pa_x11_wrapper *w, int (*cb)(pa_x11_wrapper *w,
 
     c = pa_xnew(pa_x11_client, 1);
     c->wrapper = w;
-    c->callback = cb;
+    c->event_cb = event_cb;
+    c->kill_cb = kill_cb;
     c->userdata = userdata;
 
     PA_LLIST_PREPEND(pa_x11_client, w->clients, c);

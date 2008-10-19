@@ -1,5 +1,3 @@
-/* $Id: tokenizer.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -29,14 +27,14 @@
 #include <stdlib.h>
 
 #include <pulse/xmalloc.h>
+#include <pulse/gccmacro.h>
 
 #include <pulsecore/dynarray.h>
-#include <pulsecore/gccmacro.h>
 #include <pulsecore/macro.h>
 
 #include "tokenizer.h"
 
-static void token_free(void *p, PA_GCC_UNUSED void *userdata) {
+static void token_free(void *p, void *userdata) {
     pa_xfree(p);
 }
 

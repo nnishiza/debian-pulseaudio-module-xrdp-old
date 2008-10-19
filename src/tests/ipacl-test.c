@@ -1,5 +1,3 @@
-/* $Id: ipacl-test.c 1418 2007-01-04 13:43:45Z ossman $ */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif

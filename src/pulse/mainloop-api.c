@@ -1,5 +1,3 @@
-/* $Id: mainloop-api.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -28,8 +26,9 @@
 #include <stdlib.h>
 
 #include <pulse/xmalloc.h>
+#include <pulse/gccmacro.h>
+#include <pulse/i18n.h>
 
-#include <pulsecore/gccmacro.h>
 #include <pulsecore/macro.h>
 
 #include "mainloop-api.h"
@@ -52,7 +51,7 @@ static void once_callback(pa_mainloop_api *m, pa_defer_event *e, void *userdata)
     m->defer_free(e);
 }
 
-static void free_callback(pa_mainloop_api *m, PA_GCC_UNUSED pa_defer_event *e, void *userdata) {
+static void free_callback(pa_mainloop_api *m, pa_defer_event *e, void *userdata) {
     struct once_info *i = userdata;
 
     pa_assert(m);
@@ -67,6 +66,8 @@ void pa_mainloop_api_once(pa_mainloop_api* m, void (*callback)(pa_mainloop_api *
     pa_assert(m);
     pa_assert(callback);
 
+    pa_init_i18n();
+
     i = pa_xnew(struct once_info, 1);
     i->callback = callback;
     i->userdata = userdata;
@@ -75,4 +76,3 @@ void pa_mainloop_api_once(pa_mainloop_api* m, void (*callback)(pa_mainloop_api *
     pa_assert_se(e = m->defer_new(m, once_callback, i));
     m->defer_set_destroy(e, free_callback);
 }
-

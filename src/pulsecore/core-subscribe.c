@@ -1,5 +1,3 @@
-/* $Id: core-subscribe.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -44,7 +42,7 @@
 
 struct pa_subscription {
     pa_core *core;
-    int dead;
+    pa_bool_t dead;
 
     pa_subscription_cb_t callback;
     void *userdata;
@@ -74,7 +72,7 @@ pa_subscription* pa_subscription_new(pa_core *c, pa_subscription_mask_t m, pa_su
 
     s = pa_xnew(pa_subscription, 1);
     s->core = c;
-    s->dead = 0;
+    s->dead = FALSE;
     s->callback = callback;
     s->userdata = userdata;
     s->mask = m;
@@ -88,7 +86,7 @@ void pa_subscription_free(pa_subscription*s) {
     pa_assert(s);
     pa_assert(!s->dead);
 
-    s->dead = 1;
+    s->dead = TRUE;
     sched_event(s->core);
 }
 
@@ -147,7 +145,7 @@ static void dump_event(const char * prefix, pa_subscription_event*e) {
         [PA_SUBSCRIPTION_EVENT_REMOVE] = "REMOVE"
     };
 
-    pa_log("%s event (%s|%s|%u)",
+    pa_log_debug("%s event (%s|%s|%u)",
            prefix,
            fac_table[e->type & PA_SUBSCRIPTION_EVENT_FACILITY_MASK],
            type_table[e->type & PA_SUBSCRIPTION_EVENT_TYPE_MASK],
@@ -236,7 +234,7 @@ void pa_subscription_post(pa_core *c, pa_subscription_event_type_t t, uint32_t i
                  * entry in the queue. */
 
                 free_event(i);
-                pa_log_debug("dropped redundant event.");
+                pa_log_debug("Dropped redundant event due to remove event.");
                 continue;
             }
 
@@ -244,7 +242,7 @@ void pa_subscription_post(pa_core *c, pa_subscription_event_type_t t, uint32_t i
                 /* This object has changed. If a "new" or "change" event for
                  * this object is still in the queue we can exit. */
 
-                pa_log_debug("dropped redundant event.");
+                pa_log_debug("Dropped redundant event due to change event.");
                 return;
             }
         }

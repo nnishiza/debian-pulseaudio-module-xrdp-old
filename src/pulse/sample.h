@@ -1,8 +1,6 @@
 #ifndef foosamplehfoo
 #define foosamplehfoo
 
-/* $Id: sample.h 2157 2008-03-27 23:25:08Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -30,6 +28,7 @@
 #include <sys/param.h>
 #include <math.h>
 
+#include <pulse/gccmacro.h>
 #include <pulse/cdecl.h>
 
 /** \page sample Sample Format Specifications
@@ -53,7 +52,7 @@
  * \li PA_SAMPLE_S32LE - Signed 32 bit integer PCM, little endian.
  * \li PA_SAMPLE_S32BE - Signed 32 bit integer PCM, big endian.
  *
- * The floating point sample formats have the range from -1 to 1.
+ * The floating point sample formats have the range from -1.0 to 1.0.
  *
  * The sample formats that are sensitive to endianness have convenience
  * macros for native endian (NE), and reverse endian (RE).
@@ -114,24 +113,45 @@ PA_C_DECL_BEGIN
 #endif
 
 /** Maximum number of allowed channels */
-#define PA_CHANNELS_MAX 32
+#define PA_CHANNELS_MAX 32U
 
 /** Maximum allowed sample rate */
-#define PA_RATE_MAX (48000*4)
+#define PA_RATE_MAX (48000U*4U)
 
 /** Sample format */
 typedef enum pa_sample_format {
-    PA_SAMPLE_U8,              /**< Unsigned 8 Bit PCM */
-    PA_SAMPLE_ALAW,            /**< 8 Bit a-Law */
-    PA_SAMPLE_ULAW,            /**< 8 Bit mu-Law */
-    PA_SAMPLE_S16LE,           /**< Signed 16 Bit PCM, little endian (PC) */
-    PA_SAMPLE_S16BE,           /**< Signed 16 Bit PCM, big endian */
-    PA_SAMPLE_FLOAT32LE,       /**< 32 Bit IEEE floating point, little endian, range -1 to 1 */
-    PA_SAMPLE_FLOAT32BE,       /**< 32 Bit IEEE floating point, big endian, range -1 to 1 */
-    PA_SAMPLE_S32LE,           /**< Signed 32 Bit PCM, little endian (PC) */
-    PA_SAMPLE_S32BE,           /**< Signed 32 Bit PCM, big endian (PC) */
-    PA_SAMPLE_MAX,             /**< Upper limit of valid sample types */
-    PA_SAMPLE_INVALID = -1     /**< An invalid value */
+    PA_SAMPLE_U8,
+    /**< Unsigned 8 Bit PCM */
+
+    PA_SAMPLE_ALAW,
+    /**< 8 Bit a-Law */
+
+    PA_SAMPLE_ULAW,
+    /**< 8 Bit mu-Law */
+
+    PA_SAMPLE_S16LE,
+    /**< Signed 16 Bit PCM, little endian (PC) */
+
+    PA_SAMPLE_S16BE,
+    /**< Signed 16 Bit PCM, big endian */
+
+    PA_SAMPLE_FLOAT32LE,
+    /**< 32 Bit IEEE floating point, little endian, range -1 to 1 */
+
+    PA_SAMPLE_FLOAT32BE,
+    /**< 32 Bit IEEE floating point, big endian, range -1 to 1 */
+
+    PA_SAMPLE_S32LE,
+    /**< Signed 32 Bit PCM, little endian (PC) */
+
+    PA_SAMPLE_S32BE,
+    /**< Signed 32 Bit PCM, big endian (PC) */
+
+    PA_SAMPLE_MAX,
+    /**< Upper limit of valid sample types */
+
+    PA_SAMPLE_INVALID = -1
+    /**< An invalid value */
 } pa_sample_format_t;
 
 #ifdef WORDS_BIGENDIAN
@@ -165,14 +185,32 @@ typedef enum pa_sample_format {
 /** A Shortcut for PA_SAMPLE_FLOAT32NE */
 #define PA_SAMPLE_FLOAT32 PA_SAMPLE_FLOAT32NE
 
+/** \cond fulldocs */
+/* Allow clients to check with #ifdef for thse sample formats */
+#define PA_SAMPLE_U8 PA_SAMPLE_U8
+#define PA_SAMPLE_ALAW PA_SAMPLE_ALAW
+#define PA_SAMPLE_ULAW PA_SAMPLE_ULAW
+#define PA_SAMPLE_S16LE PA_SAMPLE_S16LE
+#define PA_SAMPLE_S16BE PA_SAMPLE_S16BE
+#define PA_SAMPLE_FLOAT32LE PA_SAMPLE_FLOAT32LE
+#define PA_SAMPLE_FLOAT32BE PA_SAMPLE_FLOAT32BE
+#define PA_SAMPLE_S32LE PA_SAMPLE_S32LE
+#define PA_SAMPLE_S32BE PA_SAMPLE_S32BE
+/** \endcond */
+
 /** A sample format and attribute specification */
 typedef struct pa_sample_spec {
-    pa_sample_format_t format;     /**< The sample format */
-    uint32_t rate;                 /**< The sample rate. (e.g. 44100) */
-    uint8_t channels;              /**< Audio channels. (1 for mono, 2 for stereo, ...) */
+    pa_sample_format_t format;
+    /**< The sample format */
+
+    uint32_t rate;
+    /**< The sample rate. (e.g. 44100) */
+
+    uint8_t channels;
+    /**< Audio channels. (1 for mono, 2 for stereo, ...) */
 } pa_sample_spec;
 
-/** Type for usec specifications (unsigned). May be either 32 or 64 bit, depending on the architecture */
+/** Type for usec specifications (unsigned). Always 64 bit. */
 typedef uint64_t pa_usec_t;
 
 /** Return the amount of bytes playback of a second of audio with the specified sample type takes */
@@ -184,11 +222,20 @@ size_t pa_frame_size(const pa_sample_spec *spec) PA_GCC_PURE;
 /** Return the size of a sample with the specific sample type */
 size_t pa_sample_size(const pa_sample_spec *spec) PA_GCC_PURE;
 
-/** Calculate the time the specified bytes take to play with the specified sample type */
+/** Calculate the time the specified bytes take to play with the
+ * specified sample type. The return value will always be rounded
+ * down for non-integral return values. */
 pa_usec_t pa_bytes_to_usec(uint64_t length, const pa_sample_spec *spec) PA_GCC_PURE;
 
-/** Calculates the number of bytes that are required for the specified time. \since 0.9 */
+/** Calculates the number of bytes that are required for the specified
+ * time. The return value will always be rounded down for non-integral
+ * return values. \since 0.9 */
 size_t pa_usec_to_bytes(pa_usec_t t, const pa_sample_spec *spec) PA_GCC_PURE;
+
+/** Initialize the specified sample spec and return a pointer to
+ * it. The sample spec will have a defined state but
+ * pa_sample_spec_valid() will fail for it. \since 0.9.13 */
+pa_sample_spec* pa_sample_spec_init(pa_sample_spec *spec);
 
 /** Return non-zero when the sample type specification is valid */
 int pa_sample_spec_valid(const pa_sample_spec *spec) PA_GCC_PURE;
@@ -202,7 +249,11 @@ const char *pa_sample_format_to_string(pa_sample_format_t f) PA_GCC_PURE;
 /** Parse a sample format text. Inverse of pa_sample_format_to_string() */
 pa_sample_format_t pa_parse_sample_format(const char *format) PA_GCC_PURE;
 
-/** Maximum required string length for pa_sample_spec_snprint() */
+/** Maximum required string length for
+ * pa_sample_spec_snprint(). Please note that this value can change
+ * with any release without warning and without being considered API
+ * or ABI breakage. You should not use this definition anywhere where
+ * it might become part of an ABI. */
 #define PA_SAMPLE_SPEC_SNPRINT_MAX 32
 
 /** Pretty print a sample type specification to a string */

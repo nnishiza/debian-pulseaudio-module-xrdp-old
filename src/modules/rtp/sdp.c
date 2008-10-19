@@ -1,5 +1,3 @@
-/* $Id: sdp.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -57,7 +55,7 @@ char *pa_sdp_build(int af, const void *src, const void *dst, const char *name, u
     if (!(u = pa_get_user_name(un, sizeof(un))))
         u = "-";
 
-    ntp = time(NULL) + 2208988800U;
+    ntp = (uint32_t) time(NULL) + 2208988800U;
 
     pa_assert_se(a = inet_ntop(af, src, buf_src, sizeof(buf_src)));
     pa_assert_se(a = inet_ntop(af, dst, buf_dst, sizeof(buf_dst)));
@@ -101,10 +99,10 @@ static pa_sample_spec *parse_sdp_sample_spec(pa_sample_spec *ss, char *c) {
         return NULL;
 
     if (sscanf(c, "%u/%u", &rate, &channels) == 2) {
-        ss->rate = rate;
-        ss->channels = channels;
+        ss->rate = (uint32_t) rate;
+        ss->channels = (uint8_t) channels;
     } else if (sscanf(c, "%u", &rate) == 2) {
-        ss->rate = rate;
+        ss->rate = (uint32_t) rate;
         ss->channels = 1;
     } else
         return NULL;
@@ -117,7 +115,7 @@ static pa_sample_spec *parse_sdp_sample_spec(pa_sample_spec *ss, char *c) {
 
 pa_sdp_info *pa_sdp_parse(const char *t, pa_sdp_info *i, int is_goodbye) {
     uint16_t port = 0;
-    int ss_valid = 0;
+    pa_bool_t ss_valid = FALSE;
 
     pa_assert(t);
     pa_assert(i);
@@ -202,7 +200,7 @@ pa_sdp_info *pa_sdp_parse(const char *t, pa_sdp_info *i, int is_goodbye) {
                     i->payload = (uint8_t) _payload;
 
                     if (pa_rtp_sample_spec_from_payload(i->payload, &i->sample_spec))
-                        ss_valid = 1;
+                        ss_valid = TRUE;
                 }
             }
         } else if (pa_startswith(t, "a=rtpmap:")) {
@@ -222,7 +220,7 @@ pa_sdp_info *pa_sdp_parse(const char *t, pa_sdp_info *i, int is_goodbye) {
                         c[strcspn(c, "\n")] = 0;
 
                         if (parse_sdp_sample_spec(&i->sample_spec, c))
-                            ss_valid = 1;
+                            ss_valid = TRUE;
                     }
                 }
             }

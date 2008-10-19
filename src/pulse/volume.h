@@ -1,8 +1,6 @@
 #ifndef foovolumehfoo
 #define foovolumehfoo
 
-/* $Id: volume.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -26,8 +24,11 @@
 ***/
 
 #include <inttypes.h>
+
 #include <pulse/cdecl.h>
+#include <pulse/gccmacro.h>
 #include <pulse/sample.h>
+#include <pulse/channelmap.h>
 
 /** \page volume Volume Control
  *
@@ -61,7 +62,7 @@
  *
  * The functions described above are only valid when used with
  * software volumes. Hence it is usually a better idea to treat all
- * volume values as opaque with a range from PA_VOLUME_MUTE (0%) to
+ * volume values as opaque with a range from PA_VOLUME_MUTED (0%) to
  * PA_VOLUME_NORM (100%) and to refrain from any calculations with
  * them.
  *
@@ -101,10 +102,10 @@ PA_C_DECL_BEGIN
 typedef uint32_t pa_volume_t;
 
 /** Normal volume (100%) */
-#define PA_VOLUME_NORM (0x10000)
+#define PA_VOLUME_NORM ((pa_volume_t) 0x10000U)
 
 /** Muted volume (0%) */
-#define PA_VOLUME_MUTED (0)
+#define PA_VOLUME_MUTED ((pa_volume_t) 0U)
 
 /** A structure encapsulating a per-channel volume */
 typedef struct pa_cvolume {
@@ -115,6 +116,11 @@ typedef struct pa_cvolume {
 /** Return non-zero when *a == *b */
 int pa_cvolume_equal(const pa_cvolume *a, const pa_cvolume *b) PA_GCC_PURE;
 
+/** Initialize the specified volume and return a pointer to
+ * it. The sample spec will have a defined state but
+ * pa_cvolume_valid() will fail for it. \since 0.9.13 */
+pa_cvolume* pa_cvolume_init(pa_cvolume *a);
+
 /** Set the volume of all channels to PA_VOLUME_NORM */
 #define pa_cvolume_reset(a, n) pa_cvolume_set((a), (n), PA_VOLUME_NORM)
 
@@ -124,14 +130,31 @@ int pa_cvolume_equal(const pa_cvolume *a, const pa_cvolume *b) PA_GCC_PURE;
 /** Set the volume of all channels to the specified parameter */
 pa_cvolume* pa_cvolume_set(pa_cvolume *a, unsigned channels, pa_volume_t v);
 
-/** Maximum length of the strings returned by pa_cvolume_snprint() */
-#define PA_CVOLUME_SNPRINT_MAX 64
+/** Maximum length of the strings returned by
+ * pa_cvolume_snprint(). Please note that this value can change with
+ * any release without warning and without being considered API or ABI
+ * breakage. You should not use this definition anywhere where it
+ * might become part of an ABI.*/
+#define PA_CVOLUME_SNPRINT_MAX 320
 
 /** Pretty print a volume structure */
 char *pa_cvolume_snprint(char *s, size_t l, const pa_cvolume *c);
 
+/** Maximum length of the strings returned by
+ * pa_cvolume_snprint_dB(). Please note that this value can change with
+ * any release without warning and without being considered API or ABI
+ * breakage. You should not use this definition anywhere where it
+ * might become part of an ABI. \since 0.9.13 */
+#define PA_SW_CVOLUME_SNPRINT_DB_MAX 448
+
+/** Pretty print a volume structure but show dB values. \since 0.9.13 */
+char *pa_sw_cvolume_snprint_dB(char *s, size_t l, const pa_cvolume *c);
+
 /** Return the average volume of all channels */
 pa_volume_t pa_cvolume_avg(const pa_cvolume *a) PA_GCC_PURE;
+
+/** Return the maximum volume of all channels. \since 0.9.12 */
+pa_volume_t pa_cvolume_max(const pa_cvolume *a) PA_GCC_PURE;
 
 /** Return TRUE when the passed cvolume structure is valid, FALSE otherwise */
 int pa_cvolume_valid(const pa_cvolume *v) PA_GCC_PURE;
@@ -145,30 +168,50 @@ int pa_cvolume_channels_equal_to(const pa_cvolume *a, pa_volume_t v) PA_GCC_PURE
 /** Return 1 if the specified volume has all channels on normal level */
 #define pa_cvolume_is_norm(a) pa_cvolume_channels_equal_to((a), PA_VOLUME_NORM)
 
-/** Multiply two volumes specifications, return the result. This uses PA_VOLUME_NORM as neutral element of multiplication. This is only valid for software volumes! */
+/** Multiply two volume specifications, return the result. This uses
+ * PA_VOLUME_NORM as neutral element of multiplication. This is only
+ * valid for software volumes! */
 pa_volume_t pa_sw_volume_multiply(pa_volume_t a, pa_volume_t b) PA_GCC_CONST;
 
-/** Multiply to per-channel volumes and return the result in *dest. This is only valid for software volumes! */
-pa_cvolume *pa_sw_cvolume_multiply(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b) PA_GCC_PURE;
+/** Multiply two per-channel volumes and return the result in
+ * *dest. This is only valid for software volumes! */
+pa_cvolume *pa_sw_cvolume_multiply(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b);
 
-/** Convert a decibel value to a volume. This is only valid for software volumes! \since 0.4 */
+/** Divide two volume specifications, return the result. This uses
+ * PA_VOLUME_NORM as neutral element of division. This is only valid
+ * for software volumes! If a division by zero is tried the result
+ * will be 0. \since 0.9.13 */
+pa_volume_t pa_sw_volume_divide(pa_volume_t a, pa_volume_t b) PA_GCC_CONST;
+
+/** Multiply to per-channel volumes and return the result in
+ * *dest. This is only valid for software volumes! \since 0.9.13 */
+pa_cvolume *pa_sw_cvolume_divide(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b);
+
+/** Convert a decibel value to a volume. This is only valid for software volumes! */
 pa_volume_t pa_sw_volume_from_dB(double f) PA_GCC_CONST;
 
-/** Convert a volume to a decibel value. This is only valid for software volumes! \since 0.4 */
+/** Convert a volume to a decibel value. This is only valid for software volumes! */
 double pa_sw_volume_to_dB(pa_volume_t v) PA_GCC_CONST;
 
-/** Convert a linear factor to a volume. This is only valid for software volumes! \since 0.8 */
+/** Convert a linear factor to a volume. This is only valid for software volumes! */
 pa_volume_t pa_sw_volume_from_linear(double v) PA_GCC_CONST;
 
-/** Convert a volume to a linear factor. This is only valid for software volumes! \since 0.8 */
+/** Convert a volume to a linear factor. This is only valid for software volumes! */
 double pa_sw_volume_to_linear(pa_volume_t v) PA_GCC_CONST;
 
 #ifdef INFINITY
-#define PA_DECIBEL_MININFTY (-INFINITY)
+#define PA_DECIBEL_MININFTY ((double) -INFINITY)
 #else
-/** This value is used as minus infinity when using pa_volume_{to,from}_dB(). \since 0.4 */
-#define PA_DECIBEL_MININFTY (-200)
+/** This value is used as minus infinity when using pa_volume_{to,from}_dB(). */
+#define PA_DECIBEL_MININFTY ((double) -200.0)
 #endif
+
+/** Remap a volume from one channel mapping to a different channel mapping. \since 0.9.12 */
+pa_cvolume *pa_cvolume_remap(pa_cvolume *v, pa_channel_map *from, pa_channel_map *to);
+
+/** Return non-zero if the specified volume is compatible with
+ * the specified sample spec. \since 0.9.13 */
+int pa_cvolume_compatible(const pa_cvolume *v, const pa_sample_spec *ss) PA_GCC_PURE;
 
 PA_C_DECL_END
 

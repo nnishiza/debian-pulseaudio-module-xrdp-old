@@ -1,8 +1,6 @@
 #ifndef fooiochannelhfoo
 #define fooiochannelhfoo
 
-/* $Id: iochannel.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -84,6 +82,8 @@ void pa_iochannel_socket_peer_to_string(pa_iochannel*io, char*s, size_t l);
 /* Use setsockopt() to tune the recieve and send buffers of TCP sockets */
 int pa_iochannel_socket_set_rcvbuf(pa_iochannel*io, size_t l);
 int pa_iochannel_socket_set_sndbuf(pa_iochannel*io, size_t l);
+
+pa_bool_t pa_iochannel_socket_is_local(pa_iochannel *io);
 
 pa_mainloop_api* pa_iochannel_get_mainloop_api(pa_iochannel *io);
 

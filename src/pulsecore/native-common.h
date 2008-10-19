@@ -1,8 +1,6 @@
 #ifndef foonativecommonhfoo
 #define foonativecommonhfoo
 
-/* $Id: native-common.h 2064 2007-11-21 01:20:16Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -126,7 +124,7 @@ enum {
     PA_COMMAND_SUSPEND_SINK,
     PA_COMMAND_SUSPEND_SOURCE,
 
-    /* Supported since protocol v13 (0.9.8) */
+    /* Supported since protocol v12 (0.9.8) */
     PA_COMMAND_SET_PLAYBACK_STREAM_BUFFER_ATTR,
     PA_COMMAND_SET_RECORD_STREAM_BUFFER_ATTR,
 
@@ -138,6 +136,20 @@ enum {
     PA_COMMAND_RECORD_STREAM_SUSPENDED,
     PA_COMMAND_PLAYBACK_STREAM_MOVED,
     PA_COMMAND_RECORD_STREAM_MOVED,
+
+    /* Supported since protocol v13 (0.9.11) */
+    PA_COMMAND_UPDATE_RECORD_STREAM_PROPLIST,
+    PA_COMMAND_UPDATE_PLAYBACK_STREAM_PROPLIST,
+    PA_COMMAND_UPDATE_CLIENT_PROPLIST,
+    PA_COMMAND_REMOVE_RECORD_STREAM_PROPLIST,
+    PA_COMMAND_REMOVE_PLAYBACK_STREAM_PROPLIST,
+    PA_COMMAND_REMOVE_CLIENT_PROPLIST,
+
+    /* SERVER->CLIENT */
+    PA_COMMAND_STARTED,
+
+    /* Supported since protocol v14 (0.9.12) */
+    PA_COMMAND_EXTENSION,
 
     PA_COMMAND_MAX
 };
@@ -151,7 +163,6 @@ enum {
 #define PA_NATIVE_SERVER_PROPERTY_NAME "protocol-native-server"
 
 #define PA_NATIVE_DEFAULT_UNIX_SOCKET "native"
-
 
 PA_C_DECL_END
 

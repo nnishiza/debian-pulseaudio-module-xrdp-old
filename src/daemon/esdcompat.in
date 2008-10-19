@@ -1,7 +1,5 @@
 #!/bin/sh
 
-# $Id: esdcompat.in 1361 2006-09-02 12:28:40Z lennart $
-#
 # This file is part of PulseAudio.
 #
 # PulseAudio is free software; you can redistribute it and/or modify

@@ -1,5 +1,3 @@
-/* $Id: module-zeroconf-discover.c 2159 2008-03-27 23:29:32Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -164,8 +162,7 @@ static void resolver_cb(
         pa_module *m;
 
         ss = u->core->default_sample_spec;
-        pa_assert_se(pa_channel_map_init_auto(&cm, ss.channels, PA_CHANNEL_MAP_AUX));
-        pa_channel_map_init_auto(&cm, ss.channels, PA_CHANNEL_MAP_DEFAULT);
+        pa_channel_map_init_extend(&cm, ss.channels, PA_CHANNEL_MAP_DEFAULT);
 
         for (l = txt; l; l = l->next) {
             char *key, *value;
@@ -176,9 +173,9 @@ static void resolver_cb(
                 device = value;
                 value = NULL;
             } else if (strcmp(key, "rate") == 0)
-                ss.rate = atoi(value);
+                ss.rate = (uint32_t) atoi(value);
             else if (strcmp(key, "channels") == 0)
-                ss.channels = atoi(value);
+                ss.channels = (uint8_t) atoi(value);
             else if (strcmp(key, "format") == 0)
                 ss.format = pa_parse_sample_format(value);
             else if (strcmp(key, "channel_map") == 0) {
@@ -190,10 +187,8 @@ static void resolver_cb(
             avahi_free(value);
         }
 
-        if (!channel_map_set && cm.channels != ss.channels) {
-            pa_assert_se(pa_channel_map_init_auto(&cm, ss.channels, PA_CHANNEL_MAP_AUX));
-            pa_channel_map_init_auto(&cm, ss.channels, PA_CHANNEL_MAP_DEFAULT);
-        }
+        if (!channel_map_set && cm.channels != ss.channels)
+            pa_channel_map_init_extend(&cm, ss.channels, PA_CHANNEL_MAP_DEFAULT);
 
         if (!pa_sample_spec_valid(&ss)) {
             pa_log("Service '%s' contains an invalid sample specification.", name);
@@ -237,7 +232,7 @@ static void resolver_cb(
                                  t, dname,
                                  pa_channel_map_snprint(cmt, sizeof(cmt), &cm));
 
-        pa_log_debug("Loading module-tunnel-%s with arguments '%s'", module_name, args);
+        pa_log_debug("Loading %s with arguments '%s'", module_name, args);
 
         if ((m = pa_module_load(u->core, module_name, args))) {
             tnl->module_index = m->index;
@@ -291,7 +286,7 @@ static void browser_cb(
         struct tunnel *t2;
 
         if ((t2 = pa_hashmap_get(u->tunnels, t))) {
-            pa_module_unload_by_index(u->core, t2->module_index);
+            pa_module_unload_by_index(u->core, t2->module_index, TRUE);
             pa_hashmap_remove(u->tunnels, t2);
             tunnel_free(t2);
         }
@@ -324,7 +319,7 @@ static void client_callback(AvahiClient *c, AvahiClientState state, void *userda
                               browser_cb, u))) {
 
                     pa_log("avahi_service_browser_new() failed: %s", avahi_strerror(avahi_client_errno(c)));
-                    pa_module_unload_request(u->module);
+                    pa_module_unload_request(u->module, TRUE);
                 }
             }
 
@@ -339,7 +334,7 @@ static void client_callback(AvahiClient *c, AvahiClientState state, void *userda
                               browser_cb, u))) {
 
                     pa_log("avahi_service_browser_new() failed: %s", avahi_strerror(avahi_client_errno(c)));
-                    pa_module_unload_request(u->module);
+                    pa_module_unload_request(u->module, TRUE);
                 }
             }
 
@@ -353,7 +348,7 @@ static void client_callback(AvahiClient *c, AvahiClientState state, void *userda
 
                 if (!(u->client = avahi_client_new(u->avahi_poll, AVAHI_CLIENT_NO_FAIL, client_callback, u, &error))) {
                     pa_log("avahi_client_new() failed: %s", avahi_strerror(error));
-                    pa_module_unload_request(u->module);
+                    pa_module_unload_request(u->module, TRUE);
                 }
             }
 
@@ -432,7 +427,7 @@ void pa__done(pa_module*m) {
         struct tunnel *t;
 
         while ((t = pa_hashmap_steal_first(u->tunnels))) {
-            pa_module_unload_by_index(u->core, t->module_index);
+            pa_module_unload_by_index(u->core, t->module_index, TRUE);
             tunnel_free(t);
         }
 

@@ -1,8 +1,6 @@
 #ifndef foopulsethreadhfoo
 #define foopulsethreadhfoo
 
-/* $Id: thread.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -27,6 +25,7 @@
 
 #include <pulse/def.h>
 #include <pulsecore/once.h>
+#include <pulsecore/core-util.h>
 
 #ifndef PACKAGE
 #error "Please include config.h before including this file!"
@@ -71,6 +70,8 @@ void *pa_tls_set(pa_tls *t, void *userdata);
     static void name##_tls_destructor(void) PA_GCC_DESTRUCTOR;          \
     static void name##_tls_destructor(void) {                           \
         static void (*_free_cb)(void*) = free_cb;                       \
+        if (!pa_in_valgrind())                                          \
+            return;                                                     \
         if (!name##_tls.tls)                                            \
             return;                                                     \
         if (_free_cb) {                                                 \
@@ -88,7 +89,7 @@ void *pa_tls_set(pa_tls *t, void *userdata);
     }                                                                   \
     struct __stupid_useless_struct_to_allow_trailing_semicolon
 
-#ifdef HAVE_TLS_BUILTIN
+#ifdef SUPPORT_TLS___THREAD
 /* An optimized version of the above that requires no dynamic
  * allocation if the compiler supports __thread */
 #define PA_STATIC_TLS_DECLARE_NO_FREE(name)                             \

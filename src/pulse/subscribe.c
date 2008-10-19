@@ -1,5 +1,3 @@
-/* $Id: subscribe.c 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -27,7 +25,8 @@
 
 #include <stdio.h>
 
-#include <pulsecore/gccmacro.h>
+#include <pulse/gccmacro.h>
+
 #include <pulsecore/macro.h>
 #include <pulsecore/pstream-util.h>
 
@@ -35,7 +34,7 @@
 
 #include "subscribe.h"
 
-void pa_command_subscribe_event(pa_pdispatch *pd, uint32_t command, PA_GCC_UNUSED uint32_t tag, pa_tagstruct *t, void *userdata) {
+void pa_command_subscribe_event(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
     pa_context *c = userdata;
     pa_subscription_event_type_t e;
     uint32_t idx;
@@ -62,7 +61,6 @@ finish:
     pa_context_unref(c);
 }
 
-
 pa_operation* pa_context_subscribe(pa_context *c, pa_subscription_mask_t m, pa_context_success_cb_t cb, void *userdata) {
     pa_operation *o;
     pa_tagstruct *t;
@@ -86,6 +84,9 @@ pa_operation* pa_context_subscribe(pa_context *c, pa_subscription_mask_t m, pa_c
 void pa_context_set_subscribe_callback(pa_context *c, pa_context_subscribe_cb_t cb, void *userdata) {
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
+
+    if (c->state == PA_CONTEXT_TERMINATED || c->state == PA_CONTEXT_FAILED)
+        return;
 
     c->subscribe_callback = cb;
     c->subscribe_userdata = userdata;

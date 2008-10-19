@@ -1,8 +1,6 @@
 #ifndef foodaemonconfhfoo
 #define foodaemonconfhfoo
 
-/* $Id: daemon-conf.h 2067 2007-11-21 01:30:40Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -27,6 +25,7 @@
 
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
+#include <pulsecore/core-util.h>
 #include <pulse/sample.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -36,6 +35,7 @@
 /* The actual command to execute */
 typedef enum pa_daemon_conf_cmd {
     PA_CMD_DAEMON,  /* the default */
+    PA_CMD_START,
     PA_CMD_HELP,
     PA_CMD_VERSION,
     PA_CMD_DUMP_CONF,
@@ -65,7 +65,10 @@ typedef struct pa_daemon_conf {
         system_instance,
         no_cpu_limit,
         disable_shm,
-        disable_remixing;
+        disable_remixing,
+        disable_lfe_remixing,
+        load_default_script_file,
+        disallow_exit;
     int exit_idle_time,
         module_idle_time,
         scache_idle_time,
@@ -79,12 +82,21 @@ typedef struct pa_daemon_conf {
     char *config_file;
 
 #ifdef HAVE_SYS_RESOURCE_H
-    pa_rlimit rlimit_as, rlimit_core, rlimit_data, rlimit_fsize, rlimit_nofile, rlimit_stack;
+    pa_rlimit rlimit_fsize, rlimit_data, rlimit_stack, rlimit_core, rlimit_rss, rlimit_nofile, rlimit_as;
 #ifdef RLIMIT_NPROC
     pa_rlimit rlimit_nproc;
 #endif
 #ifdef RLIMIT_MEMLOCK
     pa_rlimit rlimit_memlock;
+#endif
+#ifdef RLIMIT_LOCKS
+    pa_rlimit rlimit_locks;
+#endif
+#ifdef RLIMIT_SIGPENDING
+    pa_rlimit rlimit_sigpending;
+#endif
+#ifdef RLIMIT_MSGQUEUE
+    pa_rlimit rlimit_msgqueue;
 #endif
 #ifdef RLIMIT_NICE
     pa_rlimit rlimit_nice;
@@ -92,10 +104,14 @@ typedef struct pa_daemon_conf {
 #ifdef RLIMIT_RTPRIO
     pa_rlimit rlimit_rtprio;
 #endif
+#ifdef RLIMIT_RTTIME
+    pa_rlimit rlimit_rttime;
+#endif
 #endif
 
     unsigned default_n_fragments, default_fragment_size_msec;
     pa_sample_spec default_sample_spec;
+    size_t shm_size;
 } pa_daemon_conf;
 
 /* Allocate a new structure and fill it with sane defaults */
@@ -120,5 +136,8 @@ int pa_daemon_conf_env(pa_daemon_conf *c);
 int pa_daemon_conf_set_log_target(pa_daemon_conf *c, const char *string);
 int pa_daemon_conf_set_log_level(pa_daemon_conf *c, const char *string);
 int pa_daemon_conf_set_resample_method(pa_daemon_conf *c, const char *string);
+
+const char *pa_daemon_conf_get_default_script_file(pa_daemon_conf *c);
+FILE *pa_daemon_conf_open_default_script_file(pa_daemon_conf *c);
 
 #endif

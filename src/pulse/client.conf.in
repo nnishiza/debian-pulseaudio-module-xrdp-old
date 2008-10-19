@@ -1,5 +1,3 @@
-# $Id: client.conf.in 2030 2007-11-08 22:31:30Z lennart $
-#
 # This file is part of PulseAudio.
 #
 # PulseAudio is free software; you can redistribute it and/or modify
@@ -25,10 +23,11 @@
 ; default-source =
 ; default-server =
 
-; autospawn = no
+; autospawn = yes
 ; daemon-binary = @PA_BINARY@
-; extra-arguments = --log-target=syslog --exit-idle-time=5
+; extra-arguments = --log-target=syslog
 
 ; cookie-file =
 
 ; disable-shm = no
+; shm-size-bytes = 0 # setting this 0 will use the system-default, usually 64 MiB

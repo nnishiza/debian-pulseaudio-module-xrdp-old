@@ -1,8 +1,6 @@
 #ifndef foopulsesourcehfoo
 #define foopulsesourcehfoo
 
-/* $Id: source.h 1971 2007-10-28 19:13:50Z lennart $ */
-
 /***
   This file is part of PulseAudio.
 
@@ -33,7 +31,6 @@ typedef struct pa_source pa_source;
 #include <pulse/channelmap.h>
 #include <pulse/volume.h>
 
-#include <pulsecore/core-def.h>
 #include <pulsecore/core.h>
 #include <pulsecore/idxset.h>
 #include <pulsecore/memblock.h>
@@ -43,6 +40,7 @@ typedef struct pa_source pa_source;
 #include <pulsecore/asyncmsgq.h>
 #include <pulsecore/msgobject.h>
 #include <pulsecore/rtpoll.h>
+#include <pulsecore/source-output.h>
 
 #define PA_MAX_OUTPUTS_PER_SOURCE 32
 
@@ -54,11 +52,11 @@ typedef enum pa_source_state {
     PA_SOURCE_UNLINKED
 } pa_source_state_t;
 
-static inline pa_bool_t PA_SOURCE_OPENED(pa_source_state_t x) {
+static inline pa_bool_t PA_SOURCE_IS_OPENED(pa_source_state_t x) {
     return x == PA_SOURCE_RUNNING || x == PA_SOURCE_IDLE;
 }
 
-static inline pa_bool_t PA_SOURCE_LINKED(pa_source_state_t x) {
+static inline pa_bool_t PA_SOURCE_IS_LINKED(pa_source_state_t x) {
     return x == PA_SOURCE_RUNNING || x == PA_SOURCE_IDLE || x == PA_SOURCE_SUSPENDED;
 }
 
@@ -71,7 +69,8 @@ struct pa_source {
     pa_source_flags_t flags;
 
     char *name;
-    char *description, *driver;              /* may be NULL */
+    char *driver;                             /* may be NULL */
+    pa_proplist *proplist;
 
     pa_module *module;                        /* may be NULL */
 
@@ -84,18 +83,45 @@ struct pa_source {
 
     pa_cvolume volume;
     pa_bool_t muted;
-    pa_bool_t refresh_volume;
-    pa_bool_t refresh_muted;
 
-    int (*set_state)(pa_source*source, pa_source_state_t state); /* may be NULL */
-    int (*set_volume)(pa_source *s);         /* dito */
-    int (*get_volume)(pa_source *s);         /* dito */
-    int (*set_mute)(pa_source *s);           /* dito */
-    int (*get_mute)(pa_source *s);           /* dito */
-    pa_usec_t (*get_latency)(pa_source *s);  /* dito */
+    pa_bool_t refresh_volume:1;
+    pa_bool_t refresh_muted:1;
 
     pa_asyncmsgq *asyncmsgq;
     pa_rtpoll *rtpoll;
+
+    pa_memchunk silence;
+
+    /* Called when the main loop requests a state change. Called from
+     * main loop context. If returns -1 the state change will be
+     * inhibited */
+    int (*set_state)(pa_source*source, pa_source_state_t state); /* may be NULL */
+
+    /* Callled when the volume is queried. Called from main loop
+     * context. If this is NULL a PA_SOURCE_MESSAGE_GET_VOLUME message
+     * will be sent to the IO thread instead. If refresh_volume is
+     * FALSE neither this function is called nor a message is sent. */
+    int (*get_volume)(pa_source *s);         /* dito */
+
+    /* Called when the volume shall be changed. Called from main loop
+     * context. If this is NULL a PA_SOURCE_MESSAGE_SET_VOLUME message
+     * will be sent to the IO thread instead. */
+    int (*set_volume)(pa_source *s);         /* dito */
+
+    /* Called when the mute setting is queried. Called from main loop
+     * context. If this is NULL a PA_SOURCE_MESSAGE_GET_MUTE message
+     * will be sent to the IO thread instead. If refresh_mute is
+     * FALSE neither this function is called nor a message is sent.*/
+    int (*get_mute)(pa_source *s);           /* dito */
+
+    /* Called when the mute setting shall be changed. Called from main
+     * loop context. If this is NULL a PA_SOURCE_MESSAGE_SET_MUTE
+     * message will be sent to the IO thread instead. */
+    int (*set_mute)(pa_source *s);           /* dito */
+
+    /* Called when a the requested latency is changed. Called from IO
+     * thread context. */
+    void (*update_requested_latency)(pa_source *s); /* dito */
 
     /* Contains copies of the above data so that the real-time worker
      * thread can work without access locking */
@@ -103,7 +129,17 @@ struct pa_source {
         pa_source_state_t state;
         pa_hashmap *outputs;
         pa_cvolume soft_volume;
-        pa_bool_t soft_muted;
+        pa_bool_t soft_muted:1;
+
+        pa_bool_t requested_latency_valid:1;
+        pa_usec_t requested_latency;
+
+        /* Then number of bytes this source will be rewound for at
+         * max. (Only used on monitor sources) */
+        size_t max_rewind;
+
+        pa_usec_t min_latency; /* we won't go below this latency */
+        pa_usec_t max_latency; /* An upper limit for the latencies */
     } thread_info;
 
     void *userdata;
@@ -120,48 +156,81 @@ typedef enum pa_source_message {
     PA_SOURCE_MESSAGE_GET_MUTE,
     PA_SOURCE_MESSAGE_SET_MUTE,
     PA_SOURCE_MESSAGE_GET_LATENCY,
+    PA_SOURCE_MESSAGE_GET_REQUESTED_LATENCY,
     PA_SOURCE_MESSAGE_SET_STATE,
-    PA_SOURCE_MESSAGE_PING,
     PA_SOURCE_MESSAGE_ATTACH,
     PA_SOURCE_MESSAGE_DETACH,
+    PA_SOURCE_MESSAGE_SET_LATENCY_RANGE,
+    PA_SOURCE_MESSAGE_GET_LATENCY_RANGE,
+    PA_SOURCE_MESSAGE_GET_MAX_REWIND,
     PA_SOURCE_MESSAGE_MAX
 } pa_source_message_t;
+
+typedef struct pa_source_new_data {
+    char *name;
+    pa_proplist *proplist;
+
+    const char *driver;
+    pa_module *module;
+
+    pa_sample_spec sample_spec;
+    pa_channel_map channel_map;
+    pa_cvolume volume;
+    pa_bool_t muted:1;
+
+    pa_bool_t volume_is_set:1;
+    pa_bool_t muted_is_set:1;
+    pa_bool_t sample_spec_is_set:1;
+    pa_bool_t channel_map_is_set:1;
+
+    pa_bool_t namereg_fail:1;
+} pa_source_new_data;
+
+pa_source_new_data* pa_source_new_data_init(pa_source_new_data *data);
+void pa_source_new_data_set_name(pa_source_new_data *data, const char *name);
+void pa_source_new_data_set_sample_spec(pa_source_new_data *data, const pa_sample_spec *spec);
+void pa_source_new_data_set_channel_map(pa_source_new_data *data, const pa_channel_map *map);
+void pa_source_new_data_set_volume(pa_source_new_data *data, const pa_cvolume *volume);
+void pa_source_new_data_set_muted(pa_source_new_data *data, pa_bool_t mute);
+void pa_source_new_data_done(pa_source_new_data *data);
 
 /* To be called exclusively by the source driver, from main context */
 
 pa_source* pa_source_new(
         pa_core *core,
-        const char *driver,
-        const char *name,
-        int namereg_fail,
-        const pa_sample_spec *spec,
-        const pa_channel_map *map);
+        pa_source_new_data *data,
+        pa_source_flags_t flags);
 
 void pa_source_put(pa_source *s);
 void pa_source_unlink(pa_source *s);
 
-void pa_source_set_module(pa_source *s, pa_module *m);
 void pa_source_set_description(pa_source *s, const char *description);
 void pa_source_set_asyncmsgq(pa_source *s, pa_asyncmsgq *q);
 void pa_source_set_rtpoll(pa_source *s, pa_rtpoll *p);
+
+void pa_source_set_latency_range(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency);
 
 void pa_source_detach(pa_source *s);
 void pa_source_attach(pa_source *s);
 
 /* May be called by everyone, from main context */
 
+/* The returned value is supposed to be in the time domain of the sound card! */
 pa_usec_t pa_source_get_latency(pa_source *s);
+pa_usec_t pa_source_get_requested_latency(pa_source *s);
+void pa_source_get_latency_range(pa_source *s, pa_usec_t *min_latency, pa_usec_t *max_latency);
+
+size_t pa_source_get_max_rewind(pa_source *s);
 
 int pa_source_update_status(pa_source*s);
 int pa_source_suspend(pa_source *s, pa_bool_t suspend);
 int pa_source_suspend_all(pa_core *c, pa_bool_t suspend);
 
-void pa_source_ping(pa_source *s);
-
 void pa_source_set_volume(pa_source *source, const pa_cvolume *volume);
-const pa_cvolume *pa_source_get_volume(pa_source *source);
+void pa_source_set_soft_volume(pa_source *s, const pa_cvolume *volume);
+const pa_cvolume *pa_source_get_volume(pa_source *source, pa_bool_t force_refresh);
 void pa_source_set_mute(pa_source *source, pa_bool_t mute);
-pa_bool_t pa_source_get_mute(pa_source *source);
+pa_bool_t pa_source_get_mute(pa_source *source, pa_bool_t force_refresh);
 
 unsigned pa_source_linked_by(pa_source *s); /* Number of connected streams */
 unsigned pa_source_used_by(pa_source *s); /* Number of connected streams that are not corked */
@@ -169,11 +238,22 @@ unsigned pa_source_used_by(pa_source *s); /* Number of connected streams that ar
 
 /* To be called exclusively by the source driver, from IO context */
 
-void pa_source_post(pa_source*s, const pa_memchunk *b);
+void pa_source_post(pa_source*s, const pa_memchunk *chunk);
+void pa_source_post_direct(pa_source*s, pa_source_output *o, const pa_memchunk *chunk);
+void pa_source_process_rewind(pa_source *s, size_t nbytes);
 
 int pa_source_process_msg(pa_msgobject *o, int code, void *userdata, int64_t, pa_memchunk *chunk);
 
 void pa_source_attach_within_thread(pa_source *s);
 void pa_source_detach_within_thread(pa_source *s);
+
+pa_usec_t pa_source_get_requested_latency_within_thread(pa_source *s);
+
+void pa_source_set_max_rewind(pa_source *s, size_t max_rewind);
+void pa_source_update_latency_range(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency);
+
+/* To be called exclusively by source output drivers, from IO context */
+
+void pa_source_invalidate_requested_latency(pa_source *s);
 
 #endif

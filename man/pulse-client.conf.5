@@ -7,11 +7,11 @@ pulse-client.conf \- PulseAudio client configuration file
 \fI/etc/pulse/client.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio client library reads configuration directives from a file \fI~/.pulse/client.conf\f1 on startup, and when that file doesn't exist from \fI/etc/pulse/client.conf\f1.
+The PulseAudio client library reads configuration directives from a file \fI~/.pulse/client.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/client.conf\f1.
 
-The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # for it ignores the rest of the line until its end.
+The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
-For the settings that take a boolean argument, the values \fBtrue\f1, \fByes\f1, \fBon\f1 and \fB1\f1 are equivalent, resp. \fBfalse\f1, \fBno\f1, \fBoff\f1, \fB0\f1.
+For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, \fBon\f1 and \fB1\f1 are equivalent, resp. \fBfalse\f1, \fBno\f1, \fBoff\f1, \fB0\f1.
 .SH DIRECTIVES
 .TP
 \fBdefault-sink=\f1 The default sink to connect to. If specified overwrites the setting in the daemon. The environment variable \fB$PULSE_SINK\f1 however takes precedence.
@@ -20,15 +20,17 @@ For the settings that take a boolean argument, the values \fBtrue\f1, \fByes\f1,
 .TP
 \fBdefault-server=\f1 The default sever to connect to. The environment variable \fB$PULSE_SERVER\f1 takes precedence.
 .TP
-\fBautospawn=\f1 Autospawn a PulseAudio daemon when needed. Takes a boolean value, defaults to "no".
+\fBautospawn=\f1 Autospawn a PulseAudio daemon when needed. Takes a boolean value, defaults to "yes".
 .TP
 \fBdaemon-binary=\f1 Path to the PulseAudio daemon to run when autospawning. Defaults to a path configured at compile time.
 .TP
-\fBextra-arguments=\f1 Extra arguments to pass to the PulseAudio daemon when autospawning. Defaults to \fB--log-target=syslog --exit-idle-time=5\f1
+\fBextra-arguments=\f1 Extra arguments to pass to the PulseAudio daemon when autospawning. Defaults to \fB--log-target=syslog\f1
 .TP
 \fBcookie-file=\f1 Specify the path to the PulseAudio authentication cookie. Defaults to \fI~/.pulse-cookie\f1.
 .TP
 \fBdisable-shm=\f1 Disable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fBno\f1.
+.TP
+\fBshm-size-bytes=\f1 Sets the shared memory segment size for clients, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
 .SH AUTHORS
 The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO
