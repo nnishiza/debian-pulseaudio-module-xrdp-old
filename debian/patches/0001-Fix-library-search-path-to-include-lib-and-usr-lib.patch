@@ -1,4 +1,4 @@
-From 887a98aa80e26aa01ba73d11546e2eeeaa193ec8 Mon Sep 17 00:00:00 2001
+From ee025936469de666ba0b9308c4955ca85a1ce251 Mon Sep 17 00:00:00 2001
 From: Courteney van den Berg <vdberg@ffm.tc.iot.dtag.de>
 Date: Mon, 31 Mar 2008 17:11:29 +0200
 Subject: [PATCH] Fix library search path to include /lib and /usr/lib

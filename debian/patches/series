@@ -1,3 +1,2 @@
-0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
-0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
-0003-load-module-gconf-earlier.patch
+0001-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+0002-load-module-gconf-earlier.patch

@@ -1,4 +1,4 @@
-From 3117863ef8395c6c1a7f61e5745438013bcac059 Mon Sep 17 00:00:00 2001
+From 121bfc9f1916395e5216927ec3a9e0bbd742395a Mon Sep 17 00:00:00 2001
 From: Sjoerd Simons <sjoerd@debian.org>
 Date: Sun, 19 Oct 2008 13:39:50 +0100
 Subject: [PATCH] load module gconf earlier
@@ -8,7 +8,7 @@ Subject: [PATCH] load module gconf earlier
  1 files changed, 10 insertions(+), 9 deletions(-)
 
 diff --git a/src/daemon/default.pa.in b/src/daemon/default.pa.in
-index 27b3458..f420a36 100755
+index 7032038..41322c6 100755
 --- a/src/daemon/default.pa.in
 +++ b/src/daemon/default.pa.in
 @@ -72,6 +72,16 @@ load-module module-native-protocol-unix

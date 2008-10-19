@@ -12,11 +12,18 @@ pulseaudio (0.9.13-1) UNRELEASED; urgency=low
   * New Upstream Version
   * Fixes FTBTS on GNU/kFreeBSD (Closes: #497624)
   * Dropped patches for things that have been fixed upstream:
-    - debian/patches/0003-Define-PULSE_INTERNAL.patch
-    - debian/patches/0005-Reduce-RT-prio-logging-severity.patch
-    - debian/patches/0006-fix-iteration-over-random-devices.patch
-  * rename debian/patches/0004-load-module-gconf-earlier.patch to
-    debian/patches/0003-load-module-gconf-earlier.patch
+    - 0003-Define-PULSE_INTERNAL.patch
+    - 0005-Reduce-RT-prio-logging-severity.patch
+    - 0006-fix-iteration-over-random-devices.patch
+  * rename 0003-load-module-gconf-earlier.patch to
+    0002-load-module-gconf-earlier.patch
+  * rename 0002-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+    to 0001-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+  * rename 0004-load-module-gconf-earlier.patch to
+    0003-load-module-gconf-earlier.patch
+  * 0001-Set-ESD-socket-to-tmp-.esd-socket-to-match-up-with.patch
+    - Dropped, not necessary anymore, the --disable-per-user-esound-socket
+      configure flag now has the same result
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Oct 2008 13:40:50 +0100
 
