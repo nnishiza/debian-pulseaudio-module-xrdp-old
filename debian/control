@@ -286,7 +286,7 @@ Description: PulseAudio sound server core
  This library provides core services to the PulseAudio daemon and modules
  the run inside the daemon.
 
-Package: libpulsecore5-dbg
+Package: libpulsecore8-dbg
 Architecture: any
 Priority: extra
 Depends: ${misc:Depends}, libpulsecore5 (= ${binary:Version})
