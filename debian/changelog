@@ -1,8 +1,14 @@
 pulseaudio (0.9.13-2) UNRELEASED; urgency=low
 
   * Rename libpulsecore5 to libpulsecore8 to correctly reflect the soname
+  * 0003-make-sure-to-use-64bit-rounding-even-on-32bit-machin.patch
+    - Fix rounding errors on 32 bit machines. From upstream git
+  * 0004-properly-remove-dbus-matches-an-filters-when-unloadi.patch
+    - Properly remove dbus filters when unloading the bluetooth module
+  * 0005-Fix-two-typos-that-broke-tunnels.patch
+    - Fix tunnels. From upstream git
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 16 Nov 2008 15:01:26 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 16 Nov 2008 17:37:24 +0000
 
 pulseaudio (0.9.13-1) experimental; urgency=low
 
