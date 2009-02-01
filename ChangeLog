@@ -1,4 +1,128 @@
 
+2009-01-12	Lennart Poettering
+	4b33a45: bump version/soname
+	5eef7a0: Fix suspending of all sinks/sources
+	6d12f81: for record streams fill in the latency as the fragsize
+
+2009-01-10	Lennart Poettering
+	71e8be6: Make sure we don't drop any data on the client side
+	94b94e9: show maximum usable slot size
+
+2009-01-08	Lennart Poettering
+	a14b8dc: add a few missing parens
+
+2009-01-07	Sean McNamara
+	1982bb7: --check: Updated manpage slightly and pulseaudio --help slightly.
+
+2009-01-06	Luiz Augusto von Dentz
+	8cc548d: Fix sending wrong codec capability length.
+	f325786: Fix send and recv message sizes.
+
+2009-01-05	Luiz Augusto von Dentz
+	49147c9: Send packets with proper size.
+
+2008-11-27	chocolateboy
+	033c9ac: Fix typo in log message: s/Recevied/Received/
+
+2008-12-20	Tom Bamford
+	d636a8c: Multicast SDP packets sent with same IP TTL as RTP packets
+
+2008-12-17	Luiz Augusto von Dentz
+	4fdebe9: Update module-bluetooth-device to the new ipc.
+
+2009-01-08	Lennart Poettering
+	bed16cb: A few minor cleanups and updates
+
+2008-12-24	Lennart Poettering
+	56e7833: Rework handling of the PA_SINK_LATENCY/PA_SOURCE_LATENCY flags
+
+2008-12-23	Lennart Poettering
+	03bdc07: fix a gcc warning
+	ed96f11: If we cannot open an ALSA device with SND_PCM_NO_AUTO_FORMAT retry without
+
+2008-12-21	Lennart Poettering
+	9e45998: make sure we don't hit an assert when we issue two rewind requests in a
+	0cb0d68: Implement PA_SOURCE_MESSAGE_GET_LATENCY
+	e4cc380: Use FIONREAD instead of TIOCINQ
+
+2008-12-18	Lennart Poettering
+	6c2c7a5: Allow access("/dev/dsp", W_OK) succeed
+	5fc8444: Make sure we drop CAP_NICE if RT is not allowed
+
+2008-12-17	Lennart Poettering
+	cc23b29: downgrade a few warnings
+	4842520: it's better to always use the index of a module instead of the pa_module*
+	06dd737: unload tunnel modules from a new stack frame
+	f786c69: actually unload the modules from a new stack frame
+	92bb3b9: Don't store pointer to pa_module
+	7272c02: introduce new function pa_module_unload_request_by_index
+
+2008-12-05	Luiz Augusto von Dentz
+	09e3c5e: Fix bug walking on module list.
+
+2008-12-17	Lennart Poettering
+	a9131ff: Load module-volume-restore and module-device-restore before all other modules
+	6f4d8bc: Pass GDBM_NOLOCK to gdbm
+	a66d2ed: Don't mix front-center into rear channels
+
+2008-12-16	Lennart Poettering
+	d72b6eb: Fix return value of --dump-resample-methods
+	08ee141: Check if environ is actually set before we use it
+
+2008-11-01	Lennart Poettering
+	3bef1a9: Make sure libpulse never gets unloaded
+	68e9a48: make shm marker architecture independant, patch from michich, closes #401
+
+2008-10-24	Lennart Poettering
+	ac8af20: make sure to use 64bit rounding even on 32bit machines when converting to pa_usec_t
+
+2008-10-23	Lennart Poettering
+	6f4b228: fix build
+
+2008-10-22	Lennart Poettering
+	09279f7: warn if ALSA wakes us up and there is actually nothing to do
+	bfdad53: don't set the volume of pacat unless it is explicitly set
+
+2008-10-21	Lennart Poettering
+	8e2a48a: make the debug trap macro a proper macro in macro.h
+	0796f5a: Try to catch certain driver errors
+	b041aac: include log.h near the end so that macro.h can be included in log.h and defines pa_bool_t properly
+	ab1139f: convert argument to boolean int in PA_UNLIKELY, too
+	74898ff: fix invalid validity check
+
+2008-10-20	Lennart Poettering
+	f3770fa: Make missing git-changelog.perl non-fatal
+
+2008-10-19	Lennart Poettering
+	ac4b0af: Fix spelling of privilige
+	af133f5: always check for libtool prefix binary name to avoid confusion when using both installed and run-from-build-tree versions of PA in parallel
+
+2008-10-09	Luiz Augusto von Dentz
+	6ad65da: Fix possible invalid read while attempting to load module-bluetooth-device.
+
+2008-10-13	Lennart Poettering
+	9fd82c1: properly remove dbus matches an filters when unloading m-b-d
+
+2008-10-11	Colin Guthrie
+	cab7cc3: Fix two typos that broke tunnels
+
+2008-10-08	Colin Guthrie
+	c72a7db: Fix a potential C++/C99 ism, add a log message on error condition
+
+2008-10-08	Lennart Poettering
+	220c9c0: define 0dB in PA as maximum amplification
+
+2008-10-07	Lennart Poettering
+	f0a2294: if the channel map was modified due to PA_SINK_INPUT_FIX_CHANNELS, remap the specified volume properly
+	215f1fb: use pa_channel_map_init_extend() instead of pa_channel_map_init_auto() as channel map for sink inputs/source outputs in case no map is specified
+	fc2ba1f: instead of resetting virtual_volume unconditionally on initialization, do so only when no volume was set before
+
+2008-10-06	Luiz Augusto von Dentz
+	3131827: Unload module-bluetooth-device if the remote device disconnects.
+
+2008-10-07	Lennart Poettering
+	b6a8027: Initialize exit_idle_time to -1 instead of 0  when in system mode.
+
 2008-10-06	Lennart Poettering
 	fa93cb7: make distcheck pass
 	e26ffc9: Merge branch 'master' of ssh://rootserver/home/lennart/git/public/pulseaudio

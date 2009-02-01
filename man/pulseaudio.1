@@ -38,7 +38,7 @@ Load the daemon configuration file \fIdaemon.conf\f1 (see below), parse remainin
 \fB--dump-modules\f1
 List available loadable modules. Combine with \fB-v\f1 for a more elaborate listing.
 .TP
-\fB--dump-resampe-methods\f1
+\fB--dump-resample-methods\f1
 List available audio resamplers.
 .TP
 \fB--cleanup-shm\f1
@@ -51,7 +51,7 @@ Start PulseAudio if it is not running yet. This is different from starting Pulse
 Kill an already running PulseAudio daemon of the calling user (Equivalent to sending a SIGTERM).
 .TP
 \fB--check\f1
-Return 0 as return code when the PulseAudio daemon is already running for the calling user.
+Return 0 as return code when the PulseAudio daemon is already running for the calling user, or non-zero otherwise. Produces no output on the console except for errors to stderr.
 .TP
 \fB--system\f1\fI[=BOOL]\f1
 Run as system-wide instance instead of per-user. Please note that this disables certain features of PulseAudio and is generally not recommended unless the system knows no local users (e.g. is a thin client). This feature needs special configuration and a dedicated UNIX user set up. It is highly recommended to combine this with \fB--disallow-module-loading\f1 (see below).

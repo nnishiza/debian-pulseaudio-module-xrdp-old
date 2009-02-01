@@ -222,7 +222,7 @@ static int change_user(void) {
 #elif defined(HAVE_SETREGID)
     r = setregid(gr->gr_gid, gr->gr_gid);
 #else
-#error "No API to drop priviliges"
+#error "No API to drop privileges"
 #endif
 
     if (r < 0) {
@@ -238,7 +238,7 @@ static int change_user(void) {
 #elif defined(HAVE_SETREUID)
     r = setreuid(pw->pw_uid, pw->pw_uid);
 #else
-#error "No API to drop priviliges"
+#error "No API to drop privileges"
 #endif
 
     if (r < 0) {
@@ -382,7 +382,7 @@ int main(int argc, char *argv[]) {
         /* Drop all capabilities except CAP_SYS_NICE  */
         pa_limit_caps();
 
-        /* Drop priviliges, but keep CAP_SYS_NICE */
+        /* Drop privileges, but keep CAP_SYS_NICE */
         pa_drop_root();
 
         /* After dropping root, the effective set is reset, hence,
@@ -432,6 +432,9 @@ int main(int argc, char *argv[]) {
     pa_log_debug("Started as real root: %s, suid root: %s", pa_yes_no(real_root), pa_yes_no(suid_root));
 
     if (!real_root && pa_have_caps()) {
+#ifdef HAVE_SYS_RESOURCE_H
+        struct rlimit rl;
+#endif
         pa_bool_t allow_high_priority = FALSE, allow_realtime = FALSE;
 
         /* Let's better not enable high prio or RT by default */
@@ -474,12 +477,35 @@ int main(int argc, char *argv[]) {
              * let's give it up early */
 
             pa_drop_caps();
-
-            if (conf->high_priority || conf->realtime_scheduling)
-                pa_log_notice(_("Called SUID root and real-time/high-priority scheduling was requested in the configuration. However, we lack the necessary priviliges:\n"
-                                "We are not in group '"PA_REALTIME_GROUP"' and PolicyKit refuse to grant us priviliges. Dropping SUID again.\n"
-                                "For enabling real-time scheduling please acquire the appropriate PolicyKit priviliges, or become a member of '"PA_REALTIME_GROUP"', or increase the RLIMIT_NICE/RLIMIT_RTPRIO resource limits for this user."));
         }
+
+#ifdef RLIMIT_RTPRIO
+        if (getrlimit(RLIMIT_RTPRIO, &rl) >= 0)
+            if (rl.rlim_cur > 0) {
+                pa_log_info("RLIMIT_RTPRIO is set to %u, allowing real-time scheduling.", (unsigned) rl.rlim_cur);
+                allow_realtime = TRUE;
+            }
+#endif
+#ifdef RLIMIT_NICE
+        if (getrlimit(RLIMIT_NICE, &rl) >= 0)
+            if (rl.rlim_cur > 20 ) {
+                pa_log_info("RLIMIT_NICE is set to %u, allowing high-priority scheduling.", (unsigned) rl.rlim_cur);
+                allow_high_priority = TRUE;
+            }
+#endif
+
+        if ((conf->high_priority && !allow_high_priority) ||
+            (conf->realtime_scheduling && !allow_realtime))
+            pa_log_notice(_("Called SUID root and real-time and/or high-priority scheduling was requested in the configuration. However, we lack the necessary privileges:\n"
+                            "We are not in group '"PA_REALTIME_GROUP"', PolicyKit refuse to grant us the requested privileges and we have no increase RLIMIT_NICE/RLIMIT_RTPRIO resource limits.\n"
+                            "For enabling real-time/high-priority scheduling please acquire the appropriate PolicyKit privileges, or become a member of '"PA_REALTIME_GROUP"', or increase the RLIMIT_NICE/RLIMIT_RTPRIO resource limits for this user."));
+
+
+        if (!allow_realtime)
+            conf->realtime_scheduling = FALSE;
+
+        if (!allow_high_priority)
+            conf->high_priority = FALSE;
     }
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -493,11 +519,15 @@ int main(int argc, char *argv[]) {
     set_all_rlimits(conf);
 #endif
 
-    if (conf->high_priority && !pa_can_high_priority())
+    if (conf->high_priority && !pa_can_high_priority()) {
         pa_log_warn(_("High-priority scheduling enabled in configuration but not allowed by policy."));
+        conf->high_priority = FALSE;
+    }
 
     if (conf->high_priority && (conf->cmd == PA_CMD_DAEMON || conf->cmd == PA_CMD_START))
         pa_raise_priority(conf->nice_level);
+
+    pa_log_debug("Can realtime: %s, can high-priority: %s", pa_yes_no(pa_can_realtime()), pa_yes_no(pa_can_high_priority()));
 
     if (!real_root && pa_have_caps()) {
         pa_bool_t drop;
@@ -535,8 +565,10 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    if (conf->realtime_scheduling && !pa_can_realtime())
+    if (conf->realtime_scheduling && !pa_can_realtime()) {
         pa_log_warn(_("Real-time scheduling enabled in configuration but not allowed by policy."));
+        conf->realtime_scheduling = FALSE;
+    }
 
     pa_log_debug("Can realtime: %s, can high-priority: %s", pa_yes_no(pa_can_realtime()), pa_yes_no(pa_can_high_priority()));
 
@@ -577,6 +609,7 @@ int main(int argc, char *argv[]) {
                 if (pa_resample_method_supported(i))
                     printf("%s\n", pa_resample_method_to_string(i));
 
+            retval = 0;
             goto finish;
         }
 
@@ -626,7 +659,7 @@ int main(int argc, char *argv[]) {
     if (real_root && !conf->system_instance)
         pa_log_warn(_("This program is not intended to be run as root (unless --system is specified)."));
     else if (!real_root && conf->system_instance) {
-        pa_log(_("Root priviliges required."));
+        pa_log(_("Root privileges required."));
         goto finish;
     }
 
@@ -646,9 +679,9 @@ int main(int argc, char *argv[]) {
         conf->disable_shm = TRUE;
     }
 
-    if (conf->system_instance && conf->exit_idle_time > 0) {
+    if (conf->system_instance && conf->exit_idle_time >= 0) {
         pa_log_notice(_("Running in system mode, forcibly disabling exit idle time!"));
-        conf->exit_idle_time = 0;
+        conf->exit_idle_time = -1;
     }
 
     if (conf->cmd == PA_CMD_START) {

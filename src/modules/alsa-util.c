@@ -30,6 +30,7 @@
 
 #include <pulse/sample.h>
 #include <pulse/xmalloc.h>
+#include <pulse/timeval.h>
 
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
@@ -555,6 +556,7 @@ snd_pcm_t *pa_alsa_open_by_device_id(
 
     for (i = 0;; i += direction) {
         pa_sample_spec try_ss;
+        pa_bool_t reformat;
 
         if (i < 0) {
             pa_assert(direction == -1);
@@ -579,8 +581,9 @@ snd_pcm_t *pa_alsa_open_by_device_id(
 
         d = pa_sprintf_malloc("%s:%s", device_table[i].name, dev_id);
 
+        reformat = FALSE;
         for (;;) {
-            pa_log_debug("Trying %s...", d);
+            pa_log_debug("Trying %s %s SND_PCM_NO_AUTO_FORMAT ...", d, reformat ? "without" : "with");
 
             /* We don't pass SND_PCM_NONBLOCK here, since alsa-lib <=
              * 1.0.17a would then ignore the SND_PCM_NO_xxx
@@ -592,7 +595,7 @@ snd_pcm_t *pa_alsa_open_by_device_id(
                                     /* SND_PCM_NONBLOCK| */
                                     SND_PCM_NO_AUTO_RESAMPLE|
                                     SND_PCM_NO_AUTO_CHANNELS|
-                                    SND_PCM_NO_AUTO_FORMAT)) < 0) {
+                                    (reformat ? 0 : SND_PCM_NO_AUTO_FORMAT))) < 0) {
                 pa_log_info("Couldn't open PCM device %s: %s", d, snd_strerror(err));
                 break;
             }
@@ -603,12 +606,20 @@ snd_pcm_t *pa_alsa_open_by_device_id(
 
             if ((err = pa_alsa_set_hw_params(pcm_handle, &try_ss, nfrags, period_size, tsched_size, use_mmap, use_tsched, TRUE)) < 0) {
 
+                if (!reformat) {
+                    reformat = TRUE;
+                    snd_pcm_close(pcm_handle);
+                    continue;
+                }
+
                 if (!pa_startswith(d, "plug:") && !pa_startswith(d, "plughw:")) {
                     char *t;
 
                     t = pa_sprintf_malloc("plug:%s", d);
                     pa_xfree(d);
                     d = t;
+
+                    reformat = FALSE;
 
                     snd_pcm_close(pcm_handle);
                     continue;
@@ -654,6 +665,7 @@ snd_pcm_t *pa_alsa_open_by_device_string(
     int err;
     char *d;
     snd_pcm_t *pcm_handle;
+    pa_bool_t reformat = FALSE;
 
     pa_assert(device);
     pa_assert(dev);
@@ -665,7 +677,7 @@ snd_pcm_t *pa_alsa_open_by_device_string(
     d = pa_xstrdup(device);
 
     for (;;) {
-        pa_log_debug("Trying %s...", d);
+        pa_log_debug("Trying %s %s SND_PCM_NO_AUTO_FORMAT ...", d, reformat ? "without" : "with");
 
         /* We don't pass SND_PCM_NONBLOCK here, since alsa-lib <=
          * 1.0.17a would then ignore the SND_PCM_NO_xxx flags. Instead
@@ -677,13 +689,20 @@ snd_pcm_t *pa_alsa_open_by_device_string(
                                 /*SND_PCM_NONBLOCK|*/
                                 SND_PCM_NO_AUTO_RESAMPLE|
                                 SND_PCM_NO_AUTO_CHANNELS|
-                                SND_PCM_NO_AUTO_FORMAT)) < 0) {
+                                (reformat ? 0 : SND_PCM_NO_AUTO_FORMAT))) < 0) {
             pa_log("Error opening PCM device %s: %s", d, snd_strerror(err));
             pa_xfree(d);
             return NULL;
         }
 
         if ((err = pa_alsa_set_hw_params(pcm_handle, ss, nfrags, period_size, tsched_size, use_mmap, use_tsched, FALSE)) < 0) {
+
+            if (!reformat) {
+                reformat = TRUE;
+
+                snd_pcm_close(pcm_handle);
+                continue;
+            }
 
             /* Hmm, some hw is very exotic, so we retry with plug, if without it didn't work */
 
@@ -693,6 +712,8 @@ snd_pcm_t *pa_alsa_open_by_device_string(
                 t = pa_sprintf_malloc("plug:%s", d);
                 pa_xfree(d);
                 d = t;
+
+                reformat = FALSE;
 
                 snd_pcm_close(pcm_handle);
                 continue;
@@ -1045,14 +1066,20 @@ int pa_alsa_recover_from_poll(snd_pcm_t *pcm, int revents) {
     pa_assert(pcm);
 
     if (revents & POLLERR)
-        pa_log_warn("Got POLLERR from ALSA");
+        pa_log_debug("Got POLLERR from ALSA");
     if (revents & POLLNVAL)
         pa_log_warn("Got POLLNVAL from ALSA");
     if (revents & POLLHUP)
         pa_log_warn("Got POLLHUP from ALSA");
+    if (revents & POLLPRI)
+        pa_log_warn("Got POLLPRI from ALSA");
+    if (revents & POLLIN)
+        pa_log_debug("Got POLLIN from ALSA");
+    if (revents & POLLOUT)
+        pa_log_debug("Got POLLOUT from ALSA");
 
     state = snd_pcm_state(pcm);
-    pa_log_warn("PCM state is %s", snd_pcm_state_name(state));
+    pa_log_debug("PCM state is %s", snd_pcm_state_name(state));
 
     /* Try to recover from this error */
 
@@ -1108,4 +1135,63 @@ pa_rtpoll_item* pa_alsa_build_pollfd(snd_pcm_t *pcm, pa_rtpoll *rtpoll) {
     }
 
     return item;
+}
+
+snd_pcm_sframes_t pa_alsa_safe_avail_update(snd_pcm_t *pcm, size_t hwbuf_size, const pa_sample_spec *ss) {
+    snd_pcm_sframes_t n;
+    size_t k;
+
+    pa_assert(pcm);
+    pa_assert(hwbuf_size > 0);
+    pa_assert(ss);
+
+    /* Some ALSA driver expose weird bugs, let's inform the user about
+     * what is going on */
+
+    n = snd_pcm_avail_update(pcm);
+
+    if (n <= 0)
+        return n;
+
+    k = (size_t) n * pa_frame_size(ss);
+
+    if (k >= hwbuf_size * 3 ||
+        k >= pa_bytes_per_second(ss)*10)
+        pa_log("snd_pcm_avail_update() returned a value that is exceptionally large: %lu bytes (%lu ms) "
+               "Most likely this is an ALSA driver bug. Please report this issue to the PulseAudio developers.",
+               (unsigned long) k, (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC));
+
+    return n;
+}
+
+int pa_alsa_safe_mmap_begin(snd_pcm_t *pcm, const snd_pcm_channel_area_t **areas, snd_pcm_uframes_t *offset, snd_pcm_uframes_t *frames, size_t hwbuf_size, const pa_sample_spec *ss) {
+    int r;
+    snd_pcm_uframes_t before;
+    size_t k;
+
+    pa_assert(pcm);
+    pa_assert(areas);
+    pa_assert(offset);
+    pa_assert(frames);
+    pa_assert(hwbuf_size > 0);
+    pa_assert(ss);
+
+    before = *frames;
+
+    r = snd_pcm_mmap_begin(pcm, areas, offset, frames);
+
+    if (r < 0)
+        return r;
+
+    k = (size_t) *frames * pa_frame_size(ss);
+
+    if (*frames > before ||
+        k >= hwbuf_size * 3 ||
+        k >= pa_bytes_per_second(ss)*10)
+
+        pa_log("snd_pcm_mmap_begin() returned a value that is exceptionally large: %lu bytes (%lu ms) "
+               "Most likely this is an ALSA driver bug. Please report this issue to the PulseAudio developers.",
+               (unsigned long) k, (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC));
+
+    return r;
 }

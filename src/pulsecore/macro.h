@@ -30,7 +30,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <pulsecore/log.h>
 #include <pulse/gccmacro.h>
 
 #ifndef PACKAGE
@@ -40,7 +39,7 @@
 #ifndef PA_LIKELY
 #ifdef __GNUC__
 #define PA_LIKELY(x) (__builtin_expect(!!(x),1))
-#define PA_UNLIKELY(x) (__builtin_expect((x),0))
+#define PA_UNLIKELY(x) (__builtin_expect(!!(x),0))
 #else
 #define PA_LIKELY(x) (x)
 #define PA_UNLIKELY(x) (x)
@@ -220,5 +219,14 @@ typedef int pa_bool_t;
 #define PA_WARN_REFERENCE(sym, msg)
 
 #endif
+
+#if defined(__i386__) || defined(__x86_64__)
+#define PA_DEBUG_TRAP __asm__("int $3")
+#else
+#define PA_DEBUG_TRAP raise(SIGTRAP)
+#endif
+
+/* We include this at the very last place */
+#include <pulsecore/log.h>
 
 #endif

@@ -57,6 +57,7 @@ static char *stream_name = NULL, *client_name = NULL, *device = NULL;
 
 static int verbose = 0;
 static pa_volume_t volume = PA_VOLUME_NORM;
+static int volume_is_set = 0;
 
 static pa_sample_spec sample_spec = {
     .format = PA_SAMPLE_S16LE,
@@ -138,17 +139,16 @@ static void stream_read_callback(pa_stream *s, size_t length, void *userdata) {
     assert(length > 0);
 
     if (buffer) {
-        fprintf(stderr, _("Buffer overrun, dropping incoming data\n"));
-        if (pa_stream_drop(s) < 0) {
-            fprintf(stderr, _("pa_stream_drop() failed: %s\n"), pa_strerror(pa_context_errno(context)));
-            quit(1);
-        }
-        return;
+        buffer = pa_xrealloc(buffer, buffer_length + length);
+        memcpy((uint8_t*) buffer + buffer_length, data, length);
+        buffer_length += length;
+    } else {
+        buffer = pa_xmalloc(length);
+        memcpy(buffer, data, length);
+        buffer_length = length;
+        buffer_index = 0;
     }
 
-    buffer = pa_xmalloc(buffer_length = length);
-    memcpy(buffer, data, length);
-    buffer_index = 0;
     pa_stream_drop(s);
 }
 
@@ -278,12 +278,13 @@ static void context_state_callback(pa_context *c, void *userdata) {
                 buffer_attr.minreq = (uint32_t) process_time;
                 buffer_attr.maxlength = (uint32_t) -1;
                 buffer_attr.prebuf = (uint32_t) -1;
+                buffer_attr.fragsize = (uint32_t) latency;
                 flags |= PA_STREAM_ADJUST_LATENCY;
             }
 
             if (mode == PLAYBACK) {
                 pa_cvolume cv;
-                if ((r = pa_stream_connect_playback(stream, device, latency > 0 ? &buffer_attr : NULL, flags, pa_cvolume_set(&cv, sample_spec.channels, volume), NULL)) < 0) {
+                if ((r = pa_stream_connect_playback(stream, device, latency > 0 ? &buffer_attr : NULL, flags, volume_is_set ? pa_cvolume_set(&cv, sample_spec.channels, volume) : NULL, NULL)) < 0) {
                     fprintf(stderr, _("pa_stream_connect_playback() failed: %s\n"), pa_strerror(pa_context_errno(c)));
                     goto fail;
                 }
@@ -627,6 +628,7 @@ int main(int argc, char *argv[]) {
             case ARG_VOLUME: {
                 int v = atoi(optarg);
                 volume = v < 0 ? 0U : (pa_volume_t) v;
+                volume_is_set = 1;
                 break;
             }
 
