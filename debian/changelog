@@ -1,3 +1,9 @@
+pulseaudio (0.9.14-1) UNRELEASED; urgency=low
+
+  * New Upstream Version
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Feb 2009 11:44:22 +0000
+
 pulseaudio (0.9.13-2) experimental; urgency=low
 
   * Rename libpulsecore5 to libpulsecore8 to correctly reflect the soname
