@@ -119,6 +119,7 @@ pa_sink_input* pa_sink_input_new(
     pa_sink_input *i;
     pa_resampler *resampler = NULL;
     char st[PA_SAMPLE_SPEC_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    pa_channel_map original_cm;
 
     pa_assert(core);
     pa_assert(data);
@@ -144,17 +145,18 @@ pa_sink_input* pa_sink_input_new(
         if (data->sink->channel_map.channels == data->sample_spec.channels)
             data->channel_map = data->sink->channel_map;
         else
-            pa_return_null_if_fail(pa_channel_map_init_auto(&data->channel_map, data->sample_spec.channels, PA_CHANNEL_MAP_DEFAULT));
+            pa_channel_map_init_extend(&data->channel_map, data->sample_spec.channels, PA_CHANNEL_MAP_DEFAULT);
     }
 
     pa_return_null_if_fail(pa_channel_map_valid(&data->channel_map));
     pa_return_null_if_fail(data->channel_map.channels == data->sample_spec.channels);
 
-    if (!data->volume_is_set)
+    if (!data->volume_is_set) {
         pa_cvolume_reset(&data->volume, data->sample_spec.channels);
+    }
 
     pa_return_null_if_fail(pa_cvolume_valid(&data->volume));
-    pa_return_null_if_fail(data->volume.channels == data->sample_spec.channels);
+    pa_return_null_if_fail(pa_cvolume_compatible(&data->volume, &data->sample_spec));
 
     if (!data->muted_is_set)
         data->muted = FALSE;
@@ -165,6 +167,8 @@ pa_sink_input* pa_sink_input_new(
     if (flags & PA_SINK_INPUT_FIX_RATE)
         data->sample_spec.rate = data->sink->sample_spec.rate;
 
+    original_cm = data->channel_map;
+
     if (flags & PA_SINK_INPUT_FIX_CHANNELS) {
         data->sample_spec.channels = data->sink->sample_spec.channels;
         data->channel_map = data->sink->channel_map;
@@ -174,8 +178,7 @@ pa_sink_input* pa_sink_input_new(
     pa_assert(pa_channel_map_valid(&data->channel_map));
 
     /* Due to the fixing of the sample spec the volume might not match anymore */
-    if (data->volume.channels != data->sample_spec.channels)
-        pa_cvolume_set(&data->volume, data->sample_spec.channels, pa_cvolume_avg(&data->volume));
+    pa_cvolume_remap(&data->volume, &original_cm, &data->channel_map);
 
     if (data->resample_method == PA_RESAMPLER_INVALID)
         data->resample_method = core->resample_method;
@@ -1144,7 +1147,8 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
      * implementor. This implies 'flush' is TRUE. */
 
     pa_sink_input_assert_ref(i);
-    pa_assert(i->thread_info.rewrite_nbytes == 0);
+
+    nbytes = PA_MAX(i->thread_info.rewrite_nbytes, nbytes);
 
 /*     pa_log_debug("request rewrite %lu", (unsigned long) nbytes); */
 
@@ -1172,26 +1176,33 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
             nbytes = pa_resampler_request(i->thread_info.resampler, nbytes);
     }
 
-    if (rewrite) {
-        /* Make sure to not overwrite over underruns */
-        if (nbytes > i->thread_info.playing_for)
-            nbytes = (size_t) i->thread_info.playing_for;
+    if (i->thread_info.rewrite_nbytes != (size_t) -1) {
+        if (rewrite) {
+            /* Make sure to not overwrite over underruns */
+            if (nbytes > i->thread_info.playing_for)
+                nbytes = (size_t) i->thread_info.playing_for;
 
-        i->thread_info.rewrite_nbytes = nbytes;
-    } else
-        i->thread_info.rewrite_nbytes = (size_t) -1;
+            i->thread_info.rewrite_nbytes = nbytes;
+        } else
+            i->thread_info.rewrite_nbytes = (size_t) -1;
+    }
 
-    i->thread_info.rewrite_flush = flush && i->thread_info.rewrite_nbytes != 0;
+    i->thread_info.rewrite_flush =
+        i->thread_info.rewrite_flush ||
+        (flush && i->thread_info.rewrite_nbytes != 0);
 
-    /* Transform to sink domain */
-    if (i->thread_info.resampler)
-        nbytes = pa_resampler_result(i->thread_info.resampler, nbytes);
+    if (nbytes != (size_t) -1) {
 
-    if (nbytes > lbq)
-        pa_sink_request_rewind(i->sink, nbytes - lbq);
-    else
-        /* This call will make sure process_rewind() is called later */
-        pa_sink_request_rewind(i->sink, 0);
+        /* Transform to sink domain */
+        if (i->thread_info.resampler)
+            nbytes = pa_resampler_result(i->thread_info.resampler, nbytes);
+
+        if (nbytes > lbq)
+            pa_sink_request_rewind(i->sink, nbytes - lbq);
+        else
+            /* This call will make sure process_rewind() is called later */
+            pa_sink_request_rewind(i->sink, 0);
+    }
 }
 
 /* Called from main context */

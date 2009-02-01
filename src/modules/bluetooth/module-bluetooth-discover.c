@@ -44,7 +44,7 @@ PA_MODULE_USAGE("");
 
 struct module {
     char *profile;
-    pa_module *pa_m;
+    uint32_t index;
     PA_LLIST_FIELDS(struct module);
 };
 
@@ -78,7 +78,7 @@ static struct module *module_new(const char *profile, pa_module *pa_m) {
 
     m = pa_xnew(struct module, 1);
     m->profile = pa_xstrdup(profile);
-    m->pa_m = pa_m;
+    m->index = pa_m->index;
     PA_LLIST_INIT(struct module, m);
 
     return m;
@@ -89,6 +89,16 @@ static void module_free(struct module *m) {
 
     pa_xfree(m->profile);
     pa_xfree(m);
+}
+
+static struct module* module_find(struct device *d, const char *profile) {
+    struct module *m;
+
+    for (m = d->module_list; m; m = m->next)
+        if (pa_streq(m->profile, profile))
+            return m;
+
+    return NULL;
 }
 
 static struct uuid *uuid_new(const char *uuid) {
@@ -336,13 +346,28 @@ static void load_module_for_device(struct userdata *u, struct device *d, const c
     pa_m = pa_module_load(u->module->core, "module-bluetooth-device", args);
     pa_xfree(args);
 
-    if (!m) {
+    if (!pa_m) {
         pa_log_debug("Failed to load module for device %s", d->object_path);
         return;
     }
 
     m = module_new(profile, pa_m);
     PA_LLIST_PREPEND(struct module, d->module_list, m);
+}
+
+static void unload_module_for_device(struct userdata *u, struct device *d, const char *profile) {
+    struct module *m;
+
+    pa_assert(u);
+    pa_assert(d);
+
+    if (!(m = module_find(d, profile)))
+        return;
+
+    pa_module_unload_request_by_index(u->module->core, m->index, TRUE);
+
+    PA_LLIST_REMOVE(struct module, d->module_list, m);
+    module_free(m);
 }
 
 static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *msg, void *userdata) {
@@ -387,6 +412,7 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *msg, void *
         struct device *d;
         const char *profile;
         DBusMessageIter variant_i;
+        dbus_bool_t connected;
 
         if (!dbus_message_iter_init(msg, &arg_i)) {
             pa_log("dbus: message has no parameters");
@@ -400,6 +426,9 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *msg, void *
 
         dbus_message_iter_get_basic(&arg_i, &value);
 
+        if (!pa_streq(value, "Connected"))
+            goto done;
+
         if (!dbus_message_iter_next(&arg_i)) {
             pa_log("Property value missing");
             goto done;
@@ -412,25 +441,29 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *msg, void *
 
         dbus_message_iter_recurse(&arg_i, &variant_i);
 
-        if (dbus_message_iter_get_arg_type(&variant_i) == DBUS_TYPE_BOOLEAN) {
-            dbus_bool_t connected;
-            dbus_message_iter_get_basic(&variant_i, &connected);
-
-            if (!pa_streq(value, "Connected") || !connected)
-                goto done;
+        if (dbus_message_iter_get_arg_type(&variant_i) != DBUS_TYPE_BOOLEAN) {
+            pa_log("Property value not a boolean.");
+            goto done;
         }
 
-        if (!(d = device_find(u, dbus_message_get_path(msg)))) {
-                d = device_new(dbus_message_get_path(msg));
-                PA_LLIST_PREPEND(struct device, u->device_list, d);
-        }
+        dbus_message_iter_get_basic(&variant_i, &connected);
 
         if (dbus_message_is_signal(msg, "org.bluez.Headset", "PropertyChanged"))
             profile = "hsp";
         else
             profile = "a2dp";
 
-        load_module_for_device(u, d, profile);
+        d = device_find(u, dbus_message_get_path(msg));
+
+        if (connected) {
+            if (!d) {
+                    d = device_new(dbus_message_get_path(msg));
+                    PA_LLIST_PREPEND(struct device, u->device_list, d);
+            }
+
+            load_module_for_device(u, d, profile);
+        } else if (d)
+            unload_module_for_device(u, d, profile);
     }
 
 done:
@@ -452,8 +485,23 @@ void pa__done(pa_module* m) {
         device_free(i);
     }
 
-    if (u->conn)
+    if (u->conn) {
+        DBusError error;
+        dbus_error_init(&error);
+
+        dbus_bus_remove_match(pa_dbus_connection_get(u->conn), "type='signal',sender='org.bluez',interface='org.bluez.Adapter',member='DeviceRemoved'", &error);
+        dbus_error_free(&error);
+
+        dbus_bus_remove_match(pa_dbus_connection_get(u->conn), "type='signal',sender='org.bluez',interface='org.bluez.Headset',member='PropertyChanged'", &error);
+        dbus_error_free(&error);
+
+        dbus_bus_remove_match(pa_dbus_connection_get(u->conn), "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'", &error);
+        dbus_error_free(&error);
+
+        dbus_connection_remove_filter(pa_dbus_connection_get(u->conn), filter_cb, u);
+
         pa_dbus_connection_unref(u->conn);
+    }
 
     pa_xfree(u);
 }

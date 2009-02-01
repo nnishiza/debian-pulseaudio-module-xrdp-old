@@ -245,8 +245,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/check_define.m4 $(top_srcdir)/m4/iconv.m4 \
 	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/lib-ld.m4 \
 	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/tls.m4 \
-	$(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/tls.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(install_sh) -d
@@ -2329,7 +2328,8 @@ AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
 
 # Only required on some platforms but defined for all to avoid errors
-AM_LDFLAGS = -Wl,-no-undefined -Wl,--gc-sections $(am__append_1)
+AM_LDFLAGS = -Wl,-no-undefined -Wl,--gc-sections -Wl,-z,nodelete \
+	$(am__append_1)
 @STATIC_BINS_TRUE@BINLDFLAGS = -static
 @OS_IS_WIN32_TRUE@WINSOCK_LIBS = -lwsock32 -lws2_32 -lwininet
 @OS_IS_WIN32_FALSE@PA_THREAD_OBJS = \

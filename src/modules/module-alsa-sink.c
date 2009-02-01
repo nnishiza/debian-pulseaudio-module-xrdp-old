@@ -241,7 +241,7 @@ static size_t check_left_to_play(struct userdata *u, snd_pcm_sframes_t n) {
     return left_to_play;
 }
 
-static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
+static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled) {
     int work_done = 0;
     pa_usec_t max_sleep_usec = 0, process_usec = 0;
     size_t left_to_play;
@@ -261,7 +261,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
         /* First we determine how many samples are missing to fill the
          * buffer up to 100% */
 
-        if (PA_UNLIKELY((n = snd_pcm_avail_update(u->pcm_handle)) < 0)) {
+        if (PA_UNLIKELY((n = pa_alsa_safe_avail_update(u->pcm_handle, u->hwbuf_size, &u->sink->sample_spec)) < 0)) {
 
             if ((r = try_recover(u, "snd_pcm_avail_update", (int) n)) == 0)
                 continue;
@@ -279,13 +279,22 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
             * need to guarantee that clients only have to keep around
             * a single hw buffer length. */
 
-            if (pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
+            if (!polled &&
+                pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
                 break;
 
-        if (PA_UNLIKELY(n <= u->hwbuf_unused_frames))
+        if (PA_UNLIKELY(n <= u->hwbuf_unused_frames)) {
+
+            if (polled)
+                pa_log("ALSA woke us up to write new data to the device, but there was actually nothing to write! "
+                       "Most likely this is an ALSA driver bug. Please report this issue to the PulseAudio developers.");
+
             break;
+        }
 
         n -= u->hwbuf_unused_frames;
+
+        polled = FALSE;
 
 /*         pa_log_debug("Filling up"); */
 
@@ -299,7 +308,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
 
 /*             pa_log_debug("%lu frames to write", (unsigned long) frames); */
 
-            if (PA_UNLIKELY((err = snd_pcm_mmap_begin(u->pcm_handle, &areas, &offset, &frames)) < 0)) {
+            if (PA_UNLIKELY((err = pa_alsa_safe_mmap_begin(u->pcm_handle, &areas, &offset, &frames, u->hwbuf_size, &u->sink->sample_spec)) < 0)) {
 
                 if ((r = try_recover(u, "snd_pcm_mmap_begin", err)) == 0)
                     continue;
@@ -357,7 +366,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec) {
     return work_done;
 }
 
-static int unix_write(struct userdata *u, pa_usec_t *sleep_usec) {
+static int unix_write(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled) {
     int work_done = 0;
     pa_usec_t max_sleep_usec = 0, process_usec = 0;
     size_t left_to_play;
@@ -374,7 +383,7 @@ static int unix_write(struct userdata *u, pa_usec_t *sleep_usec) {
 
         snd_pcm_hwsync(u->pcm_handle);
 
-        if (PA_UNLIKELY((n = snd_pcm_avail_update(u->pcm_handle)) < 0)) {
+        if (PA_UNLIKELY((n = pa_alsa_safe_avail_update(u->pcm_handle, u->hwbuf_size, &u->sink->sample_spec)) < 0)) {
 
             if ((r = try_recover(u, "snd_pcm_avail_update", (int) n)) == 0)
                 continue;
@@ -392,13 +401,22 @@ static int unix_write(struct userdata *u, pa_usec_t *sleep_usec) {
             * need to guarantee that clients only have to keep around
             * a single hw buffer length. */
 
-            if (pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
+            if (!polled &&
+                pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) > process_usec+max_sleep_usec/2)
                 break;
 
-        if (PA_UNLIKELY(n <= u->hwbuf_unused_frames))
+        if (PA_UNLIKELY(n <= u->hwbuf_unused_frames)) {
+
+            if (polled)
+                pa_log("ALSA woke us up to write new data to the device, but there was actually nothing to write! "
+                       "Most likely this is an ALSA driver bug. Please report this issue to the PulseAudio developers.");
+
             break;
+        }
 
         n -= u->hwbuf_unused_frames;
+
+        polled = FALSE;
 
         for (;;) {
             snd_pcm_sframes_t frames;
@@ -581,9 +599,9 @@ static int update_sw_params(struct userdata *u) {
             u->hwbuf_unused_frames = (snd_pcm_sframes_t)
                 (PA_LIKELY(b < u->hwbuf_size) ?
                  ((u->hwbuf_size - b) / u->frame_size) : 0);
-
-            fix_tsched_watermark(u);
         }
+
+        fix_tsched_watermark(u);
     }
 
     pa_log_debug("hwbuf_unused_frames=%lu", (unsigned long) u->hwbuf_unused_frames);
@@ -796,7 +814,7 @@ static int sink_get_volume_cb(pa_sink *s) {
                 VALGRIND_MAKE_MEM_DEFINED(&alsa_vol, sizeof(alsa_vol));
 #endif
 
-                r.values[i] = pa_sw_volume_from_dB((double) alsa_vol / 100.0);
+                r.values[i] = pa_sw_volume_from_dB((double) (alsa_vol - u->hw_dB_max) / 100.0);
             } else {
 
                 if ((err = snd_mixer_selem_get_playback_volume(u->mixer_elem, u->mixer_map[i], &alsa_vol)) < 0)
@@ -818,7 +836,7 @@ static int sink_get_volume_cb(pa_sink *s) {
             VALGRIND_MAKE_MEM_DEFINED(&alsa_vol, sizeof(alsa_vol));
 #endif
 
-            pa_cvolume_set(&r, s->sample_spec.channels, pa_sw_volume_from_dB((double) alsa_vol / 100.0));
+            pa_cvolume_set(&r, s->sample_spec.channels, pa_sw_volume_from_dB((double) (alsa_vol - u->hw_dB_max) / 100.0));
 
         } else {
 
@@ -875,6 +893,7 @@ static int sink_set_volume_cb(pa_sink *s) {
             if (u->hw_dB_supported) {
 
                 alsa_vol = (long) (pa_sw_volume_to_dB(vol) * 100);
+                alsa_vol += u->hw_dB_max;
                 alsa_vol = PA_CLAMP_UNLIKELY(alsa_vol, u->hw_dB_min, u->hw_dB_max);
 
                 if ((err = snd_mixer_selem_set_playback_dB(u->mixer_elem, u->mixer_map[i], alsa_vol, 1)) < 0)
@@ -883,7 +902,7 @@ static int sink_set_volume_cb(pa_sink *s) {
                 if ((err = snd_mixer_selem_get_playback_dB(u->mixer_elem, u->mixer_map[i], &alsa_vol)) < 0)
                     goto fail;
 
-                r.values[i] = pa_sw_volume_from_dB((double) alsa_vol / 100.0);
+                r.values[i] = pa_sw_volume_from_dB((double) (alsa_vol - u->hw_dB_max) / 100.0);
 
             } else {
                 alsa_vol = to_alsa_volume(u, vol);
@@ -906,6 +925,7 @@ static int sink_set_volume_cb(pa_sink *s) {
 
         if (u->hw_dB_supported) {
             alsa_vol = (long) (pa_sw_volume_to_dB(vol) * 100);
+            alsa_vol += u->hw_dB_max;
             alsa_vol = PA_CLAMP_UNLIKELY(alsa_vol, u->hw_dB_min, u->hw_dB_max);
 
             if ((err = snd_mixer_selem_set_playback_dB_all(u->mixer_elem, alsa_vol, 1)) < 0)
@@ -914,7 +934,7 @@ static int sink_set_volume_cb(pa_sink *s) {
             if ((err = snd_mixer_selem_get_playback_dB(u->mixer_elem, SND_MIXER_SCHN_MONO, &alsa_vol)) < 0)
                 goto fail;
 
-            pa_cvolume_set(&r, s->volume.channels, pa_sw_volume_from_dB((double) alsa_vol / 100.0));
+            pa_cvolume_set(&r, s->volume.channels, pa_sw_volume_from_dB((double) (alsa_vol - u->hw_dB_max) / 100.0));
 
         } else {
             alsa_vol = to_alsa_volume(u, vol);
@@ -1082,6 +1102,7 @@ finish:
 
 static void thread_func(void *userdata) {
     struct userdata *u = userdata;
+    unsigned short revents = 0;
 
     pa_assert(u);
 
@@ -1108,9 +1129,9 @@ static void thread_func(void *userdata) {
                         goto fail;
 
             if (u->use_mmap)
-                work_done = mmap_write(u, &sleep_usec);
+                work_done = mmap_write(u, &sleep_usec, revents & POLLOUT);
             else
-                work_done = unix_write(u, &sleep_usec);
+                work_done = unix_write(u, &sleep_usec, revents & POLLOUT);
 
             if (work_done < 0)
                 goto fail;
@@ -1178,7 +1199,6 @@ static void thread_func(void *userdata) {
         /* Tell ALSA about this and process its response */
         if (PA_SINK_IS_OPENED(u->sink->thread_info.state)) {
             struct pollfd *pollfd;
-            unsigned short revents = 0;
             int err;
             unsigned n;
 
@@ -1189,7 +1209,7 @@ static void thread_func(void *userdata) {
                 goto fail;
             }
 
-            if (revents & (POLLERR|POLLNVAL|POLLHUP|POLLPRI)) {
+            if (revents & (POLLIN|POLLERR|POLLNVAL|POLLHUP|POLLPRI)) {
                 if (pa_alsa_recover_from_poll(u->pcm_handle, revents) < 0)
                     goto fail;
 
@@ -1199,7 +1219,8 @@ static void thread_func(void *userdata) {
 
             if (revents && u->use_tsched)
                 pa_log_debug("Wakeup from ALSA!%s%s", (revents & POLLIN) ? " INPUT" : "", (revents & POLLOUT) ? " OUTPUT" : "");
-        }
+        } else
+            revents = 0;
     }
 
 fail:
