@@ -1,4 +1,4 @@
-pulseaudio (0.9.14-1) UNRELEASED; urgency=low
+pulseaudio (0.9.14-1) experimental; urgency=low
 
   * New Upstream Version
   * 0002-load-module-gconf-earlier.patch renamed to
@@ -12,7 +12,7 @@ pulseaudio (0.9.14-1) UNRELEASED; urgency=low
   * debian/patches/series
     - Updated
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Feb 2009 12:04:39 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Feb 2009 12:47:55 +0000
 
 pulseaudio (0.9.13-2) experimental; urgency=low
 
