@@ -1,8 +1,18 @@
 pulseaudio (0.9.14-1) UNRELEASED; urgency=low
 
   * New Upstream Version
+  * 0002-load-module-gconf-earlier.patch renamed to
+    0001-load-module-gconf-earlier.patch and updated
+  * 0001-Fix-library-search-path-to-include-lib-and-usr-lib.patch
+    - Removed, no longer applicable
+  * 0003-make-sure-to-use-64bit-rounding-even-on-32bit-machin.patch
+    - Removed, fixed upstream
+  * 0004-properly-remove-dbus-matches-an-filters-when-unloadi.patch
+    - Removed, fixed upstream
+  * debian/patches/series
+    - Updated
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Feb 2009 11:44:22 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Feb 2009 12:04:39 +0000
 
 pulseaudio (0.9.13-2) experimental; urgency=low
 

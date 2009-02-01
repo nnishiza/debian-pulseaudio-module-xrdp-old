@@ -1,5 +1,1 @@
-0001-Fix-library-search-path-to-include-lib-and-usr-lib.patch
-0002-load-module-gconf-earlier.patch
-0003-make-sure-to-use-64bit-rounding-even-on-32bit-machin.patch
-0004-properly-remove-dbus-matches-an-filters-when-unloadi.patch
-0005-Fix-two-typos-that-broke-tunnels.patch
+0001-load-module-gconf-earlier.patch
