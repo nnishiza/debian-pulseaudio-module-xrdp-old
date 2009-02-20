@@ -41,7 +41,7 @@ pulseaudio_start () {
 
 pulseaudio_stop () {
 	log_begin_msg "Stopping PulseAudio Daemon"
-	start-stop-daemon -p $PIDFILE --stop || echo -n "... pulseaudio is not running"
+	start-stop-daemon -p $PIDFILE --stop --retry 5 || echo -n "... pulseaudio is not running"
 	log_end_msg $?
 }
 
