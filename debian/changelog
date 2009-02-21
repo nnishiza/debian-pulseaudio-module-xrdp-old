@@ -8,8 +8,9 @@ pulseaudio (0.9.14-2) UNRELEASED; urgency=low
     supplied by James Westby (Closes: #494959)
   * Make the start option of the init script report the right status. Fix
     suggested by Aron Griffis (Closes: #488752)
+  * Use per user esound sockets instead of a single one for all users
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 20 Feb 2009 23:43:31 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Feb 2009 00:05:04 +0000
 
 pulseaudio (0.9.14-1) experimental; urgency=low
 
