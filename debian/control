@@ -11,7 +11,8 @@ Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl3-dev,
     libasound2-dev (>= 1.0.17) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
     libavahi-client-dev, libjack0.100.0-dev, libwrap0-dev,
     liblircclient-dev, libgconf2-dev, libhal-dev, libasyncns-dev,
-    libatomic-ops-dev, libspeexdsp-dev (>= 1.2~rc1), libbluetooth-dev (>= 3.0),
+    libatomic-ops-dev, libspeexdsp-dev (>= 1.2~rc1),
+    libbluetooth-dev (>= 3.0) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
     libpolkit-dbus-dev, libgdbm-dev, intltool
 Standards-Version: 3.7.3
 Vcs-Git: git://git.debian.org/git/pkg-pulseaudio/pulseaudio.git
@@ -244,7 +245,7 @@ Description: GConf module for PulseAudio sound server debugging symbols
  This package contains debugging symbols for the PulseAudio GConf module.
 
 Package: pulseaudio-module-bluetooth
-Architecture: any
+Architecture: [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386]
 Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: Bluetooth module for PulseAudio sound server
@@ -252,7 +253,7 @@ Description: Bluetooth module for PulseAudio sound server
  WIN32 systems. It is a drop in replacement for the ESD sound server with
  much better latency, mixing/re-sampling quality and overall architecture.
  .
- This module enables PulseAudio to work with bluetooth devices, like headset 
+ This module enables PulseAudio to work with bluetooth devices, like headset
  or audio gateway.
  .
  The module is called module-bluetooth

@@ -20,7 +20,11 @@ pulseaudio (0.9.14-2) UNRELEASED; urgency=low
   * debian/pulseaudio.install
     - remove files of the separate bluetooth module package
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Mar 2009 10:22:45 +0000
+  [ Sjoerd Simons ]
+  * debian/control: Don't build the bluetooth module on non-linux systems
+    (Closes: #502837)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Mar 2009 12:02:01 +0000
 
 pulseaudio (0.9.14-1) experimental; urgency=low
 
