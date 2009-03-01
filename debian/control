@@ -245,7 +245,7 @@ Description: GConf module for PulseAudio sound server debugging symbols
  This package contains debugging symbols for the PulseAudio GConf module.
 
 Package: pulseaudio-module-bluetooth
-Architecture: [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386]
+Architecture: alpha amd64 arm armel hppa i386 ia64 mips mipsel powerpc s390 sparc
 Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Conflicts: pulseaudio (<< 0.9.14-2)
@@ -260,7 +260,7 @@ Description: Bluetooth module for PulseAudio sound server
  The module is called module-bluetooth
 
 Package: pulseaudio-module-bluetooth-dbg
-Architecture: any
+Architecture: alpha amd64 arm armel hppa i386 ia64 mips mipsel powerpc s390 sparc
 Priority: extra
 Depends: ${misc:Depends}, pulseaudio-module-bluetooth (= ${binary:Version})
 Description: Bluetooth module for PulseAudio sound server
