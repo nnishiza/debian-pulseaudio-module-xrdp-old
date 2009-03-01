@@ -248,6 +248,7 @@ Package: pulseaudio-module-bluetooth
 Architecture: [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386]
 Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: pulseaudio (<< 0.9.14-2)
 Description: Bluetooth module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
