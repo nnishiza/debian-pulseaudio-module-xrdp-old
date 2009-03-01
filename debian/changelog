@@ -25,8 +25,9 @@ pulseaudio (0.9.14-2) UNRELEASED; urgency=low
     (Closes: #502837)
   * debian/control: Make the bluetooth module conflict with older pulseaudio
     versions
+  * Update standards version, no changes needed
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Mar 2009 12:21:05 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Mar 2009 13:58:23 +0000
 
 pulseaudio (0.9.14-1) experimental; urgency=low
 
