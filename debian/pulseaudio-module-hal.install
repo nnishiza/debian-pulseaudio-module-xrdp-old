@@ -1,3 +1,2 @@
 usr/lib/pulse-*/modules/libdbus-util.so
 usr/lib/pulse-*/modules/module-hal-detect.so
-usr/share/lintian/overrides/pulseaudio-module-hal
