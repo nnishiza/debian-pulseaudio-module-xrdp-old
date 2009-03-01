@@ -14,7 +14,7 @@ pulseaudio (0.9.14-2) UNRELEASED; urgency=low
 
   [ Baptiste Mille-Mathias ]
   * debian/control:
-    - create a separate package for bluetooth module
+    - create a separate package for bluetooth module (Closes: #513832)
   * debian/pulseaudio-module-bluetooth.install
     - put files for the separate bluetooth module package
   * debian/pulseaudio.install
