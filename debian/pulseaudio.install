@@ -30,15 +30,9 @@ usr/lib/pulse-*/modules/libtagstruct.so
 usr/lib/pulse-*/modules/module-alsa-sink.so
 usr/lib/pulse-*/modules/module-alsa-source.so
 usr/lib/pulse-*/modules/module-always-sink.so
-usr/lib/pulse-*/modules/libbluetooth-ipc.so
-usr/lib/pulse-*/modules/libbluetooth-sbc.so
-usr/lib/pulse-*/modules/module-bluetooth-device.so
-usr/lib/pulse-*/modules/module-bluetooth-discover.so
-usr/lib/pulse-*/modules/module-bluetooth-proximity.so
 usr/lib/pulse-*/modules/module-console-kit.so
 usr/lib/pulse-*/modules/module-device-restore.so
 usr/lib/pulse-*/modules/module-stream-restore.so
-usr/lib/pulseaudio/pulse/proximity-helper
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so
 usr/lib/pulse-*/modules/module-cli-protocol-unix.so
 usr/lib/pulse-*/modules/module-cli.so

@@ -243,6 +243,31 @@ Description: GConf module for PulseAudio sound server debugging symbols
  .
  This package contains debugging symbols for the PulseAudio GConf module.
 
+Package: pulseaudio-module-bluetooth
+Architecture: any
+Priority: extra
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Bluetooth module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This module enables PulseAudio to work with bluetooth devices, like headset 
+ or audio gateway.
+ .
+ The module is called module-bluetooth
+
+Package: pulseaudio-module-bluetooth-dbg
+Architecture: any
+Priority: extra
+Depends: ${misc:Depends}, pulseaudio-module-bluetooth (= ${binary:Version})
+Description: Bluetooth module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This package contains debugging symbols for the PulseAudio bluetooth module.
+
 Package: pulseaudio-module-x11
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, pulseaudio-utils

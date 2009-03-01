@@ -1,5 +1,6 @@
 pulseaudio (0.9.14-2) UNRELEASED; urgency=low
 
+  [ Sjoerd Simons ]
   * Build against libcap2-dev (Closes: #489060)
   * Bump shlibs of libpulse0 (Closes: #514645)
   * Bump soname of libpulsecore to 9
@@ -10,6 +11,14 @@ pulseaudio (0.9.14-2) UNRELEASED; urgency=low
   * Make the start option of the init script report the right status. Fix
     suggested by Aron Griffis (Closes: #488752)
   * Use per user esound sockets instead of a single one for all users
+
+  [ Baptiste Mille-Mathias ]
+  * debian/control:
+    - create a separate package for bluetooth module
+  * debian/pulseaudio-module-bluetooth.install
+    - put files for the separate bluetooth module package
+  * debian/pulseaudio.install
+    - remove files of the separate bluetooth module package
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 01 Mar 2009 10:22:45 +0000
 
