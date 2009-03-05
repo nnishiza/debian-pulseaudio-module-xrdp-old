@@ -3,12 +3,12 @@ Section: sound
 Priority: optional
 Maintainer: Pulseaudio maintenance team <pkg-pulseaudio-devel@lists.alioth.debian.org>
 Uploaders: CJ van den Berg <cj@vdbonline.com>, Sjoerd Simons <sjoerd@debian.org>
-Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl3-dev,
+Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl7-dev,
     liboil0.3-dev (>= 0.3.0) | liboil-dev, libsamplerate0-dev,
     libsndfile1-dev (>= 1.0.10) | libsndfile-dev, libx11-dev,
     x11proto-core-dev, libxt-dev, libglib2.0-dev,
     libcap2-dev [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
-    libasound2-dev (>= 1.0.17) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
+    libasound2-dev (>= 1.0.19) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
     libavahi-client-dev, libjack0.100.0-dev, libwrap0-dev,
     liblircclient-dev, libgconf2-dev, libhal-dev, libasyncns-dev,
     libatomic-ops-dev, libspeexdsp-dev (>= 1.2~rc1),
