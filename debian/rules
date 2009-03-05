@@ -25,7 +25,7 @@ clean::
 update-patch-series:
 	mkdir -p $(CURDIR)/debian/patches
 	rm -f $(CURDIR)/debian/patches/*.patch
-	git-format-patch -o $(CURDIR)/debian/patches patches ^upstream | \
+	git format-patch -o $(CURDIR)/debian/patches patches ^upstream | \
 		xargs -n 1 basename > $(CURDIR)/debian/patches/series
 	for patch in $$(ls $(CURDIR)/debian/patches/*.patch) ; \
 	do \

@@ -4,8 +4,11 @@ pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
   * debian/copyright: Updated
   * debian/control: Build-Depends on libltdl7-dev
   * debian/control: Build-Depends on libasound2-dev (>= 1.0.19)
+  * debian/rules: Use git format-patch instead of git-format-patch
+  * debian/patches/0001-load-module-gconf-earlier.patch:
+    - Removed. Merged upstream
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 17:44:57 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 18:09:32 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 
