@@ -1,8 +1,9 @@
 pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
 
   * New Upstream Version
+  * debian/copyright: Updated
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 16:47:06 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 17:44:24 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 
