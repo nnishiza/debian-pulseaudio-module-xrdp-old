@@ -8,8 +8,9 @@ pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
   * debian/patches/0001-load-module-gconf-earlier.patch:
     - Removed. Merged upstream
   * debian/pulseaudio.install: Update for new modules
+  * debian/pulseaudio-module-x11.install: Update for new modules
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 18:22:47 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 18:47:46 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 
