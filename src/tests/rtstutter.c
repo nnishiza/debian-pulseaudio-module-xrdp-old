@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation; either version 2 of the
+  published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -36,30 +36,35 @@
 
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
+#include <pulsecore/core-util.h>
 
 static int msec_lower, msec_upper;
 
 static void* work(void *p) PA_GCC_NORETURN;
 
 static void* work(void *p) {
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
     cpu_set_t mask;
+#endif
     struct sched_param param;
 
-    pa_log_notice("CPU%i: Created thread.", PA_PTR_TO_INT(p));
+    pa_log_notice("CPU%i: Created thread.", PA_PTR_TO_UINT(p));
 
     memset(&param, 0, sizeof(param));
     param.sched_priority = 12;
     pa_assert_se(pthread_setschedparam(pthread_self(), SCHED_FIFO, &param) == 0);
 
+#ifdef HAVE_PTHREAD_SETAFFINITY_NP
     CPU_ZERO(&mask);
-    CPU_SET((size_t) PA_PTR_TO_INT(p), &mask);
+    CPU_SET((size_t) PA_PTR_TO_UINT(p), &mask);
     pa_assert_se(pthread_setaffinity_np(pthread_self(), sizeof(mask), &mask) == 0);
+#endif
 
     for (;;) {
         struct timespec now, end;
         uint64_t nsec;
 
-        pa_log_notice("CPU%i: Sleeping for 1s", PA_PTR_TO_INT(p));
+        pa_log_notice("CPU%i: Sleeping for 1s", PA_PTR_TO_UINT(p));
         sleep(1);
 
         pa_assert_se(clock_gettime(CLOCK_REALTIME, &end) == 0);
@@ -68,7 +73,7 @@ static void* work(void *p) {
             (uint64_t) ((((double) rand())*(double)(msec_upper-msec_lower)*PA_NSEC_PER_MSEC)/RAND_MAX) +
             (uint64_t) ((uint64_t) msec_lower*PA_NSEC_PER_MSEC);
 
-        pa_log_notice("CPU%i: Freezing for %ims", PA_PTR_TO_INT(p), (int) (nsec/PA_NSEC_PER_MSEC));
+        pa_log_notice("CPU%i: Freezing for %ims", PA_PTR_TO_UINT(p), (int) (nsec/PA_NSEC_PER_MSEC));
 
         end.tv_sec += (time_t) (nsec / PA_NSEC_PER_SEC);
         end.tv_nsec += (long int) (nsec % PA_NSEC_PER_SEC);
@@ -86,7 +91,7 @@ static void* work(void *p) {
 }
 
 int main(int argc, char*argv[]) {
-    int n;
+    unsigned n;
 
     srand((unsigned) time(NULL));
 
@@ -106,9 +111,9 @@ int main(int argc, char*argv[]) {
 
     pa_log_notice("Creating random latencies in the range of %ims to  %ims.", msec_lower, msec_upper);
 
-    for (n = 1; n < sysconf(_SC_NPROCESSORS_CONF); n++) {
+    for (n = 1; n < pa_ncpus(); n++) {
         pthread_t t;
-        pa_assert_se(pthread_create(&t, NULL, work, PA_INT_TO_PTR(n)) == 0);
+        pa_assert_se(pthread_create(&t, NULL, work, PA_UINT_TO_PTR(n)) == 0);
     }
 
     work(PA_INT_TO_PTR(0));

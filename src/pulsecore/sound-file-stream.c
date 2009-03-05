@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -133,7 +133,7 @@ static void sink_input_state_change_cb(pa_sink_input *i, pa_sink_input_state_t s
      * we are heard right-away. */
     if (PA_SINK_INPUT_IS_LINKED(state) &&
         i->thread_info.state == PA_SINK_INPUT_INIT)
-        pa_sink_input_request_rewind(i, 0, FALSE, TRUE);
+        pa_sink_input_request_rewind(i, 0, FALSE, TRUE, TRUE);
 }
 
 /* Called from IO thread context */
@@ -326,7 +326,7 @@ int pa_play_file(
     pa_proplist_sets(data.proplist, PA_PROP_MEDIA_NAME, pa_path_get_filename(fname));
     pa_proplist_sets(data.proplist, PA_PROP_MEDIA_FILENAME, fname);
 
-    u->sink_input = pa_sink_input_new(sink->core, &data, 0);
+    pa_sink_input_new(&u->sink_input, sink->core, &data, 0);
     pa_sink_input_new_data_done(&data);
 
     if (!u->sink_input)

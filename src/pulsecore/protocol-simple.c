@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -283,6 +283,9 @@ static int connection_process_msg(pa_msgobject *o, int code, void*userdata, int6
     connection *c = CONNECTION(o);
     connection_assert_ref(c);
 
+    if (!c->protocol)
+        return -1;
+
     switch (code) {
         case CONNECTION_MESSAGE_REQUEST_DATA:
             do_work(c);
@@ -323,7 +326,7 @@ static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int
 
             if (pa_memblockq_is_readable(c->input_memblockq) && c->playback.underrun) {
                 pa_log_debug("Requesting rewind due to end of underrun.");
-                pa_sink_input_request_rewind(c->sink_input, 0, FALSE, TRUE);
+                pa_sink_input_request_rewind(c->sink_input, 0, FALSE, TRUE, FALSE);
             }
 
 /*             pa_log("got data, %u", pa_memblockq_get_length(c->input_memblockq)); */
@@ -476,7 +479,8 @@ static void io_callback(pa_iochannel*io, void *userdata) {
 
 void pa_simple_protocol_connect(pa_simple_protocol *p, pa_iochannel *io, pa_simple_options *o) {
     connection *c = NULL;
-    char cname[256], pname[128];
+    char pname[128];
+    pa_client_new_data client_data;
 
     pa_assert(p);
     pa_assert(io);
@@ -505,11 +509,18 @@ void pa_simple_protocol_connect(pa_simple_protocol *p, pa_iochannel *io, pa_simp
     c->playback.underrun = TRUE;
     pa_atomic_store(&c->playback.missing, 0);
 
+    pa_client_new_data_init(&client_data);
+    client_data.module = o->module;
+    client_data.driver = __FILE__;
     pa_iochannel_socket_peer_to_string(io, pname, sizeof(pname));
-    pa_snprintf(cname, sizeof(cname), "Simple client (%s)", pname);
-    pa_assert_se(c->client = pa_client_new(p->core, __FILE__, cname));
-    pa_proplist_sets(c->client->proplist, "simple-protocol.peer", pname);
-    c->client->module = o->module;
+    pa_proplist_setf(client_data.proplist, PA_PROP_APPLICATION_NAME, "Simple client (%s)", pname);
+    pa_proplist_sets(client_data.proplist, "simple-protocol.peer", pname);
+    c->client = pa_client_new(p->core, &client_data);
+    pa_client_new_data_done(&client_data);
+
+    if (!c->client)
+        goto fail;
+
     c->client->kill = client_kill_cb;
     c->client->userdata = c;
 
@@ -518,7 +529,7 @@ void pa_simple_protocol_connect(pa_simple_protocol *p, pa_iochannel *io, pa_simp
         size_t l;
         pa_sink *sink;
 
-        if (!(sink = pa_namereg_get(c->protocol->core, o->default_sink, PA_NAMEREG_SINK, TRUE))) {
+        if (!(sink = pa_namereg_get(c->protocol->core, o->default_sink, PA_NAMEREG_SINK))) {
             pa_log("Failed to get sink.");
             goto fail;
         }
@@ -531,7 +542,7 @@ void pa_simple_protocol_connect(pa_simple_protocol *p, pa_iochannel *io, pa_simp
         pa_proplist_update(data.proplist, PA_UPDATE_MERGE, c->client->proplist);
         pa_sink_input_new_data_set_sample_spec(&data, &o->sample_spec);
 
-        c->sink_input = pa_sink_input_new(p->core, &data, 0);
+        pa_sink_input_new(&c->sink_input, p->core, &data, 0);
         pa_sink_input_new_data_done(&data);
 
         if (!c->sink_input) {
@@ -570,7 +581,7 @@ void pa_simple_protocol_connect(pa_simple_protocol *p, pa_iochannel *io, pa_simp
         size_t l;
         pa_source *source;
 
-        if (!(source = pa_namereg_get(c->protocol->core, o->default_source, PA_NAMEREG_SOURCE, TRUE))) {
+        if (!(source = pa_namereg_get(c->protocol->core, o->default_source, PA_NAMEREG_SOURCE))) {
             pa_log("Failed to get source.");
             goto fail;
         }
@@ -583,7 +594,7 @@ void pa_simple_protocol_connect(pa_simple_protocol *p, pa_iochannel *io, pa_simp
         pa_proplist_update(data.proplist, PA_UPDATE_MERGE, c->client->proplist);
         pa_source_output_new_data_set_sample_spec(&data, &o->sample_spec);
 
-        c->source_output = pa_source_output_new(p->core, &data, 0);
+        pa_source_output_new(&c->source_output, p->core, &data, 0);
         pa_source_output_new_data_done(&data);
 
         if (!c->source_output) {

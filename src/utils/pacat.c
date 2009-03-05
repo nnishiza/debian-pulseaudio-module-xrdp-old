@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -238,6 +238,18 @@ static void stream_moved_callback(pa_stream *s, void *userdata) {
         fprintf(stderr, _("Stream moved to device %s (%u, %ssuspended).%s \n"), pa_stream_get_device_name(s), pa_stream_get_device_index(s), pa_stream_is_suspended(s) ? "" : _("not "),  CLEAR_LINE);
 }
 
+static void stream_event_callback(pa_stream *s, const char *name, pa_proplist *pl, void *userdata) {
+    char *t;
+
+    assert(s);
+    assert(name);
+    assert(pl);
+
+    t = pa_proplist_to_string_sep(pl, ", ");
+    fprintf(stderr, "Got event '%s', properties '%s'\n", name, t);
+    pa_xfree(t);
+}
+
 /* This is called whenever the context status changes */
 static void context_state_callback(pa_context *c, void *userdata) {
     assert(c);
@@ -271,6 +283,7 @@ static void context_state_callback(pa_context *c, void *userdata) {
             pa_stream_set_underflow_callback(stream, stream_underflow_callback, NULL);
             pa_stream_set_overflow_callback(stream, stream_overflow_callback, NULL);
             pa_stream_set_started_callback(stream, stream_started_callback, NULL);
+            pa_stream_set_event_callback(stream, stream_event_callback, NULL);
 
             if (latency > 0) {
                 memset(&buffer_attr, 0, sizeof(buffer_attr));
@@ -323,7 +336,6 @@ static void context_drain_complete(pa_context*c, void *userdata) {
 
 /* Stream draining complete */
 static void stream_drain_complete(pa_stream*s, int success, void *userdata) {
-    pa_operation *o;
 
     if (!success) {
         fprintf(stderr, _("Failed to drain stream: %s\n"), pa_strerror(pa_context_errno(context)));
@@ -337,7 +349,7 @@ static void stream_drain_complete(pa_stream*s, int success, void *userdata) {
     pa_stream_unref(stream);
     stream = NULL;
 
-    if (!(o = pa_context_drain(context, context_drain_complete, NULL)))
+    if (!pa_context_drain(context, context_drain_complete, NULL))
         pa_context_disconnect(context);
     else {
         if (verbose)

@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -487,7 +487,7 @@ static void sink_input_kill_cb(pa_sink_input *i) {
     struct output *o;
 
     pa_sink_input_assert_ref(i);
-    pa_assert(o = i->userdata);
+    pa_assert_se(o = i->userdata);
 
     pa_module_unload_request(o->userdata->module, TRUE);
     output_free(o);
@@ -504,7 +504,7 @@ static void sink_input_state_change_cb(pa_sink_input *i, pa_sink_input_state_t s
      * we are heard right-away. */
     if (PA_SINK_INPUT_IS_LINKED(state) &&
         i->thread_info.state == PA_SINK_INPUT_INIT)
-        pa_sink_input_request_rewind(i, 0, FALSE, TRUE);
+        pa_sink_input_request_rewind(i, 0, FALSE, TRUE, TRUE);
 }
 
 /* Called from thread context */
@@ -627,6 +627,7 @@ static int sink_set_state(pa_sink *sink, pa_sink_state_t state) {
 
         case PA_SINK_UNLINKED:
         case PA_SINK_INIT:
+        case PA_SINK_INVALID_STATE:
             ;
     }
 
@@ -798,7 +799,7 @@ static int output_create_sink_input(struct output *o) {
     data.module = o->userdata->module;
     data.resample_method = o->userdata->resample_method;
 
-    o->sink_input = pa_sink_input_new(o->userdata->core, &data, PA_SINK_INPUT_VARIABLE_RATE|PA_SINK_INPUT_DONT_MOVE);
+    pa_sink_input_new(&o->sink_input, o->userdata->core, &data, PA_SINK_INPUT_VARIABLE_RATE|PA_SINK_INPUT_DONT_MOVE);
 
     pa_sink_input_new_data_done(&data);
 
@@ -1051,8 +1052,9 @@ int pa__init(pa_module*m) {
 
     slaves = pa_modargs_get_value(ma, "slaves", NULL);
     u->automatic = !slaves;
-    ss = m->core->default_sample_spec;
 
+    ss = m->core->default_sample_spec;
+    map = m->core->default_channel_map;
     if ((pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_DEFAULT) < 0)) {
         pa_log("Invalid sample specification.");
         goto fail;
@@ -1103,7 +1105,7 @@ int pa__init(pa_module*m) {
         while ((n = pa_split(slaves, ",", &split_state))) {
             pa_sink *slave_sink;
 
-            if (!(slave_sink = pa_namereg_get(m->core, n, PA_NAMEREG_SINK, TRUE)) || slave_sink == u->sink) {
+            if (!(slave_sink = pa_namereg_get(m->core, n, PA_NAMEREG_SINK)) || slave_sink == u->sink) {
                 pa_log("Invalid slave sink '%s'", n);
                 pa_xfree(n);
                 goto fail;

@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -27,6 +27,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
 
 #include <liboil/liboilfuncs.h>
 #include <liboil/liboil.h>
@@ -34,8 +36,10 @@
 #include <pulse/timeval.h>
 
 #include <pulsecore/log.h>
+#include <pulsecore/core-error.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/g711.h>
+#include <pulsecore/core-util.h>
 
 #include "sample-util.h"
 #include "endianmacros.h"
@@ -79,6 +83,10 @@ static uint8_t silence_byte(pa_sample_format_t format) {
         case PA_SAMPLE_S32BE:
         case PA_SAMPLE_FLOAT32LE:
         case PA_SAMPLE_FLOAT32BE:
+        case PA_SAMPLE_S24LE:
+        case PA_SAMPLE_S24BE:
+        case PA_SAMPLE_S24_32LE:
+        case PA_SAMPLE_S24_32BE:
             return 0;
         case PA_SAMPLE_ALAW:
             return 0xd5;
@@ -205,13 +213,22 @@ size_t pa_mix(
 
                 for (i = 0; i < nstreams; i++) {
                     pa_mix_info *m = streams + i;
-                    int32_t v, cv = m->linear[channel].i;
+                    int32_t v, lo, hi, cv = m->linear[channel].i;
 
                     if (PA_UNLIKELY(cv <= 0))
                         continue;
 
+                    /* Multiplying the 32bit volume factor with the
+                     * 16bit sample might result in an 48bit value. We
+                     * want to do without 64 bit integers and hence do
+                     * the multiplication independantly for the HI and
+                     * LO part of the volume. */
+
+                    hi = cv >> 16;
+                    lo = cv & 0xFFFF;
+
                     v = *((int16_t*) m->ptr);
-                    v = (v * cv) / 0x10000;
+                    v = ((v * lo) >> 16) + (v * hi);
                     sum += v;
 
                     m->ptr = (uint8_t*) m->ptr + sizeof(int16_t);
@@ -240,13 +257,16 @@ size_t pa_mix(
 
                 for (i = 0; i < nstreams; i++) {
                     pa_mix_info *m = streams + i;
-                    int32_t v, cv = m->linear[channel].i;
+                    int32_t v, lo, hi, cv = m->linear[channel].i;
 
                     if (PA_UNLIKELY(cv <= 0))
                         continue;
 
+                    hi = cv >> 16;
+                    lo = cv & 0xFFFF;
+
                     v = PA_INT16_SWAP(*((int16_t*) m->ptr));
-                    v = (v * cv) / 0x10000;
+                    v = ((v * lo) >> 16) + (v * hi);
                     sum += v;
 
                     m->ptr = (uint8_t*) m->ptr + sizeof(int16_t);
@@ -282,7 +302,7 @@ size_t pa_mix(
                         continue;
 
                     v = *((int32_t*) m->ptr);
-                    v = (v * cv) / 0x10000;
+                    v = (v * cv) >> 16;
                     sum += v;
 
                     m->ptr = (uint8_t*) m->ptr + sizeof(int32_t);
@@ -318,7 +338,7 @@ size_t pa_mix(
                         continue;
 
                     v = PA_INT32_SWAP(*((int32_t*) m->ptr));
-                    v = (v * cv) / 0x10000;
+                    v = (v * cv) >> 16;
                     sum += v;
 
                     m->ptr = (uint8_t*) m->ptr + sizeof(int32_t);
@@ -328,6 +348,150 @@ size_t pa_mix(
                 *((int32_t*) data) = PA_INT32_SWAP((int32_t) sum);
 
                 data = (uint8_t*) data + sizeof(int32_t);
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
+
+            break;
+        }
+
+        case PA_SAMPLE_S24NE: {
+            unsigned channel = 0;
+
+            calc_linear_integer_stream_volumes(streams, nstreams, volume, spec);
+
+            while (data < end) {
+                int64_t sum = 0;
+                unsigned i;
+
+                for (i = 0; i < nstreams; i++) {
+                    pa_mix_info *m = streams + i;
+                    int32_t cv = m->linear[channel].i;
+                    int64_t v;
+
+                    if (PA_UNLIKELY(cv <= 0))
+                        continue;
+
+                    v = (int32_t) (PA_READ24NE(m->ptr) << 8);
+                    v = (v * cv) >> 16;
+                    sum += v;
+
+                    m->ptr = (uint8_t*) m->ptr + 3;
+                }
+
+                sum = PA_CLAMP_UNLIKELY(sum, -0x80000000LL, 0x7FFFFFFFLL);
+                PA_WRITE24NE(data, ((uint32_t) sum) >> 8);
+
+                data = (uint8_t*) data + 3;
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
+
+            break;
+        }
+
+        case PA_SAMPLE_S24RE: {
+            unsigned channel = 0;
+
+            calc_linear_integer_stream_volumes(streams, nstreams, volume, spec);
+
+            while (data < end) {
+                int64_t sum = 0;
+                unsigned i;
+
+                for (i = 0; i < nstreams; i++) {
+                    pa_mix_info *m = streams + i;
+                    int32_t cv = m->linear[channel].i;
+                    int64_t v;
+
+                    if (PA_UNLIKELY(cv <= 0))
+                        continue;
+
+                    v = (int32_t) (PA_READ24RE(m->ptr) << 8);
+                    v = (v * cv) >> 16;
+                    sum += v;
+
+                    m->ptr = (uint8_t*) m->ptr + 3;
+                }
+
+                sum = PA_CLAMP_UNLIKELY(sum, -0x80000000LL, 0x7FFFFFFFLL);
+                PA_WRITE24RE(data, ((uint32_t) sum) >> 8);
+
+                data = (uint8_t*) data + 3;
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
+
+            break;
+        }
+
+        case PA_SAMPLE_S24_32NE: {
+            unsigned channel = 0;
+
+            calc_linear_integer_stream_volumes(streams, nstreams, volume, spec);
+
+            while (data < end) {
+                int64_t sum = 0;
+                unsigned i;
+
+                for (i = 0; i < nstreams; i++) {
+                    pa_mix_info *m = streams + i;
+                    int32_t cv = m->linear[channel].i;
+                    int64_t v;
+
+                    if (PA_UNLIKELY(cv <= 0))
+                        continue;
+
+                    v = (int32_t) (*((uint32_t*)m->ptr) << 8);
+                    v = (v * cv) >> 16;
+                    sum += v;
+
+                    m->ptr = (uint8_t*) m->ptr + sizeof(int32_t);
+                }
+
+                sum = PA_CLAMP_UNLIKELY(sum, -0x80000000LL, 0x7FFFFFFFLL);
+                *((uint32_t*) data) = ((uint32_t) (int32_t) sum) >> 8;
+
+                data = (uint8_t*) data + sizeof(uint32_t);
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
+
+            break;
+        }
+
+        case PA_SAMPLE_S24_32RE: {
+            unsigned channel = 0;
+
+            calc_linear_integer_stream_volumes(streams, nstreams, volume, spec);
+
+            while (data < end) {
+                int64_t sum = 0;
+                unsigned i;
+
+                for (i = 0; i < nstreams; i++) {
+                    pa_mix_info *m = streams + i;
+                    int32_t cv = m->linear[channel].i;
+                    int64_t v;
+
+                    if (PA_UNLIKELY(cv <= 0))
+                        continue;
+
+                    v = (int32_t) (PA_UINT32_SWAP(*((uint32_t*) m->ptr)) << 8);
+                    v = (v * cv) >> 16;
+                    sum += v;
+
+                    m->ptr = (uint8_t*) m->ptr + 3;
+                }
+
+                sum = PA_CLAMP_UNLIKELY(sum, -0x80000000LL, 0x7FFFFFFFLL);
+                *((uint32_t*) data) = PA_INT32_SWAP(((uint32_t) (int32_t) sum) >> 8);
+
+                data = (uint8_t*) data + sizeof(uint32_t);
 
                 if (PA_UNLIKELY(++channel >= spec->channels))
                     channel = 0;
@@ -353,7 +517,7 @@ size_t pa_mix(
                         continue;
 
                     v = (int32_t) *((uint8_t*) m->ptr) - 0x80;
-                    v = (v * cv) / 0x10000;
+                    v = (v * cv) >> 16;
                     sum += v;
 
                     m->ptr = (uint8_t*) m->ptr + 1;
@@ -382,13 +546,16 @@ size_t pa_mix(
 
                 for (i = 0; i < nstreams; i++) {
                     pa_mix_info *m = streams + i;
-                    int32_t v, cv = m->linear[channel].i;
+                    int32_t v, hi, lo, cv = m->linear[channel].i;
 
                     if (PA_UNLIKELY(cv <= 0))
                         continue;
 
+                    hi = cv >> 16;
+                    lo = cv & 0xFFFF;
+
                     v = (int32_t) st_ulaw2linear16(*((uint8_t*) m->ptr));
-                    v = (v * cv) / 0x10000;
+                    v = ((v * lo) >> 16) + (v * hi);
                     sum += v;
 
                     m->ptr = (uint8_t*) m->ptr + 1;
@@ -417,13 +584,16 @@ size_t pa_mix(
 
                 for (i = 0; i < nstreams; i++) {
                     pa_mix_info *m = streams + i;
-                    int32_t v, cv = m->linear[channel].i;
+                    int32_t v, hi, lo, cv = m->linear[channel].i;
 
                     if (PA_UNLIKELY(cv <= 0))
                         continue;
 
+                    hi = cv >> 16;
+                    lo = cv & 0xFFFF;
+
                     v = (int32_t) st_alaw2linear16(*((uint8_t*) m->ptr));
-                    v = (v * cv) / 0x10000;
+                    v = ((v * lo) >> 16) + (v * hi);
                     sum += v;
 
                     m->ptr = (uint8_t*) m->ptr + 1;
@@ -477,7 +647,6 @@ size_t pa_mix(
 
         case PA_SAMPLE_FLOAT32RE: {
             unsigned channel = 0;
-            float linear[PA_CHANNELS_MAX];
 
             calc_linear_float_stream_volumes(streams, nstreams, volume, spec);
 
@@ -559,16 +728,26 @@ void pa_volume_memchunk(
             e = (int16_t*) ptr + c->length/sizeof(int16_t);
 
             for (channel = 0, d = ptr; d < e; d++) {
-                int32_t t;
+                int32_t t, hi, lo;
+
+                /* Multiplying the 32bit volume factor with the 16bit
+                 * sample might result in an 48bit value. We want to
+                 * do without 64 bit integers and hence do the
+                 * multiplication independantly for the HI and LO part
+                 * of the volume. */
+
+                hi = linear[channel] >> 16;
+                lo = linear[channel] & 0xFFFF;
 
                 t = (int32_t)(*d);
-                t = (t * linear[channel]) / 0x10000;
+                t = ((t * lo) >> 16) + (t * hi);
                 t = PA_CLAMP_UNLIKELY(t, -0x8000, 0x7FFF);
                 *d = (int16_t) t;
 
                 if (PA_UNLIKELY(++channel >= spec->channels))
                     channel = 0;
             }
+
             break;
         }
 
@@ -582,10 +761,13 @@ void pa_volume_memchunk(
             e = (int16_t*) ptr + c->length/sizeof(int16_t);
 
             for (channel = 0, d = ptr; d < e; d++) {
-                int32_t t;
+                int32_t t, hi, lo;
+
+                hi = linear[channel] >> 16;
+                lo = linear[channel] & 0xFFFF;
 
                 t = (int32_t) PA_INT16_SWAP(*d);
-                t = (t * linear[channel]) / 0x10000;
+                t = ((t * lo) >> 16) + (t * hi);
                 t = PA_CLAMP_UNLIKELY(t, -0x8000, 0x7FFF);
                 *d = PA_INT16_SWAP((int16_t) t);
 
@@ -609,7 +791,7 @@ void pa_volume_memchunk(
                 int64_t t;
 
                 t = (int64_t)(*d);
-                t = (t * linear[channel]) / 0x10000;
+                t = (t * linear[channel]) >> 16;
                 t = PA_CLAMP_UNLIKELY(t, -0x80000000LL, 0x7FFFFFFFLL);
                 *d = (int32_t) t;
 
@@ -632,14 +814,105 @@ void pa_volume_memchunk(
                 int64_t t;
 
                 t = (int64_t) PA_INT32_SWAP(*d);
-                t = (t * linear[channel]) / 0x10000;
+                t = (t * linear[channel]) >> 16;
                 t = PA_CLAMP_UNLIKELY(t, -0x80000000LL, 0x7FFFFFFFLL);
                 *d = PA_INT32_SWAP((int32_t) t);
 
                 if (PA_UNLIKELY(++channel >= spec->channels))
                     channel = 0;
             }
+            break;
+        }
 
+        case PA_SAMPLE_S24NE: {
+            uint8_t *d, *e;
+            unsigned channel;
+            int32_t linear[PA_CHANNELS_MAX];
+
+            calc_linear_integer_volume(linear, volume);
+
+            e = (uint8_t*) ptr + c->length/3;
+
+            for (channel = 0, d = ptr; d < e; d++) {
+                int64_t t;
+
+                t = (int64_t)((int32_t) (PA_READ24NE(d) << 8));
+                t = (t * linear[channel]) >> 16;
+                t = PA_CLAMP_UNLIKELY(t, -0x80000000LL, 0x7FFFFFFFLL);
+                PA_WRITE24NE(d, ((uint32_t) (int32_t) t) >> 8);
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
+            break;
+        }
+
+        case PA_SAMPLE_S24RE: {
+            uint8_t *d, *e;
+            unsigned channel;
+            int32_t linear[PA_CHANNELS_MAX];
+
+            calc_linear_integer_volume(linear, volume);
+
+            e = (uint8_t*) ptr + c->length/3;
+
+            for (channel = 0, d = ptr; d < e; d++) {
+                int64_t t;
+
+                t = (int64_t)((int32_t) (PA_READ24RE(d) << 8));
+                t = (t * linear[channel]) >> 16;
+                t = PA_CLAMP_UNLIKELY(t, -0x80000000LL, 0x7FFFFFFFLL);
+                PA_WRITE24RE(d, ((uint32_t) (int32_t) t) >> 8);
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
+            break;
+        }
+
+        case PA_SAMPLE_S24_32NE: {
+            uint32_t *d, *e;
+            unsigned channel;
+            int32_t linear[PA_CHANNELS_MAX];
+
+            calc_linear_integer_volume(linear, volume);
+
+            e = (uint32_t*) ptr + c->length/sizeof(uint32_t);
+
+            for (channel = 0, d = ptr; d < e; d++) {
+                int64_t t;
+
+                t = (int64_t) ((int32_t) (*d << 8));
+                t = (t * linear[channel]) >> 16;
+                t = PA_CLAMP_UNLIKELY(t, -0x80000000LL, 0x7FFFFFFFLL);
+                *d = ((uint32_t) ((int32_t) t)) >> 8;
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
+            break;
+        }
+
+        case PA_SAMPLE_S24_32RE: {
+            uint32_t *d, *e;
+            unsigned channel;
+            int32_t linear[PA_CHANNELS_MAX];
+
+            calc_linear_integer_volume(linear, volume);
+
+            e = (uint32_t*) ptr + c->length/sizeof(uint32_t);
+
+            for (channel = 0, d = ptr; d < e; d++) {
+                int64_t t;
+
+                t = (int64_t) ((int32_t) (PA_UINT32_SWAP(*d) << 8));
+                t = (t * linear[channel]) >> 16;
+                t = PA_CLAMP_UNLIKELY(t, -0x80000000LL, 0x7FFFFFFFLL);
+                *d = PA_UINT32_SWAP(((uint32_t) ((int32_t) t)) >> 8);
+
+                if (PA_UNLIKELY(++channel >= spec->channels))
+                    channel = 0;
+            }
             break;
         }
 
@@ -653,10 +926,13 @@ void pa_volume_memchunk(
             e = (uint8_t*) ptr + c->length;
 
             for (channel = 0, d = ptr; d < e; d++) {
-                int32_t t;
+                int32_t t, hi, lo;
+
+                hi = linear[channel] >> 16;
+                lo = linear[channel] & 0xFFFF;
 
                 t = (int32_t) *d - 0x80;
-                t = (t * linear[channel]) / 0x10000;
+                t = ((t * lo) >> 16) + (t * hi);
                 t = PA_CLAMP_UNLIKELY(t, -0x80, 0x7F);
                 *d = (uint8_t) (t + 0x80);
 
@@ -676,10 +952,13 @@ void pa_volume_memchunk(
             e = (uint8_t*) ptr + c->length;
 
             for (channel = 0, d = ptr; d < e; d++) {
-                int32_t t;
+                int32_t t, hi, lo;
+
+                hi = linear[channel] >> 16;
+                lo = linear[channel] & 0xFFFF;
 
                 t = (int32_t) st_ulaw2linear16(*d);
-                t = (t * linear[channel]) / 0x10000;
+                t = ((t * lo) >> 16) + (t * hi);
                 t = PA_CLAMP_UNLIKELY(t, -0x8000, 0x7FFF);
                 *d = (uint8_t) st_14linear2ulaw((int16_t) t >> 2);
 
@@ -699,10 +978,13 @@ void pa_volume_memchunk(
             e = (uint8_t*) ptr + c->length;
 
             for (channel = 0, d = ptr; d < e; d++) {
-                int32_t t;
+                int32_t t, hi, lo;
+
+                hi = linear[channel] >> 16;
+                lo = linear[channel] & 0xFFFF;
 
                 t = (int32_t) st_alaw2linear16(*d);
-                t = (t * linear[channel]) / 0x10000;
+                t = ((t * lo) >> 16) + (t * hi);
                 t = PA_CLAMP_UNLIKELY(t, -0x8000, 0x7FFF);
                 *d = (uint8_t) st_13linear2alaw((int16_t) t >> 3);
 
@@ -777,7 +1059,7 @@ size_t pa_frame_align(size_t l, const pa_sample_spec *ss) {
     return (l/fs) * fs;
 }
 
-int pa_frame_aligned(size_t l, const pa_sample_spec *ss) {
+pa_bool_t pa_frame_aligned(size_t l, const pa_sample_spec *ss) {
     size_t fs;
 
     pa_assert(ss);
@@ -897,12 +1179,16 @@ pa_memchunk* pa_silence_memchunk_get(pa_silence_cache *cache, pa_mempool *pool, 
             case PA_SAMPLE_S16BE:
             case PA_SAMPLE_S32LE:
             case PA_SAMPLE_S32BE:
+            case PA_SAMPLE_S24LE:
+            case PA_SAMPLE_S24BE:
             case PA_SAMPLE_FLOAT32LE:
             case PA_SAMPLE_FLOAT32BE:
                 cache->blocks[PA_SAMPLE_S16LE] = b = silence_memblock_new(pool, 0);
                 cache->blocks[PA_SAMPLE_S16BE] = pa_memblock_ref(b);
                 cache->blocks[PA_SAMPLE_S32LE] = pa_memblock_ref(b);
                 cache->blocks[PA_SAMPLE_S32BE] = pa_memblock_ref(b);
+                cache->blocks[PA_SAMPLE_S24LE] = pa_memblock_ref(b);
+                cache->blocks[PA_SAMPLE_S24BE] = pa_memblock_ref(b);
                 cache->blocks[PA_SAMPLE_FLOAT32LE] = pa_memblock_ref(b);
                 cache->blocks[PA_SAMPLE_FLOAT32BE] = pa_memblock_ref(b);
                 break;
@@ -986,4 +1272,63 @@ size_t pa_usec_to_bytes_round_up(pa_usec_t t, const pa_sample_spec *spec) {
     u *= pa_frame_size(spec);
 
     return (size_t) u;
+}
+
+void pa_memchunk_dump_to_file(pa_memchunk *c, const char *fn) {
+    FILE *f;
+    void *p;
+
+    pa_assert(c);
+    pa_assert(fn);
+
+    /* Only for debugging purposes */
+
+    f = fopen(fn, "a");
+
+    if (!f) {
+        pa_log_warn("Failed to open '%s': %s", fn, pa_cstrerror(errno));
+        return;
+    }
+
+    p = pa_memblock_acquire(c->memblock);
+
+    if (fwrite((uint8_t*) p + c->index, 1, c->length, f) != c->length)
+        pa_log_warn("Failed to write to '%s': %s", fn, pa_cstrerror(errno));
+
+    pa_memblock_release(c->memblock);
+
+    fclose(f);
+}
+
+static void calc_sine(float *f, size_t l, double freq) {
+    size_t i;
+
+    l /= sizeof(float);
+
+    for (i = 0; i < l; i++)
+        *(f++) = (float) 0.5f * sin((double) i*M_PI*2*freq / (double) l);
+}
+
+void pa_memchunk_sine(pa_memchunk *c, pa_mempool *pool, unsigned rate, unsigned freq) {
+    size_t l;
+    unsigned gcd, n;
+    void *p;
+
+    pa_memchunk_reset(c);
+
+    gcd = pa_gcd(rate, freq);
+    n = rate / gcd;
+
+    l = pa_mempool_block_size_max(pool) / sizeof(float);
+
+    l /= n;
+    if (l <= 0) l = 1;
+    l *= n;
+
+    c->length = l * sizeof(float);
+    c->memblock = pa_memblock_new(pool, c->length);
+
+    p = pa_memblock_acquire(c->memblock);
+    calc_sine(p, c->length, freq * l / rate);
+    pa_memblock_release(c->memblock);
 }

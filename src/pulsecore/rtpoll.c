@@ -50,29 +50,39 @@
 #include <pulsecore/rtsig.h>
 #include <pulsecore/flist.h>
 #include <pulsecore/core-util.h>
-
 #include <pulsecore/winsock.h>
+#include <pulsecore/ratelimit.h>
 
 #include "rtpoll.h"
+
+/* #define DEBUG_TIMING */
 
 struct pa_rtpoll {
     struct pollfd *pollfd, *pollfd2;
     unsigned n_pollfd_alloc, n_pollfd_used;
 
-    pa_bool_t timer_enabled;
     struct timeval next_elapse;
+    pa_bool_t timer_enabled:1;
 
-    pa_bool_t scan_for_dead;
-    pa_bool_t running, installed, rebuild_needed, quit;
+    pa_bool_t scan_for_dead:1;
+    pa_bool_t running:1;
+    pa_bool_t installed:1;
+    pa_bool_t rebuild_needed:1;
+    pa_bool_t quit:1;
 
 #ifdef HAVE_PPOLL
+    pa_bool_t timer_armed:1;
+#ifdef __linux__
+    pa_bool_t dont_use_ppoll:1;
+#endif
     int rtsig;
     sigset_t sigset_unblocked;
     timer_t timer;
-    pa_bool_t timer_armed;
-#ifdef __linux__
-    pa_bool_t dont_use_ppoll;
 #endif
+
+#ifdef DEBUG_TIMING
+    pa_usec_t timestamp;
+    pa_usec_t slept, awake;
 #endif
 
     PA_LLIST_HEAD(pa_rtpoll_item, items);
@@ -149,6 +159,11 @@ pa_rtpoll *pa_rtpoll_new(void) {
 
     PA_LLIST_HEAD_INIT(pa_rtpoll_item, p->items);
 
+#ifdef DEBUG_TIMING
+    p->timestamp = pa_rtclock_usec();
+    p->slept = p->awake = 0;
+#endif
+
     return p;
 }
 
@@ -156,7 +171,7 @@ void pa_rtpoll_install(pa_rtpoll *p) {
     pa_assert(p);
     pa_assert(!p->installed);
 
-    p->installed = 1;
+    p->installed = TRUE;
 
 #ifdef HAVE_PPOLL
 # ifdef __linux__
@@ -377,6 +392,14 @@ int pa_rtpoll_run(pa_rtpoll *p, pa_bool_t wait) {
             pa_timeval_add(&timeout, pa_timeval_diff(&p->next_elapse, &now));
     }
 
+#ifdef DEBUG_TIMING
+    {
+        pa_usec_t now = pa_rtclock_usec();
+        p->awake = now - p->timestamp;
+        p->timestamp = now;
+    }
+#endif
+
     /* OK, now let's sleep */
 #ifdef HAVE_PPOLL
 
@@ -395,6 +418,18 @@ int pa_rtpoll_run(pa_rtpoll *p, pa_bool_t wait) {
 
 #endif
         r = poll(p->pollfd, p->n_pollfd_used, (!wait || p->quit || p->timer_enabled) ? (int) ((timeout.tv_sec*1000) + (timeout.tv_usec / 1000)) : -1);
+
+#ifdef DEBUG_TIMING
+    {
+        pa_usec_t now = pa_rtclock_usec();
+        p->slept = now - p->timestamp;
+        p->timestamp = now;
+
+        pa_log("Process time %llu ms; sleep time %llu ms",
+               (unsigned long long) (p->awake / PA_USEC_PER_MSEC),
+               (unsigned long long) (p->slept / PA_USEC_PER_MSEC));
+    }
+#endif
 
     if (r < 0) {
         if (errno == EAGAIN || errno == EINTR)
@@ -443,59 +478,56 @@ static void update_timer(pa_rtpoll *p) {
 #ifdef HAVE_PPOLL
 
 #ifdef __linux__
-    if (!p->dont_use_ppoll) {
+    if (p->dont_use_ppoll)
+        return;
 #endif
 
-        if (p->timer == (timer_t) -1) {
-            struct sigevent se;
+    if (p->timer == (timer_t) -1) {
+        struct sigevent se;
 
-            memset(&se, 0, sizeof(se));
-            se.sigev_notify = SIGEV_SIGNAL;
-            se.sigev_signo = p->rtsig;
+        memset(&se, 0, sizeof(se));
+        se.sigev_notify = SIGEV_SIGNAL;
+        se.sigev_signo = p->rtsig;
 
-            if (timer_create(CLOCK_MONOTONIC, &se, &p->timer) < 0)
-                if (timer_create(CLOCK_REALTIME, &se, &p->timer) < 0) {
-                    pa_log_warn("Failed to allocate POSIX timer: %s", pa_cstrerror(errno));
-                    p->timer = (timer_t) -1;
-                }
-        }
-
-        if (p->timer != (timer_t) -1) {
-            struct itimerspec its;
-            struct timespec ts = { .tv_sec = 0, .tv_nsec = 0 };
-            sigset_t ss;
-
-            if (p->timer_armed) {
-                /* First disarm timer */
-                memset(&its, 0, sizeof(its));
-                pa_assert_se(timer_settime(p->timer, TIMER_ABSTIME, &its, NULL) == 0);
-
-                /* Remove a signal that might be waiting in the signal q */
-                pa_assert_se(sigemptyset(&ss) == 0);
-                pa_assert_se(sigaddset(&ss, p->rtsig) == 0);
-                sigtimedwait(&ss, NULL, &ts);
+        if (timer_create(CLOCK_MONOTONIC, &se, &p->timer) < 0)
+            if (timer_create(CLOCK_REALTIME, &se, &p->timer) < 0) {
+                pa_log_warn("Failed to allocate POSIX timer: %s", pa_cstrerror(errno));
+                p->timer = (timer_t) -1;
             }
-
-            /* And install the new timer */
-            if (p->timer_enabled) {
-                memset(&its, 0, sizeof(its));
-
-                its.it_value.tv_sec = p->next_elapse.tv_sec;
-                its.it_value.tv_nsec = p->next_elapse.tv_usec*1000;
-
-                /* Make sure that 0,0 is not understood as
-                 * "disarming" */
-                if (its.it_value.tv_sec == 0 && its.it_value.tv_nsec == 0)
-                    its.it_value.tv_nsec = 1;
-                pa_assert_se(timer_settime(p->timer, TIMER_ABSTIME, &its, NULL) == 0);
-            }
-
-            p->timer_armed = p->timer_enabled;
-        }
-
-#ifdef __linux__
     }
-#endif
+
+    if (p->timer != (timer_t) -1) {
+        struct itimerspec its;
+        struct timespec ts = { .tv_sec = 0, .tv_nsec = 0 };
+        sigset_t ss;
+
+        if (p->timer_armed) {
+            /* First disarm timer */
+            memset(&its, 0, sizeof(its));
+            pa_assert_se(timer_settime(p->timer, TIMER_ABSTIME, &its, NULL) == 0);
+
+            /* Remove a signal that might be waiting in the signal q */
+            pa_assert_se(sigemptyset(&ss) == 0);
+            pa_assert_se(sigaddset(&ss, p->rtsig) == 0);
+            sigtimedwait(&ss, NULL, &ts);
+        }
+
+        /* And install the new timer */
+        if (p->timer_enabled) {
+            memset(&its, 0, sizeof(its));
+
+            its.it_value.tv_sec = p->next_elapse.tv_sec;
+            its.it_value.tv_nsec = p->next_elapse.tv_usec*1000;
+
+            /* Make sure that 0,0 is not understood as
+             * "disarming" */
+            if (its.it_value.tv_sec == 0 && its.it_value.tv_nsec == 0)
+                its.it_value.tv_nsec = 1;
+            pa_assert_se(timer_settime(p->timer, TIMER_ABSTIME, &its, NULL) == 0);
+        }
+
+        p->timer_armed = p->timer_enabled;
+    }
 
 #endif
 }

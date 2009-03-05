@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -198,6 +198,10 @@ pa_convert_func_t pa_get_convert_to_float32ne_function(pa_sample_format_t f) {
         [PA_SAMPLE_S16BE]     = (pa_convert_func_t) pa_sconv_s16be_to_float32ne,
         [PA_SAMPLE_S32LE]     = (pa_convert_func_t) pa_sconv_s32le_to_float32ne,
         [PA_SAMPLE_S32BE]     = (pa_convert_func_t) pa_sconv_s32be_to_float32ne,
+        [PA_SAMPLE_S24LE]     = (pa_convert_func_t) pa_sconv_s24le_to_float32ne,
+        [PA_SAMPLE_S24BE]     = (pa_convert_func_t) pa_sconv_s24be_to_float32ne,
+        [PA_SAMPLE_S24_32LE]  = (pa_convert_func_t) pa_sconv_s24_32le_to_float32ne,
+        [PA_SAMPLE_S24_32BE]  = (pa_convert_func_t) pa_sconv_s24_32be_to_float32ne,
         [PA_SAMPLE_FLOAT32NE] = (pa_convert_func_t) float32ne_to_float32ne,
         [PA_SAMPLE_FLOAT32RE] = (pa_convert_func_t) float32re_to_float32ne,
     };
@@ -216,6 +220,10 @@ pa_convert_func_t pa_get_convert_from_float32ne_function(pa_sample_format_t f) {
         [PA_SAMPLE_S16BE]     = (pa_convert_func_t) pa_sconv_s16be_from_float32ne,
         [PA_SAMPLE_S32LE]     = (pa_convert_func_t) pa_sconv_s32le_from_float32ne,
         [PA_SAMPLE_S32BE]     = (pa_convert_func_t) pa_sconv_s32be_from_float32ne,
+        [PA_SAMPLE_S24LE]     = (pa_convert_func_t) pa_sconv_s24le_from_float32ne,
+        [PA_SAMPLE_S24BE]     = (pa_convert_func_t) pa_sconv_s24be_from_float32ne,
+        [PA_SAMPLE_S24_32LE]  = (pa_convert_func_t) pa_sconv_s24_32le_from_float32ne,
+        [PA_SAMPLE_S24_32BE]  = (pa_convert_func_t) pa_sconv_s24_32be_from_float32ne,
         [PA_SAMPLE_FLOAT32NE] = (pa_convert_func_t) float32ne_to_float32ne,
         [PA_SAMPLE_FLOAT32RE] = (pa_convert_func_t) float32re_to_float32ne,
         [PA_SAMPLE_ALAW]      = (pa_convert_func_t) alaw_from_float32ne,
@@ -238,6 +246,10 @@ pa_convert_func_t pa_get_convert_to_s16ne_function(pa_sample_format_t f) {
         [PA_SAMPLE_FLOAT32LE] = (pa_convert_func_t) pa_sconv_float32le_to_s16ne,
         [PA_SAMPLE_S32BE]     = (pa_convert_func_t) pa_sconv_s32be_to_s16ne,
         [PA_SAMPLE_S32LE]     = (pa_convert_func_t) pa_sconv_s32le_to_s16ne,
+        [PA_SAMPLE_S24BE]     = (pa_convert_func_t) pa_sconv_s24be_to_s16ne,
+        [PA_SAMPLE_S24LE]     = (pa_convert_func_t) pa_sconv_s24le_to_s16ne,
+        [PA_SAMPLE_S24_32BE]  = (pa_convert_func_t) pa_sconv_s24_32be_to_s16ne,
+        [PA_SAMPLE_S24_32LE]  = (pa_convert_func_t) pa_sconv_s24_32le_to_s16ne,
         [PA_SAMPLE_ALAW]      = (pa_convert_func_t) alaw_to_s16ne,
         [PA_SAMPLE_ULAW]      = (pa_convert_func_t) ulaw_to_s16ne
     };
@@ -258,6 +270,10 @@ pa_convert_func_t pa_get_convert_from_s16ne_function(pa_sample_format_t f) {
         [PA_SAMPLE_FLOAT32LE] = (pa_convert_func_t) pa_sconv_float32le_from_s16ne,
         [PA_SAMPLE_S32BE]     = (pa_convert_func_t) pa_sconv_s32be_from_s16ne,
         [PA_SAMPLE_S32LE]     = (pa_convert_func_t) pa_sconv_s32le_from_s16ne,
+        [PA_SAMPLE_S24BE]     = (pa_convert_func_t) pa_sconv_s24be_from_s16ne,
+        [PA_SAMPLE_S24LE]     = (pa_convert_func_t) pa_sconv_s24le_from_s16ne,
+        [PA_SAMPLE_S24_32BE]  = (pa_convert_func_t) pa_sconv_s24_32be_from_s16ne,
+        [PA_SAMPLE_S24_32LE]  = (pa_convert_func_t) pa_sconv_s24_32le_from_s16ne,
         [PA_SAMPLE_ALAW]      = (pa_convert_func_t) alaw_from_s16ne,
         [PA_SAMPLE_ULAW]      = (pa_convert_func_t) ulaw_from_s16ne,
     };

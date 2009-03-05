@@ -12,9 +12,11 @@
 #define pa__get_usage module_native_protocol_tcp_LTX_pa__get_usage
 #define pa__get_version module_native_protocol_tcp_LTX_pa__get_version
 #define pa__load_once module_native_protocol_tcp_LTX_pa__load_once
+#define pa__get_n_used module_native_protocol_tcp_LTX_pa__get_n_used
 
 int pa__init(pa_module*m);
 void pa__done(pa_module*m);
+int pa__get_n_used(pa_module*m);
 
 const char* pa__get_author(void);
 const char* pa__get_description(void);

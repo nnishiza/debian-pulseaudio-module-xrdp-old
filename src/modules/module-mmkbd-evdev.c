@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -109,7 +109,7 @@ static void io_callback(pa_mainloop_api *io, pa_io_event *e, int fd, pa_io_event
             if (volchange != INVALID) {
                 pa_sink *s;
 
-                if (!(s = pa_namereg_get(u->module->core, u->sink_name, PA_NAMEREG_SINK, 1)))
+                if (!(s = pa_namereg_get(u->module->core, u->sink_name, PA_NAMEREG_SINK)))
                     pa_log("Failed to get sink '%s'", u->sink_name);
                 else {
                     int i;
@@ -126,7 +126,7 @@ static void io_callback(pa_mainloop_api *io, pa_io_event *e, int fd, pa_io_event
                                     cv.values[i] = PA_VOLUME_NORM;
                             }
 
-                            pa_sink_set_volume(s, &cv);
+                            pa_sink_set_volume(s, &cv, TRUE, TRUE);
                             break;
 
                         case DOWN:
@@ -137,7 +137,7 @@ static void io_callback(pa_mainloop_api *io, pa_io_event *e, int fd, pa_io_event
                                     cv.values[i] = PA_VOLUME_MUTED;
                             }
 
-                            pa_sink_set_volume(s, &cv);
+                            pa_sink_set_volume(s, &cv, TRUE, TRUE);
                             break;
 
                         case MUTE_TOGGLE:

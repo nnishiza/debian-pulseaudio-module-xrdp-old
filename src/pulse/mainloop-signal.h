@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -40,8 +40,10 @@ PA_C_DECL_BEGIN
 /** An opaque UNIX signal event source object */
 typedef struct pa_signal_event pa_signal_event;
 
+/** Callback prototype for signal events */
 typedef void (*pa_signal_cb_t) (pa_mainloop_api *api, pa_signal_event*e, int sig, void *userdata);
 
+/** Destroy callback prototype for signal events */
 typedef void (*pa_signal_destroy_cb_t) (pa_mainloop_api *api, pa_signal_event*e, void *userdata);
 
 /** Initialize the UNIX signal subsystem and bind it to the specified main loop */

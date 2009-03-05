@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -61,12 +61,18 @@ const char*pa_strerror(int error) {
         [PA_ERR_TOOLARGE] = N_("Too large"),
         [PA_ERR_NOTSUPPORTED] = N_("Not supported"),
         [PA_ERR_UNKNOWN] = N_("Unknown error code"),
-        [PA_ERR_NOEXTENSION] = N_("No such extension")
+        [PA_ERR_NOEXTENSION] = N_("No such extension"),
+        [PA_ERR_OBSOLETE] = N_("Obsolete functionality"),
+        [PA_ERR_NOTIMPLEMENTED] = N_("Missing implementation"),
+        [PA_ERR_FORKED] = N_("Client forked")
     };
 
     pa_init_i18n();
 
-    if (error < 0 || error >= PA_ERR_MAX)
+    if (error < 0)
+        error = -error;
+
+    if (error >= PA_ERR_MAX)
         return NULL;
 
     return _(errortab[error]);

@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -29,6 +29,7 @@
 #include <pulse/cdecl.h>
 #include <pulse/operation.h>
 #include <pulse/proplist.h>
+#include <pulse/version.h>
 
 /** \page async Asynchronous API
  *
@@ -163,6 +164,13 @@ typedef void (*pa_context_notify_cb_t)(pa_context *c, void *userdata);
 /** A generic callback for operation completion */
 typedef void (*pa_context_success_cb_t) (pa_context *c, int success, void *userdata);
 
+/** A callback for asynchronous meta/policy event messages. The set
+ * of defined events can be extended at any time. Also, server modules
+ * may introduce additional message types so make sure that your
+ * callback function ignores messages it doesn't know. \since
+ * 0.9.15 */
+typedef void (*pa_context_event_cb_t)(pa_context *c, const char *name, pa_proplist *p, void *userdata);
+
 /** Instantiate a new connection context with an abstract mainloop API
  * and an application name. It is recommended to use pa_context_new_with_proplist()
  * instead and specify some initial properties.*/
@@ -181,6 +189,10 @@ pa_context* pa_context_ref(pa_context *c);
 
 /** Set a callback function that is called whenever the context status changes */
 void pa_context_set_state_callback(pa_context *c, pa_context_notify_cb_t cb, void *userdata);
+
+/** Set a callback function that is called whenver a meta/policy
+ * control event is received. \since 0.9.15 */
+void pa_context_set_event_callback(pa_context *p, pa_context_event_cb_t cb, void *userdata);
 
 /** Return the error number of the last failed operation */
 int pa_context_errno(pa_context *c);
@@ -232,14 +244,14 @@ uint32_t pa_context_get_protocol_version(pa_context *c);
 /** Return the protocol version of the connected server. */
 uint32_t pa_context_get_server_protocol_version(pa_context *c);
 
-/* Update the property list of the client, adding new entries. Please
+/** Update the property list of the client, adding new entries. Please
  * note that it is highly recommended to set as much properties
  * initially via pa_context_new_with_proplist() as possible instead a
  * posteriori with this function, since that information may then be
  * used to route streams of the client to the right device. \since 0.9.11 */
 pa_operation *pa_context_proplist_update(pa_context *c, pa_update_mode_t mode, pa_proplist *p, pa_context_success_cb_t cb, void *userdata);
 
-/* Update the property list of the client, remove entries. \since 0.9.11 */
+/** Update the property list of the client, remove entries. \since 0.9.11 */
 pa_operation *pa_context_proplist_remove(pa_context *c, const char *const keys[], pa_context_success_cb_t cb, void *userdata);
 
 /** Return the client index this context is

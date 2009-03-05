@@ -29,6 +29,7 @@
 
 #include <pulse/cdecl.h>
 #include <pulse/sample.h>
+#include <pulse/version.h>
 
 /** \file
  * Global definitions */
@@ -46,7 +47,7 @@ typedef enum pa_context_state {
     PA_CONTEXT_TERMINATED      /**< The connection was terminated cleanly */
 } pa_context_state_t;
 
-/** Return non-zero if the passed state is one of the connected states */
+/** Return non-zero if the passed state is one of the connected states. \since 0.9.11 */
 static inline int PA_CONTEXT_IS_GOOD(pa_context_state_t x) {
     return
         x == PA_CONTEXT_CONNECTING ||
@@ -54,6 +55,16 @@ static inline int PA_CONTEXT_IS_GOOD(pa_context_state_t x) {
         x == PA_CONTEXT_SETTING_NAME ||
         x == PA_CONTEXT_READY;
 }
+
+/** \cond fulldocs */
+#define PA_CONTEXT_UNCONNECTED PA_CONTEXT_UNCONNECTED
+#define PA_CONTEXT_CONNECTING PA_CONTEXT_CONNECTING
+#define PA_CONTEXT_AUTHORIZING PA_CONTEXT_AUTHORIZING
+#define PA_CONTEXT_SETTING_NAME PA_CONTEXT_SETTING_NAME
+#define PA_CONTEXT_READY PA_CONTEXT_READY
+#define PA_CONTEXT_FAILED PA_CONTEXT_FAILED
+#define PA_CONTEXT_IS_GOOD PA_CONTEXT_IS_GOOD
+/** \endcond */
 
 /** The state of a stream */
 typedef enum pa_stream_state {
@@ -64,12 +75,21 @@ typedef enum pa_stream_state {
     PA_STREAM_TERMINATED    /**< The stream has been terminated cleanly */
 } pa_stream_state_t;
 
-/** Return non-zero if the passed state is one of the connected states */
+/** Return non-zero if the passed state is one of the connected states. \since 0.9.11 */
 static inline int PA_STREAM_IS_GOOD(pa_stream_state_t x) {
     return
         x == PA_STREAM_CREATING ||
         x == PA_STREAM_READY;
 }
+
+/** \cond fulldocs */
+#define PA_STREAM_UNCONNECTED PA_STREAM_UNCONNECTED
+#define PA_STREAM_CREATING PA_STREAM_CREATING
+#define PA_STREAM_READY PA_STREAM_READY
+#define PA_STREAM_FAILED PA_STREAM_FAILED
+#define PA_STREAM_TERMINATED PA_STREAM_TERMINATED
+#define PA_STREAM_IS_GOOD PA_STREAM_IS_GOOD
+/** \endcond */
 
 /** The state of an operation */
 typedef enum pa_operation_state {
@@ -77,6 +97,12 @@ typedef enum pa_operation_state {
     PA_OPERATION_DONE,         /**< The operation has been completed */
     PA_OPERATION_CANCELED      /**< The operation has been canceled */
 } pa_operation_state_t;
+
+/** \cond fulldocs */
+#define PA_OPERATION_RUNNING PA_OPERATION_RUNNING
+#define PA_OPERATION_DONE PA_OPERATION_DONE
+#define PA_OPERATION_CANCELED PA_OPERATION_CANCELED
+/** \endcond */
 
 /** An invalid index */
 #define PA_INVALID_INDEX ((uint32_t) -1)
@@ -99,6 +125,13 @@ typedef enum pa_stream_direction {
     PA_STREAM_RECORD,        /**< Record stream */
     PA_STREAM_UPLOAD         /**< Sample upload stream */
 } pa_stream_direction_t;
+
+/** \cond fulldocs */
+#define PA_STREAM_NODIRECTION PA_STREAM_NODIRECTION
+#define PA_STREAM_PLAYBACK PA_STREAM_PLAYBACK
+#define PA_STREAM_RECORD PA_STREAM_RECORD
+#define PA_STREAM_UPLOAD PA_STREAM_UPLOAD
+/** \endcond */
 
 /** Some special flags for stream connections. */
 typedef enum pa_stream_flags {
@@ -194,7 +227,10 @@ typedef enum pa_stream_flags {
     /**< Find peaks instead of resampling. \since 0.9.11 */
 
     PA_STREAM_START_MUTED = 0x1000U,
-    /**< Create in muted state. \since 0.9.11 */
+    /**< Create in muted state. If neither PA_STREAM_START_UNMUTED nor
+     * PA_STREAM_START_MUTED it is left to the server to decide
+     * whether to create the stream in muted or in unmuted
+     * state. \since 0.9.11 */
 
     PA_STREAM_ADJUST_LATENCY = 0x2000U,
     /**< Try to adjust the latency of the sink/source based on the
@@ -203,7 +239,7 @@ typedef enum pa_stream_flags {
      * specified at the same time as PA_STREAM_EARLY_REQUESTS. \since
      * 0.9.11 */
 
-    PA_STREAM_EARLY_REQUESTS = 0x4000U
+    PA_STREAM_EARLY_REQUESTS = 0x4000U,
     /**< Enable compatibility mode for legacy clients that rely on a
      * "classic" hardware device fragment-style playback model. If
      * this option is set, the minreq value of the buffer metrics gets
@@ -220,6 +256,22 @@ typedef enum pa_stream_flags {
      * not be specified at the same time as
      * PA_STREAM_ADJUST_LATENCY. \since 0.9.12 */
 
+    PA_STREAM_DONT_INHIBIT_AUTO_SUSPEND = 0x8000U,
+    /**< If set this stream won't be taken into account when we it is
+     * checked whether the device this stream is connected to should
+     * auto-suspend. \since 0.9.15 */
+
+    PA_STREAM_START_UNMUTED = 0x10000U,
+    /**< Create in unmuted state. If neither PA_STREAM_START_UNMUTED
+     * nor PA_STREAM_START_MUTED it is left to the server to decide
+     * whether to create the stream in muted or in unmuted
+     * state. \since 0.9.15 */
+
+    PA_STREAM_FAIL_ON_SUSPEND = 0x20000U
+    /**< If the sink/source this stream is connected to is suspended
+     * during the creation of this stream, cause it to fail. If the
+     * sink/source is being suspended during creation of this stream,
+     * make sure this stream is terminated. \since 0.9.15 */
 } pa_stream_flags_t;
 
 /** \cond fulldocs */
@@ -243,6 +295,9 @@ typedef enum pa_stream_flags {
 #define PA_STREAM_START_MUTED PA_STREAM_START_MUTED
 #define PA_STREAM_ADJUST_LATENCY PA_STREAM_ADJUST_LATENCY
 #define PA_STREAM_EARLY_REQUESTS PA_STREAM_EARLY_REQUESTS
+#define PA_STREAM_DONT_INHIBIT_AUTO_SUSPEND PA_STREAM_DONT_INHIBIT_AUTO_SUSPEND
+#define PA_STREAM_START_UNMUTED PA_STREAM_START_UNMUTED
+#define PA_STREAM_FAIL_ON_SUSPEND PA_STREAM_FAIL_ON_SUSPEND
 
 /** \endcond */
 
@@ -332,8 +387,40 @@ enum {
     PA_ERR_NOTSUPPORTED,           /**< Operation not supported \since 0.9.5 */
     PA_ERR_UNKNOWN,                /**< The error code was unknown to the client */
     PA_ERR_NOEXTENSION,            /**< Extension does not exist. \since 0.9.12 */
+    PA_ERR_OBSOLETE,               /**< Obsolete functionality. \since 0.9.15 */
+    PA_ERR_NOTIMPLEMENTED,         /**< Missing implementation. \since 0.9.15 */
+    PA_ERR_FORKED,                 /**< The caler forked without calling execve() and tried to reuse the context. \since 0.9.15 */
     PA_ERR_MAX                     /**< Not really an error but the first invalid error code */
 };
+
+/** \cond fulldocs */
+#define PA_OK PA_OK
+#define PA_ERR_ACCESS PA_ERR_ACCESS
+#define PA_ERR_COMMAND PA_ERR_COMMAND
+#define PA_ERR_INVALID PA_ERR_INVALID
+#define PA_ERR_EXIST PA_ERR_EXIST
+#define PA_ERR_NOENTITY PA_ERR_NOENTITY
+#define PA_ERR_CONNECTIONREFUSED PA_ERR_CONNECTIONREFUSED
+#define PA_ERR_PROTOCOL PA_ERR_PROTOCOL
+#define PA_ERR_TIMEOUT PA_ERR_TIMEOUT
+#define PA_ERR_AUTHKEY PA_ERR_AUTHKEY
+#define PA_ERR_INTERNAL PA_ERR_INTERNAL
+#define PA_ERR_CONNECTIONTERMINATED PA_ERR_CONNECTIONTERMINATED
+#define PA_ERR_KILLED PA_ERR_KILLED
+#define PA_ERR_INVALIDSERVER PA_ERR_INVALIDSERVER
+#define PA_ERR_MODINITFAILED PA_ERR_MODINITFAILED
+#define PA_ERR_BADSTATE PA_ERR_BADSTATE
+#define PA_ERR_NODATA PA_ERR_NODATA
+#define PA_ERR_VERSION PA_ERR_VERSION
+#define PA_ERR_TOOLARGE PA_ERR_TOOLARGE
+#define PA_ERR_NOTSUPPORTED PA_ERR_NOTSUPPORTED
+#define PA_ERR_UNKNOWN PA_ERR_UNKNOWN
+#define PA_ERR_NOEXTENSION PA_ERR_NOEXTENSION
+#define PA_ERR_OBSOLETE PA_ERR_OBSOLETE
+#define PA_ERR_NOTIMPLEMENTED PA_ERR_NOTIMPLEMENTED
+#define PA_ERR_FORKED PA_ERR_FORKED
+#define PA_ERR_MAX PA_ERR_MAX
+/** \endcond */
 
 /** Subscription event mask, as used by pa_context_subscribe() */
 typedef enum pa_subscription_mask {
@@ -364,10 +451,15 @@ typedef enum pa_subscription_mask {
     PA_SUBSCRIPTION_MASK_SERVER = 0x0080U,
     /**< Other global server changes. */
 
+/** \cond fulldocs */
     PA_SUBSCRIPTION_MASK_AUTOLOAD = 0x0100U,
-    /**< Autoload table events. */
+    /**< \deprecated Autoload table events. */
+/** \endcond */
 
-    PA_SUBSCRIPTION_MASK_ALL = 0x01ffU
+    PA_SUBSCRIPTION_MASK_CARD = 0x0200U,
+    /**< Card events. \since 0.9.15 */
+
+    PA_SUBSCRIPTION_MASK_ALL = 0x02ffU
     /**< Catch all events */
 } pa_subscription_mask_t;
 
@@ -397,8 +489,13 @@ typedef enum pa_subscription_event_type {
     PA_SUBSCRIPTION_EVENT_SERVER = 0x0007U,
     /**< Event type: Global server change, only occuring with PA_SUBSCRIPTION_EVENT_CHANGE. */
 
+/** \cond fulldocs */
     PA_SUBSCRIPTION_EVENT_AUTOLOAD = 0x0008U,
-    /**< Event type: Autoload table changes. */
+    /**< \deprecated Event type: Autoload table changes. */
+/** \endcond */
+
+    PA_SUBSCRIPTION_EVENT_CARD = 0x0009U,
+    /**< Event type: Card \since 0.9.15 */
 
     PA_SUBSCRIPTION_EVENT_FACILITY_MASK = 0x000FU,
     /**< A mask to extract the event type from an event value */
@@ -412,13 +509,43 @@ typedef enum pa_subscription_event_type {
     PA_SUBSCRIPTION_EVENT_REMOVE = 0x0020U,
     /**< An object was removed */
 
-    PA_SUBSCRIPTION_EVENT_TYPE_MASK = 0x0030U,
+    PA_SUBSCRIPTION_EVENT_TYPE_MASK = 0x0030U
     /**< A mask to extract the event operation from an event value */
 
 } pa_subscription_event_type_t;
 
 /** Return one if an event type t matches an event mask bitfield */
 #define pa_subscription_match_flags(m, t) (!!((m) & (1 << ((t) & PA_SUBSCRIPTION_EVENT_FACILITY_MASK))))
+
+/** \cond fulldocs */
+#define PA_SUBSCRIPTION_MASK_NULL PA_SUBSCRIPTION_MASK_NULL
+#define PA_SUBSCRIPTION_MASK_SINK PA_SUBSCRIPTION_MASK_SINK
+#define PA_SUBSCRIPTION_MASK_SOURCE PA_SUBSCRIPTION_MASK_SOURCE
+#define PA_SUBSCRIPTION_MASK_SINK_INPUT PA_SUBSCRIPTION_MASK_SINK_INPUT
+#define PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT
+#define PA_SUBSCRIPTION_MASK_MODULE PA_SUBSCRIPTION_MASK_MODULE
+#define PA_SUBSCRIPTION_MASK_CLIENT PA_SUBSCRIPTION_MASK_CLIENT
+#define PA_SUBSCRIPTION_MASK_SAMPLE_CACHE PA_SUBSCRIPTION_MASK_SAMPLE_CACHE
+#define PA_SUBSCRIPTION_MASK_SERVER PA_SUBSCRIPTION_MASK_SERVER
+#define PA_SUBSCRIPTION_MASK_AUTOLOAD PA_SUBSCRIPTION_MASK_AUTOLOAD
+#define PA_SUBSCRIPTION_MASK_CARD PA_SUBSCRIPTION_MASK_CARD
+#define PA_SUBSCRIPTION_MASK_ALL PA_SUBSCRIPTION_MASK_ALL
+#define PA_SUBSCRIPTION_EVENT_SINK PA_SUBSCRIPTION_EVENT_SINK
+#define PA_SUBSCRIPTION_EVENT_SOURCE PA_SUBSCRIPTION_EVENT_SOURCE
+#define PA_SUBSCRIPTION_EVENT_SINK_INPUT PA_SUBSCRIPTION_EVENT_SINK_INPUT
+#define PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT
+#define PA_SUBSCRIPTION_EVENT_MODULE PA_SUBSCRIPTION_EVENT_MODULE
+#define PA_SUBSCRIPTION_EVENT_CLIENT PA_SUBSCRIPTION_EVENT_CLIENT
+#define PA_SUBSCRIPTION_EVENT_SAMPLE_CACHE PA_SUBSCRIPTION_EVENT_SAMPLE_CACHE
+#define PA_SUBSCRIPTION_EVENT_SERVER PA_SUBSCRIPTION_EVENT_SERVER
+#define PA_SUBSCRIPTION_EVENT_AUTOLOAD PA_SUBSCRIPTION_EVENT_AUTOLOAD
+#define PA_SUBSCRIPTION_EVENT_CARD PA_SUBSCRIPTION_EVENT_CARD
+#define PA_SUBSCRIPTION_EVENT_FACILITY_MASK PA_SUBSCRIPTION_EVENT_FACILITY_MASK
+#define PA_SUBSCRIPTION_EVENT_NEW PA_SUBSCRIPTION_EVENT_NEW
+#define PA_SUBSCRIPTION_EVENT_CHANGE PA_SUBSCRIPTION_EVENT_CHANGE
+#define PA_SUBSCRIPTION_EVENT_REMOVE PA_SUBSCRIPTION_EVENT_REMOVE
+#define PA_SUBSCRIPTION_EVENT_TYPE_MASK PA_SUBSCRIPTION_EVENT_TYPE_MASK
+/** \endcond */
 
 /** A structure for all kinds of timing information of a stream. See
  * pa_stream_update_timing_info() and pa_stream_get_timing_info(). The
@@ -546,6 +673,13 @@ typedef enum pa_seek_mode {
     /**< Seek relatively to the current end of the buffer queue. */
 } pa_seek_mode_t;
 
+/** \cond fulldocs */
+#define PA_SEEK_RELATIVE PA_SEEK_RELATIVE
+#define PA_SEEK_ABSOLUTE PA_SEEK_ABSOLUTE
+#define PA_SEEK_RELATIVE_ON_READ PA_SEEK_RELATIVE_ON_READ
+#define PA_SEEK_RELATIVE_END PA_SEEK_RELATIVE_END
+/** \endcond */
+
 /** Special sink flags. */
 typedef enum pa_sink_flags {
     PA_SINK_HW_VOLUME_CTRL = 0x0001U,
@@ -564,9 +698,13 @@ typedef enum pa_sink_flags {
     PA_SINK_HW_MUTE_CTRL = 0x0010U,
     /**< Supports hardware mute control \since 0.9.11 */
 
-    PA_SINK_DECIBEL_VOLUME = 0x0020U
+    PA_SINK_DECIBEL_VOLUME = 0x0020U,
     /**< Volume can be translated to dB with pa_sw_volume_to_dB()
      * \since 0.9.11 */
+
+    PA_SINK_FLAT_VOLUME = 0x0040U
+    /**< This sink is in flat volume mode, i.e. always the maximum of
+     * the volume of all connected inputs. \since 0.9.15 */
 } pa_sink_flags_t;
 
 /** \cond fulldocs */
@@ -574,8 +712,54 @@ typedef enum pa_sink_flags {
 #define PA_SINK_LATENCY PA_SINK_LATENCY
 #define PA_SINK_HARDWARE PA_SINK_HARDWARE
 #define PA_SINK_NETWORK PA_SINK_NETWORK
-#define PA_SINK_HW_VOLUME_CTRL PA_SINK_HW_VOLUME_CTRL
+#define PA_SINK_HW_MUTE_CTRL PA_SINK_HW_MUTE_CTRL
 #define PA_SINK_DECIBEL_VOLUME PA_SINK_DECIBEL_VOLUME
+#define PA_SINK_FLAT_VOLUME PA_SINK_FLAT_VOLUME
+/** \endcond */
+
+/** Sink state. \since 0.9.15 */
+typedef enum pa_sink_state { /* enum serialized in u8 */
+    PA_SINK_INVALID_STATE = -1,
+    /**< This state is used when the server does not support sink state introspection \since 0.9.15 */
+
+    PA_SINK_RUNNING = 0,
+    /**< Running, sink is playing and used by at least one non-corked sink-input \since 0.9.15 */
+
+    PA_SINK_IDLE = 1,
+    /**< When idle, the sink is playing but there is no non-corked sink-input attached to it \since 0.9.15 */
+
+    PA_SINK_SUSPENDED = 2,
+    /**< When suspended, actual sink access can be closed, for instance \since 0.9.15 */
+
+/** \cond fulldocs */
+    /* PRIVATE: Server-side values -- DO NOT USE THIS ON THE CLIENT
+     * SIDE! These values are *not* considered part of the official PA
+     * API/ABI. If you use them your application might break when PA
+     * is upgraded. Also, please note that these values are not useful
+     * on the client side anyway. */
+
+    PA_SINK_INIT = -2,
+    /**< Initialization state */
+
+    PA_SINK_UNLINKED = -3
+    /**< The state when the sink is getting unregistered and removed from client access */
+/** \endcond */
+
+} pa_sink_state_t;
+
+/** Returns non-zero if sink is playing: running or idle. \since 0.9.15 */
+static inline int PA_SINK_IS_OPENED(pa_sink_state_t x) {
+    return x == PA_SINK_RUNNING || x == PA_SINK_IDLE;
+}
+
+/** \cond fulldocs */
+#define PA_SINK_INVALID_STATE PA_SINK_INVALID_STATE
+#define PA_SINK_RUNNING PA_SINK_RUNNING
+#define PA_SINK_IDLE PA_SINK_IDLE
+#define PA_SINK_SUSPENDED PA_SINK_SUSPENDED
+#define PA_SINK_INIT PA_SINK_INIT
+#define PA_SINK_UNLINKED PA_SINK_UNLINKED
+#define PA_SINK_IS_OPENED PA_SINK_IS_OPENED
 /** \endcond */
 
 /** Special source flags.  */
@@ -591,7 +775,7 @@ typedef enum pa_source_flags {
      * "virtual"/software source \since 0.9.3 */
 
     PA_SOURCE_NETWORK = 0x0008U,
-    /**< Is a networked sink of some kind. \since 0.9.7 */
+    /**< Is a networked source of some kind. \since 0.9.7 */
 
     PA_SOURCE_HW_MUTE_CTRL = 0x0010U,
     /**< Supports hardware mute control \since 0.9.11 */
@@ -606,12 +790,67 @@ typedef enum pa_source_flags {
 #define PA_SOURCE_LATENCY PA_SOURCE_LATENCY
 #define PA_SOURCE_HARDWARE PA_SOURCE_HARDWARE
 #define PA_SOURCE_NETWORK PA_SOURCE_NETWORK
-#define PA_SOURCE_HW_VOLUME_CTRL PA_SOURCE_HW_VOLUME_CTRL
+#define PA_SOURCE_HW_MUTE_CTRL PA_SOURCE_HW_MUTE_CTRL
 #define PA_SOURCE_DECIBEL_VOLUME PA_SOURCE_DECIBEL_VOLUME
+/** \endcond */
+
+/** Source state. \since 0.9.15 */
+typedef enum pa_source_state {
+    PA_SOURCE_INVALID_STATE = -1,
+    /**< This state is used when the server does not support source state introspection \since 0.9.15 */
+
+    PA_SOURCE_RUNNING = 0,
+    /**< Running, source is recording and used by at least one non-corked source-output \since 0.9.15 */
+
+    PA_SOURCE_IDLE = 1,
+    /**< When idle, the source is still recording but there is no non-corked source-output \since 0.9.15 */
+
+    PA_SOURCE_SUSPENDED = 2,
+    /**< When suspended, actual source access can be closed, for instance \since 0.9.15 */
+
+/** \cond fulldocs */
+    /* PRIVATE: Server-side values -- DO NOT USE THIS ON THE CLIENT
+     * SIDE! These values are *not* considered part of the official PA
+     * API/ABI. If you use them your application might break when PA
+     * is upgraded. Also, please note that these values are not useful
+     * on the client side anyway. */
+
+    PA_SOURCE_INIT = -2,
+    /**< Initialization state */
+
+    PA_SOURCE_UNLINKED = -3
+    /**< The state when the source is getting unregistered and removed from client access */
+/** \endcond */
+
+} pa_source_state_t;
+
+/** Returns non-zero if source is recording: running or idle. \since 0.9.15 */
+static inline int PA_SOURCE_IS_OPENED(pa_source_state_t x) {
+    return x == PA_SOURCE_RUNNING || x == PA_SOURCE_IDLE;
+}
+
+/** \cond fulldocs */
+#define PA_SOURCE_INVALID_STATE PA_SOURCE_INVALID_STATE
+#define PA_SOURCE_RUNNING PA_SOURCE_RUNNING
+#define PA_SOURCE_IDLE PA_SOURCE_IDLE
+#define PA_SOURCE_SUSPENDED PA_SOURCE_SUSPENDED
+#define PA_SOURCE_INIT PA_SOURCE_INIT
+#define PA_SOURCE_UNLINKED PA_SOURCE_UNLINKED
+#define PA_SOURCE_IS_OPENED PA_SOURCE_IS_OPENED
 /** \endcond */
 
 /** A generic free() like callback prototype */
 typedef void (*pa_free_cb_t)(void *p);
+
+/** A stream policy/meta event requesting that an application should
+ * cork a specific stream. See pa_stream_event_cb_t for more
+ * information, \since 0.9.15 */
+#define PA_STREAM_EVENT_REQUEST_CORK "request-cork"
+
+/** A stream policy/meta event requesting that an application should
+ * cork a specific stream. See pa_stream_event_cb_t for more
+ * information, \since 0.9.15 */
+#define PA_STREAM_EVENT_REQUEST_UNCORK "request-uncork"
 
 PA_C_DECL_END
 

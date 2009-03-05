@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -32,6 +32,7 @@
 #include <pulse/channelmap.h>
 #include <pulse/volume.h>
 #include <pulse/proplist.h>
+#include <pulse/version.h>
 
 /** \page introspect Server Query and Control
  *
@@ -128,18 +129,6 @@
  * pa_context_get_module_info() or pa_context_get_module_info_list(). The
  * information structure is called pa_module_info.
  *
- * \subsection autoload_subsec Autoload Entries
- *
- * Modules can be autoloaded as a result of a client requesting a
- * certain sink or source. Please note that autoloading is deprecated
- * in 0.9.11. and is likely to be removed from the API in a later
- * version. This mapping between sink/source names and modules can be
- * queried from the server:
- *
- * \li By index - pa_context_get_autoload_info_by_index()
- * \li By sink/source name - pa_context_get_autoload_info_by_name()
- * \li All - pa_context_get_autoload_info_list()
- *
  * \subsection client_subsec Clients
  *
  * PulseAudio clients are also identified by index and are retrieved using
@@ -189,14 +178,6 @@
  * Server modules can be remotely loaded and unloaded using
  * pa_context_load_module() and pa_context_unload_module().
  *
- * \subsection autoload_subsec Autoload Entries
- *
- * New module autoloading rules can be added, and existing can be removed
- * using pa_context_add_autoload() and pa_context_remove_autoload_by_index()
- * / pa_context_remove_autoload_by_name(). Please note that autoloading is deprecated
- * in 0.9.11. and is likely to be removed from the API in a later
- * version.
- *
  * \subsection client_subsec Clients
  *
  * The only operation supported on clients, is the possibility of kicking
@@ -231,6 +212,10 @@ typedef struct pa_sink_info {
     pa_sink_flags_t flags;             /**< Flags */
     pa_proplist *proplist;             /**< Property list \since 0.9.11 */
     pa_usec_t configured_latency;      /**< The latency this device has been configured to. \since 0.9.11 */
+    pa_volume_t base_volume;           /**< Some kind of "base" volume that refers to unamplified/unattenuated volume in the context of the output device. \since 0.9.15 */
+    pa_sink_state_t state;             /**< State \since 0.9.15 */
+    uint32_t n_volume_steps;           /**< Number of volume steps for sinks which do not support arbitrary volumes. \since 0.9.15 */
+    uint32_t card;                     /**< Card index, or PA_INVALID_INDEX. \since 0.9.15 */
 } pa_sink_info;
 
 /** Callback prototype for pa_context_get_sink_info_by_name() and friends */
@@ -240,7 +225,7 @@ typedef void (*pa_sink_info_cb_t)(pa_context *c, const pa_sink_info *i, int eol,
 pa_operation* pa_context_get_sink_info_by_name(pa_context *c, const char *name, pa_sink_info_cb_t cb, void *userdata);
 
 /** Get information about a sink by its index */
-pa_operation* pa_context_get_sink_info_by_index(pa_context *c, uint32_t id, pa_sink_info_cb_t cb, void *userdata);
+pa_operation* pa_context_get_sink_info_by_index(pa_context *c, uint32_t idx, pa_sink_info_cb_t cb, void *userdata);
 
 /** Get the complete sink list */
 pa_operation* pa_context_get_sink_info_list(pa_context *c, pa_sink_info_cb_t cb, void *userdata);
@@ -286,6 +271,10 @@ typedef struct pa_source_info {
     pa_source_flags_t flags;            /**< Flags */
     pa_proplist *proplist;              /**< Property list \since 0.9.11 */
     pa_usec_t configured_latency;       /**< The latency this device has been configured to. \since 0.9.11 */
+    pa_volume_t base_volume;            /**< Some kind of "base" volume that refers to unamplified/unattenuated volume in the context of the input device. \since 0.9.15 */
+    pa_source_state_t state;            /**< State \since 0.9.15 */
+    uint32_t n_volume_steps;            /**< Number of volume steps for sources which do not support arbitrary volumes. \since 0.9.15 */
+    uint32_t card;                      /**< Card index, or PA_INVALID_INDEX. \since 0.9.15 */
 } pa_source_info;
 
 /** Callback prototype for pa_context_get_source_info_by_name() and friends */
@@ -295,7 +284,7 @@ typedef void (*pa_source_info_cb_t)(pa_context *c, const pa_source_info *i, int 
 pa_operation* pa_context_get_source_info_by_name(pa_context *c, const char *name, pa_source_info_cb_t cb, void *userdata);
 
 /** Get information about a source by its index */
-pa_operation* pa_context_get_source_info_by_index(pa_context *c, uint32_t id, pa_source_info_cb_t cb, void *userdata);
+pa_operation* pa_context_get_source_info_by_index(pa_context *c, uint32_t idx, pa_source_info_cb_t cb, void *userdata);
 
 /** Get the complete source list */
 pa_operation* pa_context_get_source_info_list(pa_context *c, pa_source_info_cb_t cb, void *userdata);
@@ -328,6 +317,7 @@ typedef struct pa_server_info {
     const char *default_sink_name;      /**< Name of default sink. */
     const char *default_source_name;    /**< Name of default sink. */
     uint32_t cookie;                    /**< A random cookie for identifying this instance of PulseAudio. */
+    pa_channel_map channel_map;         /**< Default channel map. \since 0.9.15 */
 } pa_server_info;
 
 /** Callback prototype for pa_context_get_server_info() */
@@ -348,7 +338,10 @@ typedef struct pa_module_info {
     const char*name,                    /**< Name of the module */
         *argument;                      /**< Argument string of the module */
     uint32_t n_used;                    /**< Usage counter or PA_INVALID_INDEX */
-    int auto_unload;                    /**< Non-zero if this is an autoloaded module */
+/** \cond fulldocs */
+    int auto_unload;                    /**< \deprecated Non-zero if this is an autoloaded module */
+/** \endcond */
+    pa_proplist *proplist;              /**< Property list \since 0.9.15 */
 } pa_module_info;
 
 /** Callback prototype for pa_context_get_module_info() and firends*/
@@ -395,6 +388,53 @@ pa_operation* pa_context_get_client_info_list(pa_context *c, pa_client_info_cb_t
 
 /** Kill a client. */
 pa_operation* pa_context_kill_client(pa_context *c, uint32_t idx, pa_context_success_cb_t cb, void *userdata);
+
+/** @} */
+
+/** @{ \name Cards */
+
+/** Stores information about a specific profile of a card.  Please
+ * note that this structure can be extended as part of evolutionary
+ * API updates at any time in any new release. \since 0.9.15 */
+typedef struct pa_card_profile_info {
+    const char *name;                   /**< Name of this profile */
+    const char *description;            /**< Description of this profile */
+    uint32_t n_sinks;                   /**< Number of sinks this profile would create */
+    uint32_t n_sources;                 /**< Number of sources this profile would create */
+    uint32_t priority;                  /**< The higher this value is the more useful this profile is as a default */
+} pa_card_profile_info;
+
+/** Stores information about cards. Please note that this structure
+ * can be extended as part of evolutionary API updates at any time in
+ * any new release.  \since 0.9.15 */
+typedef struct pa_card_info {
+    uint32_t index;                      /**< Index of this card */
+    const char *name;                    /**< Name of this card */
+    uint32_t owner_module;               /**< Index of the owning module, or PA_INVALID_INDEX */
+    const char *driver;                  /**< Driver name */
+    uint32_t n_profiles;                 /**< Number of entries in profile array */
+    pa_card_profile_info* profiles;      /**< Array of available profile, or NULL. Array is terminated by an entry with name set to NULL. Number of entries is stored in n_profiles */
+    pa_card_profile_info* active_profile; /**< Pointer to active profile in the array, or NULL */
+    pa_proplist *proplist;               /**< Property list */
+} pa_card_info;
+
+/** Callback prototype for pa_context_get_card_info() and firends \since 0.9.15 */
+typedef void (*pa_card_info_cb_t) (pa_context *c, const pa_card_info*i, int eol, void *userdata);
+
+/** Get information about a card by its index \since 0.9.15 */
+pa_operation* pa_context_get_card_info_by_index(pa_context *c, uint32_t idx, pa_card_info_cb_t cb, void *userdata);
+
+/** Get information about a card by its name \since 0.9.15 */
+pa_operation* pa_context_get_card_info_by_name(pa_context *c, const char *name, pa_card_info_cb_t cb, void *userdata);
+
+/** Get the complete card list \since 0.9.15 */
+pa_operation* pa_context_get_card_info_list(pa_context *c, pa_card_info_cb_t cb, void *userdata);
+
+/** Change the profile of a card. \since 0.9.15 */
+pa_operation* pa_context_set_card_profile_by_index(pa_context *c, uint32_t idx, const char*profile, pa_context_success_cb_t cb, void *userdata);
+
+/** Change the profile of a card. \since 0.9.15 */
+pa_operation* pa_context_set_card_profile_by_name(pa_context *c, const char*name, const char*profile, pa_context_success_cb_t cb, void *userdata);
 
 /** @} */
 
@@ -549,13 +589,13 @@ pa_operation* pa_context_get_sample_info_list(pa_context *c, pa_sample_info_cb_t
 
 /** @{ \name Autoload Entries */
 
-/** Type of an autoload entry. */
+/** \deprecated Type of an autoload entry. */
 typedef enum pa_autoload_type {
     PA_AUTOLOAD_SINK = 0,
     PA_AUTOLOAD_SOURCE = 1
 } pa_autoload_type_t;
 
-/** Stores information about autoload entries. Please note that this structure
+/** \deprecated Stores information about autoload entries. Please note that this structure
  * can be extended as part of evolutionary API updates at any time in
  * any new release. */
 typedef struct pa_autoload_info {
@@ -566,25 +606,25 @@ typedef struct pa_autoload_info {
     const char *argument;         /**< Argument string for module */
 } pa_autoload_info;
 
-/** Callback prototype for pa_context_get_autoload_info_by_name() and firends */
+/** \deprecated Callback prototype for pa_context_get_autoload_info_by_name() and firends */
 typedef void (*pa_autoload_info_cb_t)(pa_context *c, const pa_autoload_info *i, int eol, void *userdata);
 
-/** Get info about a specific autoload entry. */
+/** \deprecated Get info about a specific autoload entry. */
 pa_operation* pa_context_get_autoload_info_by_name(pa_context *c, const char *name, pa_autoload_type_t type, pa_autoload_info_cb_t cb, void *userdata) PA_GCC_DEPRECATED;
 
-/** Get info about a specific autoload entry. */
+/** \deprecated Get info about a specific autoload entry. */
 pa_operation* pa_context_get_autoload_info_by_index(pa_context *c, uint32_t idx, pa_autoload_info_cb_t cb, void *userdata) PA_GCC_DEPRECATED;
 
-/** Get the complete list of autoload entries. */
+/** \deprecated Get the complete list of autoload entries. */
 pa_operation* pa_context_get_autoload_info_list(pa_context *c, pa_autoload_info_cb_t cb, void *userdata) PA_GCC_DEPRECATED;
 
-/** Add a new autoload entry. */
+/** \deprecated Add a new autoload entry. */
 pa_operation* pa_context_add_autoload(pa_context *c, const char *name, pa_autoload_type_t type, const char *module, const char*argument, pa_context_index_cb_t, void* userdata) PA_GCC_DEPRECATED;
 
-/** Remove an autoload entry. */
+/** \deprecated Remove an autoload entry. */
 pa_operation* pa_context_remove_autoload_by_name(pa_context *c, const char *name, pa_autoload_type_t type, pa_context_success_cb_t cb, void* userdata) PA_GCC_DEPRECATED;
 
-/** Remove an autoload entry. */
+/** \deprecated Remove an autoload entry. */
 pa_operation* pa_context_remove_autoload_by_index(pa_context *c, uint32_t idx, pa_context_success_cb_t cb, void* userdata) PA_GCC_DEPRECATED;
 
 /** @} */

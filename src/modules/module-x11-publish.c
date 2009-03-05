@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -55,7 +55,11 @@ PA_MODULE_AUTHOR("Lennart Poettering");
 PA_MODULE_DESCRIPTION("X11 credential publisher");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(FALSE);
-PA_MODULE_USAGE("display=<X11 display>");
+PA_MODULE_USAGE(
+        "display=<X11 display> "
+        "sink=<Sink to publish> "
+        "source=<Source to publish> "
+        "cookie=<Cookie file to publish> ");
 
 static const char* const valid_modargs[] = {
     "display",

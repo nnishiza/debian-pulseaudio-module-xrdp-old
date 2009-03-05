@@ -7,7 +7,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -93,7 +93,9 @@ void pa_socket_peer_to_string(int fd, char *c, size_t l) {
         union {
             struct sockaddr sa;
             struct sockaddr_in in;
+#ifdef HAVE_IPV6
             struct sockaddr_in6 in6;
+#endif
 #ifdef HAVE_SYS_UN_H
             struct sockaddr_un un;
 #endif
@@ -112,6 +114,7 @@ void pa_socket_peer_to_string(int fd, char *c, size_t l) {
                             ip & 0xFF,
                             ntohs(sa.in.sin_port));
                 return;
+#ifdef HAVE_IPV6
             } else if (sa.sa.sa_family == AF_INET6) {
                 char buf[INET6_ADDRSTRLEN];
                 const char *res;
@@ -121,6 +124,7 @@ void pa_socket_peer_to_string(int fd, char *c, size_t l) {
                     pa_snprintf(c, l, "TCP/IP client from [%s]:%u", buf, ntohs(sa.in6.sin6_port));
                     return;
                 }
+#endif
 #ifdef HAVE_SYS_UN_H
             } else if (sa.sa.sa_family == AF_UNIX) {
                 pa_snprintf(c, l, "UNIX socket client");
@@ -202,9 +206,11 @@ void pa_make_udp_socket_low_delay(int fd) {
 }
 
 int pa_socket_set_rcvbuf(int fd, size_t l) {
+    int bufsz = (int)l;
+
     pa_assert(fd >= 0);
 
-    if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void*)&l, sizeof(l)) < 0) {
+    if (setsockopt(fd, SOL_SOCKET, SO_RCVBUF, (void*)&bufsz, sizeof(bufsz)) < 0) {
         pa_log_warn("SO_RCVBUF: %s", pa_cstrerror(errno));
         return -1;
     }
@@ -213,9 +219,11 @@ int pa_socket_set_rcvbuf(int fd, size_t l) {
 }
 
 int pa_socket_set_sndbuf(int fd, size_t l) {
+    int bufsz = (int)l;
+
     pa_assert(fd >= 0);
 
-    if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void*)&l, sizeof(l)) < 0) {
+    if (setsockopt(fd, SOL_SOCKET, SO_SNDBUF, (void*)&bufsz, sizeof(bufsz)) < 0) {
         pa_log("SO_SNDBUF: %s", pa_cstrerror(errno));
         return -1;
     }
@@ -294,8 +302,10 @@ pa_bool_t pa_socket_address_is_local(const struct sockaddr *sa) {
         case AF_INET:
             return ((const struct sockaddr_in*) sa)->sin_addr.s_addr == INADDR_LOOPBACK;
 
+#ifdef HAVE_IPV6
         case AF_INET6:
             return memcmp(&((const struct sockaddr_in6*) sa)->sin6_addr, &in6addr_loopback, sizeof(struct in6_addr)) == 0;
+#endif
 
         default:
             return FALSE;
@@ -307,7 +317,9 @@ pa_bool_t pa_socket_is_local(int fd) {
     union {
         struct sockaddr sa;
         struct sockaddr_in in;
+#ifdef HAVE_IPV6
         struct sockaddr_in6 in6;
+#endif
 #ifdef HAVE_SYS_UN_H
         struct sockaddr_un un;
 #endif

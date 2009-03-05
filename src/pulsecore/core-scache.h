@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -36,6 +36,7 @@ typedef struct pa_scache_entry {
     char *name;
 
     pa_cvolume volume;
+    pa_bool_t volume_is_set;
     pa_sample_spec sample_spec;
     pa_channel_map channel_map;
     pa_memchunk memchunk;
@@ -56,8 +57,8 @@ int pa_scache_add_directory_lazy(pa_core *c, const char *pathname);
 
 int pa_scache_remove_item(pa_core *c, const char *name);
 int pa_scache_play_item(pa_core *c, const char *name, pa_sink *sink, pa_volume_t volume, pa_proplist *p, uint32_t *sink_input_idx);
-int pa_scache_play_item_by_name(pa_core *c, const char *name, const char*sink_name, pa_bool_t autoload, pa_volume_t volume, pa_proplist *p, uint32_t *sink_input_idx);
-void pa_scache_free(pa_core *c);
+int pa_scache_play_item_by_name(pa_core *c, const char *name, const char*sink_name, pa_volume_t volume, pa_proplist *p, uint32_t *sink_input_idx);
+void pa_scache_free_all(pa_core *c);
 
 const char *pa_scache_get_name_by_id(pa_core *c, uint32_t id);
 uint32_t pa_scache_get_id_by_name(pa_core *c, const char *name);

@@ -27,6 +27,7 @@
 #include <inttypes.h>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -96,6 +97,10 @@ static inline const char *pa_strempty(const char *x) {
     return x ? x : "";
 }
 
+static inline const char *pa_strna(const char *x) {
+    return x ? x : "n/a";
+}
+
 char *pa_split(const char *c, const char*delimiters, const char **state);
 char *pa_split_spaces(const char *c, const char **state);
 
@@ -135,6 +140,8 @@ size_t pa_snprintf(char *str, size_t size, const char *format, ...);
 size_t pa_vsnprintf(char *str, size_t size, const char *format, va_list ap);
 
 char *pa_truncate_utf8(char *c, size_t l);
+
+int pa_match(const char *expr, const char *v);
 
 char *pa_getcwd(void);
 char *pa_make_path_absolute(const char *p);
@@ -197,7 +204,6 @@ pa_bool_t pa_in_system_mode(void);
 char *pa_machine_id(void);
 char *pa_uname_string(void);
 
-
 #ifdef HAVE_VALGRIND_MEMCHECK_H
 pa_bool_t pa_in_valgrind(void);
 #else
@@ -205,5 +211,16 @@ static inline pa_bool_t pa_in_valgrind(void) {
     return FALSE;
 }
 #endif
+
+unsigned pa_gcd(unsigned a, unsigned b);
+void pa_reduce(unsigned *num, unsigned *den);
+
+unsigned pa_ncpus(void);
+
+char *pa_replace(const char*s, const char*a, const char *b);
+
+char *pa_unescape(char *p);
+
+char *pa_realpath(const char *path);
 
 #endif

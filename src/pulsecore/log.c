@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation; either version 2 of the
+  published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -30,6 +30,10 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef HAVE_EXECINFO_H
+#include <execinfo.h>
+#endif
+
 #ifdef HAVE_SYSLOG_H
 #include <syslog.h>
 #endif
@@ -43,17 +47,25 @@
 #include <pulsecore/core-util.h>
 #include <pulsecore/rtclock.h>
 #include <pulsecore/once.h>
+#include <pulsecore/ratelimit.h>
 
 #include "log.h"
 
-#define ENV_LOGLEVEL "PULSE_LOG"
-#define ENV_LOGMETA "PULSE_LOG_META"
-#define ENV_LOGTIME "PULSE_LOG_TIME"
+#define ENV_LOG_SYSLOG "PULSE_LOG_SYSLOG"
+#define ENV_LOG_LEVEL "PULSE_LOG"
+#define ENV_LOG_COLORS "PULSE_LOG_COLORS"
+#define ENV_LOG_PRINT_TIME "PULSE_LOG_TIME"
+#define ENV_LOG_PRINT_FILE "PULSE_LOG_FILE"
+#define ENV_LOG_PRINT_META "PULSE_LOG_META"
+#define ENV_LOG_PRINT_LEVEL "PULSE_LOG_LEVEL"
+#define ENV_LOG_BACKTRACE "PULSE_LOG_BACKTRACE"
 
-static char *log_ident = NULL, *log_ident_local = NULL;
-static pa_log_target_t log_target = PA_LOG_STDERR;
-static pa_log_func_t user_log_func = NULL;
-static pa_log_level_t maximal_level = PA_LOG_ERROR;
+static char *ident = NULL; /* in local charset format */
+static pa_log_target_t target = PA_LOG_STDERR, target_override;
+static pa_bool_t target_override_set = FALSE;
+static pa_log_level_t maximum_level = PA_LOG_ERROR, maximum_level_override = PA_LOG_ERROR;
+static unsigned show_backtrace = 0, show_backtrace_override = 0;
+static pa_log_flags_t flags = 0, flags_override = 0;
 
 #ifdef HAVE_SYSLOG_H
 static const int level_to_syslog[] = {
@@ -74,12 +86,10 @@ static const char level_to_char[] = {
 };
 
 void pa_log_set_ident(const char *p) {
-    pa_xfree(log_ident);
-    pa_xfree(log_ident_local);
+    pa_xfree(ident);
 
-    log_ident = pa_xstrdup(p);
-    if (!(log_ident_local = pa_utf8_to_locale(log_ident)))
-        log_ident_local = pa_xstrdup(log_ident);
+    if (!(ident = pa_utf8_to_locale(p)))
+        ident = pa_ascii_filter(p);
 }
 
 /* To make valgrind shut up. */
@@ -88,21 +98,133 @@ static void ident_destructor(void) {
     if (!pa_in_valgrind())
         return;
 
-    pa_xfree(log_ident);
-    pa_xfree(log_ident_local);
+    pa_xfree(ident);
 }
 
-void pa_log_set_maximal_level(pa_log_level_t l) {
+void pa_log_set_level(pa_log_level_t l) {
     pa_assert(l < PA_LOG_LEVEL_MAX);
 
-    maximal_level = l;
+    maximum_level = l;
 }
 
-void pa_log_set_target(pa_log_target_t t, pa_log_func_t func) {
-    pa_assert(t == PA_LOG_USER || !func);
+void pa_log_set_target(pa_log_target_t t) {
+    pa_assert(t < PA_LOG_TARGET_MAX);
 
-    log_target = t;
-    user_log_func = func;
+    target = t;
+}
+
+void pa_log_set_flags(pa_log_flags_t _flags, pa_log_merge_t merge) {
+    pa_assert(!(_flags & ~(PA_LOG_COLORS|PA_LOG_PRINT_TIME|PA_LOG_PRINT_FILE|PA_LOG_PRINT_META|PA_LOG_PRINT_LEVEL)));
+
+    if (merge == PA_LOG_SET)
+        flags |= _flags;
+    else if (merge == PA_LOG_UNSET)
+        flags &= ~_flags;
+    else
+        flags = _flags;
+}
+
+void pa_log_set_show_backtrace(unsigned nlevels) {
+    show_backtrace = nlevels;
+}
+
+#ifdef HAVE_EXECINFO_H
+
+static char* get_backtrace(unsigned show_nframes) {
+    void* trace[32];
+    int n_frames;
+    char **symbols, *e, *r;
+    unsigned j, n;
+    size_t a;
+
+    pa_assert(show_nframes > 0);
+
+    n_frames = backtrace(trace, PA_ELEMENTSOF(trace));
+
+    if (n_frames <= 0)
+        return NULL;
+
+    symbols = backtrace_symbols(trace, n_frames);
+
+    if (!symbols)
+        return NULL;
+
+    n = PA_MIN((unsigned) n_frames, show_nframes);
+
+    a = 4;
+
+    for (j = 0; j < n; j++) {
+        if (j > 0)
+            a += 2;
+        a += strlen(symbols[j]);
+    }
+
+    r = pa_xnew(char, a);
+
+    strcpy(r, " (");
+    e = r + 2;
+
+    for (j = 0; j < n; j++) {
+        if (j > 0) {
+            strcpy(e, "<<");
+            e += 2;
+        }
+
+        strcpy(e, symbols[j]);
+        e += strlen(symbols[j]);
+    }
+
+    strcpy(e, ")");
+
+    free(symbols);
+
+    return r;
+}
+
+#endif
+
+static void init_defaults(void) {
+    const char *e;
+
+    if (!ident) {
+        char binary[256];
+        if (pa_get_binary_name(binary, sizeof(binary)))
+            pa_log_set_ident(binary);
+    }
+
+    if (getenv(ENV_LOG_SYSLOG)) {
+        target_override = PA_LOG_SYSLOG;
+        target_override_set = TRUE;
+    }
+
+    if ((e = getenv(ENV_LOG_LEVEL))) {
+        maximum_level_override = (pa_log_level_t) atoi(e);
+
+        if (maximum_level_override >= PA_LOG_LEVEL_MAX)
+            maximum_level_override = PA_LOG_LEVEL_MAX-1;
+    }
+
+    if (getenv(ENV_LOG_COLORS))
+        flags_override |= PA_LOG_COLORS;
+
+    if (getenv(ENV_LOG_PRINT_TIME))
+        flags_override |= PA_LOG_PRINT_TIME;
+
+    if (getenv(ENV_LOG_PRINT_FILE))
+        flags_override |= PA_LOG_PRINT_FILE;
+
+    if (getenv(ENV_LOG_PRINT_META))
+        flags_override |= PA_LOG_PRINT_META;
+
+    if (getenv(ENV_LOG_PRINT_LEVEL))
+        flags_override |= PA_LOG_PRINT_LEVEL;
+
+    if ((e = getenv(ENV_LOG_BACKTRACE))) {
+        show_backtrace_override = (unsigned) atoi(e);
+
+        if (show_backtrace_override <= 0)
+            show_backtrace_override = 0;
+    }
 }
 
 void pa_log_levelv_meta(
@@ -113,35 +235,45 @@ void pa_log_levelv_meta(
         const char *format,
         va_list ap) {
 
-    const char *e;
     char *t, *n;
     int saved_errno = errno;
+    char *bt = NULL;
+    pa_log_target_t _target;
+    pa_log_level_t _maximum_level;
+    unsigned _show_backtrace;
+    pa_log_flags_t _flags;
 
     /* We don't use dynamic memory allocation here to minimize the hit
      * in RT threads */
-    char text[1024], location[128], timestamp[32];
+    char text[4096], location[128], timestamp[32];
 
     pa_assert(level < PA_LOG_LEVEL_MAX);
     pa_assert(format);
 
-    if ((e = getenv(ENV_LOGLEVEL)))
-        maximal_level = atoi(e);
+    PA_ONCE_BEGIN {
+        init_defaults();
+    } PA_ONCE_END;
 
-    if (level > maximal_level) {
+    _target = target_override_set ? target_override : target;
+    _maximum_level = PA_MAX(maximum_level, maximum_level_override);
+    _show_backtrace = PA_MAX(show_backtrace, show_backtrace_override);
+    _flags = flags | flags_override;
+
+    if (PA_LIKELY(level > _maximum_level)) {
         errno = saved_errno;
         return;
     }
 
     pa_vsnprintf(text, sizeof(text), format, ap);
 
-    if (getenv(ENV_LOGMETA) && file && line > 0 && func)
+    if ((_flags & PA_LOG_PRINT_META) && file && line > 0 && func)
         pa_snprintf(location, sizeof(location), "[%s:%i %s()] ", file, line, func);
-    else if (file)
+    else if (_flags & (PA_LOG_PRINT_META|PA_LOG_PRINT_FILE))
         pa_snprintf(location, sizeof(location), "%s: ", pa_path_get_filename(file));
     else
         location[0] = 0;
 
-    if (getenv(ENV_LOGTIME)) {
+    if (_flags & PA_LOG_PRINT_TIME) {
         static pa_usec_t start, last;
         pa_usec_t u, a, r;
 
@@ -168,6 +300,11 @@ void pa_log_levelv_meta(
     } else
         timestamp[0] = 0;
 
+#ifdef HAVE_EXECINFO_H
+    if (_show_backtrace > 0)
+        bt = get_backtrace(_show_backtrace);
+#endif
+
     if (!pa_utf8_valid(text))
         pa_log_level(level, __FILE__": invalid UTF-8 string following below:");
 
@@ -177,36 +314,43 @@ void pa_log_levelv_meta(
             n++;
         }
 
-        if (!*t)
+        /* We ignore strings only made out of whitespace */
+        if (t[strspn(t, "\t ")] == 0)
             continue;
 
-        switch (log_target) {
+        switch (_target) {
+
             case PA_LOG_STDERR: {
-                const char *prefix = "", *suffix = "";
+                const char *prefix = "", *suffix = "", *grey = "";
                 char *local_t;
 
 #ifndef OS_IS_WIN32
                 /* Yes indeed. Useless, but fun! */
-                if (isatty(STDERR_FILENO)) {
-                    if (level <= PA_LOG_ERROR) {
+                if ((_flags & PA_LOG_COLORS) && isatty(STDERR_FILENO)) {
+                    if (level <= PA_LOG_ERROR)
                         prefix = "\x1B[1;31m";
-                        suffix = "\x1B[0m";
-                    } else if (level <= PA_LOG_WARN) {
+                    else if (level <= PA_LOG_WARN)
                         prefix = "\x1B[1m";
+
+                    if (bt)
+                        grey = "\x1B[2m";
+
+                    if (grey[0] || prefix[0])
                         suffix = "\x1B[0m";
-                    }
                 }
 #endif
 
                 /* We shouldn't be using dynamic allocation here to
                  * minimize the hit in RT threads */
-                local_t = pa_utf8_to_locale(t);
-                if (!local_t)
-                    fprintf(stderr, "%s%c: %s%s%s%s\n", timestamp, level_to_char[level], location, prefix, t, suffix);
-                else {
-                    fprintf(stderr, "%s%c: %s%s%s%s\n", timestamp, level_to_char[level], location, prefix, local_t, suffix);
-                    pa_xfree(local_t);
-                }
+                if ((local_t = pa_utf8_to_locale(t)))
+                    t = local_t;
+
+                if (_flags & PA_LOG_PRINT_LEVEL)
+                    fprintf(stderr, "%s%c: %s%s%s%s%s%s\n", timestamp, level_to_char[level], location, prefix, t, grey, pa_strempty(bt), suffix);
+                else
+                    fprintf(stderr, "%s%s%s%s%s%s%s\n", timestamp, location, prefix, t, grey, pa_strempty(bt), suffix);
+
+                pa_xfree(local_t);
 
                 break;
             }
@@ -215,29 +359,17 @@ void pa_log_levelv_meta(
             case PA_LOG_SYSLOG: {
                 char *local_t;
 
-                openlog(log_ident_local ? log_ident_local : "???", LOG_PID, LOG_USER);
+                openlog(ident, LOG_PID, LOG_USER);
 
-                local_t = pa_utf8_to_locale(t);
-                if (!local_t)
-                    syslog(level_to_syslog[level], "%s%s%s", timestamp, location, t);
-                else {
-                    syslog(level_to_syslog[level], "%s%s%s", timestamp, location, local_t);
-                    pa_xfree(local_t);
-                }
+                if ((local_t = pa_utf8_to_locale(t)))
+                    t = local_t;
 
-                closelog();
+                syslog(level_to_syslog[level], "%s%s%s%s", timestamp, location, t, pa_strempty(bt));
+                pa_xfree(local_t);
+
                 break;
             }
 #endif
-
-            case PA_LOG_USER: {
-                char x[1024];
-
-                pa_snprintf(x, sizeof(x), "%s%s%s", timestamp, location, t);
-                user_log_func(level, x);
-
-                break;
-            }
 
             case PA_LOG_NULL:
             default:
@@ -245,6 +377,7 @@ void pa_log_levelv_meta(
         }
     }
 
+    pa_xfree(bt);
     errno = saved_errno;
 }
 
@@ -271,4 +404,11 @@ void pa_log_level(pa_log_level_t level, const char *format, ...) {
     va_start(ap, format);
     pa_log_levelv_meta(level, NULL, 0, NULL, format, ap);
     va_end(ap);
+}
+
+pa_bool_t pa_log_ratelimit(void) {
+    /* Not more than 10 messages every 5s */
+    static PA_DEFINE_RATELIMIT(ratelimit, 5 * PA_USEC_PER_SEC, 10);
+
+    return pa_ratelimit_test(&ratelimit);
 }

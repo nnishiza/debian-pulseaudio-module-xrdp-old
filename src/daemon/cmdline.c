@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -52,9 +52,11 @@ enum {
     ARG_DISALLOW_MODULE_LOADING,
     ARG_DISALLOW_EXIT,
     ARG_EXIT_IDLE_TIME,
-    ARG_MODULE_IDLE_TIME,
     ARG_SCACHE_IDLE_TIME,
     ARG_LOG_TARGET,
+    ARG_LOG_META,
+    ARG_LOG_TIME,
+    ARG_LOG_BACKTRACE,
     ARG_LOAD,
     ARG_FILE,
     ARG_DL_SEARCH_PATH,
@@ -85,9 +87,11 @@ static const struct option long_options[] = {
     {"disallow-module-loading",     2, 0, ARG_DISALLOW_MODULE_LOADING},
     {"disallow-exit",               2, 0, ARG_DISALLOW_EXIT},
     {"exit-idle-time",              2, 0, ARG_EXIT_IDLE_TIME},
-    {"module-idle-time",            2, 0, ARG_MODULE_IDLE_TIME},
     {"scache-idle-time",            2, 0, ARG_SCACHE_IDLE_TIME},
     {"log-target",                  1, 0, ARG_LOG_TARGET},
+    {"log-meta",                    2, 0, ARG_LOG_META},
+    {"log-time",                    2, 0, ARG_LOG_TIME},
+    {"log-backtrace",               1, 0, ARG_LOG_BACKTRACE},
     {"load",                        1, 0, ARG_LOAD},
     {"file",                        1, 0, ARG_FILE},
     {"dl-search-path",              1, 0, ARG_DL_SEARCH_PATH},
@@ -148,6 +152,9 @@ void pa_cmdline_help(const char *argv0) {
            "      --log-level[=LEVEL]               Increase or set verbosity level\n"
            "  -v                                    Increase the verbosity level\n"
            "      --log-target={auto,syslog,stderr} Specify the log target\n"
+           "      --log-meta[=BOOL]                 Include code location in log messages\n"
+           "      --log-time[=BOOL]                 Include timestamps in log messages\n"
+           "      --log-backtrace=FRAMES            Include a backtrace in log messages\n"
            "  -p, --dl-search-path=PATH             Set the search path for dynamic shared\n"
            "                                        objects (plugins)\n"
            "      --resample-method=METHOD          Use the specified resampling method\n"
@@ -292,7 +299,7 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
 
             case ARG_DISALLOW_EXIT:
                 if ((conf->disallow_exit = optarg ? pa_parse_boolean(optarg) : TRUE) < 0) {
-                    pa_log(_("--disallow-exit boolean argument"));
+                    pa_log(_("--disallow-exit expects boolean argument"));
                     goto fail;
                 }
                 break;
@@ -321,12 +328,26 @@ int pa_cmdline_parse(pa_daemon_conf *conf, int argc, char *const argv [], int *d
                 }
                 break;
 
-            case ARG_EXIT_IDLE_TIME:
-                conf->exit_idle_time = atoi(optarg);
+            case ARG_LOG_TIME:
+                if ((conf->log_time = optarg ? pa_parse_boolean(optarg) : TRUE) < 0) {
+                    pa_log(_("--log-time expects boolean argument"));
+                    goto fail;
+                }
                 break;
 
-            case ARG_MODULE_IDLE_TIME:
-                conf->module_idle_time = atoi(optarg);
+            case ARG_LOG_META:
+                if ((conf->log_meta = optarg ? pa_parse_boolean(optarg) : TRUE) < 0) {
+                    pa_log(_("--log-meta expects boolean argument"));
+                    goto fail;
+                }
+                break;
+
+            case ARG_LOG_BACKTRACE:
+                conf->log_backtrace = (unsigned) atoi(optarg);
+                break;
+
+            case ARG_EXIT_IDLE_TIME:
+                conf->exit_idle_time = atoi(optarg);
                 break;
 
             case ARG_SCACHE_IDLE_TIME:

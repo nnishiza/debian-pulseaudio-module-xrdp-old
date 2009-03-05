@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -97,25 +97,6 @@ int pa_shared_remove(pa_core *c, const char *name) {
 
     shared_free(p);
     return 0;
-}
-
-void pa_shared_init(pa_core *c) {
-    pa_assert(c);
-
-    c->shared = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
-}
-
-void pa_shared_cleanup(pa_core *c) {
-    pa_assert(c);
-
-    if (!c->shared)
-        return;
-
-    pa_assert(pa_hashmap_isempty(c->shared));
-
-    pa_hashmap_free(c->shared, NULL, NULL);
-    c->shared = NULL;
-
 }
 
 void pa_shared_dump(pa_core *c, pa_strbuf *s) {

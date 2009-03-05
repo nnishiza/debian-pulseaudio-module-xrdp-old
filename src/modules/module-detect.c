@@ -7,7 +7,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -100,7 +100,7 @@ static int detect_alsa(pa_core *c, int just_one) {
         if (subdevice != 0)
             continue;
 
-        pa_snprintf(args, sizeof(args), "device=hw:%u", device);
+        pa_snprintf(args, sizeof(args), "device_id=%u", device);
         if (!pa_module_load(c, is_sink ? "module-alsa-sink" : "module-alsa-source", args))
             continue;
 
@@ -239,7 +239,7 @@ int pa__init(pa_module*m) {
 #ifdef HAVE_ALSA
     if ((n = detect_alsa(m->core, just_one)) <= 0)
 #endif
-#if HAVE_OSS
+#ifdef HAVE_OSS
     if ((n = detect_oss(m->core, just_one)) <= 0)
 #endif
 #ifdef HAVE_SOLARIS

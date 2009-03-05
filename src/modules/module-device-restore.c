@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -53,6 +53,9 @@ PA_MODULE_AUTHOR("Lennart Poettering");
 PA_MODULE_DESCRIPTION("Automatically restore the volume/mute state of devices");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(TRUE);
+PA_MODULE_USAGE(
+        "restore_volume=<Save/restore volumes?> "
+        "restore_muted=<Save/restore muted states?>");
 
 #define SAVE_INTERVAL 10
 
@@ -76,11 +79,14 @@ struct userdata {
     pa_bool_t restore_muted:1;
 };
 
+#define ENTRY_VERSION 1
+
 struct entry {
+    uint8_t version;
+    pa_bool_t muted:1;
     pa_channel_map channel_map;
     pa_cvolume volume;
-    pa_bool_t muted:1;
-};
+} PA_GCC_PACKED;
 
 static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
     struct userdata *u = userdata;
@@ -98,14 +104,14 @@ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct
     pa_log_info("Synced.");
 }
 
-static struct entry* read_entry(struct userdata *u, char *name) {
+static struct entry* read_entry(struct userdata *u, const char *name) {
     datum key, data;
     struct entry *e;
 
     pa_assert(u);
     pa_assert(name);
 
-    key.dptr = name;
+    key.dptr = (char*) name;
     key.dsize = (int) strlen(name);
 
     data = gdbm_fetch(u->gdbm_file, key);
@@ -114,11 +120,16 @@ static struct entry* read_entry(struct userdata *u, char *name) {
         goto fail;
 
     if (data.dsize != sizeof(struct entry)) {
-        pa_log_warn("Database contains entry for device %s of wrong size %lu != %lu", name, (unsigned long) data.dsize, (unsigned long) sizeof(struct entry));
+        pa_log_debug("Database contains entry for device %s of wrong size %lu != %lu. Probably due to upgrade, ignoring.", name, (unsigned long) data.dsize, (unsigned long) sizeof(struct entry));
         goto fail;
     }
 
     e = (struct entry*) data.dptr;
+
+    if (e->version != ENTRY_VERSION) {
+        pa_log_debug("Version of database entry for device %s doesn't match our version. Probably due to upgrade, ignoring.", name);
+        goto fail;
+    }
 
     if (!(pa_cvolume_valid(&e->volume))) {
         pa_log_warn("Invalid volume stored in database for device %s", name);
@@ -170,6 +181,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         return;
 
     memset(&entry, 0, sizeof(entry));
+    entry.version = ENTRY_VERSION;
 
     if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK) {
         pa_sink *sink;
@@ -235,13 +247,22 @@ static pa_hook_result_t sink_fixate_hook_callback(pa_core *c, pa_sink_new_data *
     if ((e = read_entry(u, name))) {
 
         if (u->restore_volume) {
-            pa_log_info("Restoring volume for sink %s.", new_data->name);
-            pa_sink_new_data_set_volume(new_data, pa_cvolume_remap(&e->volume, &e->channel_map, &new_data->channel_map));
+
+            if (!new_data->volume_is_set) {
+                pa_log_info("Restoring volume for sink %s.", new_data->name);
+                pa_sink_new_data_set_volume(new_data, pa_cvolume_remap(&e->volume, &e->channel_map, &new_data->channel_map));
+            } else
+                pa_log_debug("Not restoring volume for sink %s, because already set.", new_data->name);
+
         }
 
         if (u->restore_muted) {
-            pa_log_info("Restoring mute state for sink %s.", new_data->name);
-            pa_sink_new_data_set_muted(new_data, e->muted);
+
+            if (!new_data->muted_is_set) {
+                pa_log_info("Restoring mute state for sink %s.", new_data->name);
+                pa_sink_new_data_set_muted(new_data, e->muted);
+            } else
+                pa_log_debug("Not restoring mute state for sink %s, because already set.", new_data->name);
         }
 
         pa_xfree(e);
@@ -263,13 +284,21 @@ static pa_hook_result_t source_fixate_hook_callback(pa_core *c, pa_source_new_da
     if ((e = read_entry(u, name))) {
 
         if (u->restore_volume) {
-            pa_log_info("Restoring volume for source %s.", new_data->name);
-            pa_source_new_data_set_volume(new_data, pa_cvolume_remap(&e->volume, &e->channel_map, &new_data->channel_map));
+
+            if (!new_data->volume_is_set) {
+                pa_log_info("Restoring volume for source %s.", new_data->name);
+                pa_source_new_data_set_volume(new_data, pa_cvolume_remap(&e->volume, &e->channel_map, &new_data->channel_map));
+            } else
+                pa_log_debug("Not restoring volume for source %s, because already set.", new_data->name);
         }
 
         if (u->restore_muted) {
-            pa_log_info("Restoring mute state for source %s.", new_data->name);
-            pa_source_new_data_set_muted(new_data, e->muted);
+
+            if (!new_data->muted_is_set) {
+                pa_log_info("Restoring mute state for source %s.", new_data->name);
+                pa_source_new_data_set_muted(new_data, e->muted);
+            } else
+                pa_log_debug("Not restoring mute state for source %s, because already set.", new_data->name);
         }
 
         pa_xfree(e);

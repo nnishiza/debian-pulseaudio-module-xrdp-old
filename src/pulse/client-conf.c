@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -92,16 +92,16 @@ int pa_client_conf_load(pa_client_conf *c, const char *filename) {
 
     /* Prepare the configuration parse table */
     pa_config_item table[] = {
-        { "daemon-binary",          pa_config_parse_string,  NULL },
-        { "extra-arguments",        pa_config_parse_string,  NULL },
-        { "default-sink",           pa_config_parse_string,  NULL },
-        { "default-source",         pa_config_parse_string,  NULL },
-        { "default-server",         pa_config_parse_string,  NULL },
-        { "autospawn",              pa_config_parse_bool,    NULL },
-        { "cookie-file",            pa_config_parse_string,  NULL },
-        { "disable-shm",            pa_config_parse_bool,    NULL },
-        { "shm-size-bytes",         pa_config_parse_size,    NULL },
-        { NULL,                     NULL,                    NULL },
+        { "daemon-binary",          pa_config_parse_string,  NULL, NULL },
+        { "extra-arguments",        pa_config_parse_string,  NULL, NULL },
+        { "default-sink",           pa_config_parse_string,  NULL, NULL },
+        { "default-source",         pa_config_parse_string,  NULL, NULL },
+        { "default-server",         pa_config_parse_string,  NULL, NULL },
+        { "autospawn",              pa_config_parse_bool,    NULL, NULL },
+        { "cookie-file",            pa_config_parse_string,  NULL, NULL },
+        { "disable-shm",            pa_config_parse_bool,    NULL, NULL },
+        { "shm-size-bytes",         pa_config_parse_size,    NULL, NULL },
+        { NULL,                     NULL,                    NULL, NULL },
     };
 
     table[0].data = &c->daemon_binary;

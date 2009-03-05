@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -25,6 +25,7 @@
 
 #include <pulse/mainloop-api.h>
 #include <pulse/cdecl.h>
+#include <pulse/version.h>
 
 PA_C_DECL_BEGIN
 
@@ -107,10 +108,10 @@ PA_C_DECL_BEGIN
  * Example:
  *
  * \code
- * static void my_drain_callback(pa_stream*s, int success, void *userdata) {
+ * static void my_drain_callback(pa_stream *s, int success, void *userdata) {
  *     pa_threaded_mainloop *m;
  *
- *     m = (pa_threaded_mainloop*)userdata;
+ *     m = userdata;
  *     assert(m);
  *
  *     pa_threaded_mainloop_signal(m, 0);
@@ -124,7 +125,7 @@ PA_C_DECL_BEGIN
  *     o = pa_stream_drain(s, my_drain_callback, m);
  *     assert(o);
  *
- *     while (pa_operation_get_state(o) != OPERATION_DONE)
+ *     while (pa_operation_get_state(o) == PA_OPERATION_RUNNING)
  *         pa_threaded_mainloop_wait(m);
  *
  *     pa_operation_unref(o);
@@ -166,7 +167,7 @@ PA_C_DECL_BEGIN
  * static void my_drain_callback(pa_stream*s, int success, void *userdata) {
  *     pa_threaded_mainloop *m;
  *
- *     m = (pa_threaded_mainloop*)userdata;
+ *     m = userdata;
  *     assert(m);
  *
  *     drain_result = &success;
@@ -182,7 +183,7 @@ PA_C_DECL_BEGIN
  *     o = pa_stream_drain(s, my_drain_callback, m);
  *     assert(o);
  *
- *     while (pa_operation_get_state(o) != OPERATION_DONE)
+ *     while (pa_operation_get_state(o) == PA_OPERATION_RUNNING)
  *         pa_threaded_mainloop_wait(m);
  *
  *     pa_operation_unref(o);

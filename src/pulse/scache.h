@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -28,6 +28,7 @@
 #include <pulse/context.h>
 #include <pulse/stream.h>
 #include <pulse/cdecl.h>
+#include <pulse/version.h>
 
 /** \page scache Sample Cache
  *
@@ -100,7 +101,7 @@ pa_operation* pa_context_play_sample(
         pa_context *c               /**< Context */,
         const char *name            /**< Name of the sample to play */,
         const char *dev             /**< Sink to play this sample on */,
-        pa_volume_t volume          /**< Volume to play this sample with */ ,
+        pa_volume_t volume          /**< Volume to play this sample with. Starting with 0.9.15 you may pass here (pa_volume_t) -1 which will leave the decision about the volume to the server side which is a good idea. */ ,
         pa_context_success_cb_t cb  /**< Call this function after successfully starting playback, or NULL */,
         void *userdata              /**< Userdata to pass to the callback */);
 
@@ -112,7 +113,7 @@ pa_operation* pa_context_play_sample_with_proplist(
         pa_context *c                   /**< Context */,
         const char *name                /**< Name of the sample to play */,
         const char *dev                 /**< Sink to play this sample on */,
-        pa_volume_t volume              /**< Volume to play this sample with */ ,
+        pa_volume_t volume              /**< Volume to play this sample with. Starting with 0.9.15 you may pass here (pa_volume_t) -1 which will leave the decision about the volume to the server side which is a good idea.  */ ,
         pa_proplist *proplist           /**< Property list for this sound. The property list of the cached entry will be merged into this property list */,
         pa_context_play_sample_cb_t cb  /**< Call this function after successfully starting playback, or NULL */,
         void *userdata                  /**< Userdata to pass to the callback */);

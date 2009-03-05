@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -156,6 +156,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
 
                 case PA_SINK_UNLINKED:
                 case PA_SINK_INIT:
+                case PA_SINK_INVALID_STATE:
                     ;
             }
 
@@ -168,7 +169,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
             w = pa_bytes_to_usec((uint64_t) u->offset + u->memchunk.length, &u->sink->sample_spec);
 
             *((pa_usec_t*) data) = w > r ? w - r : 0;
-            break;
+            return 0;
         }
 
         case SINK_MESSAGE_PASS_SOCKET: {
@@ -619,6 +620,15 @@ fail:
     pa__done(m);
 
     return -1;
+}
+
+int pa__get_n_used(pa_module *m) {
+    struct userdata *u;
+
+    pa_assert(m);
+    pa_assert_se(u = m->userdata);
+
+    return pa_sink_linked_by(u->sink);
 }
 
 void pa__done(pa_module*m) {

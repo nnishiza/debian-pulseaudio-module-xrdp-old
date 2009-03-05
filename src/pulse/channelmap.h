@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -26,6 +26,7 @@
 #include <pulse/sample.h>
 #include <pulse/cdecl.h>
 #include <pulse/gccmacro.h>
+#include <pulse/version.h>
 
 /** \page channelmap Channel Maps
  *
@@ -140,6 +141,66 @@ typedef enum pa_channel_position {
     PA_CHANNEL_POSITION_MAX
 } pa_channel_position_t;
 
+/** \cond fulldocs */
+#define PA_CHANNEL_POSITION_INVALID PA_CHANNEL_POSITION_INVALID
+#define PA_CHANNEL_POSITION_MONO PA_CHANNEL_POSITION_MONO
+#define PA_CHANNEL_POSITION_LEFT PA_CHANNEL_POSITION_LEFT
+#define PA_CHANNEL_POSITION_RIGHT PA_CHANNEL_POSITION_RIGHT
+#define PA_CHANNEL_POSITION_CENTER PA_CHANNEL_POSITION_CENTER
+#define PA_CHANNEL_POSITION_FRONT_LEFT PA_CHANNEL_POSITION_FRONT_LEFT
+#define PA_CHANNEL_POSITION_FRONT_RIGHT PA_CHANNEL_POSITION_FRONT_RIGHT
+#define PA_CHANNEL_POSITION_FRONT_CENTER PA_CHANNEL_POSITION_FRONT_CENTER
+#define PA_CHANNEL_POSITION_REAR_CENTER PA_CHANNEL_POSITION_REAR_CENTER
+#define PA_CHANNEL_POSITION_REAR_LEFT PA_CHANNEL_POSITION_REAR_LEFT
+#define PA_CHANNEL_POSITION_REAR_RIGHT PA_CHANNEL_POSITION_REAR_RIGHT
+#define PA_CHANNEL_POSITION_LFE PA_CHANNEL_POSITION_LFE
+#define PA_CHANNEL_POSITION_SUBWOOFER PA_CHANNEL_POSITION_SUBWOOFER
+#define PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER
+#define PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER
+#define PA_CHANNEL_POSITION_SIDE_LEFT PA_CHANNEL_POSITION_SIDE_LEFT
+#define PA_CHANNEL_POSITION_SIDE_RIGHT PA_CHANNEL_POSITION_SIDE_RIGHT
+#define PA_CHANNEL_POSITION_AUX0 PA_CHANNEL_POSITION_AUX0
+#define PA_CHANNEL_POSITION_AUX1 PA_CHANNEL_POSITION_AUX1
+#define PA_CHANNEL_POSITION_AUX2 PA_CHANNEL_POSITION_AUX2
+#define PA_CHANNEL_POSITION_AUX3 PA_CHANNEL_POSITION_AUX3
+#define PA_CHANNEL_POSITION_AUX4 PA_CHANNEL_POSITION_AUX4
+#define PA_CHANNEL_POSITION_AUX5 PA_CHANNEL_POSITION_AUX5
+#define PA_CHANNEL_POSITION_AUX6 PA_CHANNEL_POSITION_AUX6
+#define PA_CHANNEL_POSITION_AUX7 PA_CHANNEL_POSITION_AUX7
+#define PA_CHANNEL_POSITION_AUX8 PA_CHANNEL_POSITION_AUX8
+#define PA_CHANNEL_POSITION_AUX9 PA_CHANNEL_POSITION_AUX9
+#define PA_CHANNEL_POSITION_AUX10 PA_CHANNEL_POSITION_AUX10
+#define PA_CHANNEL_POSITION_AUX11 PA_CHANNEL_POSITION_AUX11
+#define PA_CHANNEL_POSITION_AUX12 PA_CHANNEL_POSITION_AUX12
+#define PA_CHANNEL_POSITION_AUX13 PA_CHANNEL_POSITION_AUX13
+#define PA_CHANNEL_POSITION_AUX14 PA_CHANNEL_POSITION_AUX14
+#define PA_CHANNEL_POSITION_AUX15 PA_CHANNEL_POSITION_AUX15
+#define PA_CHANNEL_POSITION_AUX16 PA_CHANNEL_POSITION_AUX16
+#define PA_CHANNEL_POSITION_AUX17 PA_CHANNEL_POSITION_AUX17
+#define PA_CHANNEL_POSITION_AUX18 PA_CHANNEL_POSITION_AUX18
+#define PA_CHANNEL_POSITION_AUX19 PA_CHANNEL_POSITION_AUX19
+#define PA_CHANNEL_POSITION_AUX20 PA_CHANNEL_POSITION_AUX20
+#define PA_CHANNEL_POSITION_AUX21 PA_CHANNEL_POSITION_AUX21
+#define PA_CHANNEL_POSITION_AUX22 PA_CHANNEL_POSITION_AUX22
+#define PA_CHANNEL_POSITION_AUX23 PA_CHANNEL_POSITION_AUX23
+#define PA_CHANNEL_POSITION_AUX24 PA_CHANNEL_POSITION_AUX24
+#define PA_CHANNEL_POSITION_AUX25 PA_CHANNEL_POSITION_AUX25
+#define PA_CHANNEL_POSITION_AUX26 PA_CHANNEL_POSITION_AUX26
+#define PA_CHANNEL_POSITION_AUX27 PA_CHANNEL_POSITION_AUX27
+#define PA_CHANNEL_POSITION_AUX28 PA_CHANNEL_POSITION_AUX28
+#define PA_CHANNEL_POSITION_AUX29 PA_CHANNEL_POSITION_AUX29
+#define PA_CHANNEL_POSITION_AUX30 PA_CHANNEL_POSITION_AUX30
+#define PA_CHANNEL_POSITION_AUX31 PA_CHANNEL_POSITION_AUX31
+#define PA_CHANNEL_POSITION_TOP_CENTER PA_CHANNEL_POSITION_TOP_CENTER
+#define PA_CHANNEL_POSITION_TOP_FRONT_LEFT PA_CHANNEL_POSITION_TOP_FRONT_LEFT
+#define PA_CHANNEL_POSITION_TOP_FRONT_RIGHT PA_CHANNEL_POSITION_TOP_FRONT_RIGHT
+#define PA_CHANNEL_POSITION_TOP_FRONT_CENTER PA_CHANNEL_POSITION_TOP_FRONT_CENTER
+#define PA_CHANNEL_POSITION_TOP_REAR_LEFT PA_CHANNEL_POSITION_TOP_REAR_LEFT
+#define PA_CHANNEL_POSITION_TOP_REAR_RIGHT PA_CHANNEL_POSITION_TOP_REAR_RIGHT
+#define PA_CHANNEL_POSITION_TOP_REAR_CENTER PA_CHANNEL_POSITION_TOP_REAR_CENTER
+#define PA_CHANNEL_POSITION_MAX PA_CHANNEL_POSITION_MAX
+/** \endcond */
+
 /** A list of channel mapping definitions for pa_channel_map_init_auto() */
 typedef enum pa_channel_map_def {
     PA_CHANNEL_MAP_AIFF,
@@ -163,6 +224,16 @@ typedef enum pa_channel_map_def {
     PA_CHANNEL_MAP_DEFAULT = PA_CHANNEL_MAP_AIFF
     /**< The default channel map */
 } pa_channel_map_def_t;
+
+/** \cond fulldocs */
+#define PA_CHANNEL_MAP_AIFF PA_CHANNEL_MAP_AIFF
+#define PA_CHANNEL_MAP_ALSA PA_CHANNEL_MAP_ALSA
+#define PA_CHANNEL_MAP_AUX PA_CHANNEL_MAP_AUX
+#define PA_CHANNEL_MAP_WAVEEX PA_CHANNEL_MAP_WAVEEX
+#define PA_CHANNEL_MAP_OSS PA_CHANNEL_MAP_OSS
+#define PA_CHANNEL_MAP_DEF_MAX PA_CHANNEL_MAP_DEF_MAX
+#define PA_CHANNEL_MAP_DEFAULT PA_CHANNEL_MAP_DEFAULT
+/** \endcond */
 
 /** A channel map which can be used to attach labels to specific
  * channels of a stream. These values are relevant for conversion and
@@ -214,7 +285,10 @@ const char* pa_channel_position_to_pretty_string(pa_channel_position_t pos);
 /** Make a humand readable string from the specified channel map */
 char* pa_channel_map_snprint(char *s, size_t l, const pa_channel_map *map);
 
-/** Parse a channel position list into a channel map structure. */
+/** Parse a channel position list or well-known mapping name into a
+ * channel map structure. This turns the output of
+ * pa_channel_map_snprint() and pa_channel_map_to_name() back into a
+ * pa_channel_map */
 pa_channel_map *pa_channel_map_parse(pa_channel_map *map, const char *s);
 
 /** Compare two channel maps. Return 1 if both match. */
@@ -226,6 +300,30 @@ int pa_channel_map_valid(const pa_channel_map *map) PA_GCC_PURE;
 /** Return non-zero if the specified channel map is compatible with
  * the specified sample spec. \since 0.9.12 */
 int pa_channel_map_compatible(const pa_channel_map *map, const pa_sample_spec *ss) PA_GCC_PURE;
+
+/** Returns non-zero if every channel defined in b is also defined in a. \since 0.9.15 */
+int pa_channel_map_superset(const pa_channel_map *a, const pa_channel_map *b) PA_GCC_PURE;
+
+/** Returns non-zero if it makes sense to apply a volume 'balance'
+ * with this mapping, i.e. if there are left/right channels
+ * available. \since 0.9.15 */
+int pa_channel_map_can_balance(const pa_channel_map *map) PA_GCC_PURE;
+
+/** Returns non-zero if it makes sense to apply a volume 'fade'
+ * (i.e. 'balance' between front and rear) with this mapping, i.e. if
+ * there are front/rear channels available. \since 0.9.15 */
+int pa_channel_map_can_fade(const pa_channel_map *map) PA_GCC_PURE;
+
+/** Tries to find a well-known channel mapping name for this channel
+ * mapping. I.e. "stereo", "surround-71" and so on. If the channel
+ * mapping is unknown NULL will be returned. This name can be parsed
+ * with pa_channel_map_parse() \since 0.9.15 */
+const char* pa_channel_map_to_name(const pa_channel_map *map) PA_GCC_PURE;
+
+/** Tries to find a human readable text label for this channel
+mapping. I.e. "Stereo", "Surround 7.1" and so on. If the channel
+mapping is unknown NULL will be returned. \since 0.9.15 */
+const char* pa_channel_map_to_pretty_name(const pa_channel_map *map) PA_GCC_PURE;
 
 PA_C_DECL_END
 

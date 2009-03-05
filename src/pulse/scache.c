@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -66,10 +66,8 @@ int pa_stream_connect_upload(pa_stream *s, size_t length) {
     pa_tagstruct_put_channel_map(t, &s->channel_map);
     pa_tagstruct_putu32(t, (uint32_t) length);
 
-    if (s->context->version >= 13) {
-        pa_init_proplist(s->proplist);
+    if (s->context->version >= 13)
         pa_tagstruct_put_proplist(t, s->proplist);
-    }
 
     pa_pstream_send_tagstruct(s->context->pstream, t);
     pa_pdispatch_register_reply(s->context->pdispatch, tag, DEFAULT_TIMEOUT, pa_create_stream_callback, s, NULL);
@@ -188,6 +186,10 @@ pa_operation *pa_context_play_sample(pa_context *c, const char *name, const char
     t = pa_tagstruct_command(c, PA_COMMAND_PLAY_SAMPLE, &tag);
     pa_tagstruct_putu32(t, PA_INVALID_INDEX);
     pa_tagstruct_puts(t, dev);
+
+    if (volume == (pa_volume_t) -1 && c->version < 15)
+        volume = PA_VOLUME_NORM;
+
     pa_tagstruct_putu32(t, volume);
     pa_tagstruct_puts(t, name);
 
@@ -225,6 +227,10 @@ pa_operation *pa_context_play_sample_with_proplist(pa_context *c, const char *na
     t = pa_tagstruct_command(c, PA_COMMAND_PLAY_SAMPLE, &tag);
     pa_tagstruct_putu32(t, PA_INVALID_INDEX);
     pa_tagstruct_puts(t, dev);
+
+    if (volume == (pa_volume_t) -1 && c->version < 15)
+        volume = PA_VOLUME_NORM;
+
     pa_tagstruct_putu32(t, volume);
     pa_tagstruct_puts(t, name);
     pa_tagstruct_put_proplist(t, p);

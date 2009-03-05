@@ -88,6 +88,10 @@
 #include <samplerate.h>
 #endif
 
+#ifdef __APPLE__
+#include <xlocale.h>
+#endif
+
 #include <pulse/xmalloc.h>
 #include <pulse/util.h>
 #include <pulse/utf8.h>
@@ -97,6 +101,7 @@
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/thread.h>
+#include <pulsecore/strbuf.h>
 
 #include "core-util.h"
 
@@ -699,7 +704,7 @@ void pa_reset_priority(void) {
 #endif
 }
 
-static int match(const char *expr, const char *v) {
+int pa_match(const char *expr, const char *v) {
     int k;
     regex_t re;
     int r;
@@ -739,12 +744,12 @@ int pa_parse_boolean(const char *v) {
     /* And then we check language dependant */
     if ((expr = nl_langinfo(YESEXPR)))
         if (expr[0])
-            if ((r = match(expr, v)) > 0)
+            if ((r = pa_match(expr, v)) > 0)
                 return 1;
 
     if ((expr = nl_langinfo(NOEXPR)))
         if (expr[0])
-            if ((r = match(expr, v)) > 0)
+            if ((r = pa_match(expr, v)) > 0)
                 return 0;
 
     errno = EINVAL;
@@ -935,7 +940,7 @@ static int is_group(gid_t gid, const char *name) {
 #else
     n = -1;
 #endif
-    if (n < 0)
+    if (n <= 0)
         n = 512;
 
     data = pa_xmalloc((size_t) n);
@@ -959,7 +964,7 @@ finish:
      * support getgrgid_r. */
 
     errno = 0;
-    if ((result = getgrgid(gid)) == NULL) {
+    if (!(result = getgrgid(gid))) {
         pa_log("getgrgid(%u): %s", gid, pa_cstrerror(errno));
 
         if (!errno)
@@ -1026,18 +1031,35 @@ int pa_uid_in_group(uid_t uid, const char *name) {
     char **i;
     int r = -1;
 
+#ifdef _SC_GETGR_R_SIZE_MAX
     g_n = sysconf(_SC_GETGR_R_SIZE_MAX);
+#else
+    g_n = -1;
+#endif
+    if (g_n <= 0)
+        g_n = 512;
+
     g_buf = pa_xmalloc((size_t) g_n);
 
+#ifdef _SC_GETPW_R_SIZE_MAX
     p_n = sysconf(_SC_GETPW_R_SIZE_MAX);
+#else
+    p_n = -1;
+#endif
+    if (p_n <= 0)
+        p_n = 512;
+
     p_buf = pa_xmalloc((size_t) p_n);
 
     errno = 0;
-    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr) {
-
+#ifdef HAVE_GETGRNAM_R
+    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr)
+#else
+    if (!(gr = getgrnam(name)))
+#endif
+    {
         if (!errno)
             errno = ENOENT;
-
         goto finish;
     }
 
@@ -1045,8 +1067,11 @@ int pa_uid_in_group(uid_t uid, const char *name) {
     for (i = gr->gr_mem; *i; i++) {
         struct passwd pwbuf, *pw;
 
-        errno = 0;
+#ifdef HAVE_GETPWNAM_R
         if (getpwnam_r(*i, &pwbuf, p_buf, (size_t) p_n, &pw) != 0 || !pw)
+#else
+        if (!(pw = getpwnam(*i)))
+#endif
             continue;
 
         if (pw->pw_uid == uid) {
@@ -1069,15 +1094,25 @@ gid_t pa_get_gid_of_group(const char *name) {
     long g_n;
     struct group grbuf, *gr;
 
+#ifdef _SC_GETGR_R_SIZE_MAX
     g_n = sysconf(_SC_GETGR_R_SIZE_MAX);
+#else
+    g_n = -1;
+#endif
+    if (g_n <= 0)
+        g_n = 512;
+
     g_buf = pa_xmalloc((size_t) g_n);
 
     errno = 0;
-    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr) {
-
+#ifdef HAVE_GETGRNAM_R
+    if (getgrnam_r(name, &grbuf, g_buf, (size_t) g_n, &gr) != 0 || !gr)
+#else
+    if (!(gr = getgrnam(name)))
+#endif
+    {
         if (!errno)
             errno = ENOENT;
-
         goto finish;
     }
 
@@ -1376,6 +1411,7 @@ static int make_random_dir_and_link(mode_t m, const char *k) {
         return -1;
     }
 
+    pa_xfree(p);
     return 0;
 }
 
@@ -1408,6 +1444,7 @@ char *pa_get_runtime_dir(void) {
 
     if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1) < 0)  {
         pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+        pa_xfree(d);
         goto fail;
     }
 
@@ -2424,7 +2461,7 @@ char *pa_machine_id(void) {
 
         pa_strip_nl(ln);
 
-        if (ln[0])
+        if (r && ln[0])
             return pa_xstrdup(ln);
     }
 
@@ -2468,7 +2505,7 @@ char *pa_machine_id(void) {
 char *pa_uname_string(void) {
     struct utsname u;
 
-    pa_assert_se(uname(&u) == 0);
+    pa_assert_se(uname(&u) >= 0);
 
     return pa_sprintf_malloc("%s %s %s %s", u.sysname, u.machine, u.release, u.version);
 }
@@ -2487,3 +2524,110 @@ pa_bool_t pa_in_valgrind(void) {
     return b > 1;
 }
 #endif
+
+unsigned pa_gcd(unsigned a, unsigned b) {
+
+    while (b > 0) {
+        unsigned t = b;
+        b = a % b;
+        a = t;
+    }
+
+    return a;
+}
+
+void pa_reduce(unsigned *num, unsigned *den) {
+
+    unsigned gcd = pa_gcd(*num, *den);
+
+    if (gcd <= 0)
+        return;
+
+    *num /= gcd;
+    *den /= gcd;
+
+    pa_assert(pa_gcd(*num, *den) == 1);
+}
+
+unsigned pa_ncpus(void) {
+    long ncpus;
+
+#ifdef _SC_NPROCESSORS_CONF
+    ncpus = sysconf(_SC_NPROCESSORS_CONF);
+#else
+    ncpus = 1;
+#endif
+
+    return ncpus <= 0 ? 1 : (unsigned) ncpus;
+}
+
+char *pa_replace(const char*s, const char*a, const char *b) {
+    pa_strbuf *sb;
+    size_t an;
+
+    pa_assert(s);
+    pa_assert(a);
+    pa_assert(b);
+
+    an = strlen(a);
+    sb = pa_strbuf_new();
+
+    for (;;) {
+        const char *p;
+
+        if (!(p = strstr(s, a)))
+            break;
+
+        pa_strbuf_putsn(sb, s, p-s);
+        pa_strbuf_puts(sb, b);
+        s = p + an;
+    }
+
+    pa_strbuf_puts(sb, s);
+
+    return pa_strbuf_tostring_free(sb);
+}
+
+char *pa_unescape(char *p) {
+    char *s, *d;
+    pa_bool_t escaped = FALSE;
+
+    for (s = p, d = p; *s; s++) {
+        if (!escaped && *s == '\\') {
+            escaped = TRUE;
+            continue;
+        }
+
+        *(d++) = *s;
+        escaped = FALSE;
+    }
+
+    *d = 0;
+
+    return p;
+}
+
+char *pa_realpath(const char *path) {
+    char *r, *t;
+    pa_assert(path);
+
+    /* We want only abolsute paths */
+    if (path[0] != '/') {
+        errno = EINVAL;
+        return NULL;
+    }
+
+#ifndef __GLIBC__
+#error "It's not clear whether this system supports realpath(..., NULL) like GNU libc does. If it doesn't we need a private version of realpath() here."
+#endif
+
+    if (!(r = realpath(path, NULL)))
+        return NULL;
+
+    /* We copy this here in case our pa_xmalloc() is not implemented
+     * on top of libc malloc() */
+    t = pa_xstrdup(r);
+    pa_xfree(r);
+
+    return t;
+}
