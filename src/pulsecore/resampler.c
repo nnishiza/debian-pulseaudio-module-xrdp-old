@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -25,7 +25,7 @@
 
 #include <string.h>
 
-#if HAVE_LIBSAMPLERATE
+#ifdef HAVE_LIBSAMPLERATE
 #include <samplerate.h>
 #endif
 
@@ -156,16 +156,6 @@ static int (* const init_table[])(pa_resampler*r) = {
     [PA_RESAMPLER_PEAKS]                   = peaks_init,
 };
 
-static inline size_t sample_size(pa_sample_format_t f) {
-    pa_sample_spec ss = {
-        .format = f,
-        .rate = 0,
-        .channels = 1
-    };
-
-    return pa_sample_size(&ss);
-}
-
 pa_resampler* pa_resampler_new(
         pa_mempool *pool,
         const pa_sample_spec *a,
@@ -257,8 +247,12 @@ pa_resampler* pa_resampler_new(
 
             if (a->format == PA_SAMPLE_S32NE || a->format == PA_SAMPLE_S32RE ||
                 a->format == PA_SAMPLE_FLOAT32NE || a->format == PA_SAMPLE_FLOAT32RE ||
+                a->format == PA_SAMPLE_S24NE || a->format == PA_SAMPLE_S24RE ||
+                a->format == PA_SAMPLE_S24_32NE || a->format == PA_SAMPLE_S24_32RE ||
                 b->format == PA_SAMPLE_S32NE || b->format == PA_SAMPLE_S32RE ||
-                b->format == PA_SAMPLE_FLOAT32NE || b->format == PA_SAMPLE_FLOAT32RE)
+                b->format == PA_SAMPLE_FLOAT32NE || b->format == PA_SAMPLE_FLOAT32RE ||
+                b->format == PA_SAMPLE_S24NE || b->format == PA_SAMPLE_S24RE ||
+                b->format == PA_SAMPLE_S24_32NE || b->format == PA_SAMPLE_S24_32RE)
                 r->work_format = PA_SAMPLE_FLOAT32NE;
             else
                 r->work_format = PA_SAMPLE_S16NE;
@@ -271,7 +265,7 @@ pa_resampler* pa_resampler_new(
 
     pa_log_info("Using %s as working format.", pa_sample_format_to_string(r->work_format));
 
-    r->w_sz = sample_size(r->work_format);
+    r->w_sz = pa_sample_size_of_format(r->work_format);
 
     if (r->i_ss.format == r->work_format)
         r->to_work_format_func = NULL;
@@ -397,6 +391,30 @@ pa_resample_method_t pa_resampler_get_method(pa_resampler *r) {
     pa_assert(r);
 
     return r->method;
+}
+
+const pa_channel_map* pa_resampler_input_channel_map(pa_resampler *r) {
+    pa_assert(r);
+
+    return &r->i_cm;
+}
+
+const pa_sample_spec* pa_resampler_input_sample_spec(pa_resampler *r) {
+    pa_assert(r);
+
+    return &r->i_ss;
+}
+
+const pa_channel_map* pa_resampler_output_channel_map(pa_resampler *r) {
+    pa_assert(r);
+
+    return &r->o_cm;
+}
+
+const pa_sample_spec* pa_resampler_output_sample_spec(pa_resampler *r) {
+    pa_assert(r);
+
+    return &r->o_ss;
 }
 
 static const char * const resample_methods[] = {

@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -44,11 +44,16 @@
 char *pa_sdp_build(int af, const void *src, const void *dst, const char *name, uint16_t port, uint8_t payload, const pa_sample_spec *ss) {
     uint32_t ntp;
     char buf_src[64], buf_dst[64], un[64];
-    const char *u, *f, *a;
+    const char *u, *f;
 
     pa_assert(src);
     pa_assert(dst);
+
+#ifdef HAVE_IPV6
     pa_assert(af == AF_INET || af == AF_INET6);
+#else
+    pa_assert(af == AF_INET);
+#endif
 
     pa_assert_se(f = pa_rtp_format_to_string(ss->format));
 
@@ -57,8 +62,8 @@ char *pa_sdp_build(int af, const void *src, const void *dst, const char *name, u
 
     ntp = (uint32_t) time(NULL) + 2208988800U;
 
-    pa_assert_se(a = inet_ntop(af, src, buf_src, sizeof(buf_src)));
-    pa_assert_se(a = inet_ntop(af, dst, buf_dst, sizeof(buf_dst)));
+    pa_assert_se(inet_ntop(af, src, buf_src, sizeof(buf_src)));
+    pa_assert_se(inet_ntop(af, dst, buf_dst, sizeof(buf_dst)));
 
     return pa_sprintf_malloc(
             PA_SDP_HEADER
@@ -162,6 +167,7 @@ pa_sdp_info *pa_sdp_parse(const char *t, pa_sdp_info *i, int is_goodbye) {
             ((struct sockaddr_in*) &i->sa)->sin_family = AF_INET;
             ((struct sockaddr_in*) &i->sa)->sin_port = 0;
             i->salen = sizeof(struct sockaddr_in);
+#ifdef HAVE_IPV6
         } else if (pa_startswith(t, "c=IN IP6 ")) {
             char a[64];
             size_t k;
@@ -179,6 +185,7 @@ pa_sdp_info *pa_sdp_parse(const char *t, pa_sdp_info *i, int is_goodbye) {
             ((struct sockaddr_in6*) &i->sa)->sin6_family = AF_INET6;
             ((struct sockaddr_in6*) &i->sa)->sin6_port = 0;
             i->salen = sizeof(struct sockaddr_in6);
+#endif
         } else if (pa_startswith(t, "m=audio ")) {
 
             if (i->payload > 127) {

@@ -5,7 +5,7 @@
 
     PulseAudio is free software; you can redistribute it and/or modify
     it under the terms of the GNU Lesser General Public License as published
-    by the Free Software Foundation; either version 2 of the License,
+    by the Free Software Foundation; either version 2.1 of the License,
     or (at your option) any later version.
 
     PulseAudio is distributed in the hope that it will be useful, but
@@ -63,6 +63,7 @@ struct session {
 };
 
 struct userdata {
+    pa_module *module;
     pa_core *core;
     pa_dbus_connection *connection;
     pa_hashmap *sessions;
@@ -73,7 +74,7 @@ static void add_session(struct userdata *u, const char *id) {
     DBusMessage *m = NULL, *reply = NULL;
     uint32_t uid;
     struct session *session;
-    char *t;
+    pa_client_new_data data;
 
     dbus_error_init (&error);
 
@@ -109,11 +110,19 @@ static void add_session(struct userdata *u, const char *id) {
     session = pa_xnew(struct session, 1);
     session->id = pa_xstrdup(id);
 
-    t = pa_sprintf_malloc("ConsoleKit Session %s", id);
-    session->client = pa_client_new(u->core, __FILE__, t);
-    pa_xfree(t);
+    pa_client_new_data_init(&data);
+    data.module = u->module;
+    data.driver = __FILE__;
+    pa_proplist_setf(data.proplist, PA_PROP_APPLICATION_NAME, "ConsoleKit Session %s", id);
+    pa_proplist_sets(data.proplist, "console-kit.session", id);
+    session->client = pa_client_new(u->core, &data);
+    pa_client_new_data_done(&data);
 
-    pa_proplist_sets(session->client->proplist, "console-kit.session", id);
+    if (!session->client) {
+        pa_xfree(session->id);
+        pa_xfree(session);
+        goto fail;
+    }
 
     pa_hashmap_put(u->sessions, session->id, session);
 
@@ -295,6 +304,7 @@ int pa__init(pa_module*m) {
 
     m->userdata = u = pa_xnew(struct userdata, 1);
     u->core = m->core;
+    u->module = m;
     u->connection = connection;
     u->sessions = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
 
@@ -303,8 +313,10 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    dbus_bus_add_match(pa_dbus_connection_get(connection), "type='signal',sender='org.freedesktop.ConsoleKit', interface='org.freedesktop.ConsoleKit.Seat'", &error);
-    if (dbus_error_is_set(&error)) {
+    if (pa_dbus_add_matches(
+                pa_dbus_connection_get(connection), &error,
+                "type='signal',sender='org.freedesktop.ConsoleKit',interface='org.freedesktop.ConsoleKit.Seat',member='SessionAdded'",
+                "type='signal',sender='org.freedesktop.ConsoleKit',interface='org.freedesktop.ConsoleKit.Seat',member='SessionRemoved'", NULL) < 0) {
         pa_log_error("Unable to subscribe to ConsoleKit signals: %s: %s", error.name, error.message);
         goto fail;
     }
@@ -344,14 +356,12 @@ void pa__done(pa_module *m) {
     }
 
     if (u->connection) {
-        DBusError error;
-        dbus_error_init(&error);
-
-        dbus_bus_remove_match(pa_dbus_connection_get(u->connection), "type='signal',sender='org.freedesktop.ConsoleKit', interface='org.freedesktop.ConsoleKit.Seat'", &error);
-        dbus_error_free(&error);
+        pa_dbus_remove_matches(
+                pa_dbus_connection_get(u->connection),
+                "type='signal',sender='org.freedesktop.ConsoleKit',interface='org.freedesktop.ConsoleKit.Seat',member='SessionAdded'",
+                "type='signal',sender='org.freedesktop.ConsoleKit',interface='org.freedesktop.ConsoleKit.Seat',member='SessionRemoved'", NULL);
 
         dbus_connection_remove_filter(pa_dbus_connection_get(u->connection), filter_cb, u);
-
         pa_dbus_connection_unref(u->connection);
     }
 

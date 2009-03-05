@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -494,6 +494,7 @@ static int sink_set_state(pa_sink *s, pa_sink_state_t state) {
 
         case PA_SINK_UNLINKED:
         case PA_SINK_INIT:
+        case PA_SINK_INVALID_STATE:
             ;
     }
 
@@ -581,6 +582,7 @@ static int source_set_state(pa_source *s, pa_source_state_t state) {
 
         case PA_SOURCE_UNLINKED:
         case PA_SOURCE_INIT:
+        case PA_SINK_INVALID_STATE:
             ;
     }
 
@@ -660,7 +662,7 @@ fail:
 /* Called from main context */
 static void stream_get_latency_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
     struct userdata *u = userdata;
-    pa_usec_t sink_usec, source_usec, transport_usec;
+    pa_usec_t sink_usec, source_usec, transport_usec = 0;
     pa_bool_t playing;
     int64_t write_index, read_index;
     struct timeval local, remote, now;
@@ -1054,10 +1056,10 @@ static void sink_input_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag
     pa_assert(u->sink);
 
     if ((u->version < 11 || !!mute == !!u->sink->muted) &&
-        pa_cvolume_equal(&volume, &u->sink->volume))
+        pa_cvolume_equal(&volume, &u->sink->virtual_volume))
         return;
 
-    memcpy(&u->sink->volume, &volume, sizeof(pa_cvolume));
+    memcpy(&u->sink->virtual_volume, &volume, sizeof(pa_cvolume));
 
     if (u->version >= 11)
         u->sink->muted = !!mute;
@@ -1619,7 +1621,7 @@ static void on_connection(pa_socket_client *sc, pa_iochannel *io, void *userdata
 #ifdef TUNNEL_SINK
 
 /* Called from main context */
-static int sink_set_volume(pa_sink *sink) {
+static void sink_set_volume(pa_sink *sink) {
     struct userdata *u;
     pa_tagstruct *t;
     uint32_t tag;
@@ -1632,14 +1634,12 @@ static int sink_set_volume(pa_sink *sink) {
     pa_tagstruct_putu32(t, PA_COMMAND_SET_SINK_INPUT_VOLUME);
     pa_tagstruct_putu32(t, tag = u->ctag++);
     pa_tagstruct_putu32(t, u->device_index);
-    pa_tagstruct_put_cvolume(t, &sink->volume);
+    pa_tagstruct_put_cvolume(t, &sink->virtual_volume);
     pa_pstream_send_tagstruct(u->pstream, t);
-
-    return 0;
 }
 
 /* Called from main context */
-static int sink_set_mute(pa_sink *sink) {
+static void sink_set_mute(pa_sink *sink) {
     struct userdata *u;
     pa_tagstruct *t;
     uint32_t tag;
@@ -1649,7 +1649,7 @@ static int sink_set_mute(pa_sink *sink) {
     pa_assert(u);
 
     if (u->version < 11)
-        return -1;
+        return;
 
     t = pa_tagstruct_new(NULL, 0);
     pa_tagstruct_putu32(t, PA_COMMAND_SET_SINK_INPUT_MUTE);
@@ -1657,8 +1657,6 @@ static int sink_set_mute(pa_sink *sink) {
     pa_tagstruct_putu32(t, u->device_index);
     pa_tagstruct_put_boolean(t, !!sink->muted);
     pa_pstream_send_tagstruct(u->pstream, t);
-
-    return 0;
 }
 
 #endif
@@ -1719,6 +1717,7 @@ int pa__init(pa_module*m) {
     }
 
     ss = m->core->default_sample_spec;
+    map = m->core->default_channel_map;
     if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_DEFAULT) < 0) {
         pa_log("Invalid sample format specification");
         goto fail;

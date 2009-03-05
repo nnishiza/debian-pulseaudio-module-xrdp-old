@@ -8,7 +8,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation; either version 2 of the
+  published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -38,7 +38,7 @@ typedef struct pa_once {
     }
 
 /* Not to be called directly, use the macros defined below instead */
-int pa_once_begin(pa_once *o);
+pa_bool_t pa_once_begin(pa_once *o);
 void pa_once_end(pa_once *o);
 
 #define PA_ONCE_BEGIN                                                   \

@@ -3,7 +3,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -39,10 +39,23 @@
 static pa_context *context = NULL;
 static pa_stream *stream = NULL;
 static pa_mainloop_api *mainloop_api = NULL;
+static pa_bool_t playback = TRUE;
 
 static void stream_write_cb(pa_stream *p, size_t nbytes, void *userdata) {
     /* Just some silence */
-    pa_stream_write(p, pa_xmalloc0(nbytes), nbytes, pa_xfree, 0, PA_SEEK_RELATIVE);
+    pa_assert_se(pa_stream_write(p, pa_xmalloc0(nbytes), nbytes, pa_xfree, 0, PA_SEEK_RELATIVE) == 0);
+}
+
+static void stream_read_cb(pa_stream *p, size_t nbytes, void *userdata) {
+    /* We don't care, just drop the data */
+
+    while (pa_stream_readable_size(p) > 0) {
+        const void *d;
+        size_t b;
+
+        pa_assert_se(pa_stream_peek(p, &d, &b) == 0);
+        pa_assert_se(pa_stream_drop(p) == 0);
+    }
 }
 
 /* This is called whenever the context status changes */
@@ -68,8 +81,13 @@ static void context_state_callback(pa_context *c, void *userdata) {
             stream = pa_stream_new(c, "interpol-test", &ss, NULL);
             assert(stream);
 
-            pa_stream_connect_playback(stream, NULL, NULL, PA_STREAM_INTERPOLATE_TIMING|PA_STREAM_AUTO_TIMING_UPDATE, NULL, NULL);
-            pa_stream_set_write_callback(stream, stream_write_cb, NULL);
+            if (playback) {
+                pa_assert_se(pa_stream_connect_playback(stream, NULL, NULL, PA_STREAM_INTERPOLATE_TIMING|PA_STREAM_AUTO_TIMING_UPDATE, NULL, NULL) == 0);
+                pa_stream_set_write_callback(stream, stream_write_cb, NULL);
+            } else {
+                pa_assert_se(pa_stream_connect_record(stream, NULL, NULL, PA_STREAM_INTERPOLATE_TIMING|PA_STREAM_AUTO_TIMING_UPDATE) == 0);
+                pa_stream_set_read_callback(stream, stream_read_cb, NULL);
+            }
 
             break;
         }
@@ -89,6 +107,9 @@ int main(int argc, char *argv[]) {
     int k, r;
     struct timeval start, last_info = { 0, 0 };
     pa_usec_t old_t = 0, old_rtc = 0;
+    pa_bool_t corked = FALSE;
+
+    playback = argc <= 1 || !pa_streq(argv[1], "-r");
 
     /* Set up a new main loop */
     m = pa_threaded_mainloop_new();
@@ -106,9 +127,10 @@ int main(int argc, char *argv[]) {
 
     pa_gettimeofday(&start);
 
-    pa_threaded_mainloop_start(m);
+    r = pa_threaded_mainloop_start(m);
+    assert(r >= 0);
 
-    for (k = 0; k < 5000; k++) {
+    for (k = 0; k < 20000; k++) {
         pa_bool_t success = FALSE, changed = FALSE;
         pa_usec_t t, rtc;
         struct timeval now, tv;
@@ -137,11 +159,32 @@ int main(int argc, char *argv[]) {
         pa_gettimeofday(&now);
 
         if (success) {
+            pa_bool_t cork_now;
+
             rtc = pa_timeval_diff(&now, &start);
-            printf("%i\t%llu\t%llu\t%llu\t%llu\t%u\t%u\n", k, (unsigned long long) rtc, (unsigned long long) t, (unsigned long long) (rtc-old_rtc), (unsigned long long) (t-old_t), changed, playing);
+            printf("%i\t%llu\t%llu\t%llu\t%llu\t%u\t%u\n", k,
+                   (unsigned long long) rtc,
+                   (unsigned long long) t,
+                   (unsigned long long) (rtc-old_rtc),
+                   (unsigned long long) (t-old_t),
+                   changed,
+                   playing);
+
             fflush(stdout);
             old_t = t;
             old_rtc = rtc;
+
+            cork_now = (rtc / (2*PA_USEC_PER_SEC)) % 2 == 1;
+
+            if (corked != cork_now) {
+                pa_threaded_mainloop_lock(m);
+                pa_operation_unref(pa_stream_cork(stream, cork_now, NULL, NULL));
+                pa_threaded_mainloop_unlock(m);
+
+                pa_log(cork_now ? "Corking" : "Uncorking");
+
+                corked = cork_now;
+            }
         }
 
         /* Spin loop, ugly but normal usleep() is just too badly grained */

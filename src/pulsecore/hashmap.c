@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -138,7 +138,7 @@ int pa_hashmap_put(pa_hashmap *h, const void *key, void *value) {
 
     hash = h->hash_func(key) % NBUCKETS;
 
-    if ((e = hash_scan(h, hash, key)))
+    if (hash_scan(h, hash, key))
         return -1;
 
     if (!(e = pa_flist_pop(PA_STATIC_FLIST_GET(entries))))

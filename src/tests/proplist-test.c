@@ -3,7 +3,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -29,8 +29,9 @@
 #include <pulsecore/core-util.h>
 
 int main(int argc, char*argv[]) {
-    pa_proplist *a, *b;
-    char *s, *t;
+    pa_proplist *a, *b, *c, *d;
+    char *s, *t, *u, *v;
+    const char *text;
 
     a = pa_proplist_new();
     pa_assert_se(pa_proplist_sets(a, PA_PROP_MEDIA_TITLE, "Brandenburgische Konzerte") == 0);
@@ -50,11 +51,32 @@ int main(int argc, char*argv[]) {
     s = pa_proplist_to_string(a);
     t = pa_proplist_to_string(b);
     printf("---\n%s---\n%s", s, t);
+
+    c = pa_proplist_from_string(s);
+    u = pa_proplist_to_string(c);
+    pa_assert_se(pa_streq(s, u));
+
     pa_xfree(s);
     pa_xfree(t);
+    pa_xfree(u);
 
     pa_proplist_free(a);
     pa_proplist_free(b);
+    pa_proplist_free(c);
+
+    text = "  eins = zwei drei = \"\\\"vier\\\"\" fuenf=sechs sieben ='\\a\\c\\h\\t\\'\\\"' neun= hex:0123456789abCDef ";
+
+    printf("%s\n", text);
+    d = pa_proplist_from_string(text);
+    v = pa_proplist_to_string(d);
+    pa_proplist_free(d);
+    printf("%s\n", v);
+    d = pa_proplist_from_string(v);
+    pa_xfree(v);
+    v = pa_proplist_to_string(d);
+    pa_proplist_free(d);
+    printf("%s\n", v);
+    pa_xfree(v);
 
     return 0;
 }

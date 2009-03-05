@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -29,6 +29,7 @@
 #include <pulse/gccmacro.h>
 #include <pulse/sample.h>
 #include <pulse/channelmap.h>
+#include <pulse/version.h>
 
 /** \page volume Volume Control
  *
@@ -150,6 +151,26 @@ char *pa_cvolume_snprint(char *s, size_t l, const pa_cvolume *c);
 /** Pretty print a volume structure but show dB values. \since 0.9.13 */
 char *pa_sw_cvolume_snprint_dB(char *s, size_t l, const pa_cvolume *c);
 
+/** Maximum length of the strings returned by
+ * pa_volume_snprint(). Please note that this value can change with
+ * any release without warning and without being considered API or ABI
+ * breakage. You should not use this definition anywhere where it
+ * might become part of an ABI. \since 0.9.15 */
+#define PA_VOLUME_SNPRINT_MAX 10
+
+/** Pretty print a volume \since 0.9.15 */
+char *pa_volume_snprint(char *s, size_t l, pa_volume_t v);
+
+/** Maximum length of the strings returned by
+ * pa_volume_snprint_dB(). Please note that this value can change with
+ * any release without warning and without being considered API or ABI
+ * breakage. You should not use this definition anywhere where it
+ * might become part of an ABI. \since 0.9.15 */
+#define PA_SW_VOLUME_SNPRINT_DB_MAX 10
+
+/** Pretty print a volume but show dB values. \since 0.9.15 */
+char *pa_sw_volume_snprint_dB(char *s, size_t l, pa_volume_t v);
+
 /** Return the average volume of all channels */
 pa_volume_t pa_cvolume_avg(const pa_cvolume *a) PA_GCC_PURE;
 
@@ -207,11 +228,56 @@ double pa_sw_volume_to_linear(pa_volume_t v) PA_GCC_CONST;
 #endif
 
 /** Remap a volume from one channel mapping to a different channel mapping. \since 0.9.12 */
-pa_cvolume *pa_cvolume_remap(pa_cvolume *v, pa_channel_map *from, pa_channel_map *to);
+pa_cvolume *pa_cvolume_remap(pa_cvolume *v, const pa_channel_map *from, const pa_channel_map *to);
 
-/** Return non-zero if the specified volume is compatible with
- * the specified sample spec. \since 0.9.13 */
+/** Return non-zero if the specified volume is compatible with the
+ * specified sample spec. \since 0.9.13 */
 int pa_cvolume_compatible(const pa_cvolume *v, const pa_sample_spec *ss) PA_GCC_PURE;
+
+/** Return non-zero if the specified volume is compatible with the
+ * specified sample spec. \since 0.9.15 */
+int pa_cvolume_compatible_with_channel_map(const pa_cvolume *v, const pa_channel_map *cm) PA_GCC_PURE;
+
+/** Calculate a 'balance' value for the specified volume with the
+ * specified channel map. The return value will range from -1.0f
+ * (left) to +1.0f (right). If no balance value is applicable to this
+ * channel map the return value will always be 0.0f. See
+ * pa_channel_map_can_balance(). \since 0.9.15 */
+float pa_cvolume_get_balance(const pa_cvolume *v, const pa_channel_map *map) PA_GCC_PURE;
+
+/** Adjust the 'balance' value for the specified volume with the
+ * specified channel map. v will be modified in place and
+ * returned. The balance is a value between -1.0f and +1.0f. This
+ * operation might not be reversible! Also, after this call
+ * pa_cvolume_get_balance() is not guaranteed to actually return the
+ * requested balance value (e.g. when the input volume was zero anyway for
+ * all channels). If no balance value is applicable to
+ * this channel map the volume will not be modified. See
+ * pa_channel_map_can_balance(). \since 0.9.15 */
+pa_cvolume* pa_cvolume_set_balance(pa_cvolume *v, const pa_channel_map *map, float new_balance);
+
+/** Calculate a 'fade' value (i.e. 'balance' between front and rear)
+ * for the specified volume with the specified channel map. The return
+ * value will range from -1.0f (rear) to +1.0f (left). If no fade
+ * value is applicable to this channel map the return value will
+ * always be 0.0f. See pa_channel_map_can_fade(). \since 0.9.15 */
+float pa_cvolume_get_fade(const pa_cvolume *v, const pa_channel_map *map) PA_GCC_PURE;
+
+/** Adjust the 'fade' value (i.e. 'balance' between front and rear)
+ * for the specified volume with the specified channel map. v will be
+ * modified in place and returned. The balance is a value between
+ * -1.0f and +1.0f. This operation might not be reversible! Also,
+ * after this call pa_cvolume_get_fade() is not guaranteed to actually
+ * return the requested fade value (e.g. when the input volume was
+ * zero anyway for all channels). If no fade value is applicable to
+ * this channel map the volume will not be modified. See
+ * pa_channel_map_can_fade(). \since 0.9.15 */
+pa_cvolume* pa_cvolume_set_fade(pa_cvolume *v, const pa_channel_map *map, float new_fade);
+
+/** Scale the passed pa_cvolume structure so that the maximum volume
+ * of all channels equals max. The proportions between the channel
+ * volumes are kept. \since 0.9.15 */
+pa_cvolume* pa_cvolume_scale(pa_cvolume *v, pa_volume_t max);
 
 PA_C_DECL_END
 

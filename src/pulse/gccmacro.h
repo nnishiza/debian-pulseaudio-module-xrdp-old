@@ -8,7 +8,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -21,6 +21,9 @@
   Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
   USA.
 ***/
+
+/** \file
+ * GCC attribute macros */
 
 #ifdef __GNUC__
 #define PA_GCC_PRINTF_ATTR(a,b) __attribute__ ((format (printf, a, b)))
@@ -85,7 +88,7 @@
 #endif
 
 #ifndef PA_GCC_PACKED
-#ifdef __GNUCC__
+#ifdef __GNUC__
 #define PA_GCC_PACKED __attribute__ ((packed))
 #else
 /** Structure shall be packed in memory **/
@@ -100,16 +103,24 @@
 #else
 /** Macro for usage of GCC's alloc_size attribute */
 #define PA_GCC_ALLOC_SIZE(x)
+/** Macro for usage of GCC's alloc_size attribute */
 #define PA_GCC_ALLOC_SIZE2(x,y)
 #endif
 #endif
 
 #ifndef PA_GCC_MALLOC
-#ifdef __GNUCC__
+#ifdef __GNUC__
 #define PA_GCC_MALLOC __attribute__ ((malloc))
 #else
 /** Macro for usage of GCC's malloc attribute */
 #define PA_GCC_MALLOC
+#endif
+#endif
+
+#ifndef PA_GCC_WEAKREF
+#if defined(__GNUC__) && (((__GNUC__ == 4) && (__GNUC_MINOR__ > 1)) || (__GNUC__ > 4))
+/** Macro for usgae of GCC's weakref attribute */
+#define PA_GCC_WEAKREF(x) __attribute__((weakref(#x)));
 #endif
 #endif
 

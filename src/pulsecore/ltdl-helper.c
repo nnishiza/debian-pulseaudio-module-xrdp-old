@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -42,7 +42,9 @@ pa_void_func_t pa_load_sym(lt_dlhandle handle, const char *module, const char *s
     pa_assert(handle);
     pa_assert(symbol);
 
-    if ((f = ((pa_void_func_t) (size_t) lt_dlsym(handle, symbol))))
+    *(void**) &f = lt_dlsym(handle, symbol);
+
+    if (f)
         return f;
 
     if (!module)
@@ -57,7 +59,7 @@ pa_void_func_t pa_load_sym(lt_dlhandle handle, const char *module, const char *s
         if (!isalnum(*c))
             *c = '_';
 
-    f = (pa_void_func_t) (size_t) lt_dlsym(handle, sn);
+    *(void**) &f = lt_dlsym(handle, sn);
     pa_xfree(sn);
 
     return f;

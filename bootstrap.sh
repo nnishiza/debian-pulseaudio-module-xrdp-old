@@ -40,6 +40,19 @@ run_versioned() {
 
 set -ex
 
+# We check for this here, because if pkg-config is not found in the
+# system, it's likely that the pkg.m4 macro file is also not present,
+# which will make PKG_PROG_PKG_CONFIG be undefined and the generated
+# configure file faulty.
+if ! pkg-config --version &>/dev/null; then
+    echo "pkg-config is required to bootstrap this program" &>/dev/null
+    exit 1
+fi
+
+if type -p colorgcc > /dev/null ; then
+   export CC=colorgcc
+fi
+
 if [ "x$1" = "xam" ] ; then
     run_versioned automake "$VERSION" -a -c --foreign
     ./config.status
@@ -49,7 +62,7 @@ else
 
     rm -f Makefile.am~ configure.ac~
     # Evil, evil, evil, evil hack
-    sed 's/read dummy/\#/' `which gettextize` | sh -s -- --copy --force
+    sed 's/read dummy/\#/' `which gettextize` | bash -s -- --copy --force
     test -f Makefile.am~ && mv Makefile.am~ Makefile.am
     test -f configure.ac~ && mv configure.ac~ configure.ac
 
@@ -57,14 +70,14 @@ else
     test "x$LIBTOOLIZE" = "x" && LIBTOOLIZE=libtoolize
 
     intltoolize --copy --force --automake
-    "$LIBTOOLIZE" -c --force --ltdl
+    "$LIBTOOLIZE" -c --force
     run_versioned aclocal "$VERSION" -I m4
-    run_versioned autoconf 2.62 -Wall
-    run_versioned autoheader 2.62
+    run_versioned autoconf 2.63 -Wall
+    run_versioned autoheader 2.63
     run_versioned automake "$VERSION" --copy --foreign --add-missing
 
     if test "x$NOCONFIGURE" = "x"; then
-        CFLAGS="-g -O0" ./configure --sysconfdir=/etc --localstatedir=/var --enable-force-preopen "$@"
+        CFLAGS="-g -O0" ./configure --sysconfdir=/etc --localstatedir=/var --enable-force-preopen --enable-shave "$@"
         make clean
     fi
 fi

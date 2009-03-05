@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -329,12 +329,18 @@ int pa__init(pa_module*m) {
     if (!channels)
         channels = m->core->default_sample_spec.channels;
 
-    if (pa_modargs_get_value_u32(ma, "channels", &channels) < 0 || channels <= 0 || channels >= PA_CHANNELS_MAX) {
+    if (pa_modargs_get_value_u32(ma, "channels", &channels) < 0 ||
+        channels <= 0 ||
+        channels > PA_CHANNELS_MAX) {
         pa_log("Failed to parse channels= argument.");
         goto fail;
     }
 
-    pa_channel_map_init_extend(&map, channels, PA_CHANNEL_MAP_ALSA);
+    if (channels == m->core->default_channel_map.channels)
+        map = m->core->default_channel_map;
+    else
+        pa_channel_map_init_extend(&map, channels, PA_CHANNEL_MAP_ALSA);
+
     if (pa_modargs_get_channel_map(ma, NULL, &map) < 0 || map.channels != channels) {
         pa_log("Failed to parse channel_map= argument.");
         goto fail;
@@ -428,6 +434,15 @@ fail:
     pa__done(m);
 
     return -1;
+}
+
+int pa__get_n_used(pa_module *m) {
+    struct userdata *u;
+
+    pa_assert(m);
+    pa_assert_se(u = m->userdata);
+
+    return pa_sink_linked_by(u->sink);
 }
 
 void pa__done(pa_module*m) {

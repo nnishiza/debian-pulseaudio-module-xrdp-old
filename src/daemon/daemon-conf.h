@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -23,10 +23,12 @@
   USA.
 ***/
 
+#include <pulse/sample.h>
+#include <pulse/channelmap.h>
+
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/core-util.h>
-#include <pulse/sample.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
 #include <sys/resource.h>
@@ -68,9 +70,11 @@ typedef struct pa_daemon_conf {
         disable_remixing,
         disable_lfe_remixing,
         load_default_script_file,
-        disallow_exit;
+        disallow_exit,
+        log_meta,
+        log_time,
+        flat_volumes;
     int exit_idle_time,
-        module_idle_time,
         scache_idle_time,
         auto_log_target,
         realtime_priority,
@@ -79,10 +83,20 @@ typedef struct pa_daemon_conf {
     char *script_commands, *dl_search_path, *default_script_file;
     pa_log_target_t log_target;
     pa_log_level_t log_level;
+    unsigned log_backtrace;
     char *config_file;
 
 #ifdef HAVE_SYS_RESOURCE_H
-    pa_rlimit rlimit_fsize, rlimit_data, rlimit_stack, rlimit_core, rlimit_rss, rlimit_nofile, rlimit_as;
+    pa_rlimit rlimit_fsize, rlimit_data, rlimit_stack, rlimit_core;
+#ifdef RLIMIT_RSS
+    pa_rlimit rlimit_rss;
+#endif
+#ifdef RLIMIT_NOFILE
+    pa_rlimit rlimit_nofile;
+#endif
+#ifdef RLIMIT_AS
+    pa_rlimit rlimit_as;
+#endif
 #ifdef RLIMIT_NPROC
     pa_rlimit rlimit_nproc;
 #endif
@@ -111,6 +125,7 @@ typedef struct pa_daemon_conf {
 
     unsigned default_n_fragments, default_fragment_size_msec;
     pa_sample_spec default_sample_spec;
+    pa_channel_map default_channel_map;
     size_t shm_size;
 } pa_daemon_conf;
 

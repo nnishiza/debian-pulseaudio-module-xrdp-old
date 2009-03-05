@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -32,6 +32,7 @@
 #include <pulse/i18n.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/macro.h>
+#include <pulsecore/bitset.h>
 
 #include "channelmap.h"
 
@@ -216,10 +217,10 @@ pa_channel_map* pa_channel_map_init_auto(pa_channel_map *m, unsigned channels, p
 
                 case 6:
                     m->map[0] = PA_CHANNEL_POSITION_FRONT_LEFT;
-                    m->map[1] = PA_CHANNEL_POSITION_SIDE_LEFT;
+                    m->map[1] = PA_CHANNEL_POSITION_REAR_LEFT;
                     m->map[2] = PA_CHANNEL_POSITION_FRONT_CENTER;
                     m->map[3] = PA_CHANNEL_POSITION_FRONT_RIGHT;
-                    m->map[4] = PA_CHANNEL_POSITION_SIDE_RIGHT;
+                    m->map[4] = PA_CHANNEL_POSITION_REAR_RIGHT;
                     m->map[5] = PA_CHANNEL_POSITION_LFE;
                     return m;
 
@@ -433,10 +434,10 @@ const char* pa_channel_position_to_string(pa_channel_position_t pos) {
 
 const char* pa_channel_position_to_pretty_string(pa_channel_position_t pos) {
 
-    pa_init_i18n();
-
     if (pos < 0 || pos >= PA_CHANNEL_POSITION_MAX)
         return NULL;
+
+    pa_init_i18n();
 
     return _(pretty_table[pos]);
 }
@@ -446,6 +447,9 @@ int pa_channel_map_equal(const pa_channel_map *a, const pa_channel_map *b) {
 
     pa_assert(a);
     pa_assert(b);
+
+    pa_return_val_if_fail(pa_channel_map_valid(a), 0);
+    pa_return_val_if_fail(pa_channel_map_valid(b), 0);
 
     if (a->channels != b->channels)
         return 0;
@@ -497,10 +501,57 @@ pa_channel_map *pa_channel_map_parse(pa_channel_map *rmap, const char *s) {
 
     pa_channel_map_init(&map);
 
-    if (strcmp(s, "stereo") == 0) {
+    /* We don't need to match against the well known channel mapping
+     * "mono" here explicitly, because that can be understood as
+     * listing with one channel called "mono". */
+
+    if (pa_streq(s, "stereo")) {
         map.channels = 2;
         map.map[0] = PA_CHANNEL_POSITION_LEFT;
         map.map[1] = PA_CHANNEL_POSITION_RIGHT;
+        goto finish;
+    } else if (pa_streq(s, "surround-40")) {
+        map.channels = 4;
+        map.map[0] = PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1] = PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2] = PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[3] = PA_CHANNEL_POSITION_REAR_RIGHT;
+        goto finish;
+    } else if (pa_streq(s, "surround-41")) {
+        map.channels = 5;
+        map.map[0] = PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1] = PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2] = PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[3] = PA_CHANNEL_POSITION_REAR_RIGHT;
+        map.map[4] = PA_CHANNEL_POSITION_LFE;
+        goto finish;
+    } else if (pa_streq(s, "surround-50")) {
+        map.channels = 5;
+        map.map[0] = PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1] = PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2] = PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[3] = PA_CHANNEL_POSITION_REAR_RIGHT;
+        map.map[4] = PA_CHANNEL_POSITION_FRONT_CENTER;
+        goto finish;
+    } else if (pa_streq(s, "surround-51")) {
+        map.channels = 6;
+        map.map[0] = PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1] = PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2] = PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[3] = PA_CHANNEL_POSITION_REAR_RIGHT;
+        map.map[4] = PA_CHANNEL_POSITION_FRONT_CENTER;
+        map.map[5] = PA_CHANNEL_POSITION_LFE;
+        goto finish;
+    } else if (pa_streq(s, "surround-71")) {
+        map.channels = 8;
+        map.map[0] = PA_CHANNEL_POSITION_FRONT_LEFT;
+        map.map[1] = PA_CHANNEL_POSITION_FRONT_RIGHT;
+        map.map[2] = PA_CHANNEL_POSITION_REAR_LEFT;
+        map.map[3] = PA_CHANNEL_POSITION_REAR_RIGHT;
+        map.map[4] = PA_CHANNEL_POSITION_FRONT_CENTER;
+        map.map[5] = PA_CHANNEL_POSITION_LFE;
+        map.map[6] = PA_CHANNEL_POSITION_SIDE_LEFT;
+        map.map[7] = PA_CHANNEL_POSITION_SIDE_RIGHT;
         goto finish;
     }
 
@@ -515,13 +566,13 @@ pa_channel_map *pa_channel_map_parse(pa_channel_map *rmap, const char *s) {
         }
 
         /* Some special aliases */
-        if (strcmp(p, "left") == 0)
+        if (pa_streq(p, "left"))
             map.map[map.channels++] = PA_CHANNEL_POSITION_LEFT;
-        else if (strcmp(p, "right") == 0)
+        else if (pa_streq(p, "right"))
             map.map[map.channels++] = PA_CHANNEL_POSITION_RIGHT;
-        else if (strcmp(p, "center") == 0)
+        else if (pa_streq(p, "center"))
             map.map[map.channels++] = PA_CHANNEL_POSITION_CENTER;
-        else if (strcmp(p, "subwoofer") == 0)
+        else if (pa_streq(p, "subwoofer"))
             map.map[map.channels++] = PA_CHANNEL_POSITION_SUBWOOFER;
         else {
             pa_channel_position_t i;
@@ -569,11 +620,222 @@ int pa_channel_map_compatible(const pa_channel_map *map, const pa_sample_spec *s
     pa_assert(map);
     pa_assert(ss);
 
-    if (!pa_channel_map_valid(map))
-        return 0;
-
-    if (!pa_sample_spec_valid(ss))
-        return 0;
+    pa_return_val_if_fail(pa_channel_map_valid(map), 0);
+    pa_return_val_if_fail(pa_sample_spec_valid(ss), 0);
 
     return map->channels == ss->channels;
+}
+
+int pa_channel_map_superset(const pa_channel_map *a, const pa_channel_map *b) {
+    pa_bitset_t in_a[PA_BITSET_ELEMENTS(PA_CHANNEL_POSITION_MAX)];
+    unsigned i;
+
+    pa_assert(a);
+    pa_assert(b);
+
+    pa_return_val_if_fail(pa_channel_map_valid(a), 0);
+    pa_return_val_if_fail(pa_channel_map_valid(b), 0);
+
+    memset(in_a, 0, sizeof(in_a));
+
+    for (i = 0; i < a->channels; i++)
+        pa_bitset_set(in_a, a->map[i], TRUE);
+
+    for (i = 0; i < b->channels; i++)
+        if (!pa_bitset_get(in_a, b->map[i]))
+            return 0;
+
+    return 1;
+}
+
+int pa_channel_map_can_balance(const pa_channel_map *map) {
+    unsigned c;
+    pa_bool_t left = FALSE, right = FALSE;
+
+    pa_assert(map);
+
+    pa_return_val_if_fail(pa_channel_map_valid(map), 0);
+
+    for (c = 0; c < map->channels; c++) {
+
+        switch (map->map[c]) {
+            case PA_CHANNEL_POSITION_LEFT:
+            case PA_CHANNEL_POSITION_REAR_LEFT:
+            case PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER:
+            case PA_CHANNEL_POSITION_SIDE_LEFT:
+            case PA_CHANNEL_POSITION_TOP_FRONT_LEFT:
+            case PA_CHANNEL_POSITION_TOP_REAR_LEFT:
+                left = TRUE;
+                break;
+
+            case PA_CHANNEL_POSITION_RIGHT:
+            case PA_CHANNEL_POSITION_REAR_RIGHT:
+            case PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER:
+            case PA_CHANNEL_POSITION_SIDE_RIGHT:
+            case PA_CHANNEL_POSITION_TOP_FRONT_RIGHT:
+            case PA_CHANNEL_POSITION_TOP_REAR_RIGHT:
+                right = TRUE;
+                break;
+
+            default:
+                ;
+        }
+
+        if (left && right)
+            return 1;
+    }
+
+    return 0;
+}
+
+int pa_channel_map_can_fade(const pa_channel_map *map) {
+    unsigned c;
+    pa_bool_t front = FALSE, rear = FALSE;
+
+    pa_assert(map);
+
+    pa_return_val_if_fail(pa_channel_map_valid(map), 0);
+
+    for (c = 0; c < map->channels; c++) {
+
+        switch (map->map[c]) {
+            case PA_CHANNEL_POSITION_FRONT_LEFT:
+            case PA_CHANNEL_POSITION_FRONT_RIGHT:
+            case PA_CHANNEL_POSITION_FRONT_CENTER:
+            case PA_CHANNEL_POSITION_FRONT_LEFT_OF_CENTER:
+            case PA_CHANNEL_POSITION_FRONT_RIGHT_OF_CENTER:
+            case PA_CHANNEL_POSITION_TOP_FRONT_LEFT:
+            case PA_CHANNEL_POSITION_TOP_FRONT_RIGHT:
+            case PA_CHANNEL_POSITION_TOP_FRONT_CENTER:
+                front = TRUE;
+                break;
+
+            case PA_CHANNEL_POSITION_REAR_LEFT:
+            case PA_CHANNEL_POSITION_REAR_RIGHT:
+            case PA_CHANNEL_POSITION_REAR_CENTER:
+            case PA_CHANNEL_POSITION_TOP_REAR_LEFT:
+            case PA_CHANNEL_POSITION_TOP_REAR_RIGHT:
+            case PA_CHANNEL_POSITION_TOP_REAR_CENTER:
+                rear = TRUE;
+                break;
+
+            default:
+                ;
+        }
+
+        if (front && rear)
+            return 1;
+    }
+
+    return 0;
+}
+
+const char* pa_channel_map_to_name(const pa_channel_map *map) {
+    pa_bitset_t in_map[PA_BITSET_ELEMENTS(PA_CHANNEL_POSITION_MAX)];
+    unsigned c;
+
+    pa_assert(map);
+
+    pa_return_val_if_fail(pa_channel_map_valid(map), NULL);
+
+    memset(in_map, 0, sizeof(in_map));
+
+    for (c = 0; c < map->channels; c++)
+        pa_bitset_set(in_map, map->map[c], TRUE);
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_MONO, -1))
+        return "mono";
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT, -1))
+        return "stereo";
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT, -1))
+        return "surround-40";
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_LFE, -1))
+        return "surround-41";
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_FRONT_CENTER, -1))
+        return "surround-50";
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_FRONT_CENTER, PA_CHANNEL_POSITION_LFE, -1))
+        return "surround-51";
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_FRONT_CENTER, PA_CHANNEL_POSITION_LFE,
+                         PA_CHANNEL_POSITION_SIDE_LEFT, PA_CHANNEL_POSITION_SIDE_RIGHT, -1))
+        return "surround-71";
+
+    return NULL;
+}
+
+const char* pa_channel_map_to_pretty_name(const pa_channel_map *map) {
+    pa_bitset_t in_map[PA_BITSET_ELEMENTS(PA_CHANNEL_POSITION_MAX)];
+    unsigned c;
+
+    pa_assert(map);
+
+    pa_return_val_if_fail(pa_channel_map_valid(map), NULL);
+
+    memset(in_map, 0, sizeof(in_map));
+
+    for (c = 0; c < map->channels; c++)
+        pa_bitset_set(in_map, map->map[c], TRUE);
+
+    pa_init_i18n();
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_MONO, -1))
+        return _("Mono");
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT, -1))
+        return _("Stereo");
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT, -1))
+        return _("Surround 4.0");
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_LFE, -1))
+        return _("Surround 4.1");
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_FRONT_CENTER, -1))
+        return _("Surround 5.0");
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_FRONT_CENTER, PA_CHANNEL_POSITION_LFE, -1))
+        return _("Surround 5.1");
+
+    if (pa_bitset_equals(in_map, PA_CHANNEL_POSITION_MAX,
+                         PA_CHANNEL_POSITION_FRONT_LEFT, PA_CHANNEL_POSITION_FRONT_RIGHT,
+                         PA_CHANNEL_POSITION_REAR_LEFT, PA_CHANNEL_POSITION_REAR_RIGHT,
+                         PA_CHANNEL_POSITION_FRONT_CENTER, PA_CHANNEL_POSITION_LFE,
+                         PA_CHANNEL_POSITION_SIDE_LEFT, PA_CHANNEL_POSITION_SIDE_RIGHT, -1))
+        return _("Surround 7.1");
+
+    return NULL;
 }

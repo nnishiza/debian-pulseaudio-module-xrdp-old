@@ -8,7 +8,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -23,6 +23,7 @@
 ***/
 
 #include <pulse/context.h>
+#include <pulse/version.h>
 
 /** \file
  *
@@ -35,10 +36,10 @@ PA_C_DECL_BEGIN
  * maintained by module-stream-restore. \since 0.9.12 */
 typedef struct pa_ext_stream_restore_info {
     const char *name;            /**< Identifier string of the stream. A string like "sink-input-by-role:" or similar followed by some arbitrary property value. */
-    pa_channel_map channel_map;  /**< The channel map for the volume field */
-    pa_cvolume volume;           /**< The volume of the stream when it was seen last, if applicable */
-    const char *device;          /**< The sink/source of the stream when it was last seen */
-    int mute;                    /**< The boolean mute state of the stream when it was last seen, if applicable */
+    pa_channel_map channel_map;  /**< The channel map for the volume field, if applicable */
+    pa_cvolume volume;           /**< The volume of the stream when it was seen last, if applicable and saved */
+    const char *device;          /**< The sink/source of the stream when it was last seen, if applicable and saved */
+    int mute;                    /**< The boolean mute state of the stream when it was last seen, if applicable and saved */
 } pa_ext_stream_restore_info;
 
 /** Callback prototype for pa_ext_stream_restore_test(). \since 0.9.12 */

@@ -8,7 +8,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -25,6 +25,8 @@
 #include <pulse/mainloop-api.h>
 #include <pulse/sample.h>
 
+typedef struct pa_core pa_core;
+
 #include <pulsecore/idxset.h>
 #include <pulsecore/hashmap.h>
 #include <pulsecore/memblock.h>
@@ -34,12 +36,17 @@
 #include <pulsecore/hook-list.h>
 #include <pulsecore/asyncmsgq.h>
 #include <pulsecore/sample-util.h>
-
-typedef struct pa_core pa_core;
-
+#include <pulsecore/sink.h>
+#include <pulsecore/source.h>
 #include <pulsecore/core-subscribe.h>
 #include <pulsecore/sink-input.h>
 #include <pulsecore/msgobject.h>
+
+typedef enum pa_core_state {
+    PA_CORE_STARTUP,
+    PA_CORE_RUNNING,
+    PA_CORE_SHUTDOWN
+} pa_core_state_t;
 
 typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_NEW,
@@ -61,19 +68,32 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_INPUT_PUT,
     PA_CORE_HOOK_SINK_INPUT_UNLINK,
     PA_CORE_HOOK_SINK_INPUT_UNLINK_POST,
-    PA_CORE_HOOK_SINK_INPUT_MOVE,
-    PA_CORE_HOOK_SINK_INPUT_MOVE_POST,
+    PA_CORE_HOOK_SINK_INPUT_MOVE_START,
+    PA_CORE_HOOK_SINK_INPUT_MOVE_FINISH,
+    PA_CORE_HOOK_SINK_INPUT_MOVE_FAIL,
     PA_CORE_HOOK_SINK_INPUT_STATE_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED,
+    PA_CORE_HOOK_SINK_INPUT_SET_VOLUME,
+    PA_CORE_HOOK_SINK_INPUT_SEND_EVENT,
     PA_CORE_HOOK_SOURCE_OUTPUT_NEW,
     PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE,
     PA_CORE_HOOK_SOURCE_OUTPUT_PUT,
     PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK,
     PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST,
-    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE,
-    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_POST,
+    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_START,
+    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_FINISH,
+    PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_FAIL,
     PA_CORE_HOOK_SOURCE_OUTPUT_STATE_CHANGED,
     PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED,
+    PA_CORE_HOOK_SOURCE_OUTPUT_SEND_EVENT,
+    PA_CORE_HOOK_CLIENT_NEW,
+    PA_CORE_HOOK_CLIENT_PUT,
+    PA_CORE_HOOK_CLIENT_UNLINK,
+    PA_CORE_HOOK_CLIENT_PROPLIST_CHANGED,
+    PA_CORE_HOOK_CLIENT_SEND_EVENT,
+    PA_CORE_HOOK_CARD_NEW,
+    PA_CORE_HOOK_CARD_PUT,
+    PA_CORE_HOOK_CARD_UNLINK,
     PA_CORE_HOOK_MAX
 } pa_core_hook_t;
 
@@ -84,6 +104,8 @@ typedef enum pa_core_hook {
 struct pa_core {
     pa_msgobject parent;
 
+    pa_core_state_t state;
+
     /* A random value which may be used to identify this instance of
      * PulseAudio. Not cryptographically secure in any way. */
     uint32_t cookie;
@@ -91,18 +113,19 @@ struct pa_core {
     pa_mainloop_api *mainloop;
 
     /* idxset of all kinds of entities */
-    pa_idxset *clients, *sinks, *sources, *sink_inputs, *source_outputs, *modules, *scache, *autoload_idxset;
+    pa_idxset *clients, *cards, *sinks, *sources, *sink_inputs, *source_outputs, *modules, *scache;
 
     /* Some hashmaps for all sorts of entities */
-    pa_hashmap *namereg, *autoload_hashmap, *shared;
+    pa_hashmap *namereg, *shared;
 
-    /* The name of the default sink/source */
-    char *default_source_name, *default_sink_name;
+    /* The default sink/source */
+    pa_source *default_source;
+    pa_sink *default_sink;
 
+    pa_channel_map default_channel_map;
     pa_sample_spec default_sample_spec;
     unsigned default_n_fragments, default_fragment_size_msec;
 
-    pa_time_event *module_auto_unload_event;
     pa_defer_event *module_defer_unload_event;
 
     pa_defer_event *subscription_defer_event;
@@ -113,12 +136,12 @@ struct pa_core {
     pa_mempool *mempool;
     pa_silence_cache silence_cache;
 
-    int exit_idle_time, module_idle_time, scache_idle_time;
-
     pa_time_event *exit_event;
-
     pa_time_event *scache_auto_unload_event;
 
+    int exit_idle_time, scache_idle_time;
+
+    pa_bool_t flat_volumes:1;
     pa_bool_t disallow_module_loading:1;
     pa_bool_t disallow_exit:1;
     pa_bool_t running_as_daemon:1;
@@ -147,5 +170,7 @@ pa_core* pa_core_new(pa_mainloop_api *m, pa_bool_t shared, size_t shm_size);
 void pa_core_check_idle(pa_core *c);
 
 int pa_core_exit(pa_core *c, pa_bool_t force, int retval);
+
+void pa_core_maybe_vacuum(pa_core *c);
 
 #endif

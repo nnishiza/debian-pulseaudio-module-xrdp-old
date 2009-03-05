@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define if building universal (internal helper macro) */
+#undef AC_APPLE_UNIVERSAL_BUILD
+
 /* Have ARMv6 instructions. */
 #undef ATOMIC_ARM_INLINE_ASM
 
@@ -19,6 +22,9 @@
 
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
+
+/* Legacy runtime dir */
+#undef ENABLE_LEGACY_RUNTIME_DIR
 
 /* always defined to indicate that i18n is enabled */
 #undef ENABLE_NLS
@@ -83,6 +89,9 @@
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
 
+/* Define to 1 if you have the <execinfo.h> header file. */
+#undef HAVE_EXECINFO_H
+
 /* Define to 1 if you have the `fork' function. */
 #undef HAVE_FORK
 
@@ -95,11 +104,17 @@
 /* Define to 1 if you have the `getgrgid_r' function. */
 #undef HAVE_GETGRGID_R
 
+/* Define to 1 if you have the `getgrnam_r' function. */
+#undef HAVE_GETGRNAM_R
+
 /* Define to 1 if your system has a working `getgroups' function. */
 #undef HAVE_GETGROUPS
 
 /* Define to 1 if you have the `getopt_long' function. */
 #undef HAVE_GETOPT_LONG
+
+/* Define to 1 if you have the `getpwnam_r' function. */
+#undef HAVE_GETPWNAM_R
 
 /* Define to 1 if you have the `getpwuid_r' function. */
 #undef HAVE_GETPWUID_R
@@ -113,11 +128,20 @@
 /* Define to 1 if you have the `getuid' function. */
 #undef HAVE_GETUID
 
+/* Have GLIB? */
+#undef HAVE_GLIB
+
 /* Define to 1 if you have the <glob.h> header file. */
 #undef HAVE_GLOB_H
 
 /* Define to 1 if you have the <grp.h> header file. */
 #undef HAVE_GRP_H
+
+/* Have GTK? */
+#undef HAVE_GTK
+
+/* Have HAL. */
+#undef HAVE_HAL
 
 /* Define if you have the iconv() function and it works. */
 #undef HAVE_ICONV
@@ -130,6 +154,9 @@
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
+
+/* Define this to enable IPv6 connection support */
+#undef HAVE_IPV6
 
 /* Define if your <locale.h> file defines LC_MESSAGES. */
 #undef HAVE_LC_MESSAGES
@@ -164,12 +191,6 @@
 /* Define to 1 if you have the `lstat' function. */
 #undef HAVE_LSTAT
 
-/* Define to 1 if the system has the type `lt_dladvise'. */
-#undef HAVE_LT_DLADVISE
-
-/* Define to 1 if you have the `lt_dlmutex_register' function. */
-#undef HAVE_LT_DLMUTEX_REGISTER
-
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
@@ -200,6 +221,9 @@
 /* Define to 1 if you have the `open64' function. */
 #undef HAVE_OPEN64
 
+/* Have OpenSSL */
+#undef HAVE_OPENSSL
+
 /* Have OSS? */
 #undef HAVE_OSS
 
@@ -229,6 +253,9 @@
 
 /* Have PTHREAD_PRIO_INHERIT. */
 #undef HAVE_PTHREAD_PRIO_INHERIT
+
+/* Define to 1 if you have the `pthread_setaffinity_np' function. */
+#undef HAVE_PTHREAD_SETAFFINITY_NP
 
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
@@ -314,14 +341,14 @@
 /* Define to 1 if you have the `strtof_l' function. */
 #undef HAVE_STRTOF_L
 
-/* Define to 1 if the system has the type `struct lt_user_dlloader'. */
-#undef HAVE_STRUCT_LT_USER_DLLOADER
-
 /* Define to 1 if you have the `sysconf' function. */
 #undef HAVE_SYSCONF
 
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
+
+/* Define to 1 if you have the <sys/atomic.h> header file. */
+#undef HAVE_SYS_ATOMIC_H
 
 /* Define to 1 if you have the <sys/audio.h> header file. */
 #undef HAVE_SYS_AUDIO_H
@@ -368,11 +395,17 @@
 /* Define to 1 if you have the <sys/types.h> header file. */
 #undef HAVE_SYS_TYPES_H
 
+/* Define to 1 if you have the <sys/uio.h> header file. */
+#undef HAVE_SYS_UIO_H
+
 /* Define to 1 if you have the <sys/un.h> header file. */
 #undef HAVE_SYS_UN_H
 
 /* Define to 1 if you have the <sys/wait.h> header file. */
 #undef HAVE_SYS_WAIT_H
+
+/* Have UDEV. */
+#undef HAVE_UDEV
 
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
@@ -404,7 +437,7 @@
 /* Define to 1 if you have the <ws2tcpip.h> header file. */
 #undef HAVE_WS2TCPIP_H
 
-/* Have X11 */
+/* Have X11? */
 #undef HAVE_X11
 
 /* Define as const if the declaration of iconv() needs const. */
@@ -412,6 +445,16 @@
 
 /* Define INADDR_NONE if not found in <netinet/in.h> */
 #undef INADDR_NONE
+
+/* I know the API is subject to change. */
+#undef LIBUDEV_I_KNOW_THE_API_IS_SUBJECT_TO_CHANGE
+
+/* Define to the sub-directory in which libtool stores uninstalled libraries.
+   */
+#undef LT_OBJDIR
+
+/* netbsd implementation */
+#undef NETBSD_ATOMIC_OPS
 
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 #undef NO_MINUS_C_MINUS_O
@@ -456,9 +499,6 @@
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
 
-/* Define as the return type of signal handlers (`int' or `void'). */
-#undef RETSIGTYPE
-
 /* Define to the type of arg 1 for `select'. */
 #undef SELECT_TYPE_ARG1
 
@@ -485,42 +525,6 @@
 /* Define this if you want per-user esound socket directories */
 #undef USE_PER_USER_ESOUND_SOCKET
 
-/* Version number of package */
-#undef VERSION
-
-/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
-   significant byte first (like Motorola and SPARC, unlike Intel and VAX). */
-#if defined __BIG_ENDIAN__
-# define WORDS_BIGENDIAN 1
-#elif ! defined __LITTLE_ENDIAN__
-# undef WORDS_BIGENDIAN
-#endif
-
-/* Define to 1 if the X Window System is missing or not being used. */
-#undef X_DISPLAY_MISSING
-
-/* Number of bits in a file offset, on hosts where this is settable. */
-#undef _FILE_OFFSET_BITS
-
-/* Define for large files, on AIX-style hosts. */
-#undef _LARGE_FILES
-
-/* Define to 1 if on MINIX. */
-#undef _MINIX
-
-/* Define to 2 if the system does not provide POSIX.1 features except with
-   this defined. */
-#undef _POSIX_1_SOURCE
-
-/* Define to 1 if you need to in order for `stat' and other things to work. */
-#undef _POSIX_SOURCE
-
-/* Needed to get declarations for msg_control and msg_controllen on Solaris */
-#undef _XOPEN_SOURCE
-
-/* Needed to get declarations for msg_control and msg_controllen on Solaris */
-#undef _XOPEN_SOURCE_EXTENDED
-
 /* Enable extensions on AIX 3, Interix.  */
 #ifndef _ALL_SOURCE
 # undef _ALL_SOURCE
@@ -542,6 +546,43 @@
 # undef __EXTENSIONS__
 #endif
 
+
+/* Version number of package */
+#undef VERSION
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#undef _FILE_OFFSET_BITS
+
+/* Define for large files, on AIX-style hosts. */
+#undef _LARGE_FILES
+
+/* Define to 1 if on MINIX. */
+#undef _MINIX
+
+/* Define to 2 if the system does not provide POSIX.1 features except with
+   this defined. */
+#undef _POSIX_1_SOURCE
+
+/* Define to 1 if you need to in order for `stat' and other things to work. */
+#undef _POSIX_SOURCE
+
+/* Needed to get declarations for msg_control and msg_controllen on Solaris */
+#undef _XOPEN_SOURCE
+
+/* Needed to get declarations for msg_control and msg_controllen on Solaris */
+#undef __EXTENSIONS__
 
 /* Define to empty if `const' does not conform to ANSI C. */
 #undef const

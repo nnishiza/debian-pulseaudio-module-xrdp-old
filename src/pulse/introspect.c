@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -28,11 +28,14 @@
 
 #include <pulse/context.h>
 #include <pulse/gccmacro.h>
+#include <pulse/xmalloc.h>
 
 #include <pulsecore/macro.h>
+#include <pulsecore/core-util.h>
 #include <pulsecore/pstream-util.h>
 
 #include "internal.h"
+#include "fork-detect.h"
 
 #include "introspect.h"
 
@@ -60,7 +63,8 @@ static void context_stat_callback(pa_pdispatch *pd, uint32_t command, uint32_t t
                pa_tagstruct_getu32(t, &i.memblock_total_size) < 0 ||
                pa_tagstruct_getu32(t, &i.memblock_allocated) < 0 ||
                pa_tagstruct_getu32(t, &i.memblock_allocated_size) < 0 ||
-               pa_tagstruct_getu32(t, &i.scache_size) < 0) {
+               pa_tagstruct_getu32(t, &i.scache_size) < 0 ||
+               !pa_tagstruct_eof(t)) {
         pa_context_fail(o->context, PA_ERR_PROTOCOL);
         goto finish;
     }
@@ -107,11 +111,16 @@ static void context_get_server_info_callback(pa_pdispatch *pd, uint32_t command,
                pa_tagstruct_gets(t, &i.default_sink_name) < 0 ||
                pa_tagstruct_gets(t, &i.default_source_name) < 0 ||
                pa_tagstruct_getu32(t, &i.cookie) < 0 ||
+               (o->context->version >= 15 &&
+                pa_tagstruct_get_channel_map(t, &i.channel_map) < 0) ||
                !pa_tagstruct_eof(t)) {
 
         pa_context_fail(o->context, PA_ERR_PROTOCOL);
         goto finish;
     }
+
+    if (p && o->context->version < 15)
+        pa_channel_map_init_extend(&i.channel_map, i.sample_spec.channels, PA_CHANNEL_MAP_DEFAULT);
 
     if (o->callback) {
         pa_server_info_cb_t cb = (pa_server_info_cb_t) o->callback;
@@ -146,14 +155,20 @@ static void context_get_sink_info_callback(pa_pdispatch *pd, uint32_t command, u
 
         eol = -1;
     } else {
-        uint32_t flags;
 
         while (!pa_tagstruct_eof(t)) {
             pa_sink_info i;
-            pa_bool_t mute = FALSE;
+            pa_bool_t mute;
+            uint32_t flags;
+            uint32_t state;
 
             memset(&i, 0, sizeof(i));
             i.proplist = pa_proplist_new();
+            i.base_volume = PA_VOLUME_NORM;
+            i.n_volume_steps = PA_VOLUME_NORM+1;
+            mute = FALSE;
+            state = PA_SINK_INVALID_STATE;
+            i.card = PA_INVALID_INDEX;
 
             if (pa_tagstruct_getu32(t, &i.index) < 0 ||
                 pa_tagstruct_gets(t, &i.name) < 0 ||
@@ -170,7 +185,12 @@ static void context_get_sink_info_callback(pa_pdispatch *pd, uint32_t command, u
                 pa_tagstruct_getu32(t, &flags) < 0 ||
                 (o->context->version >= 13 &&
                  (pa_tagstruct_get_proplist(t, i.proplist) < 0 ||
-                  pa_tagstruct_get_usec(t, &i.configured_latency) < 0))) {
+                  pa_tagstruct_get_usec(t, &i.configured_latency) < 0)) ||
+                (o->context->version >= 15 &&
+                 (pa_tagstruct_get_volume(t, &i.base_volume) < 0 ||
+                  pa_tagstruct_getu32(t, &state) < 0 ||
+                  pa_tagstruct_getu32(t, &i.n_volume_steps) < 0 ||
+                  pa_tagstruct_getu32(t, &i.card) < 0))) {
 
                 pa_context_fail(o->context, PA_ERR_PROTOCOL);
                 pa_proplist_free(i.proplist);
@@ -179,6 +199,7 @@ static void context_get_sink_info_callback(pa_pdispatch *pd, uint32_t command, u
 
             i.mute = (int) mute;
             i.flags = (pa_sink_flags_t) flags;
+            i.state = (pa_sink_state_t) state;
 
             if (o->callback) {
                 pa_sink_info_cb_t cb = (pa_sink_info_cb_t) o->callback;
@@ -212,6 +233,7 @@ pa_operation* pa_context_get_sink_info_by_index(pa_context *c, uint32_t idx, pa_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -234,6 +256,7 @@ pa_operation* pa_context_get_sink_info_by_name(pa_context *c, const char *name, 
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -270,11 +293,17 @@ static void context_get_source_info_callback(pa_pdispatch *pd, uint32_t command,
 
         while (!pa_tagstruct_eof(t)) {
             pa_source_info i;
+            pa_bool_t mute;
             uint32_t flags;
-            pa_bool_t mute = FALSE;
+            uint32_t state;
 
             memset(&i, 0, sizeof(i));
             i.proplist = pa_proplist_new();
+            i.base_volume = PA_VOLUME_NORM;
+            i.n_volume_steps = PA_VOLUME_NORM+1;
+            mute = FALSE;
+            state = PA_SOURCE_INVALID_STATE;
+            i.card = PA_INVALID_INDEX;
 
             if (pa_tagstruct_getu32(t, &i.index) < 0 ||
                 pa_tagstruct_gets(t, &i.name) < 0 ||
@@ -291,7 +320,12 @@ static void context_get_source_info_callback(pa_pdispatch *pd, uint32_t command,
                 pa_tagstruct_getu32(t, &flags) < 0 ||
                 (o->context->version >= 13 &&
                  (pa_tagstruct_get_proplist(t, i.proplist) < 0 ||
-                  pa_tagstruct_get_usec(t, &i.configured_latency) < 0))) {
+                  pa_tagstruct_get_usec(t, &i.configured_latency) < 0)) ||
+                (o->context->version >= 15 &&
+                 (pa_tagstruct_get_volume(t, &i.base_volume) < 0 ||
+                  pa_tagstruct_getu32(t, &state) < 0 ||
+                  pa_tagstruct_getu32(t, &i.n_volume_steps) < 0 ||
+                  pa_tagstruct_getu32(t, &i.card) < 0))) {
 
                 pa_context_fail(o->context, PA_ERR_PROTOCOL);
                 pa_proplist_free(i.proplist);
@@ -300,6 +334,7 @@ static void context_get_source_info_callback(pa_pdispatch *pd, uint32_t command,
 
             i.mute = (int) mute;
             i.flags = (pa_source_flags_t) flags;
+            i.state = (pa_source_state_t) state;
 
             if (o->callback) {
                 pa_source_info_cb_t cb = (pa_source_info_cb_t) o->callback;
@@ -333,6 +368,7 @@ pa_operation* pa_context_get_source_info_by_index(pa_context *c, uint32_t idx, p
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -355,6 +391,7 @@ pa_operation* pa_context_get_source_info_by_name(pa_context *c, const char *name
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -434,6 +471,7 @@ pa_operation* pa_context_get_client_info(pa_context *c, uint32_t idx, pa_client_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -449,6 +487,208 @@ pa_operation* pa_context_get_client_info(pa_context *c, uint32_t idx, pa_client_
 
 pa_operation* pa_context_get_client_info_list(pa_context *c, pa_client_info_cb_t cb, void *userdata) {
     return pa_context_send_simple_command(c, PA_COMMAND_GET_CLIENT_INFO_LIST, context_get_client_info_callback, (pa_operation_cb_t) cb, userdata);
+}
+
+/*** Card info ***/
+
+static void context_get_card_info_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
+    pa_operation *o = userdata;
+    int eol = 1;
+
+    pa_assert(pd);
+    pa_assert(o);
+    pa_assert(PA_REFCNT_VALUE(o) >= 1);
+
+    if (!o->context)
+        goto finish;
+
+    if (command != PA_COMMAND_REPLY) {
+        if (pa_context_handle_error(o->context, command, t, FALSE) < 0)
+            goto finish;
+
+        eol = -1;
+    } else {
+
+        while (!pa_tagstruct_eof(t)) {
+            pa_card_info i;
+            uint32_t j;
+            const char*ap;
+
+            memset(&i, 0, sizeof(i));
+
+            if (pa_tagstruct_getu32(t, &i.index) < 0 ||
+                pa_tagstruct_gets(t, &i.name) < 0 ||
+                pa_tagstruct_getu32(t, &i.owner_module) < 0 ||
+                pa_tagstruct_gets(t, &i.driver) < 0 ||
+                pa_tagstruct_getu32(t, &i.n_profiles) < 0) {
+
+                pa_context_fail(o->context, PA_ERR_PROTOCOL);
+                goto finish;
+            }
+
+            if (i.n_profiles > 0) {
+                i.profiles = pa_xnew(pa_card_profile_info, i.n_profiles+1);
+
+                for (j = 0; j < i.n_profiles; j++) {
+
+                    if (pa_tagstruct_gets(t, &i.profiles[j].name) < 0 ||
+                        pa_tagstruct_gets(t, &i.profiles[j].description) < 0 ||
+                        pa_tagstruct_getu32(t, &i.profiles[j].n_sinks) < 0 ||
+                        pa_tagstruct_getu32(t, &i.profiles[j].n_sources) < 0 ||
+                        pa_tagstruct_getu32(t, &i.profiles[j].priority) < 0) {
+
+                        pa_context_fail(o->context, PA_ERR_PROTOCOL);
+                        pa_xfree(i.profiles);
+                        goto finish;
+                    }
+                }
+
+                /* Terminate with an extra NULL entry, just to make sure */
+                i.profiles[j].name = NULL;
+                i.profiles[j].description = NULL;
+            }
+
+            i.proplist = pa_proplist_new();
+
+            if (pa_tagstruct_gets(t, &ap) < 0 ||
+                pa_tagstruct_get_proplist(t, i.proplist) < 0) {
+
+                pa_context_fail(o->context, PA_ERR_PROTOCOL);
+                pa_xfree(i.profiles);
+                pa_proplist_free(i.proplist);
+                goto finish;
+            }
+
+            if (ap) {
+                for (j = 0; j < i.n_profiles; j++)
+                    if (pa_streq(i.profiles[j].name, ap)) {
+                        i.active_profile = &i.profiles[j];
+                        break;
+                    }
+            }
+
+            if (o->callback) {
+                pa_card_info_cb_t cb = (pa_card_info_cb_t) o->callback;
+                cb(o->context, &i, 0, o->userdata);
+            }
+
+            pa_proplist_free(i.proplist);
+            pa_xfree(i.profiles);
+        }
+    }
+
+    if (o->callback) {
+        pa_card_info_cb_t cb = (pa_card_info_cb_t) o->callback;
+        cb(o->context, NULL, eol, o->userdata);
+    }
+
+finish:
+    pa_operation_done(o);
+    pa_operation_unref(o);
+}
+
+pa_operation* pa_context_get_card_info_by_index(pa_context *c, uint32_t idx, pa_card_info_cb_t cb, void *userdata) {
+    pa_tagstruct *t;
+    pa_operation *o;
+    uint32_t tag;
+
+    pa_assert(c);
+    pa_assert(PA_REFCNT_VALUE(c) >= 1);
+    pa_assert(cb);
+
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
+
+    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
+
+    t = pa_tagstruct_command(c, PA_COMMAND_GET_CARD_INFO, &tag);
+    pa_tagstruct_putu32(t, idx);
+    pa_tagstruct_puts(t, NULL);
+    pa_pstream_send_tagstruct(c->pstream, t);
+    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, context_get_card_info_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
+
+    return o;
+}
+
+pa_operation* pa_context_get_card_info_by_name(pa_context *c, const char*name, pa_card_info_cb_t cb, void *userdata) {
+    pa_tagstruct *t;
+    pa_operation *o;
+    uint32_t tag;
+
+    pa_assert(c);
+    pa_assert(PA_REFCNT_VALUE(c) >= 1);
+    pa_assert(cb);
+
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
+
+    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
+
+    t = pa_tagstruct_command(c, PA_COMMAND_GET_CARD_INFO, &tag);
+    pa_tagstruct_putu32(t, PA_INVALID_INDEX);
+    pa_tagstruct_puts(t, name);
+    pa_pstream_send_tagstruct(c->pstream, t);
+    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, context_get_card_info_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
+
+    return o;
+}
+
+pa_operation* pa_context_get_card_info_list(pa_context *c, pa_card_info_cb_t cb, void *userdata) {
+    return pa_context_send_simple_command(c, PA_COMMAND_GET_CARD_INFO_LIST, context_get_card_info_callback, (pa_operation_cb_t) cb, userdata);
+}
+
+pa_operation* pa_context_set_card_profile_by_index(pa_context *c, uint32_t idx, const char*profile, pa_context_success_cb_t cb, void *userdata) {
+    pa_operation *o;
+    pa_tagstruct *t;
+    uint32_t tag;
+
+    pa_assert(c);
+    pa_assert(PA_REFCNT_VALUE(c) >= 1);
+
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
+
+    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
+
+    t = pa_tagstruct_command(c, PA_COMMAND_SET_CARD_PROFILE, &tag);
+    pa_tagstruct_putu32(t, idx);
+    pa_tagstruct_puts(t, NULL);
+    pa_tagstruct_puts(t, profile);
+    pa_pstream_send_tagstruct(c->pstream, t);
+    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, pa_context_simple_ack_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
+
+    return o;
+}
+
+pa_operation* pa_context_set_card_profile_by_name(pa_context *c, const char *name, const char*profile, pa_context_success_cb_t cb, void *userdata) {
+    pa_operation *o;
+    pa_tagstruct *t;
+    uint32_t tag;
+
+    pa_assert(c);
+    pa_assert(PA_REFCNT_VALUE(c) >= 1);
+
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
+    PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 15, PA_ERR_NOTSUPPORTED);
+
+    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
+
+    t = pa_tagstruct_command(c, PA_COMMAND_SET_CARD_PROFILE, &tag);
+    pa_tagstruct_putu32(t, PA_INVALID_INDEX);
+    pa_tagstruct_puts(t, name);
+    pa_tagstruct_puts(t, profile);
+    pa_pstream_send_tagstruct(c->pstream, t);
+    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, pa_context_simple_ack_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
+
+    return o;
 }
 
 /*** Module info ***/
@@ -474,13 +714,16 @@ static void context_get_module_info_callback(pa_pdispatch *pd, uint32_t command,
         while (!pa_tagstruct_eof(t)) {
             pa_module_info i;
             pa_bool_t auto_unload = FALSE;
+
             memset(&i, 0, sizeof(i));
+            i.proplist = pa_proplist_new();
 
             if (pa_tagstruct_getu32(t, &i.index) < 0 ||
                 pa_tagstruct_gets(t, &i.name) < 0 ||
                 pa_tagstruct_gets(t, &i.argument) < 0 ||
                 pa_tagstruct_getu32(t, &i.n_used) < 0 ||
-                pa_tagstruct_get_boolean(t, &auto_unload) < 0) {
+                (o->context->version < 15 && pa_tagstruct_get_boolean(t, &auto_unload) < 0) ||
+                (o->context->version >= 15 && pa_tagstruct_get_proplist(t, i.proplist) < 0)) {
                 pa_context_fail(o->context, PA_ERR_PROTOCOL);
                 goto finish;
             }
@@ -491,6 +734,8 @@ static void context_get_module_info_callback(pa_pdispatch *pd, uint32_t command,
                 pa_module_info_cb_t cb = (pa_module_info_cb_t) o->callback;
                 cb(o->context, &i, 0, o->userdata);
             }
+
+            pa_proplist_free(i.proplist);
         }
     }
 
@@ -513,6 +758,7 @@ pa_operation* pa_context_get_module_info(pa_context *c, uint32_t idx, pa_module_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -607,6 +853,7 @@ pa_operation* pa_context_get_sink_input_info(pa_context *c, uint32_t idx, pa_sin
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -696,6 +943,7 @@ pa_operation* pa_context_get_source_output_info(pa_context *c, uint32_t idx, pa_
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -724,6 +972,7 @@ pa_operation* pa_context_set_sink_volume_by_index(pa_context *c, uint32_t idx, c
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
 
@@ -749,6 +998,7 @@ pa_operation* pa_context_set_sink_volume_by_name(pa_context *c, const char *name
     pa_assert(name);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
@@ -773,6 +1023,7 @@ pa_operation* pa_context_set_sink_mute_by_index(pa_context *c, uint32_t idx, int
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -796,6 +1047,7 @@ pa_operation* pa_context_set_sink_mute_by_name(pa_context *c, const char *name, 
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(name);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -820,6 +1072,7 @@ pa_operation* pa_context_set_sink_input_volume(pa_context *c, uint32_t idx, cons
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
@@ -843,6 +1096,7 @@ pa_operation* pa_context_set_sink_input_mute(pa_context *c, uint32_t idx, int mu
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
@@ -867,6 +1121,7 @@ pa_operation* pa_context_set_source_volume_by_index(pa_context *c, uint32_t idx,
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
 
@@ -892,6 +1147,7 @@ pa_operation* pa_context_set_source_volume_by_name(pa_context *c, const char *na
     pa_assert(name);
     pa_assert(volume);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, pa_cvolume_valid(volume), PA_ERR_INVALID);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
@@ -916,6 +1172,7 @@ pa_operation* pa_context_set_source_mute_by_index(pa_context *c, uint32_t idx, i
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
 
     o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
@@ -939,6 +1196,7 @@ pa_operation* pa_context_set_source_mute_by_name(pa_context *c, const char *name
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(name);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !name || *name, PA_ERR_INVALID);
 
@@ -1026,6 +1284,7 @@ pa_operation* pa_context_get_sample_info_by_name(pa_context *c, const char *name
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, name && *name, PA_ERR_INVALID);
 
@@ -1049,6 +1308,7 @@ pa_operation* pa_context_get_sample_info_by_index(pa_context *c, uint32_t idx, p
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
     pa_assert(cb);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -1075,6 +1335,7 @@ static pa_operation* command_kill(pa_context *c, uint32_t command, uint32_t idx,
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
 
@@ -1141,6 +1402,7 @@ pa_operation* pa_context_load_module(pa_context *c, const char*name, const char 
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, name && *name, PA_ERR_INVALID);
 
@@ -1161,186 +1423,59 @@ pa_operation* pa_context_unload_module(pa_context *c, uint32_t idx, pa_context_s
 
 /*** Autoload stuff ***/
 
-static void context_get_autoload_info_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
-    pa_operation *o = userdata;
-    int eol = 1;
-
-    pa_assert(pd);
-    pa_assert(o);
-    pa_assert(PA_REFCNT_VALUE(o) >= 1);
-
-    if (!o->context)
-        goto finish;
-
-    if (command != PA_COMMAND_REPLY) {
-        if (pa_context_handle_error(o->context, command, t, FALSE) < 0)
-            goto finish;
-
-        eol = -1;
-    } else {
-
-        while (!pa_tagstruct_eof(t)) {
-            pa_autoload_info i;
-
-            memset(&i, 0, sizeof(i));
-
-            if (pa_tagstruct_getu32(t, &i.index) < 0 ||
-                pa_tagstruct_gets(t, &i.name) < 0 ||
-                pa_tagstruct_getu32(t, &i.type) < 0 ||
-                pa_tagstruct_gets(t, &i.module) < 0 ||
-                pa_tagstruct_gets(t, &i.argument) < 0) {
-                pa_context_fail(o->context, PA_ERR_PROTOCOL);
-                goto finish;
-            }
-
-            if (o->callback) {
-                pa_autoload_info_cb_t cb = (pa_autoload_info_cb_t) o->callback;
-                cb(o->context, &i, 0, o->userdata);
-            }
-        }
-    }
-
-    if (o->callback) {
-        pa_autoload_info_cb_t cb = (pa_autoload_info_cb_t) o->callback;
-        cb(o->context, NULL, eol, o->userdata);
-    }
-
-finish:
-    pa_operation_done(o);
-    pa_operation_unref(o);
-}
-
-PA_WARN_REFERENCE(pa_context_get_autoload_info_by_name, "Autoload will no longer be implemented by future versions of the PulseAudio server.");
+PA_WARN_REFERENCE(pa_context_get_autoload_info_by_name, "Module auto-loading no longer supported.");
 
 pa_operation* pa_context_get_autoload_info_by_name(pa_context *c, const char *name, pa_autoload_type_t type, pa_autoload_info_cb_t cb, void *userdata) {
-    pa_tagstruct *t;
-    pa_operation *o;
-    uint32_t tag;
 
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
-    pa_assert(cb);
 
-    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, name && *name, PA_ERR_INVALID);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, type == PA_AUTOLOAD_SINK || type == PA_AUTOLOAD_SOURCE, PA_ERR_INVALID);
-
-    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
-
-    t = pa_tagstruct_command(c, PA_COMMAND_GET_AUTOLOAD_INFO, &tag);
-    pa_tagstruct_puts(t, name);
-    pa_tagstruct_putu32(t, type);
-    pa_pstream_send_tagstruct(c->pstream, t);
-    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, context_get_autoload_info_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
-
-    return o;
+    PA_FAIL_RETURN_NULL(c, PA_ERR_OBSOLETE);
 }
 
-PA_WARN_REFERENCE(pa_context_get_autoload_info_by_index, "Autoload will no longer be implemented by future versions of the PulseAudio server.");
+PA_WARN_REFERENCE(pa_context_get_autoload_info_by_index, "Module auto-loading no longer supported.");
 
 pa_operation* pa_context_get_autoload_info_by_index(pa_context *c, uint32_t idx, pa_autoload_info_cb_t cb, void *userdata) {
-    pa_tagstruct *t;
-    pa_operation *o;
-    uint32_t tag;
-
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
-    pa_assert(cb);
 
-    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
-
-    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
-
-    t = pa_tagstruct_command(c, PA_COMMAND_GET_AUTOLOAD_INFO, &tag);
-    pa_tagstruct_putu32(t, idx);
-    pa_pstream_send_tagstruct(c->pstream, t);
-    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, context_get_autoload_info_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
-
-    return o;
+    PA_FAIL_RETURN_NULL(c, PA_ERR_OBSOLETE);
 }
 
-
-PA_WARN_REFERENCE(pa_context_get_autoload_info_list, "Autoload will no longer be implemented by future versions of the PulseAudio server.");
+PA_WARN_REFERENCE(pa_context_get_autoload_info_list, "Module auto-loading no longer supported.");
 
 pa_operation* pa_context_get_autoload_info_list(pa_context *c, pa_autoload_info_cb_t cb, void *userdata) {
-    return pa_context_send_simple_command(c, PA_COMMAND_GET_AUTOLOAD_INFO_LIST, context_get_autoload_info_callback, (pa_operation_cb_t) cb, userdata);
+    pa_assert(c);
+    pa_assert(PA_REFCNT_VALUE(c) >= 1);
+
+    PA_FAIL_RETURN_NULL(c, PA_ERR_OBSOLETE);
 }
 
-PA_WARN_REFERENCE(pa_context_add_autoload, "Autoload will no longer be implemented by future versions of the PulseAudio server.");
+PA_WARN_REFERENCE(pa_context_add_autoload, "Module auto-loading no longer supported.");
 
 pa_operation* pa_context_add_autoload(pa_context *c, const char *name, pa_autoload_type_t type, const char *module, const char*argument, pa_context_index_cb_t cb, void* userdata) {
-    pa_operation *o;
-    pa_tagstruct *t;
-    uint32_t tag;
-
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
-    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, name && *name, PA_ERR_INVALID);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, type == PA_AUTOLOAD_SINK || type == PA_AUTOLOAD_SOURCE, PA_ERR_INVALID);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, module && *module, PA_ERR_INVALID);
-
-    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
-
-    t = pa_tagstruct_command(c, PA_COMMAND_ADD_AUTOLOAD, &tag);
-    pa_tagstruct_puts(t, name);
-    pa_tagstruct_putu32(t, type);
-    pa_tagstruct_puts(t, module);
-    pa_tagstruct_puts(t, argument);
-    pa_pstream_send_tagstruct(c->pstream, t);
-    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, context_index_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
-
-    return o;
+    PA_FAIL_RETURN_NULL(c, PA_ERR_OBSOLETE);
 }
 
-PA_WARN_REFERENCE(pa_context_remove_autoload_by_name, "Autoload will no longer be implemented by future versions of the PulseAudio server.");
+PA_WARN_REFERENCE(pa_context_remove_autoload_by_name, "Module auto-loading no longer supported.");
 
 pa_operation* pa_context_remove_autoload_by_name(pa_context *c, const char *name, pa_autoload_type_t type, pa_context_success_cb_t cb, void* userdata) {
-    pa_operation *o;
-    pa_tagstruct *t;
-    uint32_t tag;
-
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
-    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, name && *name, PA_ERR_INVALID);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, type == PA_AUTOLOAD_SINK || type == PA_AUTOLOAD_SOURCE, PA_ERR_INVALID);
-
-    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
-
-    t = pa_tagstruct_command(c, PA_COMMAND_REMOVE_AUTOLOAD, &tag);
-    pa_tagstruct_puts(t, name);
-    pa_tagstruct_putu32(t, type);
-    pa_pstream_send_tagstruct(c->pstream, t);
-    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, pa_context_simple_ack_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
-
-    return o;
+    PA_FAIL_RETURN_NULL(c, PA_ERR_OBSOLETE);
 }
 
-PA_WARN_REFERENCE(pa_context_remove_autoload_by_index, "Autoload will no longer be implemented by future versions of the PulseAudio server.");
+PA_WARN_REFERENCE(pa_context_remove_autoload_by_index, "Module auto-loading no longer supported.");
 
 pa_operation* pa_context_remove_autoload_by_index(pa_context *c, uint32_t idx, pa_context_success_cb_t cb, void* userdata) {
-    pa_operation *o;
-    pa_tagstruct *t;
-    uint32_t tag;
-
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
-    PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
-    PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
-
-    o = pa_operation_new(c, NULL, (pa_operation_cb_t) cb, userdata);
-
-    t = pa_tagstruct_command(c, PA_COMMAND_REMOVE_AUTOLOAD, &tag);
-    pa_tagstruct_putu32(t, idx);
-    pa_pstream_send_tagstruct(c->pstream, t);
-    pa_pdispatch_register_reply(c->pdispatch, tag, DEFAULT_TIMEOUT, pa_context_simple_ack_callback, pa_operation_ref(o), (pa_free_cb_t) pa_operation_unref);
-
-    return o;
+    PA_FAIL_RETURN_NULL(c, PA_ERR_OBSOLETE);
 }
 
 pa_operation* pa_context_move_sink_input_by_name(pa_context *c, uint32_t idx, const char *sink_name, pa_context_success_cb_t cb, void* userdata) {
@@ -1351,6 +1486,7 @@ pa_operation* pa_context_move_sink_input_by_name(pa_context *c, uint32_t idx, co
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1376,6 +1512,7 @@ pa_operation* pa_context_move_sink_input_by_index(pa_context *c, uint32_t idx, u
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1401,6 +1538,7 @@ pa_operation* pa_context_move_source_output_by_name(pa_context *c, uint32_t idx,
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1426,6 +1564,7 @@ pa_operation* pa_context_move_source_output_by_index(pa_context *c, uint32_t idx
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 10, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, idx != PA_INVALID_INDEX, PA_ERR_INVALID);
@@ -1451,6 +1590,7 @@ pa_operation* pa_context_suspend_sink_by_name(pa_context *c, const char *sink_na
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !sink_name || *sink_name, PA_ERR_INVALID);
@@ -1475,6 +1615,7 @@ pa_operation* pa_context_suspend_sink_by_index(pa_context *c, uint32_t idx, int 
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
 
@@ -1498,6 +1639,7 @@ pa_operation* pa_context_suspend_source_by_name(pa_context *c, const char *sourc
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, !source_name || *source_name, PA_ERR_INVALID);
@@ -1522,6 +1664,7 @@ pa_operation* pa_context_suspend_source_by_index(pa_context *c, uint32_t idx, in
     pa_assert(c);
     pa_assert(PA_REFCNT_VALUE(c) >= 1);
 
+    PA_CHECK_VALIDITY_RETURN_NULL(c, !pa_detect_fork(), PA_ERR_FORKED);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     PA_CHECK_VALIDITY_RETURN_NULL(c, c->version >= 11, PA_ERR_NOTSUPPORTED);
 

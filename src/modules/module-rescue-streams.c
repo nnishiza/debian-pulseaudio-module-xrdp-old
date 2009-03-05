@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -54,12 +54,16 @@ static pa_hook_result_t sink_hook_callback(pa_core *c, pa_sink *sink, void* user
     pa_assert(c);
     pa_assert(sink);
 
+    /* There's no point in doing anything if the core is shut down anyway */
+    if (c->state == PA_CORE_SHUTDOWN)
+        return PA_HOOK_OK;
+
     if (!pa_idxset_size(sink->inputs)) {
         pa_log_debug("No sink inputs to move away.");
         return PA_HOOK_OK;
     }
 
-    if (!(target = pa_namereg_get(c, NULL, PA_NAMEREG_SINK, 0)) || target == sink) {
+    if (!(target = pa_namereg_get(c, NULL, PA_NAMEREG_SINK)) || target == sink) {
         uint32_t idx;
 
         for (target = pa_idxset_first(c->sinks, &idx); target; target = pa_idxset_next(c->sinks, &idx))
@@ -73,7 +77,7 @@ static pa_hook_result_t sink_hook_callback(pa_core *c, pa_sink *sink, void* user
     }
 
     while ((i = pa_idxset_first(sink->inputs, NULL))) {
-        if (pa_sink_input_move_to(i, target) < 0) {
+        if (pa_sink_input_move_to(i, target, FALSE) < 0) {
             pa_log_warn("Failed to move sink input %u \"%s\" to %s.", i->index, pa_proplist_gets(i->proplist, PA_PROP_APPLICATION_NAME), target->name);
             return PA_HOOK_OK;
         }
@@ -92,12 +96,16 @@ static pa_hook_result_t source_hook_callback(pa_core *c, pa_source *source, void
     pa_assert(c);
     pa_assert(source);
 
+    /* There's no point in doing anything if the core is shut down anyway */
+    if (c->state == PA_CORE_SHUTDOWN)
+        return PA_HOOK_OK;
+
     if (!pa_idxset_size(source->outputs)) {
         pa_log_debug("No source outputs to move away.");
         return PA_HOOK_OK;
     }
 
-    if (!(target = pa_namereg_get(c, NULL, PA_NAMEREG_SOURCE, 0)) || target == source) {
+    if (!(target = pa_namereg_get(c, NULL, PA_NAMEREG_SOURCE)) || target == source) {
         uint32_t idx;
 
         for (target = pa_idxset_first(c->sources, &idx); target; target = pa_idxset_next(c->sources, &idx))
@@ -113,7 +121,7 @@ static pa_hook_result_t source_hook_callback(pa_core *c, pa_source *source, void
     pa_assert(target != source);
 
     while ((o = pa_idxset_first(source->outputs, NULL))) {
-        if (pa_source_output_move_to(o, target) < 0) {
+        if (pa_source_output_move_to(o, target, FALSE) < 0) {
             pa_log_warn("Failed to move source output %u \"%s\" to %s.", o->index, pa_proplist_gets(o->proplist, PA_PROP_APPLICATION_NAME), target->name);
             return PA_HOOK_OK;
         }

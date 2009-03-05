@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -62,6 +62,7 @@ pa_operation *pa_operation_ref(pa_operation *o) {
     PA_REFCNT_INC(o);
     return o;
 }
+
 void pa_operation_unref(pa_operation *o) {
     pa_assert(o);
     pa_assert(PA_REFCNT_VALUE(o) >= 1);

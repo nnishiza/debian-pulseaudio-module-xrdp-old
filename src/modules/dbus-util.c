@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -23,6 +23,8 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
+
+#include <stdarg.h>
 
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
@@ -324,4 +326,106 @@ pa_dbus_connection* pa_dbus_bus_get(pa_core *c, DBusBusType type, DBusError *err
     dbus_connection_set_wakeup_main_function(conn, wakeup_main, pconn, NULL);
 
     return pconn;
+}
+
+int pa_dbus_add_matches(DBusConnection *c, DBusError *error, ...) {
+    const char *t;
+    va_list ap;
+    unsigned k = 0;
+
+    pa_assert(c);
+    pa_assert(error);
+
+    va_start(ap, error);
+    while ((t = va_arg(ap, const char*))) {
+        dbus_bus_add_match(c, t, error);
+
+        if (dbus_error_is_set(error))
+            goto fail;
+
+        k++;
+    }
+    va_end(ap);
+    return 0;
+
+fail:
+
+    va_end(ap);
+    va_start(ap, error);
+    for (; k > 0; k--) {
+        DBusError e;
+
+        pa_assert_se(t = va_arg(ap, const char*));
+
+        dbus_error_init(&e);
+        dbus_bus_remove_match(c, t, &e);
+        dbus_error_free(&e);
+    }
+    va_end(ap);
+
+    return -1;
+}
+
+void pa_dbus_remove_matches(DBusConnection *c, ...) {
+    const char *t;
+    va_list ap;
+    DBusError error;
+
+    pa_assert(c);
+
+    dbus_error_init(&error);
+
+    va_start(ap, c);
+    while ((t = va_arg(ap, const char*))) {
+        dbus_bus_remove_match(c, t, &error);
+        dbus_error_free(&error);
+    }
+    va_end(ap);
+}
+
+pa_dbus_pending *pa_dbus_pending_new(DBusMessage *m, DBusPendingCall *pending, void *context_data, void *call_data) {
+    pa_dbus_pending *p;
+
+    pa_assert(pending);
+
+    p = pa_xnew(pa_dbus_pending, 1);
+    p->message = m;
+    p->pending = pending;
+    p->context_data = context_data;
+    p->call_data = call_data;
+
+    PA_LLIST_INIT(pa_dbus_pending, p);
+
+    return p;
+}
+
+void pa_dbus_pending_free(pa_dbus_pending *p) {
+    pa_assert(p);
+
+    if (p->pending) {
+        dbus_pending_call_cancel(p->pending); /* p->pending is freed by cancel() */
+    }
+
+    if (p->message)
+        dbus_message_unref(p->message);
+
+    pa_xfree(p);
+}
+
+void pa_dbus_sync_pending_list(pa_dbus_pending **p) {
+    pa_assert(p);
+
+    while (*p)
+        dbus_pending_call_block((*p)->pending);
+}
+
+void pa_dbus_free_pending_list(pa_dbus_pending **p) {
+    pa_dbus_pending *i;
+
+    pa_assert(p);
+
+    while ((i = *p)) {
+        PA_LLIST_REMOVE(pa_dbus_pending, *p, i);
+        pa_dbus_pending_free(i);
+    }
 }

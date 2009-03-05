@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as
-  published by the Free Software Foundation; either version 2 of the
+  published by the Free Software Foundation; either version 2.1 of the
   License, or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -162,7 +162,7 @@ static void resolver_cb(
         pa_module *m;
 
         ss = u->core->default_sample_spec;
-        pa_channel_map_init_extend(&cm, ss.channels, PA_CHANNEL_MAP_DEFAULT);
+        cm = u->core->default_channel_map;
 
         for (l = txt; l; l = l->next) {
             char *key, *value;

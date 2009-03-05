@@ -5,7 +5,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -29,6 +29,7 @@
 
 #include <pulse/utf8.h>
 #include <pulse/xmalloc.h>
+#include <pulse/util.h>
 
 #include <pulsecore/sample-util.h>
 #include <pulsecore/core-subscribe.h>
@@ -90,10 +91,13 @@ static void reset_callbacks(pa_source_output *o) {
     o->kill = NULL;
     o->get_latency = NULL;
     o->state_change = NULL;
+    o->may_move_to = NULL;
+    o->send_event = NULL;
 }
 
 /* Called from main context */
-pa_source_output* pa_source_output_new(
+int pa_source_output_new(
+        pa_source_output**_o,
         pa_core *core,
         pa_source_output_new_data *data,
         pa_source_output_flags_t flags) {
@@ -101,37 +105,43 @@ pa_source_output* pa_source_output_new(
     pa_source_output *o;
     pa_resampler *resampler = NULL;
     char st[PA_SAMPLE_SPEC_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    int r;
 
+    pa_assert(_o);
     pa_assert(core);
     pa_assert(data);
 
-    if (pa_hook_fire(&core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_NEW], data) < 0)
-        return NULL;
+    if (data->client)
+        pa_proplist_update(data->proplist, PA_UPDATE_MERGE, data->client->proplist);
 
-    pa_return_null_if_fail(!data->driver || pa_utf8_valid(data->driver));
+    if ((r = pa_hook_fire(&core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_NEW], data)) < 0)
+        return r;
 
-    if (!data->source)
-        data->source = pa_namereg_get(core, NULL, PA_NAMEREG_SOURCE, TRUE);
+    pa_return_val_if_fail(!data->driver || pa_utf8_valid(data->driver), -PA_ERR_INVALID);
 
-    pa_return_null_if_fail(data->source);
-    pa_return_null_if_fail(pa_source_get_state(data->source) != PA_SOURCE_UNLINKED);
+    if (!data->source) {
+        data->source = pa_namereg_get(core, NULL, PA_NAMEREG_SOURCE);
+        data->save_source = FALSE;
+    }
 
-    pa_return_null_if_fail(!data->direct_on_input || data->direct_on_input->sink == data->source->monitor_of);
+    pa_return_val_if_fail(data->source, -PA_ERR_NOENTITY);
+    pa_return_val_if_fail(PA_SOURCE_IS_LINKED(pa_source_get_state(data->source)), -PA_ERR_BADSTATE);
+    pa_return_val_if_fail(!data->direct_on_input || data->direct_on_input->sink == data->source->monitor_of, -PA_ERR_INVALID);
 
     if (!data->sample_spec_is_set)
         data->sample_spec = data->source->sample_spec;
 
-    pa_return_null_if_fail(pa_sample_spec_valid(&data->sample_spec));
+    pa_return_val_if_fail(pa_sample_spec_valid(&data->sample_spec), -PA_ERR_INVALID);
 
     if (!data->channel_map_is_set) {
-        if (data->source->channel_map.channels == data->sample_spec.channels)
+        if (pa_channel_map_compatible(&data->source->channel_map, &data->sample_spec))
             data->channel_map = data->source->channel_map;
         else
             pa_channel_map_init_extend(&data->channel_map, data->sample_spec.channels, PA_CHANNEL_MAP_DEFAULT);
     }
 
-    pa_return_null_if_fail(pa_channel_map_valid(&data->channel_map));
-    pa_return_null_if_fail(data->channel_map.channels == data->sample_spec.channels);
+    pa_return_val_if_fail(pa_channel_map_valid(&data->channel_map), -PA_ERR_INVALID);
+    pa_return_val_if_fail(pa_channel_map_compatible(&data->channel_map, &data->sample_spec), -PA_ERR_INVALID);
 
     if (flags & PA_SOURCE_OUTPUT_FIX_FORMAT)
         data->sample_spec.format = data->source->sample_spec.format;
@@ -150,14 +160,20 @@ pa_source_output* pa_source_output_new(
     if (data->resample_method == PA_RESAMPLER_INVALID)
         data->resample_method = core->resample_method;
 
-    pa_return_null_if_fail(data->resample_method < PA_RESAMPLER_MAX);
+    pa_return_val_if_fail(data->resample_method < PA_RESAMPLER_MAX, -PA_ERR_INVALID);
 
-    if (pa_hook_fire(&core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE], data) < 0)
-        return NULL;
+    if ((r = pa_hook_fire(&core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE], data)) < 0)
+        return r;
+
+    if ((flags & PA_SOURCE_OUTPUT_FAIL_ON_SUSPEND) &&
+        pa_source_get_state(data->source) == PA_SOURCE_SUSPENDED) {
+        pa_log("Failed to create source output: source is suspended.");
+        return -PA_ERR_BADSTATE;
+    }
 
     if (pa_idxset_size(data->source->outputs) >= PA_MAX_OUTPUTS_PER_SOURCE) {
         pa_log("Failed to create source output: too many outputs per source.");
-        return NULL;
+        return -PA_ERR_TOOLARGE;
     }
 
     if ((flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) ||
@@ -174,10 +190,8 @@ pa_source_output* pa_source_output_new(
                       (core->disable_remixing || (flags & PA_SOURCE_OUTPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0) |
                       (core->disable_lfe_remixing ? PA_RESAMPLER_NO_LFE : 0)))) {
             pa_log_warn("Unsupported resampling operation.");
-            return NULL;
+            return -PA_ERR_NOTSUPPORTED;
         }
-
-        data->resample_method = pa_resampler_get_method(resampler);
     }
 
     o = pa_msgobject_new(pa_source_output);
@@ -188,16 +202,19 @@ pa_source_output* pa_source_output_new(
     o->state = PA_SOURCE_OUTPUT_INIT;
     o->flags = flags;
     o->proplist = pa_proplist_copy(data->proplist);
-    o->driver = pa_xstrdup(data->driver);
+    o->driver = pa_xstrdup(pa_path_get_filename(data->driver));
     o->module = data->module;
     o->source = data->source;
     o->client = data->client;
 
-    o->resample_method = data->resample_method;
+    o->actual_resample_method = resampler ? pa_resampler_get_method(resampler) : PA_RESAMPLER_INVALID;
+    o->requested_resample_method = data->resample_method;
     o->sample_spec = data->sample_spec;
     o->channel_map = data->channel_map;
 
     o->direct_on_input = data->direct_on_input;
+
+    o->save_source = data->save_source;
 
     reset_callbacks(o);
     o->userdata = NULL;
@@ -222,6 +239,9 @@ pa_source_output* pa_source_output_new(
     pa_assert_se(pa_idxset_put(core->source_outputs, o, &o->index) == 0);
     pa_assert_se(pa_idxset_put(o->source->outputs, pa_source_output_ref(o), NULL) == 0);
 
+    if (o->client)
+        pa_assert_se(pa_idxset_put(o->client->source_outputs, o, NULL) >= 0);
+
     if (o->direct_on_input)
         pa_assert_se(pa_idxset_put(o->direct_on_input->direct_outputs, o, NULL) == 0);
 
@@ -234,27 +254,29 @@ pa_source_output* pa_source_output_new(
 
     /* Don't forget to call pa_source_output_put! */
 
-    return o;
+    *_o = o;
+    return 0;
 }
 
 /* Called from main context */
 static void update_n_corked(pa_source_output *o, pa_source_output_state_t state) {
     pa_assert(o);
 
+    if (!o->source)
+        return;
+
     if (o->state == PA_SOURCE_OUTPUT_CORKED && state != PA_SOURCE_OUTPUT_CORKED)
         pa_assert_se(o->source->n_corked -- >= 1);
     else if (o->state != PA_SOURCE_OUTPUT_CORKED && state == PA_SOURCE_OUTPUT_CORKED)
         o->source->n_corked++;
-
-    pa_source_update_status(o->source);
 }
 
 /* Called from main context */
-static int source_output_set_state(pa_source_output *o, pa_source_output_state_t state) {
+static void source_output_set_state(pa_source_output *o, pa_source_output_state_t state) {
     pa_assert(o);
 
     if (o->state == state)
-        return 0;
+        return;
 
     pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o), PA_SOURCE_OUTPUT_MESSAGE_SET_STATE, PA_UINT_TO_PTR(state), 0, NULL) == 0);
 
@@ -262,9 +284,9 @@ static int source_output_set_state(pa_source_output *o, pa_source_output_state_t
     o->state = state;
 
     if (state != PA_SOURCE_OUTPUT_UNLINKED)
-        pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_STATE_CHANGED], o);
+        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_STATE_CHANGED], o);
 
-    return 0;
+    pa_source_update_status(o->source);
 }
 
 /* Called from main context */
@@ -280,29 +302,41 @@ void pa_source_output_unlink(pa_source_output*o) {
     linked = PA_SOURCE_OUTPUT_IS_LINKED(o->state);
 
     if (linked)
-        pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK], o);
+        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK], o);
 
     if (o->direct_on_input)
         pa_idxset_remove_by_data(o->direct_on_input->direct_outputs, o, NULL);
-    pa_idxset_remove_by_data(o->source->core->source_outputs, o, NULL);
-    if (pa_idxset_remove_by_data(o->source->outputs, o, NULL))
-        pa_source_output_unref(o);
+
+    pa_idxset_remove_by_data(o->core->source_outputs, o, NULL);
+
+    if (o->source)
+        if (pa_idxset_remove_by_data(o->source->outputs, o, NULL))
+            pa_source_output_unref(o);
+
+    if (o->client)
+        pa_idxset_remove_by_data(o->client->source_outputs, o, NULL);
 
     update_n_corked(o, PA_SOURCE_OUTPUT_UNLINKED);
     o->state = PA_SOURCE_OUTPUT_UNLINKED;
 
-    if (linked)
+    if (linked && o->source)
         if (o->source->asyncmsgq)
             pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o->source), PA_SOURCE_MESSAGE_REMOVE_OUTPUT, o, 0, NULL) == 0);
 
     reset_callbacks(o);
 
     if (linked) {
-        pa_subscription_post(o->source->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_REMOVE, o->index);
-        pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST], o);
+        pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_REMOVE, o->index);
+        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST], o);
     }
 
-    o->source = NULL;
+    if (o->source) {
+        pa_source_update_status(o->source);
+        o->source = NULL;
+    }
+
+    pa_core_maybe_vacuum(o->core);
+
     pa_source_output_unref(o);
 }
 
@@ -351,8 +385,10 @@ void pa_source_output_put(pa_source_output *o) {
 
     pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o->source), PA_SOURCE_MESSAGE_ADD_OUTPUT, o, 0, NULL) == 0);
 
-    pa_subscription_post(o->source->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_NEW, o->index);
-    pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PUT], o);
+    pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_NEW, o->index);
+    pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PUT], o);
+
+    pa_source_update_status(o->source);
 }
 
 /* Called from main context */
@@ -549,7 +585,7 @@ void pa_source_output_cork(pa_source_output *o, pa_bool_t b) {
 int pa_source_output_set_rate(pa_source_output *o, uint32_t rate) {
     pa_source_output_assert_ref(o);
     pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
-    pa_return_val_if_fail(o->thread_info.resampler, -1);
+    pa_return_val_if_fail(o->thread_info.resampler, -PA_ERR_BADSTATE);
 
     if (o->sample_spec.rate == rate)
         return 0;
@@ -558,7 +594,7 @@ int pa_source_output_set_rate(pa_source_output *o, uint32_t rate) {
 
     pa_asyncmsgq_post(o->source->asyncmsgq, PA_MSGOBJECT(o), PA_SOURCE_OUTPUT_MESSAGE_SET_RATE, PA_UINT_TO_PTR(rate), 0, NULL, NULL);
 
-    pa_subscription_post(o->source->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
+    pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
     return 0;
 }
 
@@ -581,8 +617,21 @@ void pa_source_output_set_name(pa_source_output *o, const char *name) {
         pa_proplist_unset(o->proplist, PA_PROP_MEDIA_NAME);
 
     if (PA_SOURCE_OUTPUT_IS_LINKED(o->state)) {
-        pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED], o);
-        pa_subscription_post(o->source->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
+        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED], o);
+        pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
+    }
+}
+
+/* Called from main thread */
+void pa_source_output_update_proplist(pa_source_output *o, pa_update_mode_t mode, pa_proplist *p) {
+    pa_source_output_assert_ref(o);
+
+    if (p)
+        pa_proplist_update(o->proplist, mode, p);
+
+    if (PA_SINK_IS_LINKED(o->state)) {
+        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED], o);
+        pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
     }
 }
 
@@ -590,38 +639,92 @@ void pa_source_output_set_name(pa_source_output *o, const char *name) {
 pa_resample_method_t pa_source_output_get_resample_method(pa_source_output *o) {
     pa_source_output_assert_ref(o);
 
-    return o->resample_method;
+    return o->actual_resample_method;
 }
 
 /* Called from main context */
-int pa_source_output_move_to(pa_source_output *o, pa_source *dest) {
-    pa_source *origin;
-    pa_resampler *new_resampler;
-    pa_source_output_move_hook_data hook_data;
+pa_bool_t pa_source_output_may_move(pa_source_output *o) {
+    pa_source_output_assert_ref(o);
+    pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
 
+    if (o->flags & PA_SOURCE_OUTPUT_DONT_MOVE)
+        return FALSE;
+
+    if (o->direct_on_input)
+        return FALSE;
+
+    return TRUE;
+}
+
+/* Called from main context */
+pa_bool_t pa_source_output_may_move_to(pa_source_output *o, pa_source *dest) {
     pa_source_output_assert_ref(o);
     pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
     pa_source_assert_ref(dest);
 
-    origin = o->source;
+    if (dest == o->source)
+        return TRUE;
 
-    if (dest == origin)
-        return 0;
-
-    if (o->flags & PA_SOURCE_OUTPUT_DONT_MOVE)
-        return -1;
-
-    if (o->direct_on_input)
-        return -1;
+    if (!pa_source_output_may_move(o))
+        return FALSE;
 
     if (pa_idxset_size(dest->outputs) >= PA_MAX_OUTPUTS_PER_SOURCE) {
         pa_log_warn("Failed to move source output: too many outputs per source.");
-        return -1;
+        return FALSE;
     }
 
+    if (o->may_move_to)
+        if (!o->may_move_to(o, dest))
+            return FALSE;
+
+    return TRUE;
+}
+
+/* Called from main context */
+int pa_source_output_start_move(pa_source_output *o) {
+    pa_source *origin;
+    int r;
+
+    pa_source_output_assert_ref(o);
+    pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
+    pa_assert(o->source);
+
+    if (!pa_source_output_may_move(o))
+        return -PA_ERR_NOTSUPPORTED;
+
+    if ((r = pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_START], o)) < 0)
+        return r;
+
+    origin = o->source;
+
+    pa_idxset_remove_by_data(o->source->outputs, o, NULL);
+
+    if (pa_source_output_get_state(o) == PA_SOURCE_OUTPUT_CORKED)
+        pa_assert_se(origin->n_corked-- >= 1);
+
+    pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o->source), PA_SOURCE_MESSAGE_REMOVE_OUTPUT, o, 0, NULL) == 0);
+
+    pa_source_update_status(o->source);
+    o->source = NULL;
+
+    return 0;
+}
+
+/* Called from main context */
+int pa_source_output_finish_move(pa_source_output *o, pa_source *dest, pa_bool_t save) {
+    pa_resampler *new_resampler;
+
+    pa_source_output_assert_ref(o);
+    pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
+    pa_assert(!o->source);
+    pa_source_assert_ref(dest);
+
+    if (!pa_source_output_may_move_to(o, dest))
+        return -1;
+
     if (o->thread_info.resampler &&
-        pa_sample_spec_equal(&origin->sample_spec, &dest->sample_spec) &&
-        pa_channel_map_equal(&origin->channel_map, &dest->channel_map))
+        pa_sample_spec_equal(pa_resampler_input_sample_spec(o->thread_info.resampler), &dest->sample_spec) &&
+        pa_channel_map_equal(pa_resampler_input_channel_map(o->thread_info.resampler), &dest->channel_map))
 
         /* Try to reuse the old resampler if possible */
         new_resampler = o->thread_info.resampler;
@@ -633,34 +736,25 @@ int pa_source_output_move_to(pa_source_output *o, pa_source *dest) {
         /* Okey, we need a new resampler for the new source */
 
         if (!(new_resampler = pa_resampler_new(
-                      dest->core->mempool,
+                      o->core->mempool,
                       &dest->sample_spec, &dest->channel_map,
                       &o->sample_spec, &o->channel_map,
-                      o->resample_method,
+                      o->requested_resample_method,
                       ((o->flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
                       ((o->flags & PA_SOURCE_OUTPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
                       (o->core->disable_remixing || (o->flags & PA_SOURCE_OUTPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0)))) {
             pa_log_warn("Unsupported resampling operation.");
-            return -1;
+            return -PA_ERR_NOTSUPPORTED;
         }
     } else
         new_resampler = NULL;
 
-    hook_data.source_output = o;
-    hook_data.destination = dest;
-    pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_MOVE], &hook_data);
-
-    /* Okey, let's move it */
-    pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o->source), PA_SOURCE_MESSAGE_REMOVE_OUTPUT, o, 0, NULL) == 0);
-
-    pa_idxset_remove_by_data(origin->outputs, o, NULL);
-    pa_idxset_put(dest->outputs, o, NULL);
     o->source = dest;
+    o->save_source = save;
+    pa_idxset_put(o->source->outputs, o, NULL);
 
-    if (pa_source_output_get_state(o) == PA_SOURCE_OUTPUT_CORKED) {
-        pa_assert_se(origin->n_corked-- >= 1);
-        dest->n_corked++;
-    }
+    if (pa_source_output_get_state(o) == PA_SOURCE_OUTPUT_CORKED)
+        o->source->n_corked++;
 
     /* Replace resampler */
     if (new_resampler != o->thread_info.resampler) {
@@ -681,20 +775,41 @@ int pa_source_output_move_to(pa_source_output *o, pa_source *dest) {
                 &o->source->silence);
     }
 
-    pa_source_update_status(origin);
     pa_source_update_status(dest);
-
     pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o->source), PA_SOURCE_MESSAGE_ADD_OUTPUT, o, 0, NULL) == 0);
 
+    pa_log_debug("Successfully moved source output %i to %s.", o->index, dest->name);
+
+    /* Notify everyone */
     if (o->moved)
         o->moved(o);
 
-    pa_hook_fire(&o->source->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_POST], o);
+    pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_FINISH], o);
+    pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
 
-    pa_log_debug("Successfully moved source output %i from %s to %s.", o->index, origin->name, dest->name);
+    return 0;
+}
 
-    /* Notify everyone */
-    pa_subscription_post(o->source->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
+/* Called from main context */
+int pa_source_output_move_to(pa_source_output *o, pa_source *dest, pa_bool_t save) {
+    int r;
+
+    pa_source_output_assert_ref(o);
+    pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
+    pa_assert(o->source);
+    pa_source_assert_ref(dest);
+
+    if (dest == o->source)
+        return 0;
+
+    if (!pa_source_output_may_move_to(o, dest))
+        return -PA_ERR_NOTSUPPORTED;
+
+    if ((r = pa_source_output_start_move(o)) < 0)
+        return r;
+
+    if ((r = pa_source_output_finish_move(o, dest, save)) < 0)
+        return r;
 
     return 0;
 }
@@ -758,5 +873,32 @@ int pa_source_output_process_msg(pa_msgobject *mo, int code, void *userdata, int
         }
     }
 
-    return -1;
+    return -PA_ERR_NOTIMPLEMENTED;
+}
+
+void pa_source_output_send_event(pa_source_output *o, const char *event, pa_proplist *data) {
+    pa_proplist *pl = NULL;
+    pa_source_output_send_event_hook_data hook_data;
+
+    pa_source_output_assert_ref(o);
+    pa_assert(event);
+
+    if (!o->send_event)
+        return;
+
+    if (!data)
+        data = pl = pa_proplist_new();
+
+    hook_data.source_output = o;
+    hook_data.data = data;
+    hook_data.event = event;
+
+    if (pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_SEND_EVENT], &hook_data) < 0)
+        goto finish;
+
+    o->send_event(o, event, data);
+
+finish:
+    if (pl)
+        pa_proplist_free(pl);
 }

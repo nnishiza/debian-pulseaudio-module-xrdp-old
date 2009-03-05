@@ -3,7 +3,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
     pa_assert_se(m = pa_threaded_mainloop_new());
     pa_assert_se(a = pa_threaded_mainloop_get_api(m));
 
-    pa_threaded_mainloop_start(m);
+    pa_assert_se(pa_threaded_mainloop_start(m) >= 0);
 
     pa_threaded_mainloop_lock(m);
 

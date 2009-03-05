@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -36,7 +36,7 @@
 
 #include "sample.h"
 
-size_t pa_sample_size(const pa_sample_spec *spec) {
+size_t pa_sample_size_of_format(pa_sample_format_t f) {
 
     static const size_t table[] = {
         [PA_SAMPLE_U8] = 1,
@@ -48,34 +48,50 @@ size_t pa_sample_size(const pa_sample_spec *spec) {
         [PA_SAMPLE_FLOAT32BE] = 4,
         [PA_SAMPLE_S32LE] = 4,
         [PA_SAMPLE_S32BE] = 4,
+        [PA_SAMPLE_S24LE] = 3,
+        [PA_SAMPLE_S24BE] = 3,
+        [PA_SAMPLE_S24_32LE] = 4,
+        [PA_SAMPLE_S24_32BE] = 4
     };
 
-    pa_assert(spec);
-    pa_assert(spec->format >= 0);
-    pa_assert(spec->format < PA_SAMPLE_MAX);
+    pa_assert(f >= 0);
+    pa_assert(f < PA_SAMPLE_MAX);
 
-    return table[spec->format];
+    return table[f];
+}
+
+size_t pa_sample_size(const pa_sample_spec *spec) {
+
+    pa_assert(spec);
+    pa_return_val_if_fail(pa_sample_spec_valid(spec), 0);
+
+    return pa_sample_size_of_format(spec->format);
 }
 
 size_t pa_frame_size(const pa_sample_spec *spec) {
     pa_assert(spec);
+    pa_return_val_if_fail(pa_sample_spec_valid(spec), 0);
 
     return pa_sample_size(spec) * spec->channels;
 }
 
 size_t pa_bytes_per_second(const pa_sample_spec *spec) {
     pa_assert(spec);
+    pa_return_val_if_fail(pa_sample_spec_valid(spec), 0);
+
     return spec->rate*pa_frame_size(spec);
 }
 
 pa_usec_t pa_bytes_to_usec(uint64_t length, const pa_sample_spec *spec) {
     pa_assert(spec);
+    pa_return_val_if_fail(pa_sample_spec_valid(spec), 0);
 
     return (((pa_usec_t) (length / pa_frame_size(spec)) * PA_USEC_PER_SEC) / spec->rate);
 }
 
 size_t pa_usec_to_bytes(pa_usec_t t, const pa_sample_spec *spec) {
     pa_assert(spec);
+    pa_return_val_if_fail(pa_sample_spec_valid(spec), 0);
 
     return (size_t) (((t * spec->rate) / PA_USEC_PER_SEC)) * pa_frame_size(spec);
 }
@@ -108,6 +124,9 @@ int pa_sample_spec_equal(const pa_sample_spec*a, const pa_sample_spec*b) {
     pa_assert(a);
     pa_assert(b);
 
+    pa_return_val_if_fail(pa_sample_spec_valid(a), 0);
+    pa_return_val_if_fail(pa_sample_spec_valid(b), 0);
+
     return
         (a->format == b->format) &&
         (a->rate == b->rate) &&
@@ -125,6 +144,10 @@ const char *pa_sample_format_to_string(pa_sample_format_t f) {
         [PA_SAMPLE_FLOAT32BE] = "float32be",
         [PA_SAMPLE_S32LE] = "s32le",
         [PA_SAMPLE_S32BE] = "s32be",
+        [PA_SAMPLE_S24LE] = "s24le",
+        [PA_SAMPLE_S24BE] = "s24be",
+        [PA_SAMPLE_S24_32LE] = "s24-32le",
+        [PA_SAMPLE_S24_32BE] = "s24-32be",
     };
 
     if (f < 0 || f >= PA_SAMPLE_MAX)
@@ -135,7 +158,7 @@ const char *pa_sample_format_to_string(pa_sample_format_t f) {
 
 char *pa_sample_spec_snprint(char *s, size_t l, const pa_sample_spec *spec) {
     pa_assert(s);
-    pa_assert(l);
+    pa_assert(l > 0);
     pa_assert(spec);
 
     pa_init_i18n();
@@ -143,22 +166,25 @@ char *pa_sample_spec_snprint(char *s, size_t l, const pa_sample_spec *spec) {
     if (!pa_sample_spec_valid(spec))
         pa_snprintf(s, l, _("(invalid)"));
     else
-        pa_snprintf(s, l, "%s %uch %uHz", pa_sample_format_to_string(spec->format), spec->channels, spec->rate);
+        pa_snprintf(s, l, _("%s %uch %uHz"), pa_sample_format_to_string(spec->format), spec->channels, spec->rate);
 
     return s;
 }
 
 char* pa_bytes_snprint(char *s, size_t l, unsigned v) {
     pa_assert(s);
+    pa_assert(l > 0);
+
+    pa_init_i18n();
 
     if (v >= ((unsigned) 1024)*1024*1024)
-        pa_snprintf(s, l, "%0.1f GiB", ((double) v)/1024/1024/1024);
+        pa_snprintf(s, l, _("%0.1f GiB"), ((double) v)/1024/1024/1024);
     else if (v >= ((unsigned) 1024)*1024)
-        pa_snprintf(s, l, "%0.1f MiB", ((double) v)/1024/1024);
+        pa_snprintf(s, l, _("%0.1f MiB"), ((double) v)/1024/1024);
     else if (v >= (unsigned) 1024)
-        pa_snprintf(s, l, "%0.1f KiB", ((double) v)/1024);
+        pa_snprintf(s, l, _("%0.1f KiB"), ((double) v)/1024);
     else
-        pa_snprintf(s, l, "%u B", (unsigned) v);
+        pa_snprintf(s, l, _("%u B"), (unsigned) v);
 
     return s;
 }
@@ -195,7 +221,23 @@ pa_sample_format_t pa_parse_sample_format(const char *format) {
     else if (strcasecmp(format, "s32ne") == 0 || strcasecmp(format, "s32") == 0 || strcasecmp(format, "32") == 0)
         return PA_SAMPLE_S32NE;
     else if (strcasecmp(format, "s32re") == 0)
-        return PA_SAMPLE_S32RE;
+        return PA_SAMPLE_S24RE;
+    else if (strcasecmp(format, "s24le") == 0)
+        return PA_SAMPLE_S24LE;
+    else if (strcasecmp(format, "s24be") == 0)
+        return PA_SAMPLE_S24BE;
+    else if (strcasecmp(format, "s24ne") == 0 || strcasecmp(format, "s24") == 0 || strcasecmp(format, "24") == 0)
+        return PA_SAMPLE_S24NE;
+    else if (strcasecmp(format, "s24re") == 0)
+        return PA_SAMPLE_S24RE;
+    else if (strcasecmp(format, "s24-32le") == 0)
+        return PA_SAMPLE_S24LE;
+    else if (strcasecmp(format, "s24-32be") == 0)
+        return PA_SAMPLE_S24BE;
+    else if (strcasecmp(format, "s24-32ne") == 0 || strcasecmp(format, "s24-32") == 0)
+        return PA_SAMPLE_S24NE;
+    else if (strcasecmp(format, "s24-32re") == 0)
+        return PA_SAMPLE_S24RE;
 
     return -1;
 }

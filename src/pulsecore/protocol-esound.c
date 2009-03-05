@@ -6,7 +6,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -34,6 +34,7 @@
 #include <pulse/timeval.h>
 #include <pulse/utf8.h>
 #include <pulse/xmalloc.h>
+#include <pulse/proplist.h>
 
 #include <pulsecore/esound.h>
 #include <pulsecore/memblock.h>
@@ -164,10 +165,12 @@ static int esd_proto_get_latency(connection *c, esd_proto_t request, const void 
 static int esd_proto_server_info(connection *c, esd_proto_t request, const void *data, size_t length);
 static int esd_proto_all_info(connection *c, esd_proto_t request, const void *data, size_t length);
 static int esd_proto_stream_pan(connection *c, esd_proto_t request, const void *data, size_t length);
+static int esd_proto_sample_pan(connection *c, esd_proto_t request, const void *data, size_t length);
 static int esd_proto_sample_cache(connection *c, esd_proto_t request, const void *data, size_t length);
 static int esd_proto_sample_free_or_play(connection *c, esd_proto_t request, const void *data, size_t length);
 static int esd_proto_sample_get_id(connection *c, esd_proto_t request, const void *data, size_t length);
 static int esd_proto_standby_or_resume(connection *c, esd_proto_t request, const void *data, size_t length);
+static int esd_proto_standby_mode(connection *c, esd_proto_t request, const void *data, size_t length);
 
 /* the big map of protocol handler info */
 static struct proto_handler proto_map[ESD_PROTO_MAX] = {
@@ -186,8 +189,8 @@ static struct proto_handler proto_map[ESD_PROTO_MAX] = {
     { sizeof(int),                    NULL, "sample stop" },
     { (size_t) -1,                    NULL, "TODO: sample kill" },
 
-    { ESD_KEY_LEN + sizeof(int),      esd_proto_standby_or_resume, "standby" },  /* NOOP! */
-    { ESD_KEY_LEN + sizeof(int),      esd_proto_standby_or_resume, "resume" },   /* NOOP! */         /* 13 */
+    { ESD_KEY_LEN + sizeof(int),      esd_proto_standby_or_resume, "standby" },
+    { ESD_KEY_LEN + sizeof(int),      esd_proto_standby_or_resume, "resume" },                       /* 13 */
 
     { ESD_NAME_MAX,                   esd_proto_sample_get_id, "sample getid" },                     /* 14 */
     { ESD_NAME_MAX + 2 * sizeof(int), NULL, "stream filter" },
@@ -198,9 +201,9 @@ static struct proto_handler proto_map[ESD_PROTO_MAX] = {
     { (size_t) -1,                    NULL, "TODO: unsubscribe" },
 
     { 3 * sizeof(int),                esd_proto_stream_pan, "stream pan"},
-    { 3 * sizeof(int),                NULL, "sample pan" },
+    { 3 * sizeof(int),                esd_proto_sample_pan, "sample pan" },
 
-    { sizeof(int),                    NULL, "standby mode" },
+    { sizeof(int),                    esd_proto_standby_mode, "standby mode" },
     { 0,                              esd_proto_get_latency, "get latency" }
 };
 
@@ -372,6 +375,8 @@ static int esd_proto_connect(connection *c, esd_proto_t request, const void *dat
         return -1;
     }
 
+    pa_proplist_sets(c->client->proplist, "esound.byte_order", c->swap_byte_order ? "reverse" : "native");
+
     ok = 1;
     connection_write(c, &ok, sizeof(int));
     return 0;
@@ -403,8 +408,8 @@ static int esd_proto_stream_play(connection *c, esd_proto_t request, const void 
     CHECK_VALIDITY(pa_sample_spec_valid(&ss), "Invalid sample specification");
 
     if (c->options->default_sink) {
-        sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1);
-        CHECK_VALIDITY(sink, "No such sink: %s", c->options->default_sink);
+        sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK);
+        CHECK_VALIDITY(sink, "No such sink: %s", pa_strnull(c->options->default_sink));
     }
 
     pa_strlcpy(name, data, sizeof(name));
@@ -422,10 +427,9 @@ static int esd_proto_stream_play(connection *c, esd_proto_t request, const void 
     sdata.module = c->options->module;
     sdata.client = c->client;
     sdata.sink = sink;
-    pa_proplist_update(sdata.proplist, PA_UPDATE_MERGE, c->client->proplist);
     pa_sink_input_new_data_set_sample_spec(&sdata, &ss);
 
-    c->sink_input = pa_sink_input_new(c->protocol->core, &sdata, 0);
+    pa_sink_input_new(&c->sink_input, c->protocol->core, &sdata, 0);
     pa_sink_input_new_data_done(&sdata);
 
     CHECK_VALIDITY(c->sink_input, "Failed to create sink input.");
@@ -490,23 +494,17 @@ static int esd_proto_stream_record(connection *c, esd_proto_t request, const voi
     if (request == ESD_PROTO_STREAM_MON) {
         pa_sink* sink;
 
-        if (!(sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1))) {
-            pa_log("no such sink.");
-            return -1;
-        }
+        sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK);
+        CHECK_VALIDITY(sink, "No such sink: %s", pa_strnull(c->options->default_sink));
 
-        if (!(source = sink->monitor_source)) {
-            pa_log("no such monitor source.");
-            return -1;
-        }
+        source = sink->monitor_source;
+        CHECK_VALIDITY(source, "No such source.");
     } else {
         pa_assert(request == ESD_PROTO_STREAM_REC);
 
         if (c->options->default_source) {
-            if (!(source = pa_namereg_get(c->protocol->core, c->options->default_source, PA_NAMEREG_SOURCE, 1))) {
-                pa_log("no such source.");
-                return -1;
-            }
+            source = pa_namereg_get(c->protocol->core, c->options->default_source, PA_NAMEREG_SOURCE);
+            CHECK_VALIDITY(source, "No such source: %s", pa_strnull(c->options->default_source));
         }
     }
 
@@ -525,10 +523,9 @@ static int esd_proto_stream_record(connection *c, esd_proto_t request, const voi
     sdata.module = c->options->module;
     sdata.client = c->client;
     sdata.source = source;
-    pa_proplist_update(sdata.proplist, PA_UPDATE_MERGE, c->client->proplist);
     pa_source_output_new_data_set_sample_spec(&sdata, &ss);
 
-    c->source_output = pa_source_output_new(c->protocol->core, &sdata, 0);
+    pa_source_output_new(&c->source_output, c->protocol->core, &sdata, 0);
     pa_source_output_new_data_done(&sdata);
 
     CHECK_VALIDITY(c->source_output, "Failed to create source output.");
@@ -569,10 +566,10 @@ static int esd_proto_get_latency(connection *c, esd_proto_t request, const void 
     pa_assert(!data);
     pa_assert(length == 0);
 
-    if (!(sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1)))
+    if (!(sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK)))
         latency = 0;
     else {
-        double usec = (double) pa_sink_get_latency(sink);
+        double usec = (double) pa_sink_get_requested_latency(sink);
         latency = (int) ((usec*44100)/1000000);
     }
 
@@ -590,7 +587,7 @@ static int esd_proto_server_info(connection *c, esd_proto_t request, const void 
     pa_assert(data);
     pa_assert(length == sizeof(int32_t));
 
-    if ((sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1))) {
+    if ((sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK))) {
         rate = (int32_t) sink->sample_spec.rate;
         format = format_native2esd(&sink->sample_spec);
     }
@@ -623,7 +620,7 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
 
     k = sizeof(int32_t)*5+ESD_NAME_MAX;
     s = sizeof(int32_t)*6+ESD_NAME_MAX;
-    nsamples = c->protocol->core->scache ? pa_idxset_size(c->protocol->core->scache) : 0;
+    nsamples = pa_idxset_size(c->protocol->core->scache);
     t = s*(nsamples+1) + k*(c->protocol->n_player+1);
 
     connection_write_prepare(c, t);
@@ -643,7 +640,7 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
             pa_cvolume volume = *pa_sink_input_get_volume(conn->sink_input);
             rate = (int32_t) conn->sink_input->sample_spec.rate;
             lvolume = (int32_t) ((volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM);
-            rvolume = (int32_t) ((volume.values[1]*ESD_VOLUME_BASE)/PA_VOLUME_NORM);
+            rvolume = (int32_t) ((volume.values[volume.channels == 2 ? 1 : 0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM);
             format = format_native2esd(&conn->sink_input->sample_spec);
         }
 
@@ -690,8 +687,25 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
         for (ce = pa_idxset_first(c->protocol->core->scache, &idx); ce; ce = pa_idxset_next(c->protocol->core->scache, &idx)) {
             int32_t id, rate, lvolume, rvolume, format, len;
             char name[ESD_NAME_MAX];
+            pa_channel_map stereo = { .channels = 2, .map = { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT } };
+            pa_cvolume volume;
+            pa_sample_spec ss;
 
             pa_assert(t >= s*2);
+
+            if (ce->volume_is_set) {
+                volume = ce->volume;
+                pa_cvolume_remap(&volume, &ce->channel_map, &stereo);
+            } else
+                pa_cvolume_reset(&volume, 2);
+
+            if (ce->memchunk.memblock)
+                ss = ce->sample_spec;
+            else {
+                ss.format = PA_SAMPLE_S16NE;
+                ss.rate = 44100;
+                ss.channels = 2;
+            }
 
             /* id */
             id = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int) (ce->index+1));
@@ -706,19 +720,19 @@ static int esd_proto_all_info(connection *c, esd_proto_t request, const void *da
             connection_write(c, name, ESD_NAME_MAX);
 
             /* rate */
-            rate = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ce->sample_spec.rate);
+            rate = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ss.rate);
             connection_write(c, &rate, sizeof(int32_t));
 
             /* left */
-            lvolume = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ((ce->volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM));
+            lvolume = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ((volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM));
             connection_write(c, &lvolume, sizeof(int32_t));
 
             /*right*/
-            rvolume = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ((ce->volume.values[0]*ESD_VOLUME_BASE)/PA_VOLUME_NORM));
+            rvolume = PA_MAYBE_INT32_SWAP(c->swap_byte_order, (int32_t) ((volume.values[1]*ESD_VOLUME_BASE)/PA_VOLUME_NORM));
             connection_write(c, &rvolume, sizeof(int32_t));
 
             /*format*/
-            format = PA_MAYBE_INT32_SWAP(c->swap_byte_order, format_native2esd(&ce->sample_spec));
+            format = PA_MAYBE_INT32_SWAP(c->swap_byte_order, format_native2esd(&ss));
             connection_write(c, &format, sizeof(int32_t));
 
             /*length*/
@@ -761,11 +775,52 @@ static int esd_proto_stream_pan(connection *c, esd_proto_t request, const void *
         pa_cvolume volume;
         volume.values[0] = (lvolume*PA_VOLUME_NORM)/ESD_VOLUME_BASE;
         volume.values[1] = (rvolume*PA_VOLUME_NORM)/ESD_VOLUME_BASE;
-        volume.channels = 2;
-        pa_sink_input_set_volume(conn->sink_input, &volume);
+        volume.channels = conn->sink_input->sample_spec.channels;
+
+        pa_sink_input_set_volume(conn->sink_input, &volume, TRUE);
         ok = 1;
     } else
         ok = 0;
+
+    connection_write(c, &ok, sizeof(int32_t));
+
+    return 0;
+}
+
+static int esd_proto_sample_pan(connection *c, esd_proto_t request, const void *data, size_t length) {
+    int32_t ok = 0;
+    uint32_t idx, lvolume, rvolume;
+    pa_cvolume volume;
+    pa_scache_entry *ce;
+
+    connection_assert_ref(c);
+    pa_assert(data);
+    pa_assert(length == sizeof(int32_t)*3);
+
+    memcpy(&idx, data, sizeof(uint32_t));
+    idx = PA_MAYBE_UINT32_SWAP(c->swap_byte_order, idx) - 1;
+    data = (const char*)data + sizeof(uint32_t);
+
+    memcpy(&lvolume, data, sizeof(uint32_t));
+    lvolume = PA_MAYBE_UINT32_SWAP(c->swap_byte_order, lvolume);
+    data = (const char*)data + sizeof(uint32_t);
+
+    memcpy(&rvolume, data, sizeof(uint32_t));
+    rvolume = PA_MAYBE_UINT32_SWAP(c->swap_byte_order, rvolume);
+    data = (const char*)data + sizeof(uint32_t);
+
+    volume.values[0] = (lvolume*PA_VOLUME_NORM)/ESD_VOLUME_BASE;
+    volume.values[1] = (rvolume*PA_VOLUME_NORM)/ESD_VOLUME_BASE;
+    volume.channels = 2;
+
+    if ((ce = pa_idxset_get_by_index(c->protocol->core->scache, idx))) {
+        pa_channel_map stereo = { .channels = 2, .map = { PA_CHANNEL_POSITION_LEFT, PA_CHANNEL_POSITION_RIGHT } };
+
+        pa_cvolume_remap(&volume, &stereo, &ce->channel_map);
+        ce->volume = volume;
+        ce->volume_is_set = TRUE;
+        ok = 1;
+    }
 
     connection_write(c, &ok, sizeof(int32_t));
 
@@ -865,7 +920,7 @@ static int esd_proto_sample_free_or_play(connection *c, esd_proto_t request, con
         if (request == ESD_PROTO_SAMPLE_PLAY) {
             pa_sink *sink;
 
-            if ((sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK, 1)))
+            if ((sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK)))
                 if (pa_scache_play_item(c->protocol->core, name, sink, PA_VOLUME_NORM, c->client->proplist, NULL) >= 0)
                     ok = (int32_t) idx + 1;
         } else {
@@ -882,16 +937,44 @@ static int esd_proto_sample_free_or_play(connection *c, esd_proto_t request, con
 }
 
 static int esd_proto_standby_or_resume(connection *c, esd_proto_t request, const void *data, size_t length) {
-    int32_t ok;
+    int32_t ok = 1;
 
     connection_assert_ref(c);
 
     connection_write_prepare(c, sizeof(int32_t) * 2);
-
-    ok = 1;
-    connection_write(c, &ok, sizeof(int32_t));
     connection_write(c, &ok, sizeof(int32_t));
 
+    if (request == ESD_PROTO_STANDBY)
+        ok = pa_sink_suspend_all(c->protocol->core, TRUE) >= 0;
+    else {
+        pa_assert(request == ESD_PROTO_RESUME);
+        ok = pa_sink_suspend_all(c->protocol->core, FALSE) >= 0;
+    }
+
+    connection_write(c, &ok, sizeof(int32_t));
+
+    return 0;
+}
+
+static int esd_proto_standby_mode(connection *c, esd_proto_t request, const void *data, size_t length) {
+    int32_t mode;
+    pa_sink *sink, *source;
+
+    connection_assert_ref(c);
+
+    mode = ESM_RUNNING;
+
+    if ((sink = pa_namereg_get(c->protocol->core, c->options->default_sink, PA_NAMEREG_SINK)))
+        if (pa_sink_get_state(sink) == PA_SINK_SUSPENDED)
+            mode = ESM_ON_STANDBY;
+
+    if ((source = pa_namereg_get(c->protocol->core, c->options->default_source, PA_NAMEREG_SOURCE)))
+        if (pa_source_get_state(source) == PA_SOURCE_SUSPENDED)
+            mode = ESM_ON_STANDBY;
+
+    mode = PA_MAYBE_INT32_SWAP(c->swap_byte_order, mode);
+
+    connection_write(c, &mode, sizeof(mode));
     return 0;
 }
 
@@ -914,7 +997,13 @@ static int do_read(connection *c) {
         ssize_t r;
         pa_assert(c->read_data_length < sizeof(c->request));
 
-        if ((r = pa_iochannel_read(c->io, ((uint8_t*) &c->request) + c->read_data_length, sizeof(c->request) - c->read_data_length)) <= 0) {
+        if ((r = pa_iochannel_read(c->io,
+                                   ((uint8_t*) &c->request) + c->read_data_length,
+                                   sizeof(c->request) - c->read_data_length)) <= 0) {
+
+            if (r < 0 && (errno == EINTR || errno == EAGAIN))
+                return 0;
+
             pa_log_debug("read(): %s", r < 0 ? pa_cstrerror(errno) : "EOF");
             return -1;
         }
@@ -926,7 +1015,7 @@ static int do_read(connection *c) {
 
             c->request = PA_MAYBE_INT32_SWAP(c->swap_byte_order, c->request);
 
-            if (c->request < ESD_PROTO_CONNECT || c->request > ESD_PROTO_MAX) {
+            if (c->request < ESD_PROTO_CONNECT || c->request >= ESD_PROTO_MAX) {
                 pa_log("recieved invalid request.");
                 return -1;
             }
@@ -964,7 +1053,10 @@ static int do_read(connection *c) {
 
         pa_assert(c->read_data && c->read_data_length < handler->data_length);
 
-        if ((r = pa_iochannel_read(c->io, (uint8_t*) c->read_data + c->read_data_length, handler->data_length - c->read_data_length)) <= 0) {
+        if ((r = pa_iochannel_read(c->io,
+                                   (uint8_t*) c->read_data + c->read_data_length,
+                                   handler->data_length - c->read_data_length)) <= 0) {
+
             if (r < 0 && (errno == EINTR || errno == EAGAIN))
                 return 0;
 
@@ -1198,6 +1290,9 @@ static int connection_process_msg(pa_msgobject *o, int code, void*userdata, int6
     connection *c = CONNECTION(o);
     connection_assert_ref(c);
 
+    if (!c->protocol)
+        return -1;
+
     switch (code) {
         case CONNECTION_MESSAGE_REQUEST_DATA:
             do_work(c);
@@ -1238,7 +1333,7 @@ static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int
 
             if (pa_memblockq_is_readable(c->input_memblockq) && c->playback.underrun) {
                 pa_log_debug("Requesting rewind due to end of underrun.");
-                pa_sink_input_request_rewind(c->sink_input, 0, FALSE, TRUE);
+                pa_sink_input_request_rewind(c->sink_input, 0, FALSE, TRUE, FALSE);
             }
 
 /*             pa_log("got data, %u", pa_memblockq_get_length(c->input_memblockq)); */
@@ -1377,7 +1472,9 @@ static void auth_timeout(pa_mainloop_api*m, pa_time_event *e, const struct timev
 
 void pa_esound_protocol_connect(pa_esound_protocol *p, pa_iochannel *io, pa_esound_options *o) {
     connection *c;
-    char cname[256], pname[128];
+    char pname[128];
+    pa_client_new_data data;
+    pa_client *client;
 
     pa_assert(p);
     pa_assert(io);
@@ -1389,6 +1486,18 @@ void pa_esound_protocol_connect(pa_esound_protocol *p, pa_iochannel *io, pa_esou
         return;
     }
 
+    pa_client_new_data_init(&data);
+    data.module = o->module;
+    data.driver = __FILE__;
+    pa_iochannel_socket_peer_to_string(io, pname, sizeof(pname));
+    pa_proplist_setf(data.proplist, PA_PROP_APPLICATION_NAME, "EsounD client (%s)", pname);
+    pa_proplist_sets(data.proplist, "esound-protocol.peer", pname);
+    client = pa_client_new(p->core, &data);
+    pa_client_new_data_done(&data);
+
+    if (!client)
+        return;
+
     c = pa_msgobject_new(connection);
     c->parent.parent.free = connection_free;
     c->parent.process_msg = connection_process_msg;
@@ -1396,11 +1505,7 @@ void pa_esound_protocol_connect(pa_esound_protocol *p, pa_iochannel *io, pa_esou
     c->io = io;
     pa_iochannel_set_callback(c->io, io_callback, c);
 
-    pa_iochannel_socket_peer_to_string(io, pname, sizeof(pname));
-    pa_snprintf(cname, sizeof(cname), "EsounD client (%s)", pname);
-    c->client = pa_client_new(p->core, __FILE__, cname);
-    pa_proplist_sets(c->client->proplist, "esound-protocol.peer", pname);
-    c->client->module = o->module;
+    c->client = client;
     c->client->kill = client_kill_cb;
     c->client->userdata = c;
 

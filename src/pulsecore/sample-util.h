@@ -9,7 +9,7 @@
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
-  by the Free Software Foundation; either version 2 of the License,
+  by the Free Software Foundation; either version 2.1 of the License,
   or (at your option) any later version.
 
   PulseAudio is distributed in the hope that it will be useful, but
@@ -71,7 +71,7 @@ void pa_volume_memchunk(
 
 size_t pa_frame_align(size_t l, const pa_sample_spec *ss) PA_GCC_PURE;
 
-int pa_frame_aligned(size_t l, const pa_sample_spec *ss) PA_GCC_PURE;
+pa_bool_t pa_frame_aligned(size_t l, const pa_sample_spec *ss) PA_GCC_PURE;
 
 void pa_interleave(const void *src[], unsigned channels, void *dst, size_t ss, unsigned n);
 void pa_deinterleave(const void *src, void *dst[], unsigned channels, size_t ss, unsigned n);
@@ -80,5 +80,9 @@ void pa_sample_clamp(pa_sample_format_t format, void *dst, size_t dstr, const vo
 
 pa_usec_t pa_bytes_to_usec_round_up(uint64_t length, const pa_sample_spec *spec);
 size_t pa_usec_to_bytes_round_up(pa_usec_t t, const pa_sample_spec *spec);
+
+void pa_memchunk_dump_to_file(pa_memchunk *c, const char *fn);
+
+void pa_memchunk_sine(pa_memchunk *c, pa_mempool *pool, unsigned rate, unsigned freq);
 
 #endif
