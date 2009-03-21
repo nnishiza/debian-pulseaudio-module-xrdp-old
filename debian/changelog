@@ -10,10 +10,11 @@ pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
   * debian/pulseaudio.install: Update for new modules
   * debian/pulseaudio-module-x11.install: Update for new modules
   * Move libpulscore into the pulseaudio package
-  * debian/pulseaudio-module-bluetooth.install: Add the bluetooth-util module 
+  * debian/pulseaudio-module-bluetooth.install: Add the bluetooth-util module
     library
+  * debian/pulseaudio.install: Add new modules
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Mar 2009 13:24:23 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Mar 2009 13:26:47 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 
