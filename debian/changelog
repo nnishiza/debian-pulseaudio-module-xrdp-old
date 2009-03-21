@@ -9,8 +9,9 @@ pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
     - Removed. Merged upstream
   * debian/pulseaudio.install: Update for new modules
   * debian/pulseaudio-module-x11.install: Update for new modules
+  * Move libpulscore into the pulseaudio package
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 05 Mar 2009 18:47:46 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Mar 2009 13:20:57 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 

@@ -296,36 +296,6 @@ Description: X11 module for PulseAudio sound server debugging symbols
  .
  This package contains debugging symbols for the PulseAudio X11 modules.
 
-Package: libpulsecore9
-Section: libs
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: pulseaudio (<< 0.9.6-2), pulseaudio-esound-compat (<< 0.9.6-2),
-    pulseaudio-module-gconf (<< 0.9.6-2), pulseaudio-module-hal (<< 0.9.6-2),
-    pulseaudio-module-jack (<< 0.9.6-2), pulseaudio-module-lirc (<< 0.9.6-2),
-    pulseaudio-module-x11 (<< 0.9.6-2),
-    pulseaudio-module-zeroconf (<< 0.9.6-2), libpulsecore8 (= 0.9.14)
-Recommends: pulseaudio
-Description: PulseAudio sound server core
- PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
- WIN32 systems. It is a drop in replacement for the ESD sound server with
- much better latency, mixing/re-sampling quality and overall architecture.
- .
- This library provides core services to the PulseAudio daemon and modules
- the run inside the daemon.
-
-Package: libpulsecore9-dbg
-Architecture: any
-Priority: extra
-Depends: ${misc:Depends}, libpulsecore9 (= ${binary:Version})
-Description: PulseAudio sound server core detached debugging symbols
- PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
- WIN32 systems. It is a drop in replacement for the ESD sound server with
- much better latency, mixing/re-sampling quality and overall architecture.
- .
- This package contains the detached debugging symbols for the daemon
- core.
-
 Package: libpulse0
 Section: libs
 Architecture: any

@@ -52,3 +52,4 @@ usr/lib/pulse-*/modules/module-volume-restore.so
 usr/share/man/man5/default.pa.5
 usr/share/locale
 usr/share/PolicyKit/policy/org.pulseaudio.policy
+usr/lib/libpulsecore-*.so
