@@ -14,8 +14,9 @@ pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
     library
   * debian/pulseaudio.install: Add new modules
   * debian/control: Add bulid-depends on libgtk2.0-dev and libxtst-dev
+  * debian/pulseaudio.shlibs, debian/libpulse0.shlibs: Update shlib files
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Mar 2009 14:10:12 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Mar 2009 15:24:44 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 
