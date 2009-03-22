@@ -16,8 +16,9 @@ pulseaudio (0.9.15~test5-1) UNRELEASED; urgency=low
   * debian/control: Add bulid-depends on libgtk2.0-dev and libxtst-dev
   * debian/pulseaudio.shlibs, debian/libpulse0.shlibs: Update shlib files
   * debian/pulseaudio.install: Add liboss-util.so oss module helper library
+  * debian/control, debian/pulseaudio-module-raop.install: Add RAOP module
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 22 Mar 2009 21:32:37 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 22 Mar 2009 21:44:40 +0000
 
 pulseaudio (0.9.14-2) unstable; urgency=low
 
