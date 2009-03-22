@@ -35,6 +35,7 @@ usr/lib/pulse-*/modules/module-native-protocol-unix.so
 usr/share/lintian/overrides/pulseaudio
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-oss.so
+usr/lib/pulse-*/modules/liboss-util.so
 usr/lib/pulse-*/modules/module-pipe-sink.so
 usr/lib/pulse-*/modules/module-pipe-source.so
 usr/lib/pulse-*/modules/module-position-event-sounds.so
