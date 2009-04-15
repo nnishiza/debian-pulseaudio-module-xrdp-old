@@ -87,6 +87,8 @@ struct pa_source {
 
     pa_memchunk silence;
 
+    pa_usec_t fixed_latency; /* for sources with PA_SOURCE_DYNAMIC_LATENCY this is 0 */
+
     /* Called when the main loop requests a state change. Called from
      * main loop context. If returns -1 the state change will be
      * inhibited */
@@ -159,6 +161,7 @@ typedef enum pa_source_message {
     PA_SOURCE_MESSAGE_SET_LATENCY_RANGE,
     PA_SOURCE_MESSAGE_GET_LATENCY_RANGE,
     PA_SOURCE_MESSAGE_GET_MAX_REWIND,
+    PA_SOURCE_MESSAGE_SET_MAX_REWIND,
     PA_SOURCE_MESSAGE_MAX
 } pa_source_message_t;
 
@@ -205,12 +208,15 @@ void pa_source_set_description(pa_source *s, const char *description);
 void pa_source_set_asyncmsgq(pa_source *s, pa_asyncmsgq *q);
 void pa_source_set_rtpoll(pa_source *s, pa_rtpoll *p);
 
+void pa_source_set_max_rewind(pa_source *s, size_t max_rewind);
 void pa_source_set_latency_range(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency);
 
 void pa_source_detach(pa_source *s);
 void pa_source_attach(pa_source *s);
 
 void pa_source_set_soft_volume(pa_source *s, const pa_cvolume *volume);
+void pa_source_volume_changed(pa_source *s, const pa_cvolume *new_volume);
+void pa_source_mute_changed(pa_source *s, pa_bool_t new_muted);
 
 int pa_source_sync_suspend(pa_source *s);
 
@@ -257,11 +263,12 @@ void pa_source_detach_within_thread(pa_source *s);
 
 pa_usec_t pa_source_get_requested_latency_within_thread(pa_source *s);
 
-void pa_source_set_max_rewind(pa_source *s, size_t max_rewind);
-void pa_source_update_latency_range(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency);
+void pa_source_set_max_rewind_within_thread(pa_source *s, size_t max_rewind);
+void pa_source_set_latency_range_within_thread(pa_source *s, pa_usec_t min_latency, pa_usec_t max_latency);
 
 /*** To be called exclusively by source output drivers, from IO context */
 
 void pa_source_invalidate_requested_latency(pa_source *s);
+pa_usec_t pa_source_get_latency_within_thread(pa_source *s);
 
 #endif

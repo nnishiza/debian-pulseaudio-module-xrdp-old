@@ -135,12 +135,21 @@ enum {
 /* Forward declaration */
 static void sink_set_volume_cb(pa_sink *);
 
-static void on_connection(PA_GCC_UNUSED int fd, void*userdata) {
+static void on_connection(int fd, void*userdata) {
+    int so_sndbuf = 0;
+    socklen_t sl = sizeof(int);
     struct userdata *u = userdata;
     pa_assert(u);
 
     pa_assert(u->fd < 0);
     u->fd = fd;
+
+    if (getsockopt(u->fd, SOL_SOCKET, SO_SNDBUF, &so_sndbuf, &sl) < 0)
+        pa_log_warn("getsockopt(SO_SNDBUF) failed: %s", pa_cstrerror(errno));
+    else {
+        pa_log_debug("SO_SNDBUF is %zu.", (size_t) so_sndbuf);
+        pa_sink_set_max_request(u->sink, PA_MAX((size_t) so_sndbuf, u->block_size));
+    }
 
     /* Set the initial volume */
     sink_set_volume_cb(u->sink);
@@ -183,7 +192,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
                 case PA_SINK_RUNNING:
 
                     if (u->sink->thread_info.state == PA_SINK_SUSPENDED) {
-                        pa_smoother_resume(u->smoother, pa_rtclock_usec());
+                        pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
 
                         /* The connection can be closed when idle, so check to
                            see if we need to reestablish it */
@@ -531,7 +540,14 @@ int pa__init(pa_module*m) {
     u->module = m;
     m->userdata = u;
     u->fd = -1;
-    u->smoother = pa_smoother_new(PA_USEC_PER_SEC, PA_USEC_PER_SEC*2, TRUE, 10);
+    u->smoother = pa_smoother_new(
+            PA_USEC_PER_SEC,
+            PA_USEC_PER_SEC*2,
+            TRUE,
+            TRUE,
+            10,
+            0,
+            FALSE);
     pa_memchunk_reset(&u->raw_memchunk);
     pa_memchunk_reset(&u->encoded_memchunk);
     u->offset = 0;

@@ -23,14 +23,15 @@
 #include <config.h>
 #endif
 
+#include <errno.h>
+
 #include <pulse/xmalloc.h>
 #include <pulse/i18n.h>
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/shared.h>
-
-#include <modules/dbus-util.h>
+#include <pulsecore/dbus-shared.h>
 
 #include "reserve.h"
 #include "reserve-wrap.h"
@@ -112,8 +113,11 @@ pa_reserve_wrapper* pa_reserve_wrapper_get(pa_core *c, const char *device_name) 
     pa_assert_se(pa_shared_set(c, r->shared_name, r) >= 0);
 
     if (!(r->connection = pa_dbus_bus_get(c, DBUS_BUS_SESSION, &error)) || dbus_error_is_set(&error)) {
-        pa_log_error("Unable to contact D-Bus session bus: %s: %s", error.name, error.message);
-        goto fail;
+        pa_log_warn("Unable to contact D-Bus session bus: %s: %s", error.name, error.message);
+
+        /* We don't treat this as error here because we want allow PA
+         * to run even when no session bus is available. */
+        return r;
     }
 
     if ((k = rd_acquire(
@@ -125,8 +129,13 @@ pa_reserve_wrapper* pa_reserve_wrapper_get(pa_core *c, const char *device_name) 
                  request_cb,
                  NULL)) < 0) {
 
-        pa_log_error("Failed to acquire reservation lock on device '%s': %s", device_name, pa_cstrerror(-k));
-        goto fail;
+        if (k == -EBUSY) {
+            pa_log_error("Device '%s' already locked.", device_name);
+            goto fail;
+        } else {
+            pa_log_warn("Failed to acquire reservation lock on device '%s': %s", device_name, pa_cstrerror(-k));
+            return r;
+        }
     }
 
     pa_log_debug("Successfully acquired reservation lock on device '%s'", device_name);

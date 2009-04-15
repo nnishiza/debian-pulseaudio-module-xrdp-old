@@ -175,7 +175,7 @@ static const struct command commands[] = {
     { "suspend-sink",            pa_cli_command_suspend_sink,       "Suspend sink (args: index|name, bool)", 3},
     { "suspend-source",          pa_cli_command_suspend_source,     "Suspend source (args: index|name, bool)", 3},
     { "suspend",                 pa_cli_command_suspend,            "Suspend all sinks and all sources (args: bool)", 2},
-    { "set-card-profile",        pa_cli_command_card_profile,       "Change the profile of a card (aargs: index, name)", 3},
+    { "set-card-profile",        pa_cli_command_card_profile,       "Change the profile of a card (args: index, name)", 3},
     { "set-log-level",           pa_cli_command_log_level,          "Change the log level (args: numeric level)", 2},
     { "set-log-meta",            pa_cli_command_log_meta,           "Show source code location in log messages (args: bool)", 2},
     { "set-log-time",            pa_cli_command_log_time,           "Show timestamps in log messages (args: bool)", 2},
@@ -524,7 +524,7 @@ static int pa_cli_command_sink_volume(pa_core *c, pa_tokenizer *t, pa_strbuf *bu
     }
 
     pa_cvolume_set(&cvolume, sink->sample_spec.channels, volume);
-    pa_sink_set_volume(sink, &cvolume, TRUE, TRUE);
+    pa_sink_set_volume(sink, &cvolume, TRUE, TRUE, TRUE);
     return 0;
 }
 
@@ -566,7 +566,7 @@ static int pa_cli_command_sink_input_volume(pa_core *c, pa_tokenizer *t, pa_strb
     }
 
     pa_cvolume_set(&cvolume, si->sample_spec.channels, volume);
-    pa_sink_input_set_volume(si, &cvolume, TRUE);
+    pa_sink_input_set_volume(si, &cvolume, TRUE, TRUE);
     return 0;
 }
 
@@ -699,7 +699,10 @@ static int pa_cli_command_update_sink_proplist(pa_core *c, pa_tokenizer *t, pa_s
         return -1;
     }
 
-    p = pa_proplist_from_string(s);
+    if (!(p = pa_proplist_from_string(s))) {
+        pa_strbuf_puts(buf, "Failed to parse proplist.\n");
+        return -1;
+    }
 
     pa_sink_update_proplist(sink, PA_UPDATE_REPLACE, p);
 
@@ -733,7 +736,10 @@ static int pa_cli_command_update_source_proplist(pa_core *c, pa_tokenizer *t, pa
         return -1;
     }
 
-    p = pa_proplist_from_string(s);
+    if (!(p = pa_proplist_from_string(s))) {
+        pa_strbuf_puts(buf, "Failed to parse proplist.\n");
+        return -1;
+    }
 
     pa_source_update_proplist(source, PA_UPDATE_REPLACE, p);
 
@@ -773,7 +779,10 @@ static int pa_cli_command_update_sink_input_proplist(pa_core *c, pa_tokenizer *t
         return -1;
     }
 
-    p = pa_proplist_from_string(s);
+    if (!(p = pa_proplist_from_string(s))) {
+        pa_strbuf_puts(buf, "Failed to parse proplist.\n");
+        return -1;
+    }
 
     pa_sink_input_update_proplist(si, PA_UPDATE_REPLACE, p);
 
@@ -813,7 +822,10 @@ static int pa_cli_command_update_source_output_proplist(pa_core *c, pa_tokenizer
         return -1;
     }
 
-    p = pa_proplist_from_string(s);
+    if (!(p = pa_proplist_from_string(s))) {
+        pa_strbuf_puts(buf, "Failed to parse proplist.\n");
+        return -1;
+    }
 
     pa_source_output_update_proplist(so, PA_UPDATE_REPLACE, p);
 
@@ -1454,7 +1466,7 @@ static int pa_cli_command_card_profile(pa_core *c, pa_tokenizer *t, pa_strbuf *b
         return -1;
     }
 
-    if (pa_card_set_profile(card, p) < 0) {
+    if (pa_card_set_profile(card, p, TRUE) < 0) {
         pa_strbuf_printf(buf, "Failed to set card profile to '%s'.\n", p);
         return -1;
     }
@@ -1504,7 +1516,7 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_b
             nl = 1;
         }
 
-        pa_strbuf_printf(buf, "set-sink-volume %s 0x%03x\n", sink->name, pa_cvolume_avg(pa_sink_get_volume(sink, FALSE)));
+        pa_strbuf_printf(buf, "set-sink-volume %s 0x%03x\n", sink->name, pa_cvolume_avg(pa_sink_get_volume(sink, FALSE, TRUE)));
         pa_strbuf_printf(buf, "set-sink-mute %s %s\n", sink->name, pa_yes_no(pa_sink_get_mute(sink, FALSE)));
         pa_strbuf_printf(buf, "suspend-sink %s %s\n", sink->name, pa_yes_no(pa_sink_get_state(sink) == PA_SINK_SUSPENDED));
     }

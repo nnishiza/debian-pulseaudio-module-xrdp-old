@@ -150,7 +150,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
                 case PA_SINK_RUNNING:
 
                     if (u->sink->thread_info.state == PA_SINK_SUSPENDED)
-                        pa_smoother_resume(u->smoother, pa_rtclock_usec());
+                        pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
 
                     break;
 
@@ -354,6 +354,9 @@ static int do_write(struct userdata *u) {
     }
 
     if (!u->write_data && u->state == STATE_PREPARE) {
+        int so_sndbuf = 0;
+        socklen_t sl = sizeof(int);
+
         /* OK, we're done with sending all control data we need to, so
          * let's hand the socket over to the IO thread now */
 
@@ -365,6 +368,13 @@ static int do_write(struct userdata *u) {
         u->io = NULL;
 
         pa_make_tcp_socket_low_delay(u->fd);
+
+        if (getsockopt(u->fd, SOL_SOCKET, SO_SNDBUF, &so_sndbuf, &sl) < 0)
+            pa_log_warn("getsockopt(SO_SNDBUF) failed: %s", pa_cstrerror(errno));
+        else {
+            pa_log_debug("SO_SNDBUF is %zu.", (size_t) so_sndbuf);
+            pa_sink_set_max_request(u->sink, PA_MAX((size_t) so_sndbuf, u->block_size));
+        }
 
         pa_log_debug("Connection authenticated, handing fd to IO thread...");
 
@@ -535,7 +545,14 @@ int pa__init(pa_module*m) {
     u->module = m;
     m->userdata = u;
     u->fd = -1;
-    u->smoother = pa_smoother_new(PA_USEC_PER_SEC, PA_USEC_PER_SEC*2, TRUE, 10);
+    u->smoother = pa_smoother_new(
+            PA_USEC_PER_SEC,
+            PA_USEC_PER_SEC*2,
+            TRUE,
+            TRUE,
+            10,
+            0,
+            FALSE);
     pa_memchunk_reset(&u->memchunk);
     u->offset = 0;
 
@@ -566,7 +583,8 @@ int pa__init(pa_module*m) {
     pa_sink_new_data_set_name(&data, pa_modargs_get_value(ma, "sink_name", DEFAULT_SINK_NAME));
     pa_sink_new_data_set_sample_spec(&data, &ss);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, espeaker);
-    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Esound sink '%s'", espeaker);
+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_API, "esd");
+    pa_proplist_setf(data.proplist, PA_PROP_DEVICE_DESCRIPTION, "EsounD Output on %s", espeaker);
 
     u->sink = pa_sink_new(m->core, &data, PA_SINK_LATENCY|PA_SINK_NETWORK);
     pa_sink_new_data_done(&data);

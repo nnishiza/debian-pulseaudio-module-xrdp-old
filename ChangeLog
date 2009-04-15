@@ -1,9 +1,441 @@
 
-2009-03-05	Diego Elio 'Flameeyes' PettenÃ²
-	21547d7: Properly check for versioning flags.
-	cad3dd2: Make sure to set 'no' on the variable cached.
+2009-04-14	Lennart Poettering
+	ca9cd14: add a few missing initializations
+	40d71e1: explcitly ignore return values of some functions marked with gcc's warn_unused_result attribute
+	845b312: bump version for final 0.9.15 release
+	a4cea4e: core: when applying delay memblockq take monitored sink latency into account
+	2d94c93: pacat: add missing newline
+	4ee4a55: core: use pa_{source
+2009-04-13	Lennart Poettering
+	16324fc: sort LINGUAS
+	a654155: run make update-po
+	c96f6f3: update LINGUAS
+	0948dca: Merge commit 'origin/master-tx'
+	fe8b10c: core: introduce new 'reference' volume for sinks
+	49dcf09: alsa: include the alsa mixer control that is used in the property list
+	6fd8fd1: alsa: store mixer controls to use in profile data
+	89f74cb: alsa: when passing emptry mixer control name, force sw volume
+	237a9e1: volume: increase dB range to -90dB
+	0ac038e: client-conf-x11: unbreak autospawn due to stale X11 properties
+	0aed5ea: client-conf: when  is set, disable autospawn setting
+	4cc4cbd: client-conf: make setting a default server independant from the autospawn setting
+	20aba71: proplist-util: use pa_session_id() instead of accessing 7b816367b01393ed3e3e650047d78f6e-1239640487.203609-1061245823 directly
+	43650de: client-conf: modernize a few things
+	a36197c: print session id when starting up
+	1d8da03: core-util: filter utf8 in pa_machine_id()
+	1b4e5f1: core-util: add pa_session_id()
+	17f1784: cork-music-on-phone: make sure that we don't check the refcnt of pa_core when the daemon goes down
+	62db10c: lirc: fix logic behind mute buttons
+	66d2184: mmkbd: get rid of support for ancient kernels
+	f1d3dfb: mmkbd,lirc: make use of pa_assert_not_reached()
+	270a698: lirc, mmkbd: extend controllable volume range to PA_VOLUME_MAX
+	6d218e9: api: introduce PA_VOLUME_MAX
+	e9dd7a5: lirc: drop lirc_in_use, it's made redundant by PA_MODULE_LOAD_ONCE
+	d8de5d3: make sure we never overflow when calculating sleep time
+
+2009-04-13	warrink
+	2ba882c: Sending translation for po/nl.po
+
+2009-04-11	ifelix
+	362ec7b: Sending translation for Tamil
+
+2009-04-10	Lennart Poettering
+	6eaeaea: Downgrade default log level to NOTICE to follow documentation
+	a26c945: add missing languages to LINGUAS
+	3e29fd7: prepare another snapshot
+	991cb06: set fixed latencies at more places where appropriate
+
+2009-04-06	Finn Thain
+	80e18c8: make dbus optional during build
+
+2009-04-10	Lennart Poettering
+	e011230: run make update-po
+	d6f019e: Merge commit 'origin/master-tx'
+	5388b44: alsa: when printing warning about bogus data from alsa include snd_pcm_dump()
+	ee6657a: bluetooth: when starting up HSP stream, send 2 packets first, only afterwards enter one-read-one-write logic
+	d77b28c: bluetooth: rework timing logic, properly implement latency callbacks
+	e9a4dec: bluetooth: be a bit more verbose if we exit due to bad poll() revents flag
+	48cff5b: bluetooth: rename sco to hsp also for the user
+	f7c229d: core: add a seperate fixed_latency field for sinks/sources with fixed latency
+	9ae8ca2: core: memory leak, fix ref counting when moving streams
+	dcd4a73: dbus: memory leak, actually free dbus wrapper
+	d827ecd: dbus: drop pa_ prefix from static symbol
+	f8ebe85: protocol-native: downgrade message if we receive pcm block for dead stream
+	5b87196: protocol-native: print underrun message only once for each underrun
+	3507d1e: socket-server: memory leak, free machine id after use
+	669703d: dbus: memory leak, free pending calls
+	9ba9883: dbus: memory leak, free server id after use
+	9ee6a41: bluetooth: memory leak, actually free discovery struct itself
+	f65b276: interpol-test: make it easier to test corking only optionally
+
+2009-04-09	elsupergomez
+	dac687d: Sending translation for Spanish
+
+2009-04-09	mgiri
+	d1cf6eb: Sending translation for Oriya
+	6c5bbd3: Sending translation for Oriya
+
+2009-04-08	mgiri
+	8e1a9b7: Sending translation for Oriya
+
+2009-04-08	kkrothap
+	27784c4: Sending translation for Telugu
+
+2009-04-08	ifelix
+	0474762: Sending translation for po/ta.po
+
+2009-04-08	runab
+	bb7beeb: Sending translation for Bengali (India)
+
+2009-04-08	amitakhya
+	89f5da8: Sending translation for Assamese
+	b445f79: Sending translation for po/as.po
+
+2009-04-08	Lennart Poettering
+	6c04a1c: bluetooth: make sure to set max_request
+	c32c6c8: introduce relative_volume field in sink_input and make use of it on sink flat volume change
+	14e89d4: when calculating volume from dB use ceil()
+	4ff41ec: print smallest attenuation/sample
+
+2009-04-07	kkrothap
+	091a0f2: Sending translation for po/te.po
+
+2009-04-07	kmilos
+	f5eca5d: Sending translation for po/sr@latin.po
+	7202d52: Sending translation for Serbian
+
+2009-04-07	mgiri
+	5b0d1bf: Sending translation for Oriya
+	54c895c: Sending translation for po/or.po
+
+2009-04-07	runab
+	7154f06: Sending translation for po/bn_IN.po
+
+2009-04-07	Lennart Poettering
+	aacb11b: update documentation regarding stream timing a bit
+	c523b16: after propagating a sink volume change to the sink inputs recalculate their soft volumes
+	93e14d3: we need to make our multiplications with linear values
+	02686cc: reduce number of conversions to/from linear volumes
+	d612fbb: compare with doubles, not integer
+	e356a03: If the sink volume is lowered to 0 and then increased again, make sure all stream volumes follow instead of staying at 0
+	2c2713a: make use of SO_TIMESTAMP timestamp for accuracy and leave smoother paused until we have data
+	f204c0f: mark null sink as support dynamic latency
+	298bd0b: adjust max_rewind/max_request whenever the latency changes
+	e976034: send the source latency based on the MTU size
+	61b0776: add suspend_within_thread() callbacks to pa_sink_input/pa_source_output
+	35a4a0b: enable debugging output based on if DEBUG_DATA macro is set
+
+2009-04-07	swkothar
+	ff2dc1b: Sending translation for Gujarati
+
+2009-04-07	shanky
+	682c101: Sending translation for po/kn.po
+
+2009-04-06	Lennart Poettering
+	886ddc3: make sure we don't apply sampling rate fixes that bring the sampling freq > PA_RATE_MAX
+	e61728e: Make sure we don't get stuck when prebuf is too high
+	ff8d66d: extend documentation for pa_stream_cork() a bit
+	7fc2382: properly handle interpolation when queried x is left of last data position
+	daa945a: don't fail device reservation if the D-Bus connection is dead
+	4b521e5: be a bit more verbose about the busses we are connected to
+	90f4fdb: make sure we keep a reference of the bus connection during the whole runtime if we manage to acquire the bus name
+
+2009-04-06	swkothar
+	f598776: Sending translation for Gujarati
+	b9b470e: Sending translation for Gujarati
+	4c0a2e0: Sending translation for po/gu.po
+
+2009-04-06	sandeeps
+	a55c236: Sending translation for po/mr.po
+
+2009-04-06	leahliu
+	f709f2b: Sending translation for Chinese (Simplified)
+
+2009-04-05	soko
+	6c0ce4d: Sending translation for po/sr@latin.po
+	c66e3fd: Sending translation for Serbian
+
+2009-04-05	raven
+	015d66e: Sending translation for Polish
+
+2009-04-05	vpv
+	4053e35: Sending translation for Finnish
+	d5e8488: Sending translation for Finnish
+	f5ec110: Sending translation for Finnish
+
+2009-04-05	Lennart Poettering
+	ecba42b: run make po-update
+	9416cdf: Merge commit 'origin/master-tx'
+	6ba3333: Merge branch 'master' of ssh://rootserver/home/lennart/git/public/pulseaudio
+	923c5bc: make it easy to disable interpolation in the interpolation test tool
+	14e11e4: Fix a couple of races in native protocol
+	7dafa87: don't try to outsmart the transport
+	ce73e71: introduce pa_{sink	d035f4a: Modify smoothing code to make cubic interpolation optional and allow 'quick fixups' on resuming
+
+2009-04-04	vpv
+	82d1301: Sending translation for Finnish
+
+2009-04-04	Lennart Poettering
+	ca39fa2: initialize sound cards only after the 'control' object appeared
+	9bea250: increase log buffer further
+	77a1e38: refuse to initialize on modem devices
+	f708328: add missing files to POTFILES.in
+	99f45a6: run make update-po
+	f446f0e: Merge commit 'origin/master-tx'
+
+2009-04-01	Maarten Bosmans
+	8bcb9c6: various spelling fixes
+
+2009-04-01	Luke Yelavich
+	ccaf765: POTFILES.IN: Refer to src/pulsecore/dbus-util.c
+
+2009-04-03	soko
+	a12f4e6: Sending translation for po/sr@latin.po
+	310d47a: Sending translation for Serbian
+	398e381: Sending translation for po/sr@latin.po
+	a0e46c2: Sending translation for Serbian
+
+2009-04-03	Lennart Poettering
+	6152c52: Merge branch 'master' of ssh://rootserver/home/lennart/git/public/pulseaudio
+	143e1ba: downgrade a few messages
+
+2009-04-02	soko
+	089a081: Sending translation for Serbian
+
+2009-04-02	leahliu
+	cb40e85: Sending translation for Chinese (Simplified)
+
+2009-04-01	Lennart Poettering
+	1c26d7e: plot the difference between system and sound card time
+	373b5ef: properly account for seeks in the requested_bytes counter
+	380e97a: use machine id instead of hostname to identify local connections
+	dcb24f5: load bt discover module only when installed
+	707acab: prepare test7
+	75a8d18: pass destination source/sink when moving streams so that we can access them
+	c2f6d09: don't access i->sink if it is not set
+	d9b19f8: prepare test6
+	5348cc1: increase timing update interval exponentially
+	aa1ad0d: in verbose mode log buffer attr changes
+	0aa99c4: add buffer_attr callback stuff to exported symbol list
+
+2009-04-01	tombo
+	1fa761a: Sending translation for Italian
+
+2009-03-31	Lennart Poettering
+	4e8ceae: fix buffer defaults
+	76c44d1: be a bit more verbose about max_request changes
+	cebaa98: Log underruns
+	917e8cd: handle buffer_attr changed messages properly
+	5cbd4b7: update command name table
+	ef5af55: fix an error where a signal was accidently freed when it is tried to register it twice
+	2a32de1: Merge commit 'origin/master-tx'
+
+2009-03-31	beckerde
+	c29e9cf: Sending translation for Spanish
+	2cd93ab: Sending translation for Spanish
+	1e99255: Sending translation for Spanish
+
+2009-03-07	Finn Thain
+	5e11972: revive solaris module
+
+2009-03-30	Kyle Cronan
+	92ae5f1: Specifying ALSA mixer control
+
+2009-03-29	Maarten Bosmans
+	facc46d: fix some typos in doxygen comments
+
+2009-03-30	Maarten Bosmans
+	4a40aed: handle failure to parse proplist in cli-command gracefully
+
+2009-03-31	Lennart Poettering
+	cab1e54: explain ff7033c11d9248fe837204b03c8397231dc511fe
+	ff7033c: Revert "make sure we always read in all properties"
+
+2009-03-30	Lennart Poettering
+	29a282a: allow nofail mode only when no server string was specified
+	b6135b3: minor cleanups
+	3df9eef: take org.pulseaudio.Server instead of org.pulseaudio to match the interface name already used in the HAL module
+	857a1f4: fix compiler warning
+	90fbc03: make sure we never access an invalid pa_bluetooth_device object
+	1c8f968: make sure we always read in all properties
+	66b80e9: get rid of old 'Connected' property parsing and make sure we don't execute two case branches
+	91355a1: introduce typedef for pa_bt_audio_state and use it everywhere
+	1390564: Merge commit 'elmarco/bluetooth-fixes'
+	d33be12: Merge commit 'elmarco/dbus'
+	649c982: Use pa_source_set_max_rewind_within_thread() for updating the monitor source's max_rewind
+
+2009-03-27	Marc-AndrÃ© Lureau
+	8491b47: gtk-test: updated to use PA_CONTEXT_NOAUTOSPAWN
+2009-03-20	Marc-AndrÃ© Lureau
+	1dad83b: pulse: client connect to dbus
+	b4ef64d: daemon: take org.pulseaudio
+
+2009-03-19	Marc-AndrÃ© Lureau
+	eb93e25: dbus: split dbus-util into dbus-shared
+
+2009-03-30	Lennart Poettering
+	1743322: Merge commit 'coling/master'
+	061344f: Merge commit 'origin/master'
+	aa68036: rework tunneling code
+	65b787d: notify clients about tlength changes
+	491aafd: typo fix
+	b349dae: add pa_memblockq_apply_attr()/pa_memblockq_get_attr()
+	7c37c37: document more often the context certain functions are called in
+	7f5481e: simplify latency config functions a bit and make them callable in more contexts
+	d04f3e1: Trigger move callback a little bit earlier so that no IO thread is running
+	e3f1510: don't enabled tsched on software ALSA devices
+
+2009-03-27	Marc-AndrÃ© Lureau
+	87fcb3d: bluetooth: use new audio State properties
+	38825d7: bluetooth: GetProperties after profile UUID show up
+	20bd1c6: bluetooth: remove racy GetProperties to check profile
+
+2009-03-26	Marc-AndrÃ© Lureau
+	9e8c2d3: bluetooth: don't access outside array range
+
+2009-03-24	Marc-AndrÃ© Lureau
+	61cd6d4: bluetooth: fail when switching on non-connected profile
+	62a4e36: bluetooth: connected can be -1, check > 0
+
+2009-03-27	Lennart Poettering
+	87d63b1: Small fix for MacOSX compat
+	db714bf: fix typo
+
+2009-03-26	Luiz Augusto von Dentz
+	13f1c44: Do not reconfigure capabilities.
+
+2009-03-24	Luiz Augusto von Dentz
+	168c741: Query and make use of the current configuration.
+
+2009-03-25	Luiz Augusto von Dentz
+	071b3e7: Update ipc to match new message headers introduced on BlueZ 4.34.
+
+2009-03-23	Luiz Augusto von Dentz
+	b03c545: Fix misuse of 'frame.joint' when estimating the frame length.
+	f80a1f6: Maintain the original code style for sbc.
+
+2009-03-25	Colin Guthrie
+	205cbe8: raop: Add call to pa_sink_set_max_request()
+
+2009-03-25	Lennart Poettering
+	3813034: add missing initialization
+	cbbd986: make sure the discovery module is only loaded once
+	39576ec: on monitor source be fine with any latency range set by the sink
+	6defb1a: add missing whitespace
+	2c1eaa7: copy latency flags from sink to monitor source
+	4edb109: use u->use_tsched everywhere
+	8282efc: fix value of DYNAMIC_LATENCY
+	c367a88: fix misplace _ref() calls that should have been _assert_ref()
+	f6a6d01: optionally skip initial frames in backtrace
+	8460fac: don't show full so path in backtrace
+	e41ec51: add simple ref counting debugging framework
+	577259b: trivial simplification
+	119698a: beef up esd sink properties a bit
+	fdbe054: initialize max_request to SO_SNDBUF
+	98a5f4a: don't fiddle with latency range in sources with static latency
+	d0bd3d9: initialize max_request
+	bcfe51f: again, don't fiddle with latency range in sinks with static latency
+	59b7e53: Don't initialize userdata twice
+	b815a1c: don't fiddle with latency range because we cannot adjust it dynamically
+	0316dba: set latency range only in tsched mode
+	171c88f: link jack modules's max_request to the jack buffer size
+	892a839: simplify things and make sure timing setters can be called in most contexts
+	44ca897: introduce new flag that marks sinks/sources which can adjust the latency dynamically
+	9bca59e: make pa_source_set_max_rewind() work similar to pa_sink_set_max_rewind()
+	9151107: get rid of 'default' min/max latencies, simplify things by just having absolute boundaries
+
+2009-03-24	Marc-AndrÃ© Lureau
+	a7246bd: bluetooth: fix #NOKIA, correctly unlink sink/src
+
+2009-03-24	Lennart Poettering
+	5b523d0: fix bad memory access when destroying m-b-d
+	c64d8cb: Allow calling pa_{sink	50695d9: minimal reordering
+	2f9a784: set request/rewind sizes only via accessor functions
+	aa92ff4: simplify latency range by not allowing stored 'wildcard' ranges anymore
+	e6be948: only decrease timer slack, never increase
+
+2009-03-23	Lennart Poettering
+	bcbfd5b: don't fail when no session bus is available
+	52dcb95: add pa_assert_cc() for compile time assertions
+
+2009-03-16	Marc-AndrÃ© Lureau
+	a467bec: pulse: check context (do not user pstream when NULL)
+
+2009-03-23	Lennart Poettering
+	0815455: only store card profile if flagged for that
+	124de50: enable bluetooth default by support
+	906fd57: Merge commit 'origin/master-tx'
+
+2009-03-21	kmilos
+	4c381cd: Sending translation for po/sr@latin.po
+	29d1db6: Sending translation for po/sr.po
+
+2009-03-21	Lennart Poettering
+	c14da67: readd volume control logic
+	b3675c2: add functions that modules can call whenever they now the volume changed
+	8d5b375: at a couple of #ifdef NOKIAs for now
+	3aa3972: rework device discovery to share a single device list among all modules
+	20488fb: add pa_hook_is_firing
+
+2009-03-20	Lennart Poettering
+	f5c8990: make sure we dispatch messages in order
+	77a1db1: fix a misplaced assert
+	888e44f: rework bluetooth IO loops
+	d2bee57: fix prototypes of remaining sbc.[ch] API regarding size_t/const
+	99dae9b: don't try to unref reserve stuff if we don't use it
+	0251078: fix channel mapping for a52 devices. Closes #508
+	33a8f53: simply bluetooth nrec handling a bit
+	dfb3d2e: always remap relative volume properly
+	a998038: introduce pa_sink_input_get_relative_volume()
+	bd3154a: introduce pa_assert_fp() for fast path assertions
+
+2009-03-19	Xavier Conde
+	5cc7d00: Update catalan po
+
+2009-03-19	Lennart Poettering
+	fe3709c: fix a comment
+	dd40006: document things that need to be fixed with FIXME
+	3762299: unfuck i18n
+	86439a4: Merge commit 'origin/master-tx'
+	0a1af8e: Merge branch 'master' of ssh://rootserver/home/lennart/git/public/pulseaudio
+	4a98312: Merge commit 'elmarco/bluetooth-fixes'
+	291d21c: fix prototypes of sbc functions a bit
+	794775b: document todo items discussed at bt meeting
+	303cd90: get rid of setsockopt() calls since they have never been implemented upstream
+
+2009-03-19	Marc-AndrÃ© Lureau
+	e836217: bluetooth: rework the info_valid logic to be more tolerant
+	f1daa28: bluetooth: mark info_valid when receive Connected
+
+2009-03-06	Marc-AndrÃ© Lureau
+	af9f92b: bluetooth: update SCO over PCM with latest changes
+
+2009-03-19	Marc-AndrÃ© Lureau
+	df3f4ee: bluetooth: load bluetooth device with connected profile
+
+2009-03-19	Lennart Poettering
+	9744595: Merge commit '2d903bae9a2e57f997a3d3f335379c3880f95c77'
+	4ebdee5: deduce a proper icon for TV sets
+	3e8c7ac: Ignore HAL NoSuchProperty errors when looking for capabilities field. Closes rhbz #489394
+
+2009-03-12	Lennart Poettering
+	2928b44: Merge commit 'elmarco/bluetooth-fixes'
+
+2009-03-12	A S Alam
+	000f0b8: Adding Punjabi Language
+
+2009-03-05	Marc-AndrÃ© Lureau
+	9e93b9c: bluetooth: stream also when source is suspended
+	018cadd: bluetooth: restart timer when write begin
+	362d196: bluetooth: accept temporarily unavailable error
+	2d903ba: bluetooth: s/handled/not_yet_handled for signals
+	12ea570: bluetooth: reset read/write index when starting to stream
+
+2009-03-05	Piotr DrÄg
+	5d00693: Updated Polish translation
 
 2009-03-05	Lennart Poettering
+	47bc3b7: prepare test5
 	c589da7: prepare release 0.9.15-test4
 	c6ed0e8: run make update-po
 	57baff5: Merge commit 'origin/master-tx'
@@ -11,6 +443,10 @@
 	81323b5: Merge branch 'master' of ssh://rootserver/home/lennart/git/public/pulseaudio
 	3122008: try to detect when stupid clients forks and refuse all service from then on
 	9d29b96: make interpol test more interesting by corking/uncorking multiple times
+
+2009-03-05	Diego Elio 'Flameeyes' PettenÃ²
+	21547d7: Properly check for versioning flags.
+	cad3dd2: Make sure to set 'no' on the variable cached.
 
 2009-03-04	Lennart Poettering
 	dcee888: Merge branch 'master' of ssh://rootserver/home/lennart/git/public/pulseaudio

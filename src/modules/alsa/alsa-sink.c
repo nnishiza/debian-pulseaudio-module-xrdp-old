@@ -240,7 +240,7 @@ static void adjust_after_underrun(struct userdata *u) {
         pa_log_notice("Increasing minimal latency to %0.2f ms",
                       (double) new_min_latency / PA_USEC_PER_MSEC);
 
-        pa_sink_update_latency_range(u->sink, new_min_latency, u->sink->thread_info.max_latency);
+        pa_sink_set_latency_range_within_thread(u->sink, new_min_latency, u->sink->thread_info.max_latency);
         return;
     }
 
@@ -483,7 +483,13 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polle
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) - process_usec;
+    *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec);
+
+    if (*sleep_usec > process_usec)
+        *sleep_usec -= process_usec;
+    else
+        *sleep_usec = 0;
+
     return work_done ? 1 : 0;
 }
 
@@ -605,7 +611,13 @@ static int unix_write(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polle
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec) - process_usec;
+    *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec);
+
+    if (*sleep_usec > process_usec)
+        *sleep_usec -= process_usec;
+    else
+        *sleep_usec = 0;
+
     return work_done ? 1 : 0;
 }
 
@@ -756,7 +768,7 @@ static int update_sw_params(struct userdata *u) {
         return err;
     }
 
-    pa_sink_set_max_request(u->sink, u->hwbuf_size - u->hwbuf_unused);
+    pa_sink_set_max_request_within_thread(u->sink, u->hwbuf_size - u->hwbuf_unused);
 
     return 0;
 }
@@ -919,7 +931,7 @@ static int mixer_callback(snd_mixer_elem_t *elem, unsigned int mask) {
         return 0;
 
     if (mask & SND_CTL_EVENT_MASK_VALUE) {
-        pa_sink_get_volume(u->sink, TRUE);
+        pa_sink_get_volume(u->sink, TRUE, FALSE);
         pa_sink_get_mute(u->sink, TRUE);
     }
 
@@ -1173,7 +1185,7 @@ static void sink_update_requested_latency_cb(pa_sink *s) {
 
     /* Let's check whether we now use only a smaller part of the
     buffer then before. If so, we need to make sure that subsequent
-    rewinds are relative to the new maxium fill level and not to the
+    rewinds are relative to the new maximum fill level and not to the
     current fill level. Thus, let's do a full rewind once, to clear
     things up. */
 
@@ -1286,7 +1298,7 @@ static void thread_func(void *userdata) {
                     pa_log_info("Starting playback.");
                     snd_pcm_start(u->pcm_handle);
 
-                    pa_smoother_resume(u->smoother, pa_rtclock_usec());
+                    pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
                 }
 
                 update_smoother(u);
@@ -1300,7 +1312,7 @@ static void thread_func(void *userdata) {
                     /* USB devices on ALSA seem to hit a buffer
                      * underrun during the first iterations much
                      * quicker then we calculate here, probably due to
-                     * the transport latency. To accomodate for that
+                     * the transport latency. To accommodate for that
                      * we artificially decrease the sleep time until
                      * we have filled the buffer at least once
                      * completely.*/
@@ -1495,7 +1507,6 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     snd_pcm_uframes_t period_frames, tsched_frames;
     size_t frame_size;
     pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d, ignore_dB = FALSE;
-    pa_usec_t usec;
     pa_sink_new_data data;
 
     pa_assert(m);
@@ -1559,10 +1570,14 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
-    u->smoother = pa_smoother_new(DEFAULT_TSCHED_BUFFER_USEC*2, DEFAULT_TSCHED_BUFFER_USEC*2, TRUE, 5);
-    usec = pa_rtclock_usec();
-    pa_smoother_set_time_offset(u->smoother, usec);
-    pa_smoother_pause(u->smoother, usec);
+    u->smoother = pa_smoother_new(
+            DEFAULT_TSCHED_BUFFER_USEC*2,
+            DEFAULT_TSCHED_BUFFER_USEC*2,
+            TRUE,
+            TRUE,
+            5,
+            pa_rtclock_usec(),
+            TRUE);
 
     if (reserve_init(u, pa_modargs_get_value(
                              ma, "device_id",
@@ -1617,6 +1632,11 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     pa_assert(u->device_name);
     pa_log_info("Successfully opened device %s.", u->device_name);
 
+    if (pa_alsa_pcm_is_modem(u->pcm_handle)) {
+        pa_log_notice("Device %s is modem, refusing further initialization.", u->device_name);
+        goto fail;
+    }
+
     if (profile)
         pa_log_info("Selected configuration '%s' (%s).", profile->description, profile->name);
 
@@ -1630,6 +1650,11 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         u->use_tsched = use_tsched = FALSE;
     }
 
+    if (use_tsched && !pa_alsa_pcm_is_hw(u->pcm_handle)) {
+        pa_log_info("Device is not a hardware device, disabling timer-based scheduling.");
+        u->use_tsched = use_tsched = FALSE;
+    }
+
     if (u->use_mmap)
         pa_log_info("Successfully enabled mmap() mode.");
 
@@ -1639,7 +1664,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     /* ALSA might tweak the sample spec, so recalculate the frame size */
     frame_size = pa_frame_size(&ss);
 
-    pa_alsa_find_mixer_and_elem(u->pcm_handle, &u->mixer_handle, &u->mixer_elem);
+    pa_alsa_find_mixer_and_elem(u->pcm_handle, &u->mixer_handle, &u->mixer_elem, pa_modargs_get_value(ma, "control", NULL), profile);
 
     pa_sink_new_data_init(&data);
     data.driver = driver;
@@ -1649,7 +1674,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     pa_sink_new_data_set_sample_spec(&data, &ss);
     pa_sink_new_data_set_channel_map(&data, &map);
 
-    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle);
+    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle, u->mixer_elem);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_frames * frame_size * nfrags));
     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_frames * frame_size));
@@ -1662,7 +1687,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
 
     pa_alsa_init_description(data.proplist);
 
-    u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY);
+    u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY|(u->use_tsched ? PA_SINK_DYNAMIC_LATENCY : 0));
     pa_sink_new_data_done(&data);
 
     if (!u->sink) {
@@ -1685,26 +1710,27 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     u->tsched_watermark = pa_usec_to_bytes_round_up(pa_bytes_to_usec_round_up(tsched_watermark, &requested_ss), &u->sink->sample_spec);
     pa_cvolume_mute(&u->hardware_volume, u->sink->sample_spec.channels);
 
-    if (use_tsched) {
-        fix_min_sleep_wakeup(u);
-        fix_tsched_watermark(u);
-
-        u->watermark_step = pa_usec_to_bytes(TSCHED_WATERMARK_STEP_USEC, &u->sink->sample_spec);
-    }
-
-    pa_sink_set_max_rewind(u->sink, use_tsched ? u->hwbuf_size : 0);
-    pa_sink_set_max_request(u->sink, u->hwbuf_size);
-    pa_sink_set_latency_range(u->sink,
-                              use_tsched ? (pa_usec_t) -1 : pa_bytes_to_usec(u->hwbuf_size, &ss),
-                              pa_bytes_to_usec(u->hwbuf_size, &ss));
-
     pa_log_info("Using %u fragments of size %lu bytes, buffer time is %0.2fms",
                 nfrags, (long unsigned) u->fragment_size,
                 (double) pa_bytes_to_usec(u->hwbuf_size, &ss) / PA_USEC_PER_MSEC);
 
-    if (use_tsched)
+    pa_sink_set_max_request(u->sink, u->hwbuf_size);
+    pa_sink_set_max_rewind(u->sink, u->hwbuf_size);
+
+    if (u->use_tsched) {
+        u->watermark_step = pa_usec_to_bytes(TSCHED_WATERMARK_STEP_USEC, &u->sink->sample_spec);
+
+        fix_min_sleep_wakeup(u);
+        fix_tsched_watermark(u);
+
+        pa_sink_set_latency_range(u->sink,
+                                  0,
+                                  pa_bytes_to_usec(u->hwbuf_size, &ss));
+
         pa_log_info("Time scheduling watermark is %0.2fms",
                     (double) pa_bytes_to_usec(u->tsched_watermark, &ss) / PA_USEC_PER_MSEC);
+    } else
+        u->sink->fixed_latency = pa_bytes_to_usec(u->hwbuf_size, &ss);
 
     reserve_update(u);
 
@@ -1714,7 +1740,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     if (setup_mixer(u, ignore_dB) < 0)
         goto fail;
 
-    pa_alsa_dump(u->pcm_handle);
+    pa_alsa_dump(PA_LOG_DEBUG, u->pcm_handle);
 
     if (!(u->thread = pa_thread_new(thread_func, u))) {
         pa_log("Failed to create thread.");

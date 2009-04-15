@@ -179,7 +179,7 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
     if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
         return;
 
-    pa_sink_set_max_rewind(u->sink, nbytes);
+    pa_sink_set_max_rewind_within_thread(u->sink, nbytes);
 }
 
 /* Called from I/O thread context */
@@ -192,7 +192,7 @@ static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes) {
     if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
         return;
 
-    pa_sink_set_max_request(u->sink, nbytes);
+    pa_sink_set_max_request_within_thread(u->sink, nbytes);
 }
 
 /* Called from I/O thread context */
@@ -205,7 +205,7 @@ static void sink_input_update_sink_latency_range_cb(pa_sink_input *i) {
     if (!u->sink || !PA_SINK_IS_LINKED(u->sink->thread_info.state))
         return;
 
-    pa_sink_update_latency_range(u->sink, i->sink->thread_info.min_latency, i->sink->thread_info.max_latency);
+    pa_sink_set_latency_range_within_thread(u->sink, i->sink->thread_info.min_latency, i->sink->thread_info.max_latency);
 }
 
 /* Called from I/O thread context */
@@ -237,7 +237,7 @@ static void sink_input_attach_cb(pa_sink_input *i) {
     pa_sink_set_rtpoll(u->sink, i->sink->rtpoll);
     pa_sink_attach_within_thread(u->sink);
 
-    pa_sink_update_latency_range(u->sink, u->master->thread_info.min_latency, u->master->thread_info.max_latency);
+    pa_sink_set_latency_range_within_thread(u->sink, u->master->thread_info.min_latency, u->master->thread_info.max_latency);
 }
 
 /* Called from main context */
@@ -354,7 +354,7 @@ int pa__init(pa_module*m) {
     pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_MASTER_DEVICE, master->name);
     pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_CLASS, "filter");
 
-    u->sink = pa_sink_new(m->core, &sink_data, PA_SINK_LATENCY);
+    u->sink = pa_sink_new(m->core, &sink_data, PA_SINK_LATENCY|PA_SINK_DYNAMIC_LATENCY);
     pa_sink_new_data_done(&sink_data);
 
     if (!u->sink) {
