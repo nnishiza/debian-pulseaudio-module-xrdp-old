@@ -7,8 +7,9 @@ pulseaudio (0.9.15-1) UNRELEASED; urgency=low
   * Move debug package to the debug Section
   * Done make shlibs files for modules in /usr/lib/pulse-0.9.15
   * Update standards-version to 3.8.1, no further changes
+  * Set priority of pulseaudio-module-raop-dbg to extra
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 16 Apr 2009 00:05:25 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 16 Apr 2009 00:44:44 +0100
 
 pulseaudio (0.9.15~test5-1) experimental; urgency=low
 

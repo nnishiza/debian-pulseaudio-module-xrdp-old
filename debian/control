@@ -265,6 +265,7 @@ Description: RAOP module for PulseAudio sound server
 
 Package: pulseaudio-module-raop-dbg
 Architecture: any
+Priority: extra
 Section: debug
 Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: RAOP module for PulseAudio sound server
