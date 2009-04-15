@@ -4,8 +4,9 @@ pulseaudio (0.9.15-1) UNRELEASED; urgency=low
   * New Upstream Version
   * Update copyright file
   * Updated pulseaudio-module-hal.install, dbus-util became part of pulsecore
+  * Move debug package to the debug Section
 
- -- Sjoerd Simons <sjoerd@debian.org>  Wed, 15 Apr 2009 23:29:58 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Wed, 15 Apr 2009 23:46:18 +0100
 
 pulseaudio (0.9.15~test5-1) experimental; urgency=low
 
