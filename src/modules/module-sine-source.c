@@ -60,7 +60,7 @@ PA_MODULE_USAGE(
         "frequency=<frequency in Hz>");
 
 #define DEFAULT_SOURCE_NAME "sine_input"
-#define MAX_LATENCY_USEC (PA_USEC_PER_SEC * 2)
+#define BLOCK_USEC (PA_USEC_PER_SEC * 2)
 
 struct userdata {
     pa_core *core;
@@ -260,11 +260,12 @@ int pa__init(pa_module*m) {
     u->source->update_requested_latency = source_update_requested_latency_cb;
     u->source->userdata = u;
 
+    u->block_usec = BLOCK_USEC;
+
     pa_source_set_asyncmsgq(u->source, u->thread_mq.inq);
     pa_source_set_rtpoll(u->source, u->rtpoll);
+    u->source->fixed_latency = u->block_usec;
 
-    pa_source_set_latency_range(u->source, (pa_usec_t) -1, MAX_LATENCY_USEC);
-    u->block_usec = u->source->thread_info.max_latency;
 
     if (!(u->thread = pa_thread_new(thread_func, u))) {
         pa_log("Failed to create thread.");

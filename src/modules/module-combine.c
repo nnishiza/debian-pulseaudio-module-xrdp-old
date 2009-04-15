@@ -69,7 +69,7 @@ PA_MODULE_USAGE(
 
 #define DEFAULT_ADJUST_TIME 10
 
-#define REQUEST_LATENCY_USEC (PA_USEC_PER_MSEC * 200)
+#define BLOCK_USEC (PA_USEC_PER_MSEC * 200)
 
 static const char* const valid_modargs[] = {
     "sink_name",
@@ -649,7 +649,7 @@ static void update_max_request(struct userdata *u) {
     if (max_request <= 0)
         max_request = pa_usec_to_bytes(u->block_usec, &u->sink->sample_spec);
 
-    pa_sink_set_max_request(u->sink, max_request);
+    pa_sink_set_max_request_within_thread(u->sink, max_request);
 }
 
 /* Called from thread context of the io thread */
@@ -664,7 +664,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
             if (PA_PTR_TO_UINT(data) == PA_SINK_SUSPENDED)
                 pa_smoother_pause(u->thread_info.smoother, pa_rtclock_usec());
             else
-                pa_smoother_resume(u->thread_info.smoother, pa_rtclock_usec());
+                pa_smoother_resume(u->thread_info.smoother, pa_rtclock_usec(), TRUE);
 
             break;
 
@@ -817,7 +817,7 @@ static int output_create_sink_input(struct output *o) {
     o->sink_input->kill = sink_input_kill_cb;
     o->sink_input->userdata = o;
 
-    pa_sink_input_set_requested_latency(o->sink_input, REQUEST_LATENCY_USEC);
+    pa_sink_input_set_requested_latency(o->sink_input, BLOCK_USEC);
 
     return 0;
 }
@@ -1043,7 +1043,14 @@ int pa__init(pa_module*m) {
     pa_atomic_store(&u->thread_info.running, FALSE);
     u->thread_info.in_null_mode = FALSE;
     u->thread_info.counter = 0;
-    u->thread_info.smoother = pa_smoother_new(PA_USEC_PER_SEC, PA_USEC_PER_SEC*2, TRUE, 10);
+    u->thread_info.smoother = pa_smoother_new(
+            PA_USEC_PER_SEC,
+            PA_USEC_PER_SEC*2,
+            TRUE,
+            TRUE,
+            10,
+            0,
+            FALSE);
 
     if (pa_modargs_get_value_u32(ma, "adjust_time", &u->adjust_time) < 0) {
         pa_log("Failed to parse adjust_time value");
@@ -1088,11 +1095,8 @@ int pa__init(pa_module*m) {
     pa_sink_set_rtpoll(u->sink, u->rtpoll);
     pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
 
-    pa_sink_set_latency_range(u->sink, REQUEST_LATENCY_USEC, REQUEST_LATENCY_USEC);
-    u->block_usec = u->sink->thread_info.max_latency;
-
-    u->sink->thread_info.max_request =
-        pa_usec_to_bytes(u->block_usec, &u->sink->sample_spec);
+    u->block_usec = BLOCK_USEC;
+    pa_sink_set_max_request(u->sink, pa_usec_to_bytes(u->block_usec, &u->sink->sample_spec));
 
     if (!u->automatic) {
         const char*split_state;

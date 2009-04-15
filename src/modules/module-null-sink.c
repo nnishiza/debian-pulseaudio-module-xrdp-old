@@ -62,7 +62,7 @@ PA_MODULE_USAGE(
         "description=<description for the sink>");
 
 #define DEFAULT_SINK_NAME "null"
-#define MAX_LATENCY_USEC (PA_USEC_PER_SEC * 2)
+#define BLOCK_USEC (PA_USEC_PER_SEC * 2)
 
 struct userdata {
     pa_core *core;
@@ -119,6 +119,7 @@ static int sink_process_msg(
 
 static void sink_update_requested_latency_cb(pa_sink *s) {
     struct userdata *u;
+    size_t nbytes;
 
     pa_sink_assert_ref(s);
     pa_assert_se(u = s->userdata);
@@ -127,6 +128,10 @@ static void sink_update_requested_latency_cb(pa_sink *s) {
 
     if (u->block_usec == (pa_usec_t) -1)
         u->block_usec = s->thread_info.max_latency;
+
+    nbytes = pa_usec_to_bytes(u->block_usec, &s->sample_spec);
+    pa_sink_set_max_rewind_within_thread(s, nbytes);
+    pa_sink_set_max_request_within_thread(s, nbytes);
 }
 
 static void process_rewind(struct userdata *u, pa_usec_t now) {
@@ -253,6 +258,7 @@ int pa__init(pa_module*m) {
     pa_channel_map map;
     pa_modargs *ma = NULL;
     pa_sink_new_data data;
+    size_t nbytes;
 
     pa_assert(m);
 
@@ -283,7 +289,7 @@ int pa__init(pa_module*m) {
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, pa_modargs_get_value(ma, "description", "Null Output"));
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CLASS, "abstract");
 
-    u->sink = pa_sink_new(m->core, &data, PA_SINK_LATENCY);
+    u->sink = pa_sink_new(m->core, &data, PA_SINK_LATENCY|PA_SINK_DYNAMIC_LATENCY);
     pa_sink_new_data_done(&data);
 
     if (!u->sink) {
@@ -298,12 +304,10 @@ int pa__init(pa_module*m) {
     pa_sink_set_asyncmsgq(u->sink, u->thread_mq.inq);
     pa_sink_set_rtpoll(u->sink, u->rtpoll);
 
-    pa_sink_set_latency_range(u->sink, (pa_usec_t) -1, MAX_LATENCY_USEC);
-    u->block_usec = u->sink->thread_info.max_latency;
-
-    u->sink->thread_info.max_rewind =
-        u->sink->thread_info.max_request =
-        pa_usec_to_bytes(u->block_usec, &u->sink->sample_spec);
+    u->block_usec = BLOCK_USEC;
+    nbytes = pa_usec_to_bytes(u->block_usec, &u->sink->sample_spec);
+    pa_sink_set_max_rewind(u->sink, nbytes);
+    pa_sink_set_max_request(u->sink, nbytes);
 
     if (!(u->thread = pa_thread_new(thread_func, u))) {
         pa_log("Failed to create thread.");

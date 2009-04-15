@@ -33,6 +33,7 @@
 
 #include <pulsecore/rtpoll.h>
 #include <pulsecore/core.h>
+#include <pulsecore/log.h>
 
 typedef struct pa_alsa_fdlist pa_alsa_fdlist;
 
@@ -52,17 +53,19 @@ int pa_alsa_set_hw_params(
 
 int pa_alsa_set_sw_params(snd_pcm_t *pcm, snd_pcm_uframes_t avail_min);
 
-int pa_alsa_prepare_mixer(snd_mixer_t *mixer, const char *dev);
-snd_mixer_elem_t *pa_alsa_find_elem(snd_mixer_t *mixer, const char *name, const char *fallback, pa_bool_t playback);
-int pa_alsa_find_mixer_and_elem(snd_pcm_t *pcm, snd_mixer_t **_m, snd_mixer_elem_t **_e);
-
 typedef struct pa_alsa_profile_info {
     pa_channel_map map;
     const char *alsa_name;
     const char *description; /* internationalized */
     const char *name;
     unsigned priority;
+    const char *playback_control_name, *playback_control_fallback;
+    const char *record_control_name, *record_control_fallback;
 } pa_alsa_profile_info;
+
+int pa_alsa_prepare_mixer(snd_mixer_t *mixer, const char *dev);
+snd_mixer_elem_t *pa_alsa_find_elem(snd_mixer_t *mixer, const char *name, const char *fallback, pa_bool_t playback);
+int pa_alsa_find_mixer_and_elem(snd_pcm_t *pcm, snd_mixer_t **_m, snd_mixer_elem_t **_e, const char *control_name, const pa_alsa_profile_info*profile);
 
 /* Picks a working profile based on the specified ss/map */
 snd_pcm_t *pa_alsa_open_by_device_id_auto(
@@ -114,7 +117,7 @@ int pa_alsa_probe_profiles(
 
 int pa_alsa_calc_mixer_map(snd_mixer_elem_t *elem, const pa_channel_map *channel_map, snd_mixer_selem_channel_id_t mixer_map[], pa_bool_t playback);
 
-void pa_alsa_dump(snd_pcm_t *pcm);
+void pa_alsa_dump(pa_log_level_t level, snd_pcm_t *pcm);
 void pa_alsa_dump_status(snd_pcm_t *pcm);
 
 void pa_alsa_redirect_errors_inc(void);
@@ -122,7 +125,7 @@ void pa_alsa_redirect_errors_dec(void);
 
 void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *pcm_info);
 void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card);
-void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm);
+void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm, snd_mixer_elem_t *elem);
 pa_bool_t pa_alsa_init_description(pa_proplist *p);
 
 int pa_alsa_recover_from_poll(snd_pcm_t *pcm, int revents);
@@ -138,5 +141,9 @@ char *pa_alsa_get_driver_name(int card);
 char *pa_alsa_get_driver_name_by_pcm(snd_pcm_t *pcm);
 
 char *pa_alsa_get_reserve_name(const char *device);
+
+pa_bool_t pa_alsa_pcm_is_hw(snd_pcm_t *pcm);
+
+pa_bool_t pa_alsa_pcm_is_modem(snd_pcm_t *pcm);
 
 #endif

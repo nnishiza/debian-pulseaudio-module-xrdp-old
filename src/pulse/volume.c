@@ -120,13 +120,13 @@ pa_volume_t pa_sw_volume_divide(pa_volume_t a, pa_volume_t b) {
     return pa_sw_volume_from_linear(pa_sw_volume_to_linear(a) / v);
 }
 
-#define USER_DECIBEL_RANGE 60
+#define USER_DECIBEL_RANGE 90
 
 pa_volume_t pa_sw_volume_from_dB(double dB) {
     if (isinf(dB) < 0 || dB <= -USER_DECIBEL_RANGE)
         return PA_VOLUME_MUTED;
 
-    return (pa_volume_t) lrint((dB/USER_DECIBEL_RANGE+1)*PA_VOLUME_NORM);
+    return (pa_volume_t) lrint(ceil((dB/USER_DECIBEL_RANGE+1.0)*PA_VOLUME_NORM));
 }
 
 double pa_sw_volume_to_dB(pa_volume_t v) {
@@ -138,19 +138,19 @@ double pa_sw_volume_to_dB(pa_volume_t v) {
 
 pa_volume_t pa_sw_volume_from_linear(double v) {
 
-    if (v <= 0)
+    if (v <= 0.0)
         return PA_VOLUME_MUTED;
 
     if (v > .999 && v < 1.001)
         return PA_VOLUME_NORM;
 
-    return pa_sw_volume_from_dB(20*log10(v));
+    return pa_sw_volume_from_dB(20.0*log10(v));
 }
 
 double pa_sw_volume_to_linear(pa_volume_t v) {
 
     if (v == PA_VOLUME_MUTED)
-        return 0;
+        return 0.0;
 
     return pow(10.0, pa_sw_volume_to_dB(v)/20.0);
 }

@@ -41,7 +41,8 @@
 #include "fork-detect.h"
 #include "internal.h"
 
-#define LATENCY_IPOL_INTERVAL_USEC (333*PA_USEC_PER_MSEC)
+#define AUTO_TIMING_INTERVAL_START_USEC (10*PA_USEC_PER_MSEC)
+#define AUTO_TIMING_INTERVAL_END_USEC (1500*PA_USEC_PER_MSEC)
 
 #define SMOOTHER_ADJUST_TIME (1000*PA_USEC_PER_MSEC)
 #define SMOOTHER_HISTORY_TIME (5000*PA_USEC_PER_MSEC)
@@ -72,6 +73,8 @@ static void reset_callbacks(pa_stream *s) {
     s->started_userdata = NULL;
     s->event_callback = NULL;
     s->event_userdata = NULL;
+    s->buffer_attr_callback = NULL;
+    s->buffer_attr_userdata = NULL;
 }
 
 pa_stream *pa_stream_new_with_proplist(
@@ -138,13 +141,13 @@ pa_stream *pa_stream_new_with_proplist(
     s->device_index = PA_INVALID_INDEX;
     s->device_name = NULL;
     s->suspended = FALSE;
+    s->corked = FALSE;
 
     pa_memchunk_reset(&s->peek_memchunk);
     s->peek_data = NULL;
 
     s->record_memblockq = NULL;
 
-    s->corked = FALSE;
 
     memset(&s->timing_info, 0, sizeof(s->timing_info));
     s->timing_info_valid = FALSE;
@@ -159,6 +162,7 @@ pa_stream *pa_stream_new_with_proplist(
 
     s->auto_timing_update_event = NULL;
     s->auto_timing_update_requested = FALSE;
+    s->auto_timing_interval_usec = AUTO_TIMING_INTERVAL_START_USEC;
 
     reset_callbacks(s);
 
@@ -306,7 +310,7 @@ static void request_auto_timing_update(pa_stream *s, pa_bool_t force) {
         (force || !s->auto_timing_update_requested)) {
         pa_operation *o;
 
-/*         pa_log("automatically requesting new timing data"); */
+/*         pa_log("Automatically requesting new timing data"); */
 
         if ((o = pa_stream_update_timing_info(s, NULL, NULL))) {
             pa_operation_unref(o);
@@ -316,9 +320,15 @@ static void request_auto_timing_update(pa_stream *s, pa_bool_t force) {
 
     if (s->auto_timing_update_event) {
         struct timeval next;
+
+        if (force)
+            s->auto_timing_interval_usec = AUTO_TIMING_INTERVAL_START_USEC;
+
         pa_gettimeofday(&next);
-        pa_timeval_add(&next, LATENCY_IPOL_INTERVAL_USEC);
+        pa_timeval_add(&next, s->auto_timing_interval_usec);
         s->mainloop->time_restart(s->auto_timing_update_event, &next);
+
+        s->auto_timing_interval_usec = PA_MIN(AUTO_TIMING_INTERVAL_END_USEC, s->auto_timing_interval_usec*2);
     }
 }
 
@@ -370,20 +380,13 @@ static void check_smoother_status(pa_stream *s, pa_bool_t aposteriori, pa_bool_t
             x -= s->timing_info.transport_usec;
         else
             x += s->timing_info.transport_usec;
-
-        if (s->direction == PA_STREAM_PLAYBACK)
-            /* it takes a while until the pause/resume is actually
-             * audible */
-            x += s->timing_info.sink_usec;
-        else
-            /* Data froma  while back will be dropped */
-            x -= s->timing_info.source_usec;
     }
 
     if (s->suspended || s->corked || force_stop)
         pa_smoother_pause(s->smoother, x);
     else if (force_start || s->buffer_attr.prebuf == 0)
-        pa_smoother_resume(s->smoother, x);
+        pa_smoother_resume(s->smoother, x, TRUE);
+
 
     /* Please note that we have no idea if playback actually started
      * if prebuf is non-zero! */
@@ -396,7 +399,7 @@ void pa_command_stream_moved(pa_pdispatch *pd, uint32_t command, uint32_t tag, p
     const char *dn;
     pa_bool_t suspended;
     uint32_t di;
-    pa_usec_t usec;
+    pa_usec_t usec = 0;
     uint32_t maxlength = 0, fragsize = 0, minreq = 0, tlength = 0, prebuf = 0;
 
     pa_assert(pd);
@@ -481,6 +484,80 @@ void pa_command_stream_moved(pa_pdispatch *pd, uint32_t command, uint32_t tag, p
 
     if (s->moved_callback)
         s->moved_callback(s, s->moved_userdata);
+
+finish:
+    pa_context_unref(c);
+}
+
+void pa_command_stream_buffer_attr(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
+    pa_context *c = userdata;
+    pa_stream *s;
+    uint32_t channel;
+    pa_usec_t usec = 0;
+    uint32_t maxlength = 0, fragsize = 0, minreq = 0, tlength = 0, prebuf = 0;
+
+    pa_assert(pd);
+    pa_assert(command == PA_COMMAND_PLAYBACK_BUFFER_ATTR_CHANGED || command == PA_COMMAND_RECORD_BUFFER_ATTR_CHANGED);
+    pa_assert(t);
+    pa_assert(c);
+    pa_assert(PA_REFCNT_VALUE(c) >= 1);
+
+    pa_context_ref(c);
+
+    if (c->version < 15) {
+        pa_context_fail(c, PA_ERR_PROTOCOL);
+        goto finish;
+    }
+
+    if (pa_tagstruct_getu32(t, &channel) < 0) {
+        pa_context_fail(c, PA_ERR_PROTOCOL);
+        goto finish;
+    }
+
+    if (command == PA_COMMAND_RECORD_STREAM_MOVED) {
+        if (pa_tagstruct_getu32(t, &maxlength) < 0 ||
+            pa_tagstruct_getu32(t, &fragsize) < 0 ||
+            pa_tagstruct_get_usec(t, &usec) < 0) {
+            pa_context_fail(c, PA_ERR_PROTOCOL);
+            goto finish;
+        }
+    } else {
+        if (pa_tagstruct_getu32(t, &maxlength) < 0 ||
+            pa_tagstruct_getu32(t, &tlength) < 0 ||
+            pa_tagstruct_getu32(t, &prebuf) < 0 ||
+            pa_tagstruct_getu32(t, &minreq) < 0 ||
+            pa_tagstruct_get_usec(t, &usec) < 0) {
+            pa_context_fail(c, PA_ERR_PROTOCOL);
+            goto finish;
+        }
+    }
+
+    if (!pa_tagstruct_eof(t)) {
+        pa_context_fail(c, PA_ERR_PROTOCOL);
+        goto finish;
+    }
+
+    if (!(s = pa_dynarray_get(command == PA_COMMAND_PLAYBACK_BUFFER_ATTR_CHANGED ? c->playback_streams : c->record_streams, channel)))
+        goto finish;
+
+    if (s->state != PA_STREAM_READY)
+        goto finish;
+
+    if (s->direction == PA_STREAM_RECORD)
+        s->timing_info.configured_source_usec = usec;
+    else
+        s->timing_info.configured_sink_usec = usec;
+
+    s->buffer_attr.maxlength = maxlength;
+    s->buffer_attr.fragsize = fragsize;
+    s->buffer_attr.tlength = tlength;
+    s->buffer_attr.prebuf = prebuf;
+    s->buffer_attr.minreq = minreq;
+
+    request_auto_timing_update(s, TRUE);
+
+    if (s->buffer_attr_callback)
+        s->buffer_attr_callback(s, s->buffer_attr_userdata);
 
 finish:
     pa_context_unref(c);
@@ -645,7 +722,7 @@ void pa_command_request(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tag
     s->requested_bytes += bytes;
 
     if (s->requested_bytes > 0 && s->write_callback)
-        s->write_callback(s, s->requested_bytes, s->write_userdata);
+        s->write_callback(s, (size_t) s->requested_bytes, s->write_userdata);
 
 finish:
     pa_context_unref(c);
@@ -742,12 +819,13 @@ static void create_stream_complete(pa_stream *s) {
     pa_stream_set_state(s, PA_STREAM_READY);
 
     if (s->requested_bytes > 0 && s->write_callback)
-        s->write_callback(s, s->requested_bytes, s->write_userdata);
+        s->write_callback(s, (size_t) s->requested_bytes, s->write_userdata);
 
     if (s->flags & PA_STREAM_AUTO_TIMING_UPDATE) {
         struct timeval tv;
         pa_gettimeofday(&tv);
-        tv.tv_usec += (suseconds_t) LATENCY_IPOL_INTERVAL_USEC; /* every 100 ms */
+        s->auto_timing_interval_usec = AUTO_TIMING_INTERVAL_START_USEC;
+        pa_timeval_add(&tv, s->auto_timing_interval_usec);
         pa_assert(!s->auto_timing_update_event);
         s->auto_timing_update_event = s->mainloop->time_new(s->mainloop, &tv, &auto_timing_update_callback, s);
 
@@ -789,6 +867,7 @@ static void automatic_buffer_attr(pa_stream *s, pa_buffer_attr *attr, const pa_s
 
 void pa_create_stream_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
     pa_stream *s = userdata;
+    uint32_t requested_bytes;
 
     pa_assert(pd);
     pa_assert(s);
@@ -808,10 +887,12 @@ void pa_create_stream_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag,
     if (pa_tagstruct_getu32(t, &s->channel) < 0 ||
         s->channel == PA_INVALID_INDEX ||
         ((s->direction != PA_STREAM_UPLOAD) && (pa_tagstruct_getu32(t, &s->stream_index) < 0 ||  s->stream_index == PA_INVALID_INDEX)) ||
-        ((s->direction != PA_STREAM_RECORD) && pa_tagstruct_getu32(t, &s->requested_bytes) < 0)) {
+        ((s->direction != PA_STREAM_RECORD) && pa_tagstruct_getu32(t, &requested_bytes) < 0)) {
         pa_context_fail(s->context, PA_ERR_PROTOCOL);
         goto finish;
     }
+
+    s->requested_bytes = (int64_t) requested_bytes;
 
     if (s->context->version >= 9) {
         if (s->direction == PA_STREAM_PLAYBACK) {
@@ -948,6 +1029,7 @@ static int create_stream(
 
     PA_CHECK_VALIDITY(s->context, s->context->version >= 12 || !(flags & PA_STREAM_VARIABLE_RATE), PA_ERR_NOTSUPPORTED);
     PA_CHECK_VALIDITY(s->context, s->context->version >= 13 || !(flags & PA_STREAM_PEAK_DETECT), PA_ERR_NOTSUPPORTED);
+    PA_CHECK_VALIDITY(s->context, s->context->state == PA_CONTEXT_READY, PA_ERR_BADSTATE);
     /* Althought some of the other flags are not supported on older
      * version, we don't check for them here, because it doesn't hurt
      * when they are passed but actually not supported. This makes
@@ -975,14 +1057,17 @@ static int create_stream(
     if (flags & PA_STREAM_INTERPOLATE_TIMING) {
         pa_usec_t x;
 
-        if (s->smoother)
-            pa_smoother_free(s->smoother);
-
-        s->smoother = pa_smoother_new(SMOOTHER_ADJUST_TIME, SMOOTHER_HISTORY_TIME, !(flags & PA_STREAM_NOT_MONOTONIC), SMOOTHER_MIN_HISTORY);
-
         x = pa_rtclock_usec();
-        pa_smoother_set_time_offset(s->smoother, x);
-        pa_smoother_pause(s->smoother, x);
+
+        pa_assert(!s->smoother);
+        s->smoother = pa_smoother_new(
+                SMOOTHER_ADJUST_TIME,
+                SMOOTHER_HISTORY_TIME,
+                !(flags & PA_STREAM_NOT_MONOTONIC),
+                TRUE,
+                SMOOTHER_MIN_HISTORY,
+                x,
+                TRUE);
     }
 
     if (!dev)
@@ -1172,12 +1257,9 @@ int pa_stream_write(
     if (free_cb && pa_pstream_get_shm(s->context->pstream))
         free_cb((void*) data);
 
-    if (length < s->requested_bytes)
-        s->requested_bytes -= (uint32_t) length;
-    else
-        s->requested_bytes = 0;
-
-    /* FIXME!!! ^^^ will break when offset is != 0 and mode is not RELATIVE*/
+    /* This is obviously wrong since we ignore the seeking index . But
+     * that's OK, the server side applies the same error */
+    s->requested_bytes -= (seek == PA_SEEK_RELATIVE ? offset : 0) + (int64_t) length;
 
     if (s->direction == PA_STREAM_PLAYBACK) {
 
@@ -1273,7 +1355,7 @@ size_t pa_stream_writable_size(pa_stream *s) {
     PA_CHECK_VALIDITY_RETURN_ANY(s->context, s->state == PA_STREAM_READY, PA_ERR_BADSTATE, (size_t) -1);
     PA_CHECK_VALIDITY_RETURN_ANY(s->context, s->direction != PA_STREAM_RECORD, PA_ERR_BADSTATE, (size_t) -1);
 
-    return s->requested_bytes;
+    return s->requested_bytes > 0 ? (size_t) s->requested_bytes : 0;
 }
 
 size_t pa_stream_readable_size(pa_stream *s) {
@@ -1537,7 +1619,7 @@ static void stream_get_timing_info_callback(pa_pdispatch *pd, uint32_t command, 
                 pa_smoother_put(o->stream->smoother, u, calc_time(o->stream, TRUE));
 
             if (i->playing)
-                pa_smoother_resume(o->stream->smoother, x);
+                pa_smoother_resume(o->stream->smoother, x, TRUE);
         }
     }
 
@@ -1795,6 +1877,20 @@ void pa_stream_set_event_callback(pa_stream *s, pa_stream_event_cb_t cb, void *u
 
     s->event_callback = cb;
     s->event_userdata = userdata;
+}
+
+void pa_stream_set_buffer_attr_callback(pa_stream *s, pa_stream_notify_cb_t cb, void *userdata) {
+    pa_assert(s);
+    pa_assert(PA_REFCNT_VALUE(s) >= 1);
+
+    if (pa_detect_fork())
+        return;
+
+    if (s->state == PA_STREAM_TERMINATED || s->state == PA_STREAM_FAILED)
+        return;
+
+    s->buffer_attr_callback = cb;
+    s->buffer_attr_userdata = userdata;
 }
 
 void pa_stream_simple_ack_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {

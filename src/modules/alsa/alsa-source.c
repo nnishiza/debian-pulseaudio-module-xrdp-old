@@ -238,7 +238,7 @@ static void adjust_after_overrun(struct userdata *u) {
         pa_log_notice("Increasing minimal latency to %0.2f ms",
                       (double) new_min_latency / PA_USEC_PER_MSEC);
 
-        pa_source_update_latency_range(u->source, new_min_latency, u->source->thread_info.max_latency);
+        pa_source_set_latency_range_within_thread(u->source, new_min_latency, u->source->thread_info.max_latency);
         return;
     }
 
@@ -465,7 +465,13 @@ static int mmap_read(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec) - process_usec;
+    *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
+
+    if (*sleep_usec > process_usec)
+        *sleep_usec -= process_usec;
+    else
+        *sleep_usec = 0;
+
     return work_done ? 1 : 0;
 }
 
@@ -575,7 +581,13 @@ static int unix_read(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec) - process_usec;
+    *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
+
+    if (*sleep_usec > process_usec)
+        *sleep_usec -= process_usec;
+    else
+        *sleep_usec = 0;
+
     return work_done ? 1 : 0;
 }
 
@@ -776,7 +788,7 @@ static int unsuspend(struct userdata *u) {
     /* FIXME: We need to reload the volume somehow */
 
     snd_pcm_start(u->pcm_handle);
-    pa_smoother_resume(u->smoother, pa_rtclock_usec());
+    pa_smoother_resume(u->smoother, pa_rtclock_usec(), TRUE);
 
     pa_log_info("Resumed successfully...");
 
@@ -1416,8 +1428,14 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
     u->alsa_rtpoll_item = NULL;
 
-    u->smoother = pa_smoother_new(DEFAULT_TSCHED_WATERMARK_USEC*2, DEFAULT_TSCHED_WATERMARK_USEC*2, TRUE, 5);
-    pa_smoother_set_time_offset(u->smoother, pa_rtclock_usec());
+    u->smoother = pa_smoother_new(
+            DEFAULT_TSCHED_WATERMARK_USEC*2,
+            DEFAULT_TSCHED_WATERMARK_USEC*2,
+            TRUE,
+            TRUE,
+            5,
+            pa_rtclock_usec(),
+            FALSE);
 
     if (reserve_init(u, pa_modargs_get_value(
                              ma, "device_id",
@@ -1469,6 +1487,11 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     pa_assert(u->device_name);
     pa_log_info("Successfully opened device %s.", u->device_name);
 
+    if (pa_alsa_pcm_is_modem(u->pcm_handle)) {
+        pa_log_notice("Device %s is modem, refusing further initialization.", u->device_name);
+        goto fail;
+    }
+
     if (profile)
         pa_log_info("Selected configuration '%s' (%s).", profile->description, profile->name);
 
@@ -1482,6 +1505,11 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
         u->use_tsched = use_tsched = FALSE;
     }
 
+    if (use_tsched && !pa_alsa_pcm_is_hw(u->pcm_handle)) {
+        pa_log_info("Device is not a hardware device, disabling timer-based scheduling.");
+        u->use_tsched = use_tsched = FALSE;
+    }
+
     if (u->use_mmap)
         pa_log_info("Successfully enabled mmap() mode.");
 
@@ -1491,7 +1519,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     /* ALSA might tweak the sample spec, so recalculate the frame size */
     frame_size = pa_frame_size(&ss);
 
-    pa_alsa_find_mixer_and_elem(u->pcm_handle, &u->mixer_handle, &u->mixer_elem);
+    pa_alsa_find_mixer_and_elem(u->pcm_handle, &u->mixer_handle, &u->mixer_elem, pa_modargs_get_value(ma, "control", NULL), profile);
 
     pa_source_new_data_init(&data);
     data.driver = driver;
@@ -1501,7 +1529,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     pa_source_new_data_set_sample_spec(&data, &ss);
     pa_source_new_data_set_channel_map(&data, &map);
 
-    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle);
+    pa_alsa_init_proplist_pcm(m->core, data.proplist, u->pcm_handle, u->mixer_elem);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) (period_frames * frame_size * nfrags));
     pa_proplist_setf(data.proplist, PA_PROP_DEVICE_BUFFERING_FRAGMENT_SIZE, "%lu", (unsigned long) (period_frames * frame_size));
@@ -1514,7 +1542,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
 
     pa_alsa_init_description(data.proplist);
 
-    u->source = pa_source_new(m->core, &data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY);
+    u->source = pa_source_new(m->core, &data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY|(u->use_tsched ? PA_SOURCE_DYNAMIC_LATENCY : 0));
     pa_source_new_data_done(&data);
 
     if (!u->source) {
@@ -1537,24 +1565,24 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     u->tsched_watermark = pa_usec_to_bytes_round_up(pa_bytes_to_usec_round_up(tsched_watermark, &requested_ss), &u->source->sample_spec);
     pa_cvolume_mute(&u->hardware_volume, u->source->sample_spec.channels);
 
-    if (use_tsched) {
-        fix_min_sleep_wakeup(u);
-        fix_tsched_watermark(u);
-
-        u->watermark_step = pa_usec_to_bytes(TSCHED_WATERMARK_STEP_USEC, &u->source->sample_spec);
-    }
-
-    pa_source_set_latency_range(u->source,
-                                use_tsched ? (pa_usec_t) -1 : pa_bytes_to_usec(u->hwbuf_size, &ss),
-                                pa_bytes_to_usec(u->hwbuf_size, &ss));
-
     pa_log_info("Using %u fragments of size %lu bytes, buffer time is %0.2fms",
                 nfrags, (long unsigned) u->fragment_size,
                 (double) pa_bytes_to_usec(u->hwbuf_size, &ss) / PA_USEC_PER_MSEC);
 
-    if (use_tsched)
+    if (u->use_tsched) {
+        u->watermark_step = pa_usec_to_bytes(TSCHED_WATERMARK_STEP_USEC, &u->source->sample_spec);
+
+        fix_min_sleep_wakeup(u);
+        fix_tsched_watermark(u);
+
+        pa_source_set_latency_range(u->source,
+                                    0,
+                                    pa_bytes_to_usec(u->hwbuf_size, &ss));
+
         pa_log_info("Time scheduling watermark is %0.2fms",
                     (double) pa_bytes_to_usec(u->tsched_watermark, &ss) / PA_USEC_PER_MSEC);
+    } else
+        u->source->fixed_latency = pa_bytes_to_usec(u->hwbuf_size, &ss);
 
     reserve_update(u);
 
@@ -1564,7 +1592,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     if (setup_mixer(u, ignore_dB) < 0)
         goto fail;
 
-    pa_alsa_dump(u->pcm_handle);
+    pa_alsa_dump(PA_LOG_DEBUG, u->pcm_handle);
 
     if (!(u->thread = pa_thread_new(thread_func, u))) {
         pa_log("Failed to create thread.");
