@@ -1,8 +1,9 @@
-pulseaudio (0.9.15~test5-2) UNRELEASED; urgency=low
+pulseaudio (0.9.15-1) UNRELEASED; urgency=low
 
   * debian/control: Build-Depend on libcap-dev instead of libcap2-dev
+  * New Upstream Version
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 27 Mar 2009 09:06:37 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Wed, 15 Apr 2009 22:50:03 +0100
 
 pulseaudio (0.9.15~test5-1) experimental; urgency=low
 
