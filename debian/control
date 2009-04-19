@@ -333,6 +333,7 @@ Package: libpulse0
 Section: libs
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
+Breaks: pavucontrol (<< 0.9.8)
 Suggests: pulseaudio
 Description: PulseAudio client libraries
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
