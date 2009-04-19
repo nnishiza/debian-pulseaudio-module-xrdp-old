@@ -11,7 +11,7 @@ pulseaudio (0.9.15-1) UNRELEASED; urgency=low
   * Update standards-version to 3.8.1, no further changes
   * Set priority of pulseaudio-module-raop-dbg to extra
   * Change build-depend on libltdl7-dev to recent versions libltdl-dev
-  * Add Breaks to libpulse0 for olds version of pavucontrol
+  * Add Breaks to libpulse0 for old version of pavucontrol
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Apr 2009 12:49:53 +0100
 
