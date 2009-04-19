@@ -2,6 +2,7 @@ pulseaudio (0.9.15-1) UNRELEASED; urgency=low
 
   * debian/control: Build-Depend on libcap-dev instead of libcap2-dev
   * New Upstream Version
+  * Fixes build on HPPA (Closes: #520378)
   * Update copyright file
   * Updated pulseaudio-module-hal.install, dbus-util became part of pulsecore
   * Move debug package to the debug Section
@@ -9,7 +10,7 @@ pulseaudio (0.9.15-1) UNRELEASED; urgency=low
   * Update standards-version to 3.8.1, no further changes
   * Set priority of pulseaudio-module-raop-dbg to extra
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 16 Apr 2009 00:44:44 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Apr 2009 12:37:59 +0100
 
 pulseaudio (0.9.15~test5-1) experimental; urgency=low
 
