@@ -12,8 +12,10 @@ pulseaudio (0.9.15-1) UNRELEASED; urgency=low
   * Set priority of pulseaudio-module-raop-dbg to extra
   * Change build-depend on libltdl7-dev to recent versions libltdl-dev
   * Add Breaks to libpulse0 for old version of pavucontrol
+  * Temporarily disable bluetooth support as the needed bluez version is stuck
+    in the NEW queue
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Apr 2009 12:49:53 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Apr 2009 14:42:27 +0100
 
 pulseaudio (0.9.15~test5-1) experimental; urgency=low
 
