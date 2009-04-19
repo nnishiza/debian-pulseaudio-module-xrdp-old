@@ -1,4 +1,4 @@
-pulseaudio (0.9.15-1) UNRELEASED; urgency=low
+pulseaudio (0.9.15-1) unstable; urgency=low
 
   * debian/control: Build-Depend on libcap-dev instead of libcap2-dev
   * New Upstream Version
@@ -15,7 +15,7 @@ pulseaudio (0.9.15-1) UNRELEASED; urgency=low
   * Temporarily disable bluetooth support as the needed bluez version is stuck
     in the NEW queue
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Apr 2009 14:42:27 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Apr 2009 14:43:41 +0100
 
 pulseaudio (0.9.15~test5-1) experimental; urgency=low
 
