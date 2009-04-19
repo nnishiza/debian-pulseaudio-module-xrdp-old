@@ -3,7 +3,7 @@ Section: sound
 Priority: optional
 Maintainer: Pulseaudio maintenance team <pkg-pulseaudio-devel@lists.alioth.debian.org>
 Uploaders: CJ van den Berg <cj@vdbonline.com>, Sjoerd Simons <sjoerd@debian.org>
-Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl7-dev,
+Build-Depends: debhelper (>= 5), cdbs, quilt, m4, libltdl-dev (>= 2.2.6a-2),
     liboil0.3-dev (>= 0.3.0) | liboil-dev, libsamplerate0-dev,
     libsndfile1-dev (>= 1.0.10) | libsndfile-dev, libx11-dev,
     x11proto-core-dev, libxt-dev, libglib2.0-dev,
