@@ -1,3 +1,10 @@
+pulseaudio (0.9.15-2) UNRELEASED; urgency=low
+
+  * debian/control: Add strict dependencies from libpulse-dev to the various
+    libraries (Closes: #525759)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Wed, 20 May 2009 23:12:24 +0100
+
 pulseaudio (0.9.15-1) unstable; urgency=low
 
   * debian/control: Build-Depend on libcap-dev instead of libcap2-dev
