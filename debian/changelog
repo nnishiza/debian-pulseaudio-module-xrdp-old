@@ -1,3 +1,9 @@
+pulseaudio (0.9.15-3) UNRELEASED; urgency=low
+
+  * Re-enable bluetooth support
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 23 May 2009 13:42:44 +0100
+
 pulseaudio (0.9.15-2) unstable; urgency=low
 
   * debian/control: Add strict dependencies from libpulse-dev to the various
