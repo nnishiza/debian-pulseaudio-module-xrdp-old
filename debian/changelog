@@ -6,8 +6,10 @@ pulseaudio (0.9.15-3) UNRELEASED; urgency=low
   * 0001-alsa-allow-configuration-of-fallback-device-strings-.patch
     - Added. Support alsa devices which only have the raw hw device, but no
       front device even though they can do 2ch stereo (from upstream git)
+  * Add support for the status action in the init script, patch by Peter
+    Eisentraut (Closes: #527333)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 07 Jun 2009 20:33:03 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 07 Jun 2009 20:44:36 +0100
 
 pulseaudio (0.9.15-2) unstable; urgency=low
 

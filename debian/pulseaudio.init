@@ -23,9 +23,9 @@ test -x $DAEMON || exit 0
 PULSEAUDIO_SYSTEM_START=0
 DISALLOW_MODULE_LOADING=1
 test -f /etc/default/pulseaudio && . /etc/default/pulseaudio
-test "$PULSEAUDIO_SYSTEM_START" != "1" && exit 0
 
 pulseaudio_start () {
+	test "$PULSEAUDIO_SYSTEM_START" != "1" && exit 0
 	log_begin_msg "Starting PulseAudio Daemon"
 	start-stop-daemon -x $DAEMON -p $PIDFILE --start -- --system --daemonize --high-priority --log-target=syslog --disallow-module-loading=$DISALLOW_MODULE_LOADING
 	status=$?
@@ -60,8 +60,12 @@ case "$1" in
 		sleep 2
 		killall -9 pulseaudio || true
 		;;
+	status)
+		status_of_proc $DAEMON pulseaudio -p $PIDFILE
+		exit $?
+		;;
 	*)
-		echo "Usage: /etc/init.d/pulseaudio {start|stop|force-stop|restart|reload|force-reload}"
+		echo "Usage: /etc/init.d/pulseaudio {start|stop|force-stop|restart|reload|force-reload|status}"
 		exit 1
 		;;
 esac
