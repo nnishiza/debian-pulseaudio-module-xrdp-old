@@ -10,8 +10,10 @@ pulseaudio (0.9.15-3) UNRELEASED; urgency=low
     Eisentraut (Closes: #527333)
   * Change the libjack0.100.0-dev build-depend to libjack-dev as per request of
     the debian multimedia maintainers (Closes: #527424)
+  * Prevent the default.pa manpage from being installed as part of the pa
+    locale (Closes: #508874)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 07 Jun 2009 20:49:03 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 07 Jun 2009 21:57:25 +0100
 
 pulseaudio (0.9.15-2) unstable; urgency=low
 

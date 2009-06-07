@@ -16,6 +16,9 @@ common-install-arch::
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian
 	cp -a $(CURDIR)/debian/overrides $(CURDIR)/debian/tmp/usr/share/lintian
 
+pulseaudio-install-arch::
+	dh_installman --language=C debian/tmp/usr/share/man/man5/default.pa.5
+
 common-binary-post-install-arch:: list-missing
 
 clean::
