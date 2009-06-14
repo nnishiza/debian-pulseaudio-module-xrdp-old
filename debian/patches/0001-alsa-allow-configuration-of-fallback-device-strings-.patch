@@ -1,7 +1,7 @@
 From 270ab5f0f2c049f842e5b4a7f69c59db84827c5d Mon Sep 17 00:00:00 2001
 From: Lennart Poettering <lennart@poettering.net>
 Date: Wed, 29 Apr 2009 01:58:18 +0200
-Subject: [PATCH] alsa: allow configuration of fallback device strings in profiles
+Subject: [PATCH 01/28] alsa: allow configuration of fallback device strings in profiles
 
 This has the benefit that we can properly support ALSA devices where
 only the raw 'hw' device exists but no 'front' although it's a proper
