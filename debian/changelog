@@ -1,4 +1,4 @@
-pulseaudio (0.9.15-4) UNRELEASED; urgency=low
+pulseaudio (0.9.15-4) unstable; urgency=low
 
   * Synchronize our patches with Mandriva and Fedora (thanks to Colin Guthrie
     and Lennart Poettering)
@@ -32,7 +32,7 @@ pulseaudio (0.9.15-4) UNRELEASED; urgency=low
     - 0027-alsa-properly-convert-return-values-of-snd_strerror-.patch
     - 0028-alsa-remove-debug-code.patch
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 14 Jun 2009 17:30:30 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 21 Jun 2009 15:40:33 +0100
 
 pulseaudio (0.9.15-3) unstable; urgency=low
 
