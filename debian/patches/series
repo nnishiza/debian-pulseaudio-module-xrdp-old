@@ -26,3 +26,4 @@
 0026-sample-fix-build-on-BE-archs.patch
 0027-alsa-properly-convert-return-values-of-snd_strerror-.patch
 0028-alsa-remove-debug-code.patch
+0029-CVE-2009-1894.patch

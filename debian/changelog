@@ -1,3 +1,14 @@
+pulseaudio (0.9.15-4.1) unstable; urgency=high
+
+  * Non-maintainer upload by the Security Team.
+  * Fix race condition when reading /proc/self/exe and reloading the binary
+    that leads to arbitrary code execution as pulseaudio is suid root
+    + Use LDFLAGS to preload DSOs
+    + regenerate autofoo
+    (CVE-2009-1894; Closes: #537351).
+
+ -- Nico Golde <nion@debian.org>  Fri, 24 Jul 2009 18:02:24 +0200
+
 pulseaudio (0.9.15-4) unstable; urgency=low
 
   * Synchronize our patches with Mandriva and Fedora (thanks to Colin Guthrie
