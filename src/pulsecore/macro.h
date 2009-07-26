@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <pulse/gccmacro.h>
 
@@ -57,18 +58,27 @@
 #define PA_PAGE_SIZE ((size_t) 4096)
 #endif
 
+/* Rounds down */
+static inline void* pa_align_ptr(const void *p) {
+    return (void*) (((size_t) p) & ~(sizeof(void*)-1));
+}
+#define PA_ALIGN_PTR(x) (pa_align_ptr(x))
+
+/* Rounds up */
 static inline size_t pa_align(size_t l) {
     return (((l + sizeof(void*) - 1) / sizeof(void*)) * sizeof(void*));
 }
 #define PA_ALIGN(x) (pa_align(x))
 
+/* Rounds down */
 static inline void* pa_page_align_ptr(const void *p) {
     return (void*) (((size_t) p) & ~(PA_PAGE_SIZE-1));
 }
 #define PA_PAGE_ALIGN_PTR(x) (pa_page_align_ptr(x))
 
+/* Rounds up */
 static inline size_t pa_page_align(size_t l) {
-    return l & ~(PA_PAGE_SIZE-1);
+    return ((l + PA_PAGE_SIZE - 1) / PA_PAGE_SIZE) * PA_PAGE_SIZE;
 }
 #define PA_PAGE_ALIGN(x) (pa_page_align(x))
 
@@ -251,6 +261,9 @@ typedef int pa_bool_t;
 #else
 #define PA_DEBUG_TRAP raise(SIGTRAP)
 #endif
+
+#define pa_memzero(x,l) (memset((x), 0, (l)))
+#define pa_zero(x) (pa_memzero(&(x), sizeof(x)))
 
 /* We include this at the very last place */
 #include <pulsecore/log.h>

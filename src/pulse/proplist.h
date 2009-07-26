@@ -39,6 +39,12 @@ PA_C_DECL_BEGIN
 /** For streams: localized media artist if applicable, formatted as UTF-8. e.g. "Guns'N'Roses" */
 #define PA_PROP_MEDIA_ARTIST                   "media.artist"
 
+/** For streams: localized media copyright string if applicable, formatted as UTF-8. e.g. "Evil Record Corp." */
+#define PA_PROP_MEDIA_COPYRIGHT                "media.copyright"
+
+/** For streams: localized media generator software string if applicable, formatted as UTF-8. e.g. "Foocrop AudioFrobnicator" */
+#define PA_PROP_MEDIA_SOFTWARE                 "media.software"
+
 /** For streams: media language if applicable, in standard POSIX format. e.g. "de_DE" */
 #define PA_PROP_MEDIA_LANGUAGE                 "media.language"
 
@@ -200,6 +206,9 @@ PA_C_DECL_BEGIN
 /** For devices: profile identifier for the profile this devices is in. e.g. "analog-stereo", "analog-surround-40", "iec958-stereo", ...*/
 #define PA_PROP_DEVICE_PROFILE_NAME            "device.profile.name"
 
+/** For devices: intended use. A comma seperated list of roles (see PA_PROP_MEDIA_ROLE) this device is particularly well suited for, due to latency, quality or form factor. \since 0.9.16 */
+#define PA_PROP_DEVICE_INTENDED_ROLES          "device.intended_roles"
+
 /** For devices: human readable one-line description of the profile this device is in. e.g. "Analog Stereo", ... */
 #define PA_PROP_DEVICE_PROFILE_DESCRIPTION     "device.profile.description"
 
@@ -230,6 +239,14 @@ void pa_proplist_free(pa_proplist* p);
  * internal copy of the data passed is made. Will accept only valid
  * UTF-8. \since 0.9.11 */
 int pa_proplist_sets(pa_proplist *p, const char *key, const char *value);
+
+/** Append a new string entry to the property list, possibly
+ * overwriting an already existing entry with the same key. An
+ * internal copy of the data passed is made. Will accept only valid
+ * UTF-8. The string passed in must contain a '='. Left hand side of
+ * the '=' is used as key name, the right hand side as string
+ * data. \since 0.9.16 */
+int pa_proplist_setp(pa_proplist *p, const char *pair);
 
 /** Append a new string entry to the property list, possibly
  * overwriting an already existing entry with the same key. An

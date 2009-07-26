@@ -30,12 +30,12 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
-#include <gdbm.h>
 
 #include <pulse/xmalloc.h>
 #include <pulse/volume.h>
 #include <pulse/timeval.h>
 #include <pulse/util.h>
+#include <pulse/rtclock.h>
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/module.h>
@@ -49,6 +49,7 @@
 #include <pulsecore/protocol-native.h>
 #include <pulsecore/pstream.h>
 #include <pulsecore/pstream-util.h>
+#include <pulsecore/database.h>
 
 #include "module-stream-restore-symdef.h"
 
@@ -59,15 +60,19 @@ PA_MODULE_LOAD_ONCE(TRUE);
 PA_MODULE_USAGE(
         "restore_device=<Save/restore sinks/sources?> "
         "restore_volume=<Save/restore volumes?> "
-        "restore_muted=<Save/restore muted states?>");
+        "restore_muted=<Save/restore muted states?> "
+        "on_hotplug=<When new device becomes available, recheck streams?> "
+        "on_rescue=<When device becomes unavailable, recheck streams?>");
 
-#define SAVE_INTERVAL 10
+#define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
 #define IDENTIFICATION_PROPERTY "module-stream-restore.id"
 
 static const char* const valid_modargs[] = {
     "restore_device",
     "restore_volume",
     "restore_muted",
+    "on_hotplug",
+    "on_rescue",
     NULL
 };
 
@@ -79,13 +84,19 @@ struct userdata {
         *sink_input_new_hook_slot,
         *sink_input_fixate_hook_slot,
         *source_output_new_hook_slot,
+        *sink_put_hook_slot,
+        *source_put_hook_slot,
+        *sink_unlink_hook_slot,
+        *source_unlink_hook_slot,
         *connection_unlink_hook_slot;
     pa_time_event *save_time_event;
-    GDBM_FILE gdbm_file;
+    pa_database* database;
 
     pa_bool_t restore_device:1;
     pa_bool_t restore_volume:1;
     pa_bool_t restore_muted:1;
+    pa_bool_t on_hotplug:1;
+    pa_bool_t on_rescue:1;
 
     pa_native_protocol *protocol;
     pa_idxset *subscribed;
@@ -111,19 +122,18 @@ enum {
     SUBCOMMAND_EVENT
 };
 
-static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *tv, void *userdata) {
+static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *t, void *userdata) {
     struct userdata *u = userdata;
 
     pa_assert(a);
     pa_assert(e);
-    pa_assert(tv);
     pa_assert(u);
 
     pa_assert(e == u->save_time_event);
     u->core->mainloop->time_free(u->save_time_event);
     u->save_time_event = NULL;
 
-    gdbm_sync(u->gdbm_file);
+    pa_database_sync(u->database);
     pa_log_info("Synced.");
 }
 
@@ -153,28 +163,28 @@ static char *get_name(pa_proplist *p, const char *prefix) {
 }
 
 static struct entry* read_entry(struct userdata *u, const char *name) {
-    datum key, data;
+    pa_datum key, data;
     struct entry *e;
 
     pa_assert(u);
     pa_assert(name);
 
-    key.dptr = (char*) name;
-    key.dsize = (int) strlen(name);
+    key.data = (char*) name;
+    key.size = strlen(name);
 
-    data = gdbm_fetch(u->gdbm_file, key);
+    pa_zero(data);
 
-    if (!data.dptr)
+    if (!pa_database_get(u->database, &key, &data))
         goto fail;
 
-    if (data.dsize != sizeof(struct entry)) {
+    if (data.size != sizeof(struct entry)) {
         /* This is probably just a database upgrade, hence let's not
          * consider this more than a debug message */
-        pa_log_debug("Database contains entry for stream %s of wrong size %lu != %lu. Probably due to uprade, ignoring.", name, (unsigned long) data.dsize, (unsigned long) sizeof(struct entry));
+        pa_log_debug("Database contains entry for stream %s of wrong size %lu != %lu. Probably due to uprade, ignoring.", name, (unsigned long) data.size, (unsigned long) sizeof(struct entry));
         goto fail;
     }
 
-    e = (struct entry*) data.dptr;
+    e = (struct entry*) data.data;
 
     if (e->version != ENTRY_VERSION) {
         pa_log_debug("Version of database entry for stream %s doesn't match our version. Probably due to upgrade, ignoring.", name);
@@ -205,12 +215,11 @@ static struct entry* read_entry(struct userdata *u, const char *name) {
 
 fail:
 
-    pa_xfree(data.dptr);
+    pa_datum_free(&data);
     return NULL;
 }
 
 static void trigger_save(struct userdata *u) {
-    struct timeval tv;
     pa_native_connection *c;
     uint32_t idx;
 
@@ -230,9 +239,7 @@ static void trigger_save(struct userdata *u) {
     if (u->save_time_event)
         return;
 
-    pa_gettimeofday(&tv);
-    tv.tv_sec += SAVE_INTERVAL;
-    u->save_time_event = u->core->mainloop->time_new(u->core->mainloop, &tv, save_time_callback, u);
+    u->save_time_event = pa_core_rttime_new(u->core, pa_rtclock_now() + SAVE_INTERVAL, save_time_callback, u);
 }
 
 static pa_bool_t entries_equal(const struct entry *a, const struct entry *b) {
@@ -261,7 +268,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
     struct userdata *u = userdata;
     struct entry entry, *old;
     char *name;
-    datum key, data;
+    pa_datum key, data;
 
     pa_assert(c);
     pa_assert(u);
@@ -272,7 +279,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         t != (PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE))
         return;
 
-    memset(&entry, 0, sizeof(entry));
+    pa_zero(entry);
     entry.version = ENTRY_VERSION;
 
     if ((t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) == PA_SUBSCRIPTION_EVENT_SINK_INPUT) {
@@ -334,15 +341,15 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         pa_xfree(old);
     }
 
-    key.dptr = name;
-    key.dsize = (int) strlen(name);
+    key.data = name;
+    key.size = strlen(name);
 
-    data.dptr = (void*) &entry;
-    data.dsize = sizeof(entry);
+    data.data = &entry;
+    data.size = sizeof(entry);
 
     pa_log_info("Storing volume/mute/device for stream %s.", name);
 
-    gdbm_store(u->gdbm_file, key, data, GDBM_REPLACE);
+    pa_database_set(u->database, &key, &data, TRUE);
 
     pa_xfree(name);
 
@@ -353,18 +360,18 @@ static pa_hook_result_t sink_input_new_hook_callback(pa_core *c, pa_sink_input_n
     char *name;
     struct entry *e;
 
+    pa_assert(c);
     pa_assert(new_data);
-
-    if (!u->restore_device)
-        return PA_HOOK_OK;
+    pa_assert(u);
+    pa_assert(u->restore_device);
 
     if (!(name = get_name(new_data->proplist, "sink-input")))
         return PA_HOOK_OK;
 
     if ((e = read_entry(u, name))) {
-        pa_sink *s;
 
         if (e->device_valid) {
+            pa_sink *s;
 
             if ((s = pa_namereg_get(c, e->device, PA_NAMEREG_SINK))) {
                 if (!new_data->sink) {
@@ -372,7 +379,7 @@ static pa_hook_result_t sink_input_new_hook_callback(pa_core *c, pa_sink_input_n
                     new_data->sink = s;
                     new_data->save_sink = TRUE;
                 } else
-                    pa_log_info("Not restore device for stream %s, because already set.", name);
+                    pa_log_debug("Not restoring device for stream %s, because already set.", name);
             }
         }
 
@@ -388,10 +395,10 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
     char *name;
     struct entry *e;
 
+    pa_assert(c);
     pa_assert(new_data);
-
-    if (!u->restore_volume && !u->restore_muted)
-        return PA_HOOK_OK;
+    pa_assert(u);
+    pa_assert(u->restore_volume || u->restore_muted);
 
     if (!(name = get_name(new_data->proplist, "sink-input")))
         return PA_HOOK_OK;
@@ -404,12 +411,13 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
                 pa_cvolume v;
 
                 pa_log_info("Restoring volume for sink input %s.", name);
+
                 v = e->volume;
                 pa_cvolume_remap(&v, &e->channel_map, &new_data->channel_map);
                 pa_sink_input_new_data_set_volume(new_data, &v);
 
                 new_data->volume_is_absolute = FALSE;
-                new_data->save_volume = FALSE;
+                new_data->save_volume = TRUE;
             } else
                 pa_log_debug("Not restoring volume for sink input %s, because already set.", name);
         }
@@ -436,10 +444,10 @@ static pa_hook_result_t source_output_new_hook_callback(pa_core *c, pa_source_ou
     char *name;
     struct entry *e;
 
+    pa_assert(c);
     pa_assert(new_data);
-
-    if (!u->restore_device)
-        return PA_HOOK_OK;
+    pa_assert(u);
+    pa_assert(u->restore_device);
 
     if (new_data->direct_on_input)
         return PA_HOOK_OK;
@@ -457,7 +465,7 @@ static pa_hook_result_t source_output_new_hook_callback(pa_core *c, pa_source_ou
                     new_data->source = s;
                     new_data->save_source = TRUE;
                 } else
-                    pa_log_info("Not restoring device for stream %s, because already set", name);
+                    pa_log_debug("Not restoring device for stream %s, because already set", name);
             }
         }
 
@@ -469,26 +477,156 @@ static pa_hook_result_t source_output_new_hook_callback(pa_core *c, pa_source_ou
     return PA_HOOK_OK;
 }
 
-#define EXT_VERSION 1
+static pa_hook_result_t sink_put_hook_callback(pa_core *c, pa_sink *sink, struct userdata *u) {
+    pa_sink_input *si;
+    uint32_t idx;
 
-static void clear_db(struct userdata *u) {
-    datum key;
-
+    pa_assert(c);
+    pa_assert(sink);
     pa_assert(u);
+    pa_assert(u->on_hotplug && u->restore_device);
 
-    key = gdbm_firstkey(u->gdbm_file);
-    while (key.dptr) {
-        datum next_key;
-        next_key = gdbm_nextkey(u->gdbm_file, key);
+    PA_IDXSET_FOREACH(si, c->sink_inputs, idx) {
+        char *name;
+        struct entry *e;
 
-        gdbm_delete(u->gdbm_file, key);
-        pa_xfree(key.dptr);
+        if (si->sink == sink)
+            continue;
 
-        key = next_key;
+        if (si->save_sink)
+            continue;
+
+        if (!(name = get_name(si->proplist, "sink-input")))
+            continue;
+
+        if ((e = read_entry(u, name))) {
+            if (e->device_valid && pa_streq(e->device, sink->name))
+                pa_sink_input_move_to(si, sink, TRUE);
+
+            pa_xfree(e);
+        }
+
+        pa_xfree(name);
     }
 
-    gdbm_reorganize(u->gdbm_file);
+    return PA_HOOK_OK;
 }
+
+static pa_hook_result_t source_put_hook_callback(pa_core *c, pa_source *source, struct userdata *u) {
+    pa_source_output *so;
+    uint32_t idx;
+
+    pa_assert(c);
+    pa_assert(source);
+    pa_assert(u);
+    pa_assert(u->on_hotplug && u->restore_device);
+
+    PA_IDXSET_FOREACH(so, c->source_outputs, idx) {
+        char *name;
+        struct entry *e;
+
+        if (so->source == source)
+            continue;
+
+        if (so->save_source)
+            continue;
+
+        if (so->direct_on_input)
+            continue;
+
+        if (!(name = get_name(so->proplist, "source-input")))
+            continue;
+
+        if ((e = read_entry(u, name))) {
+            if (e->device_valid && pa_streq(e->device, source->name))
+                pa_source_output_move_to(so, source, TRUE);
+
+            pa_xfree(e);
+        }
+
+        pa_xfree(name);
+    }
+
+    return PA_HOOK_OK;
+}
+
+static pa_hook_result_t sink_unlink_hook_callback(pa_core *c, pa_sink *sink, struct userdata *u) {
+    pa_sink_input *si;
+    uint32_t idx;
+
+    pa_assert(c);
+    pa_assert(sink);
+    pa_assert(u);
+    pa_assert(u->on_rescue && u->restore_device);
+
+    /* There's no point in doing anything if the core is shut down anyway */
+    if (c->state == PA_CORE_SHUTDOWN)
+        return PA_HOOK_OK;
+
+    PA_IDXSET_FOREACH(si, sink->inputs, idx) {
+        char *name;
+        struct entry *e;
+
+        if (!(name = get_name(si->proplist, "sink-input")))
+            continue;
+
+        if ((e = read_entry(u, name))) {
+
+            if (e->device_valid) {
+                pa_sink *d;
+
+                if ((d = pa_namereg_get(c, e->device, PA_NAMEREG_SINK)) && d != sink)
+                    pa_sink_input_move_to(si, d, TRUE);
+            }
+
+            pa_xfree(e);
+        }
+
+        pa_xfree(name);
+    }
+
+    return PA_HOOK_OK;
+}
+
+static pa_hook_result_t source_unlink_hook_callback(pa_core *c, pa_source *source, struct userdata *u) {
+    pa_source_output *so;
+    uint32_t idx;
+
+    pa_assert(c);
+    pa_assert(source);
+    pa_assert(u);
+    pa_assert(u->on_rescue && u->restore_device);
+
+    /* There's no point in doing anything if the core is shut down anyway */
+    if (c->state == PA_CORE_SHUTDOWN)
+        return PA_HOOK_OK;
+
+    PA_IDXSET_FOREACH(so, source->outputs, idx) {
+        char *name;
+        struct entry *e;
+
+        if (!(name = get_name(so->proplist, "source-output")))
+            continue;
+
+        if ((e = read_entry(u, name))) {
+
+            if (e->device_valid) {
+                pa_source *d;
+
+                if ((d = pa_namereg_get(c, e->device, PA_NAMEREG_SOURCE)) && d != source)
+                    pa_source_output_move_to(so, d, TRUE);
+            }
+
+            pa_xfree(e);
+        }
+
+        pa_xfree(name);
+    }
+
+    return PA_HOOK_OK;
+}
+
+#define EXT_VERSION 1
 
 static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
     pa_sink_input *si;
@@ -499,7 +637,7 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
     pa_assert(name);
     pa_assert(e);
 
-    for (si = pa_idxset_first(u->core->sink_inputs, &idx); si; si = pa_idxset_next(u->core->sink_inputs, &idx)) {
+    PA_IDXSET_FOREACH(si, u->core->sink_inputs, idx) {
         char *n;
         pa_sink *s;
 
@@ -517,7 +655,8 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
 
             v = e->volume;
             pa_log_info("Restoring volume for sink input %s.", name);
-            pa_sink_input_set_volume(si, pa_cvolume_remap(&v, &e->channel_map, &si->channel_map), FALSE, FALSE);
+            pa_cvolume_remap(&v, &e->channel_map, &si->channel_map);
+            pa_sink_input_set_volume(si, &v, TRUE, FALSE);
         }
 
         if (u->restore_muted && e->muted_valid) {
@@ -534,7 +673,7 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
         }
     }
 
-    for (so = pa_idxset_first(u->core->source_outputs, &idx); so; so = pa_idxset_next(u->core->source_outputs, &idx)) {
+    PA_IDXSET_FOREACH(so, u->core->source_outputs, idx) {
         char *n;
         pa_source *s;
 
@@ -559,18 +698,20 @@ static void apply_entry(struct userdata *u, const char *name, struct entry *e) {
 
 #if 0
 static void dump_database(struct userdata *u) {
-    datum key;
+    pa_datum key;
+    pa_bool_t done;
 
-    key = gdbm_firstkey(u->gdbm_file);
-    while (key.dptr) {
-        datum next_key;
+    done = !pa_database_first(u->database, &key, NULL);
+
+    while (!done) {
+        pa_datum next_key;
         struct entry *e;
         char *name;
 
-        next_key = gdbm_nextkey(u->gdbm_file, key);
+        done = !pa_database_next(u->database, &key, &next_key, NULL);
 
-        name = pa_xstrndup(key.dptr, key.dsize);
-        pa_xfree(key.dptr);
+        name = pa_xstrndup(key.data, key.size);
+        pa_datum_free(&key);
 
         if ((e = read_entry(u, name))) {
             char t[256];
@@ -618,21 +759,23 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
         }
 
         case SUBCOMMAND_READ: {
-            datum key;
+            pa_datum key;
+            pa_bool_t done;
 
             if (!pa_tagstruct_eof(t))
                 goto fail;
 
-            key = gdbm_firstkey(u->gdbm_file);
-            while (key.dptr) {
-                datum next_key;
+            done = !pa_database_first(u->database, &key, NULL);
+
+            while (!done) {
+                pa_datum next_key;
                 struct entry *e;
                 char *name;
 
-                next_key = gdbm_nextkey(u->gdbm_file, key);
+                done = !pa_database_next(u->database, &key, &next_key, NULL);
 
-                name = pa_xstrndup(key.dptr, (size_t) key.dsize);
-                pa_xfree(key.dptr);
+                name = pa_xstrndup(key.data, key.size);
+                pa_datum_free(&key);
 
                 if ((e = read_entry(u, name))) {
                     pa_cvolume r;
@@ -669,16 +812,15 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
                 goto fail;
 
             if (mode == PA_UPDATE_SET)
-                clear_db(u);
+                pa_database_clear(u->database);
 
             while (!pa_tagstruct_eof(t)) {
                 const char *name, *device;
                 pa_bool_t muted;
                 struct entry entry;
-                datum key, data;
-                int k;
+                pa_datum key, data;
 
-                memset(&entry, 0, sizeof(entry));
+                pa_zero(entry);
                 entry.version = ENTRY_VERSION;
 
                 if (pa_tagstruct_gets(t, &name) < 0 ||
@@ -708,13 +850,13 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
                     !pa_namereg_is_valid_name(entry.device))
                     goto fail;
 
-                key.dptr = (void*) name;
-                key.dsize = (int) strlen(name);
+                key.data = (char*) name;
+                key.size = strlen(name);
 
-                data.dptr = (void*) &entry;
-                data.dsize = sizeof(entry);
+                data.data = &entry;
+                data.size = sizeof(entry);
 
-                if ((k = gdbm_store(u->gdbm_file, key, data, mode == PA_UPDATE_REPLACE ? GDBM_REPLACE : GDBM_INSERT)) == 0)
+                if (pa_database_set(u->database, &key, &data, mode == PA_UPDATE_REPLACE) == 0)
                     if (apply_immediately)
                         apply_entry(u, name, &entry);
             }
@@ -728,15 +870,15 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
 
             while (!pa_tagstruct_eof(t)) {
                 const char *name;
-                datum key;
+                pa_datum key;
 
                 if (pa_tagstruct_gets(t, &name) < 0)
                     goto fail;
 
-                key.dptr = (void*) name;
-                key.dsize = (int) strlen(name);
+                key.data = (char*) name;
+                key.size = strlen(name);
 
-                gdbm_delete(u->gdbm_file, key);
+                pa_database_unset(u->database, &key);
             }
 
             trigger_save(u);
@@ -786,12 +928,11 @@ static pa_hook_result_t connection_unlink_hook_cb(pa_native_protocol *p, pa_nati
 int pa__init(pa_module*m) {
     pa_modargs *ma = NULL;
     struct userdata *u;
-    char *fname, *fn;
+    char *fname;
     pa_sink_input *si;
     pa_source_output *so;
     uint32_t idx;
-    pa_bool_t restore_device = TRUE, restore_volume = TRUE, restore_muted = TRUE;
-    int gdbm_cache_size;
+    pa_bool_t restore_device = TRUE, restore_volume = TRUE, restore_muted = TRUE, on_hotplug = TRUE, on_rescue = TRUE;
 
     pa_assert(m);
 
@@ -802,22 +943,24 @@ int pa__init(pa_module*m) {
 
     if (pa_modargs_get_value_boolean(ma, "restore_device", &restore_device) < 0 ||
         pa_modargs_get_value_boolean(ma, "restore_volume", &restore_volume) < 0 ||
-        pa_modargs_get_value_boolean(ma, "restore_muted", &restore_muted) < 0) {
-        pa_log("restore_device=, restore_volume= and restore_muted= expect boolean arguments");
+        pa_modargs_get_value_boolean(ma, "restore_muted", &restore_muted) < 0 ||
+        pa_modargs_get_value_boolean(ma, "on_hotplug", &on_hotplug) < 0 ||
+        pa_modargs_get_value_boolean(ma, "on_rescue", &on_rescue) < 0) {
+        pa_log("restore_device=, restore_volume=, restore_muted=, on_hotplug= and on_rescue= expect boolean arguments");
         goto fail;
     }
 
     if (!restore_muted && !restore_volume && !restore_device)
         pa_log_warn("Neither restoring volume, nor restoring muted, nor restoring device enabled!");
 
-    m->userdata = u = pa_xnew(struct userdata, 1);
+    m->userdata = u = pa_xnew0(struct userdata, 1);
     u->core = m->core;
     u->module = m;
-    u->save_time_event = NULL;
     u->restore_device = restore_device;
     u->restore_volume = restore_volume;
     u->restore_muted = restore_muted;
-    u->gdbm_file = NULL;
+    u->on_hotplug = on_hotplug;
+    u->on_rescue = on_rescue;
     u->subscribed = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
 
     u->protocol = pa_native_protocol_get(m->core);
@@ -828,41 +971,42 @@ int pa__init(pa_module*m) {
     u->subscription = pa_subscription_new(m->core, PA_SUBSCRIPTION_MASK_SINK_INPUT|PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT, subscribe_callback, u);
 
     if (restore_device) {
+        /* A little bit earlier than module-intended-roles ... */
         u->sink_input_new_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) sink_input_new_hook_callback, u);
         u->source_output_new_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) source_output_new_hook_callback, u);
+    }
+
+    if (restore_device && on_hotplug) {
+        /* A little bit earlier than module-intended-roles ... */
+        u->sink_put_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PUT], PA_HOOK_LATE, (pa_hook_cb_t) sink_put_hook_callback, u);
+        u->source_put_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_PUT], PA_HOOK_LATE, (pa_hook_cb_t) source_put_hook_callback, u);
+    }
+
+    if (restore_device && on_rescue) {
+        /* A little bit earlier than module-intended-roles, module-rescue-streams, ... */
+        u->sink_unlink_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_UNLINK], PA_HOOK_LATE, (pa_hook_cb_t) sink_unlink_hook_callback, u);
+        u->source_unlink_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_UNLINK], PA_HOOK_LATE, (pa_hook_cb_t) source_unlink_hook_callback, u);
     }
 
     if (restore_volume || restore_muted)
         u->sink_input_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_input_fixate_hook_callback, u);
 
-    /* We include the host identifier in the file name because gdbm
-     * files are CPU dependant, and we don't want things to go wrong
-     * if we are on a multiarch system. */
-
-    fn = pa_sprintf_malloc("stream-volumes."CANONICAL_HOST".gdbm");
-    fname = pa_state_path(fn, TRUE);
-    pa_xfree(fn);
-
-    if (!fname)
+    if (!(fname = pa_state_path("stream-volumes", TRUE)))
         goto fail;
 
-    if (!(u->gdbm_file = gdbm_open(fname, 0, GDBM_WRCREAT|GDBM_NOLOCK, 0600, NULL))) {
-        pa_log("Failed to open volume database '%s': %s", fname, gdbm_strerror(gdbm_errno));
+    if (!(u->database = pa_database_open(fname, TRUE))) {
+        pa_log("Failed to open volume database '%s': %s", fname, pa_cstrerror(errno));
         pa_xfree(fname);
         goto fail;
     }
 
-    /* By default the cache of gdbm is rather large, let's reduce it a bit to save memory */
-    gdbm_cache_size = 10;
-    gdbm_setopt(u->gdbm_file, GDBM_CACHESIZE, &gdbm_cache_size, sizeof(gdbm_cache_size));
-
     pa_log_info("Sucessfully opened database file '%s'.", fname);
     pa_xfree(fname);
 
-    for (si = pa_idxset_first(m->core->sink_inputs, &idx); si; si = pa_idxset_next(m->core->sink_inputs, &idx))
+    PA_IDXSET_FOREACH(si, m->core->sink_inputs, idx)
         subscribe_callback(m->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_NEW, si->index, u);
 
-    for (so = pa_idxset_first(m->core->source_outputs, &idx); so; so = pa_idxset_next(m->core->source_outputs, &idx))
+    PA_IDXSET_FOREACH(so, m->core->source_outputs, idx)
         subscribe_callback(m->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_NEW, so->index, u);
 
     pa_modargs_free(ma);
@@ -895,14 +1039,24 @@ void pa__done(pa_module*m) {
     if (u->source_output_new_hook_slot)
         pa_hook_slot_free(u->source_output_new_hook_slot);
 
+    if (u->sink_put_hook_slot)
+        pa_hook_slot_free(u->sink_put_hook_slot);
+    if (u->source_put_hook_slot)
+        pa_hook_slot_free(u->source_put_hook_slot);
+
+    if (u->sink_unlink_hook_slot)
+        pa_hook_slot_free(u->sink_unlink_hook_slot);
+    if (u->source_unlink_hook_slot)
+        pa_hook_slot_free(u->source_unlink_hook_slot);
+
     if (u->connection_unlink_hook_slot)
         pa_hook_slot_free(u->connection_unlink_hook_slot);
 
     if (u->save_time_event)
         u->core->mainloop->time_free(u->save_time_event);
 
-    if (u->gdbm_file)
-        gdbm_close(u->gdbm_file);
+    if (u->database)
+        pa_database_close(u->database);
 
     if (u->protocol) {
         pa_native_protocol_remove_ext(u->protocol, m);

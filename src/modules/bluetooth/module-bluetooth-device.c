@@ -30,13 +30,15 @@
 #include <linux/sockios.h>
 #include <arpa/inet.h>
 
-#include <pulse/xmalloc.h>
-#include <pulse/timeval.h>
-#include <pulse/sample.h>
 #include <pulse/i18n.h>
+#include <pulse/rtclock.h>
+#include <pulse/sample.h>
+#include <pulse/timeval.h>
+#include <pulse/xmalloc.h>
 
 #include <pulsecore/module.h>
 #include <pulsecore/modargs.h>
+#include <pulsecore/core-rtclock.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/core-error.h>
 #include <pulsecore/socket-util.h>
@@ -44,7 +46,6 @@
 #include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
 #include <pulsecore/time-smoother.h>
-#include <pulsecore/rtclock.h>
 #include <pulsecore/namereg.h>
 #include <pulsecore/dbus-shared.h>
 
@@ -64,8 +65,11 @@ PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "name=<name for the card/sink/source, to be prefixed> "
         "card_name=<name for the card> "
+        "card_properties=<properties for the card> "
         "sink_name=<name for the sink> "
+        "sink_properties=<properties for the sink> "
         "source_name=<name for the source> "
+        "source_properties=<properties for the source> "
         "address=<address of the device> "
         "profile=<a2dp|hsp> "
         "rate=<sample rate> "
@@ -84,8 +88,11 @@ PA_MODULE_USAGE(
 static const char* const valid_modargs[] = {
     "name",
     "card_name",
+    "card_properties",
     "sink_name",
+    "sink_properties",
     "source_name",
+    "source_properties",
     "address",
     "profile",
     "rate",
@@ -173,6 +180,8 @@ struct userdata {
 #define FIXED_LATENCY_PLAYBACK_A2DP (25*PA_USEC_PER_MSEC)
 #define FIXED_LATENCY_PLAYBACK_HSP (125*PA_USEC_PER_MSEC)
 #define FIXED_LATENCY_RECORD_HSP (25*PA_USEC_PER_MSEC)
+
+#define MAX_PLAYBACK_CATCH_UP_USEC (100*PA_USEC_PER_MSEC)
 
 #ifdef NOKIA
 #define USE_SCO_OVER_PCM(u) (u->profile == PROFILE_HSP && (u->hsp.sco_sink && u->hsp.sco_source))
@@ -765,7 +774,7 @@ static int start_stream_fd(struct userdata *u) {
                 TRUE,
                 TRUE,
                 10,
-                pa_rtclock_usec(),
+                pa_rtclock_now(),
                 TRUE);
 
     return 0;
@@ -859,14 +868,14 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
             if (u->read_smoother) {
                 pa_usec_t wi, ri;
 
-                ri = pa_smoother_get(u->read_smoother, pa_rtclock_usec());
+                ri = pa_smoother_get(u->read_smoother, pa_rtclock_now());
                 wi = pa_bytes_to_usec(u->write_index + u->block_size, &u->sample_spec);
 
                 *((pa_usec_t*) data) = wi > ri ? wi - ri : 0;
             } else {
                 pa_usec_t ri, wi;
 
-                ri = pa_rtclock_usec() - u->started_at;
+                ri = pa_rtclock_now() - u->started_at;
                 wi = pa_bytes_to_usec(u->write_index, &u->sample_spec);
 
                 *((pa_usec_t*) data) = wi > ri ? wi - ri : 0;
@@ -904,7 +913,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
                         stop_stream_fd(u);
 
                     if (u->read_smoother)
-                        pa_smoother_pause(u->read_smoother, pa_rtclock_usec());
+                        pa_smoother_pause(u->read_smoother, pa_rtclock_now());
                     break;
 
                 case PA_SOURCE_IDLE:
@@ -931,7 +940,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
         case PA_SOURCE_MESSAGE_GET_LATENCY: {
             pa_usec_t wi, ri;
 
-            wi = pa_smoother_get(u->read_smoother, pa_rtclock_usec());
+            wi = pa_smoother_get(u->read_smoother, pa_rtclock_now());
             ri = pa_bytes_to_usec(u->read_index, &u->sample_spec);
 
             *((pa_usec_t*) data) = (wi > ri ? wi - ri : 0) + u->source->fixed_latency;
@@ -1078,7 +1087,7 @@ static int hsp_process_push(struct userdata *u) {
 
         if (!found_tstamp) {
             pa_log_warn("Couldn't find SO_TIMESTAMP data in auxiliary recvmsg() data!");
-            tstamp = pa_rtclock_usec();
+            tstamp = pa_rtclock_now();
         }
 
         pa_smoother_put(u->read_smoother, tstamp, pa_bytes_to_usec(u->read_index, &u->sample_spec));
@@ -1257,7 +1266,6 @@ static void thread_func(void *userdata) {
         goto fail;
 
     pa_thread_mq_install(&u->thread_mq);
-    pa_rtpoll_install(u->rtpoll);
 
     for (;;) {
         struct pollfd *pollfd;
@@ -1296,22 +1304,44 @@ static void thread_func(void *userdata) {
 
                 if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && do_write <= 0 && writable) {
                     pa_usec_t time_passed;
-                    uint64_t should_have_written;
+                    pa_usec_t audio_sent;
 
                     /* Hmm, there is no input stream we could synchronize
                      * to. So let's do things by time */
 
-                    time_passed = pa_rtclock_usec() - u->started_at;
-                    should_have_written = pa_usec_to_bytes(time_passed, &u->sample_spec);
+                    time_passed = pa_rtclock_now() - u->started_at;
+                    audio_sent = pa_bytes_to_usec(u->write_index, &u->sample_spec);
 
-                    do_write = u->write_index <= should_have_written;
+                    if (audio_sent <= time_passed) {
+                        pa_usec_t audio_to_send = time_passed - audio_sent;
+
+                        /* Never try to catch up for more than 100ms */
+                        if (u->write_index > 0 && audio_to_send > MAX_PLAYBACK_CATCH_UP_USEC) {
+                            pa_usec_t skip_usec;
+                            uint64_t skip_bytes;
+                            pa_memchunk tmp;
+
+                            skip_usec = audio_to_send - MAX_PLAYBACK_CATCH_UP_USEC;
+                            skip_bytes = pa_usec_to_bytes(skip_usec, &u->sample_spec);
+
+                            pa_log_warn("Skipping %llu us (= %llu bytes) in audio stream",
+                                        (unsigned long long) skip_usec,
+                                        (unsigned long long) skip_bytes);
+
+                            pa_sink_render_full(u->sink, skip_bytes, &tmp);
+                            pa_memblock_unref(tmp.memblock);
+                            u->write_index += skip_bytes;
+                        }
+
+                        do_write = 1;
+                    }
                 }
 
                 if (writable && do_write > 0) {
                     int n_written;
 
                     if (u->write_index <= 0)
-                        u->started_at = pa_rtclock_usec();
+                        u->started_at = pa_rtclock_now();
 
                     if (u->profile == PROFILE_A2DP) {
                         if ((n_written = a2dp_process_render(u)) < 0)
@@ -1321,17 +1351,20 @@ static void thread_func(void *userdata) {
                             goto fail;
                     }
 
+                    if (n_written == 0)
+                        pa_log("Broken kernel: we got EAGAIN on write() after POLLOUT!");
+
                     do_write -= n_written;
                     writable = FALSE;
                 }
 
-                if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && do_write <= 0) {
+                if ((!u->source || !PA_SOURCE_IS_LINKED(u->source->thread_info.state)) && do_write <= 0 && writable) {
                     pa_usec_t time_passed, next_write_at, sleep_for;
 
                     /* Hmm, there is no input stream we could synchronize
                      * to. So let's estimate when we need to wake up the latest */
 
-                    time_passed = pa_rtclock_usec() - u->started_at;
+                    time_passed = pa_rtclock_now() - u->started_at;
                     next_write_at = pa_bytes_to_usec(u->write_index, &u->sample_spec);
                     sleep_for = time_passed < next_write_at ? next_write_at - time_passed : 0;
 
@@ -1413,12 +1446,12 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
             if (u->sink && dbus_message_is_signal(m, "org.bluez.Headset", "SpeakerGainChanged")) {
 
                 pa_cvolume_set(&v, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
-                pa_sink_volume_changed(u->sink, &v);
+                pa_sink_volume_changed(u->sink, &v, TRUE);
 
             } else if (u->source && dbus_message_is_signal(m, "org.bluez.Headset", "MicrophoneGainChanged")) {
 
                 pa_cvolume_set(&v, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
-                pa_source_volume_changed(u->source, &v);
+                pa_source_volume_changed(u->source, &v, TRUE);
             }
         }
     }
@@ -1592,9 +1625,17 @@ static int add_sink(struct userdata *u) {
         data.module = u->module;
         pa_sink_new_data_set_sample_spec(&data, &u->sample_spec);
         pa_proplist_sets(data.proplist, "bluetooth.protocol", u->profile == PROFILE_A2DP ? "a2dp" : "sco");
+        if (u->profile == PROFILE_HSP)
+            pa_proplist_sets(data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
         data.card = u->card;
         data.name = get_name("sink", u->modargs, u->address, &b);
         data.namereg_fail = b;
+
+        if (pa_modargs_get_proplist(u->modargs, "sink_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {
+            pa_log("Invalid properties");
+            pa_sink_new_data_done(&data);
+            return -1;
+        }
 
         u->sink = pa_sink_new(u->core, &data, PA_SINK_HARDWARE|PA_SINK_LATENCY | (u->profile == PROFILE_HSP ? PA_SINK_HW_VOLUME_CTRL : 0));
         pa_sink_new_data_done(&data);
@@ -1608,9 +1649,9 @@ static int add_sink(struct userdata *u) {
         u->sink->parent.process_msg = sink_process_msg;
 
         pa_sink_set_max_request(u->sink, u->block_size);
-        u->sink->fixed_latency =
-            (u->profile == PROFILE_A2DP ? FIXED_LATENCY_PLAYBACK_A2DP : FIXED_LATENCY_PLAYBACK_HSP) +
-            pa_bytes_to_usec(u->block_size, &u->sample_spec);
+        pa_sink_set_fixed_latency(u->sink,
+                                  (u->profile == PROFILE_A2DP ? FIXED_LATENCY_PLAYBACK_A2DP : FIXED_LATENCY_PLAYBACK_HSP) +
+                                  pa_bytes_to_usec(u->block_size, &u->sample_spec));
     }
 
     if (u->profile == PROFILE_HSP) {
@@ -1644,9 +1685,17 @@ static int add_source(struct userdata *u) {
         data.module = u->module;
         pa_source_new_data_set_sample_spec(&data, &u->sample_spec);
         pa_proplist_sets(data.proplist, "bluetooth.protocol", u->profile == PROFILE_A2DP ? "a2dp" : "hsp");
+        if (u->profile == PROFILE_HSP)
+            pa_proplist_sets(data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
         data.card = u->card;
         data.name = get_name("source", u->modargs, u->address, &b);
         data.namereg_fail = b;
+
+        if (pa_modargs_get_proplist(u->modargs, "source_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {
+            pa_log("Invalid properties");
+            pa_source_new_data_done(&data);
+            return -1;
+        }
 
         u->source = pa_source_new(u->core, &data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY | (u->profile == PROFILE_HSP ? PA_SOURCE_HW_VOLUME_CTRL : 0));
         pa_source_new_data_done(&data);
@@ -1659,9 +1708,9 @@ static int add_source(struct userdata *u) {
         u->source->userdata = u;
         u->source->parent.process_msg = source_process_msg;
 
-        u->source->fixed_latency =
-            (/* u->profile == PROFILE_A2DP ? FIXED_LATENCY_RECORD_A2DP : */ FIXED_LATENCY_RECORD_HSP) +
-            pa_bytes_to_usec(u->block_size, &u->sample_spec);
+        pa_source_set_fixed_latency(u->source,
+                                    (/* u->profile == PROFILE_A2DP ? FIXED_LATENCY_RECORD_A2DP : */ FIXED_LATENCY_RECORD_HSP) +
+                                    pa_bytes_to_usec(u->block_size, &u->sample_spec));
     }
 
     if (u->profile == PROFILE_HSP) {
@@ -1874,20 +1923,25 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
 
     if (!(device = pa_bluetooth_discovery_get_by_path(u->discovery, u->path))) {
         pa_log_error("Failed to get device object.");
-        return -1;
+        return -PA_ERR_IO;
     }
 
-    if (device->headset_state != PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_HSP) {
+    /* The state signal is sent by bluez, so it is racy to check
+       strictly for CONNECTED, we should also accept STREAMING state
+       as being good enough. However, if the profile is used
+       concurrently (which is unlikely), ipc will fail later on, and
+       module will be unloaded. */
+    if (device->headset_state < PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_HSP) {
         pa_log_warn("HSP is not connected, refused to switch profile");
-        return -1;
+        return -PA_ERR_IO;
     }
-    else if (device->audio_sink_state != PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_A2DP) {
+    else if (device->audio_sink_state < PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_A2DP) {
         pa_log_warn("A2DP is not connected, refused to switch profile");
-        return -1;
+        return -PA_ERR_IO;
     }
 
     if (u->sink) {
-        inputs = pa_sink_move_all_start(u->sink);
+        inputs = pa_sink_move_all_start(u->sink, NULL);
 #ifdef NOKIA
         if (!USE_SCO_OVER_PCM(u))
 #endif
@@ -1895,7 +1949,7 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
     }
 
     if (u->source) {
-        outputs = pa_source_move_all_start(u->source);
+        outputs = pa_source_move_all_start(u->source, NULL);
 #ifdef NOKIA
         if (!USE_SCO_OVER_PCM(u))
 #endif
@@ -1934,13 +1988,17 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
 }
 
 /* Run from main thread */
-static int add_card(struct userdata *u, const char *default_profile, const pa_bluetooth_device *device) {
+static int add_card(struct userdata *u, const pa_bluetooth_device *device) {
     pa_card_new_data data;
     pa_bool_t b;
     pa_card_profile *p;
     enum profile *d;
     const char *ff;
     char *n;
+    const char *default_profile;
+
+    pa_assert(u);
+    pa_assert(device);
 
     pa_card_new_data_init(&data);
     data.driver = __FILE__;
@@ -1960,6 +2018,12 @@ static int add_card(struct userdata *u, const char *default_profile, const pa_bl
     pa_proplist_sets(data.proplist, "bluez.name", device->name);
     data.name = get_name("card", u->modargs, device->address, &b);
     data.namereg_fail = b;
+
+    if (pa_modargs_get_proplist(u->modargs, "card_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {
+        pa_log("Invalid properties");
+        pa_card_new_data_done(&data);
+        return -1;
+    }
 
     data.profiles = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
 
@@ -2003,7 +2067,7 @@ static int add_card(struct userdata *u, const char *default_profile, const pa_bl
     *d = PROFILE_OFF;
     pa_hashmap_put(data.profiles, p->name, p);
 
-    if (default_profile) {
+    if ((default_profile = pa_modargs_get_value(u->modargs, "profile", NULL))) {
         if (pa_hashmap_get(data.profiles, default_profile))
             pa_card_new_data_set_profile(&data, default_profile);
         else
@@ -2020,6 +2084,15 @@ static int add_card(struct userdata *u, const char *default_profile, const pa_bl
 
     u->card->userdata = u;
     u->card->set_profile = card_set_profile;
+
+    d = PA_CARD_PROFILE_DATA(u->card->active_profile);
+
+    if ((device->headset_state < PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_HSP) ||
+        (device->audio_sink_state < PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_A2DP)) {
+        pa_log_warn("Default profile not connected, selecting off profile");
+        u->card->active_profile = pa_hashmap_get(u->card->profiles, "off");
+        u->card->save_profile = FALSE;
+    }
 
     d = PA_CARD_PROFILE_DATA(u->card->active_profile);
     u->profile = *d;
@@ -2149,7 +2222,7 @@ int pa__init(pa_module* m) {
         goto fail;
 
     /* Add the card structure. This will also initialize the default profile */
-    if (add_card(u, pa_modargs_get_value(ma, "profile", NULL), device) < 0)
+    if (add_card(u, device) < 0)
         goto fail;
 
     /* Connect to the BT service and query capabilities */
