@@ -46,6 +46,7 @@
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
 #include <pulse/util.h>
+#include <pulse/rtclock.h>
 
 #include <pulsecore/iochannel.h>
 #include <pulsecore/sink.h>
@@ -59,7 +60,6 @@
 #include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
 #include <pulsecore/thread.h>
-#include <pulsecore/rtclock.h>
 
 #include "module-solaris-symdef.h"
 
@@ -68,7 +68,9 @@ PA_MODULE_DESCRIPTION("Solaris Sink/Source");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_USAGE(
     "sink_name=<name for the sink> "
+    "sink_properties=<properties for the sink> "
     "source_name=<name for the source> "
+    "source_properties=<properties for the source> "
     "device=<audio device file name> "
     "record=<enable source?> "
     "playback=<enable sink?> "
@@ -112,7 +114,9 @@ struct userdata {
 
 static const char* const valid_modargs[] = {
     "sink_name",
+    "sink_properties",
     "source_name",
+    "source_properties",
     "device",
     "record",
     "playback",
@@ -601,7 +605,6 @@ static void thread_func(void *userdata) {
         pa_make_realtime(u->core->realtime_priority);
 
     pa_thread_mq_install(&u->thread_mq);
-    pa_rtpoll_install(u->rtpoll);
 
     for (;;) {
         /* Render some data and write it to the dsp */
@@ -637,7 +640,7 @@ static void thread_func(void *userdata) {
                  * Since we cannot modify the size of the output buffer we fake it
                  * by not filling it more than u->buffer_size.
                  */
-                xtime0 = pa_rtclock_usec();
+                xtime0 = pa_rtclock_now();
                 buffered_bytes = get_playback_buffered_bytes(u);
                 if (buffered_bytes >= (uint64_t)u->buffer_size)
                     break;
@@ -794,7 +797,7 @@ static void sig_callback(pa_mainloop_api *api, pa_signal_event*e, int sig, void 
     pa_log_debug("caught signal");
 
     if (u->sink) {
-        pa_sink_get_volume(u->sink, TRUE);
+        pa_sink_get_volume(u->sink, TRUE, FALSE);
         pa_sink_get_mute(u->sink, TRUE);
     }
 
@@ -897,9 +900,15 @@ int pa__init(pa_module *m) {
         pa_source_new_data_set_channel_map(&source_new_data, &map);
         pa_proplist_sets(source_new_data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
         pa_proplist_sets(source_new_data.proplist, PA_PROP_DEVICE_API, "solaris");
-        pa_proplist_setf(source_new_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Solaris PCM source");
+        pa_proplist_sets(source_new_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Solaris PCM source");
         pa_proplist_sets(source_new_data.proplist, PA_PROP_DEVICE_ACCESS_MODE, "serial");
         pa_proplist_setf(source_new_data.proplist, PA_PROP_DEVICE_BUFFERING_BUFFER_SIZE, "%lu", (unsigned long) u->buffer_size);
+
+        if (pa_modargs_get_proplist(ma, "source_properties", source_new_data.proplist, PA_UPDATE_REPLACE) < 0) {
+            pa_log("Invalid properties");
+            pa_source_new_data_done(&source_new_data);
+            goto fail;
+        }
 
         u->source = pa_source_new(m->core, &source_new_data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY|PA_SOURCE_HW_VOLUME_CTRL);
         pa_source_new_data_done(&source_new_data);
@@ -939,8 +948,14 @@ int pa__init(pa_module *m) {
         pa_sink_new_data_set_channel_map(&sink_new_data, &map);
         pa_proplist_sets(sink_new_data.proplist, PA_PROP_DEVICE_STRING, u->device_name);
         pa_proplist_sets(sink_new_data.proplist, PA_PROP_DEVICE_API, "solaris");
-        pa_proplist_setf(sink_new_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Solaris PCM sink");
+        pa_proplist_sets(sink_new_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Solaris PCM sink");
         pa_proplist_sets(sink_new_data.proplist, PA_PROP_DEVICE_ACCESS_MODE, "serial");
+
+        if (pa_modargs_get_proplist(ma, "sink_properties", sink_new_data.proplist, PA_UPDATE_REPLACE) < 0) {
+            pa_log("Invalid properties");
+            pa_sink_new_data_done(&sink_new_data);
+            goto fail;
+        }
 
         u->sink = pa_sink_new(m->core, &sink_new_data, PA_SINK_HARDWARE|PA_SINK_LATENCY|PA_SINK_HW_VOLUME_CTRL|PA_SINK_HW_MUTE_CTRL);
         pa_sink_new_data_done(&sink_new_data);

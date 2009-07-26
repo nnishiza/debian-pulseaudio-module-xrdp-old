@@ -116,11 +116,11 @@ Open a command interpreter on STDIN/STDOUT after startup. This may be used to co
 \fB-n\f1
 Don't load default script file \fIdefault.pa\f1 (see below) on startup. Useful in conjunction with \fB-C\f1 or \fB--file\f1.
 .SH FILES
-\fI~/.pulse/daemon.conf\f1, \fI/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
+\fI~/.pulse/daemon.conf\f1, \fI/usr/local/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
 
-\fI~/.pulse/default.pa\f1, \fI/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
+\fI~/.pulse/default.pa\f1, \fI/usr/local/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
 
-\fI~/.pulse/client.conf\f1, \fI/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
+\fI~/.pulse/client.conf\f1, \fI/usr/local/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
 .SH SIGNALS
 \fISIGINT, SIGTERM\f1: the PulseAudio daemon will shut down (Same as \fB--kill\f1).
 

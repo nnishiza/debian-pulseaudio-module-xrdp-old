@@ -11,6 +11,7 @@
 #define pa__get_description module_suspend_on_idle_LTX_pa__get_description
 #define pa__get_usage module_suspend_on_idle_LTX_pa__get_usage
 #define pa__get_version module_suspend_on_idle_LTX_pa__get_version
+#define pa__get_deprecated module_suspend_on_idle_LTX_pa__get_deprecated
 #define pa__load_once module_suspend_on_idle_LTX_pa__load_once
 #define pa__get_n_used module_suspend_on_idle_LTX_pa__get_n_used
 
@@ -22,6 +23,7 @@ const char* pa__get_author(void);
 const char* pa__get_description(void);
 const char* pa__get_usage(void);
 const char* pa__get_version(void);
+const char* pa__get_deprecated(void);
 pa_bool_t pa__load_once(void);
 
 #endif

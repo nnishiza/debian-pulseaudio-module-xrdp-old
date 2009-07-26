@@ -80,9 +80,6 @@ int pa_make_realtime(int rtprio);
 int pa_raise_priority(int nice_level);
 void pa_reset_priority(void);
 
-pa_bool_t pa_can_realtime(void);
-pa_bool_t pa_can_high_priority(void);
-
 int pa_parse_boolean(const char *s) PA_GCC_PURE;
 
 static inline const char *pa_yes_no(pa_bool_t b) {
@@ -201,6 +198,9 @@ pa_bool_t pa_in_system_mode(void);
 
 #define pa_streq(a,b) (!strcmp((a),(b)))
 
+char *pa_get_host_name_malloc(void);
+char *pa_get_user_name_malloc(void);
+
 char *pa_machine_id(void);
 char *pa_session_id(void);
 char *pa_uname_string(void);
@@ -223,5 +223,17 @@ char *pa_replace(const char*s, const char*a, const char *b);
 char *pa_unescape(char *p);
 
 char *pa_realpath(const char *path);
+
+void pa_disable_sigpipe(void);
+
+void pa_xfreev(void**a);
+
+static inline void pa_xstrfreev(char **a) {
+    pa_xfreev((void**) a);
+}
+
+char **pa_split_spaces_strv(const char *s);
+
+char* pa_maybe_prefix_path(const char *path, const char *prefix);
 
 #endif

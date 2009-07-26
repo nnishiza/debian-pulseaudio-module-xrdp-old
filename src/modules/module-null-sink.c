@@ -32,12 +32,14 @@
 #include <unistd.h>
 #include <limits.h>
 
+#include <pulse/rtclock.h>
 #include <pulse/timeval.h>
 #include <pulse/xmalloc.h>
 
 #include <pulsecore/macro.h>
 #include <pulsecore/sink.h>
 #include <pulsecore/module.h>
+#include <pulsecore/core-rtclock.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/core-error.h>
 #include <pulsecore/modargs.h>
@@ -45,7 +47,6 @@
 #include <pulsecore/thread.h>
 #include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
-#include <pulsecore/rtclock.h>
 
 #include "module-null-sink-symdef.h"
 
@@ -54,12 +55,12 @@ PA_MODULE_DESCRIPTION("Clocked NULL sink");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
-        "format=<sample format> "
-        "channels=<number of channels> "
-        "rate=<sample rate> "
         "sink_name=<name of sink> "
-        "channel_map=<channel map> "
-        "description=<description for the sink>");
+        "sink_properties=<properties for the sink> "
+        "format=<sample format> "
+        "rate=<sample rate> "
+        "channels=<number of channels> "
+        "channel_map=<channel map>");
 
 #define DEFAULT_SINK_NAME "null"
 #define BLOCK_USEC (PA_USEC_PER_SEC * 2)
@@ -78,12 +79,13 @@ struct userdata {
 };
 
 static const char* const valid_modargs[] = {
-    "rate",
-    "format",
-    "channels",
     "sink_name",
+    "sink_properties",
+    "format",
+    "rate",
+    "channels",
     "channel_map",
-    "description",
+    "description", /* supported for compatibility reasons, made redundant by sink_properties= */
     NULL
 };
 
@@ -100,14 +102,14 @@ static int sink_process_msg(
         case PA_SINK_MESSAGE_SET_STATE:
 
             if (PA_PTR_TO_UINT(data) == PA_SINK_RUNNING)
-                u->timestamp = pa_rtclock_usec();
+                u->timestamp = pa_rtclock_now();
 
             break;
 
         case PA_SINK_MESSAGE_GET_LATENCY: {
             pa_usec_t now;
 
-            now = pa_rtclock_usec();
+            now = pa_rtclock_now();
             *((pa_usec_t*) data) = u->timestamp > now ? u->timestamp - now : 0ULL;
 
             return 0;
@@ -207,9 +209,8 @@ static void thread_func(void *userdata) {
     pa_log_debug("Thread starting up");
 
     pa_thread_mq_install(&u->thread_mq);
-    pa_rtpoll_install(u->rtpoll);
 
-    u->timestamp = pa_rtclock_usec();
+    u->timestamp = pa_rtclock_now();
 
     for (;;) {
         int ret;
@@ -218,7 +219,7 @@ static void thread_func(void *userdata) {
         if (PA_SINK_IS_OPENED(u->sink->thread_info.state)) {
             pa_usec_t now;
 
-            now = pa_rtclock_usec();
+            now = pa_rtclock_now();
 
             if (u->sink->thread_info.rewind_requested) {
                 if (u->sink->thread_info.rewind_nbytes > 0)
@@ -288,6 +289,12 @@ int pa__init(pa_module*m) {
     pa_sink_new_data_set_channel_map(&data, &map);
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, pa_modargs_get_value(ma, "description", "Null Output"));
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CLASS, "abstract");
+
+    if (pa_modargs_get_proplist(ma, "sink_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {
+        pa_log("Invalid properties");
+        pa_sink_new_data_done(&data);
+        goto fail;
+    }
 
     u->sink = pa_sink_new(m->core, &data, PA_SINK_LATENCY|PA_SINK_DYNAMIC_LATENCY);
     pa_sink_new_data_done(&data);
