@@ -3,8 +3,9 @@ pulseaudio (0.9.16~test2~20090726git59659e1db-1) UNRELEASED; urgency=low
   * New Upstream Version
   * Ack NMU (Closes: #537351)
   * Remove all patches, everything was merged upstream :)
+  * debian/copyright: updated
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 26 Jul 2009 17:03:28 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 26 Jul 2009 17:20:42 +0200
 
 pulseaudio (0.9.15-4.1) unstable; urgency=high
 

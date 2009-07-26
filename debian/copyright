@@ -253,21 +253,30 @@ License: LGPL-2+
 File: po/ca.po
 Copyright:
   Copyright (C) 2008 Xavier Conde Rueda <xavi.conde@gmail.com>
+  Copyright (C) Agustí Grau <fletxa@gmail.com>, 2009.
+  Copyright (C) Judith Pintó Subirada <judithp@gmail.com>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
 
 File: po/cs.po
 Copyright:
-  Copyright (C) 2008 Petr Kovar <pknbe@volny.cz>
+  Copyright (C) 2008,2009 Petr Kovar <pknbe@volny.cz>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
 
 File: po/de.po
 Copyright:
-  Copyright (C) 2008 Fabian Affolter <fab@fedoraproject.org>
-  Copyright (C) 2008 Micha Pietsch <barney@fedoraproject.org>
+  Copyright (C) 2008,2009 Fabian Affolter <fab@fedoraproject.org>
+  Copyright (C) 2008,2009 Micha Pietsch <barney@fedoraproject.org>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+File: po/de_CH.po
+Copyright:
+  Copyright (C) 2008,2009 Fabian Affolter <fab@fedoraproject.org>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -300,6 +309,7 @@ Copyright:
   Copyright (C) 2008 Robert-Andre Mauchin <zebob.m@pengzone.org>
   Copyright (C) 2008 Michael Ughetto <telimektar esraonline com>
   Copyright (C) 2008 Pablo Martin-Gomez <pablo.martin-gomez@laposte.net>
+  Copyright (C) 2009 Corentin Perard <corentin.perard@gmail.com>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -311,10 +321,18 @@ License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
 
+File: po/hi.po
+Copyright:
+  Copyright (C) 2009 Rajesh Ranjan <rajesh672@gmail.com>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
 File: po/it.po
 Copyright:
-  Copyright (C) 2008 Luca Ferretti <elle.uca@libero.it>
+  Copyright (C) 2008,2009 Luca Ferretti <elle.uca@libero.it>
   Copyright (C) 2009 Milo Casagrande <milo@ubuntu.com>
+  Copyright C() 2009 ario_santagiuliana <mario at marionline.it>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -350,6 +368,8 @@ License: LGPL-2.1+
 File: po/pa.po
 Copyright:
   Copyright (C) 2009 Amanpreet Singh Alam <aalam@users.sf.net>
+  Copyright (C) 2009 Jaswinder Singh <jsingh@redhat.com>
+  Copyright (C) 2009 A S Alam <aalam@users.sf.net>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -393,6 +413,13 @@ License: LGPL-2.1+
 File: po/te.po
 Copyright:
   Copyright (C) 2009 Krishna Babu K <kkrothap@redhat.com>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+File: po/uk.po
+Copyright:
+  Copyright (C) 2009 Yuri Chornoivan <yurchor@ukr.net>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
