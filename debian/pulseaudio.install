@@ -57,4 +57,5 @@ usr/lib/pulse-*/modules/module-cork-music-on-phone.so
 usr/lib/pulse-*/modules/module-sine-source.so
 usr/share/man/man5/default.pa.5
 usr/share/locale
+usr/share/pulseaudio
 usr/lib/libpulsecore-*.so

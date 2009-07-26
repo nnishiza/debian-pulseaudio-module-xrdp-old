@@ -7,8 +7,9 @@ pulseaudio (0.9.16~test2~20090726git59659e1db-1) UNRELEASED; urgency=low
   * debian/pulseaudio.install: Don't install the PolicyKit config file
   * debian/control: Removed build-dep on libpolkit-dbus-dev
   * Update various shlibs files to use 0.9.16
+  * debian/pulseaudio.install: Install pulseaudio shared config files
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 26 Jul 2009 17:39:33 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 26 Jul 2009 18:39:25 +0200
 
 pulseaudio (0.9.15-4.1) unstable; urgency=high
 
