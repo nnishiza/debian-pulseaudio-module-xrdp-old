@@ -267,7 +267,8 @@ Package: pulseaudio-module-raop-dbg
 Architecture: any
 Priority: extra
 Section: debug
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends},
+          pulseaudio-module-raop (= ${binary:Version})
 Description: RAOP module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
