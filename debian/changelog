@@ -1,4 +1,4 @@
-pulseaudio (0.9.16~test2~20090726git59659e1db-1) UNRELEASED; urgency=low
+pulseaudio (0.9.16~test2~20090726git59659e1db-1) experimental; urgency=low
 
   * New Upstream Version
   * Ack NMU (Was fixed upstream in this version) (Closes: #537351)
@@ -12,7 +12,7 @@ pulseaudio (0.9.16~test2~20090726git59659e1db-1) UNRELEASED; urgency=low
   * debian/control: Make pulseaudio-module-raop-dbg depend on
     pulseaudio-module-raop
 
- -- Sjoerd Simons <sjoerd@debian.org>  Tue, 28 Jul 2009 13:59:39 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Tue, 28 Jul 2009 14:00:27 +0200
 
 pulseaudio (0.9.15-4.1) unstable; urgency=high
 
