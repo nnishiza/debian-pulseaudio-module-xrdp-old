@@ -1,7 +1,7 @@
 pulseaudio (0.9.16~test2~20090726git59659e1db-1) UNRELEASED; urgency=low
 
   * New Upstream Version
-  * Ack NMU (Closes: #537351)
+  * Ack NMU (Was fixed upstream in this version) (Closes: #537351)
   * Remove all patches, everything was merged upstream :)
   * debian/copyright: updated
   * debian/pulseaudio.install: Don't install the PolicyKit config file
@@ -12,7 +12,7 @@ pulseaudio (0.9.16~test2~20090726git59659e1db-1) UNRELEASED; urgency=low
   * debian/control: Make pulseaudio-module-raop-dbg depend on
     pulseaudio-module-raop
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 26 Jul 2009 18:01:31 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Tue, 28 Jul 2009 13:59:39 +0200
 
 pulseaudio (0.9.15-4.1) unstable; urgency=high
 
