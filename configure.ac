@@ -27,7 +27,7 @@ AC_INIT([pulseaudio], m4_esyscmd([./git-version-gen .tarball-version]),
 AC_CONFIG_SRCDIR([src/daemon/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([foreign 1.10 -Wall -Wno-portability tar-pax])
+AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax])
 
 m4_define(pa_major, `echo $VERSION | cut -d. -f1 | cut -d- -f1`)
 m4_define(pa_minor, `echo $VERSION | cut -d. -f2 | cut -d- -f1`)
@@ -45,11 +45,11 @@ AC_SUBST(PA_PROTOCOL_VERSION, 16)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [8:0:8])
+AC_SUBST(LIBPULSE_VERSION_INFO, [9:0:9])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
-AC_SUBST(LIBPULSE_SIMPLE_VERSION_INFO, [0:2:0])
+AC_SUBST(LIBPULSE_SIMPLE_VERSION_INFO, [0:3:0])
 
 # The ABI-stable network browsing interface for client applications,
 # for the version info x:y:z always will hold y=z
@@ -80,7 +80,7 @@ case $host in
       ;;
 esac
 
-#AM_SILENT_RULES([yes])
+AM_SILENT_RULES([yes])
 
 #### Checks for programs. ####
 

@@ -4,10 +4,10 @@ pulse-daemon.conf \- PulseAudio daemon configuration file
 .SH SYNOPSIS
 \fB\fI~/.pulse/daemon.conf\fB
 
-\fI/usr/local/etc/pulse/daemon.conf\fB
+\fI/etc/pulse/daemon.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a file \fI~/.pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/usr/local/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
+The PulseAudio sound server reads configuration directives from a file \fI~/.pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -45,21 +45,21 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBhigh-priority=\f1 Renice the daemon after startup to become a high-priority process. This a good idea if you experience drop-outs during playback. However, this is a certain security issue, since it works when called SUID root only, or RLIMIT_NICE is used. root is dropped immediately after gaining the nice level on startup, thus it is presumably safe. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to "yes". The \fB--high-priority\f1 command line option takes precedence.
 .TP
-\fBrealtime-scheduling=\f1 Try to acquire SCHED_FIFO scheduling for the IO threads. The same security concerns as mentioned above apply. However, if PA enters an endless loop, realtime scheduling causes a system lockup. Thus, realtime scheduling should only be enabled on trusted machines for now. Please not that only the IO threads of PulseAudio are made real-time. The controlling thread is left a normally scheduled thread. Thus enabling the high-priority option is orthogonal. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to "no". The \fB--realtime\f1 command line option takes precedence.
+\fBrealtime-scheduling=\f1 Try to acquire SCHED_FIFO scheduling for the IO threads. The same security concerns as mentioned above apply. However, if PA enters an endless loop, realtime scheduling causes a system lockup. Thus, realtime scheduling should only be enabled on trusted machines for now. Please not that only the IO threads of PulseAudio are made real-time. The controlling thread is left a normally scheduled thread. Thus enabling the high-priority option is orthogonal. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to "yes". The \fB--realtime\f1 command line option takes precedence.
 .TP
 \fBrealtime-priority=\f1 The realtime priority to acquire, if \fBrealtime-scheduling\f1 is enabled. Note: JACK uses 10 by default, 9 for clients. Thus it is recommended to choose the PulseAudio real-time priorities lower. Some PulseAudio threads might choose a priority a little lower or higher than the specified value. Defaults to "5".
 .TP
 \fBnice-level=\f1 The nice level to acquire for the daemon, if \fBhigh-priority\f1 is enabled. Note: on some distributions X11 uses -10 by default. Defaults to -11.
 .SH IDLE TIMES
 .TP
-\fBexit-idle-time=\f1 Terminate the daemon after the last client quit and this time in seconds passed. Use a negative value to disable this feature. Defaults to -1. The \fB--exit-idle-time\f1 command line option takes precedence.
+\fBexit-idle-time=\f1 Terminate the daemon after the last client quit and this time in seconds passed. Use a negative value to disable this feature. Defaults to 20. The \fB--exit-idle-time\f1 command line option takes precedence.
 .TP
 \fBscache-idle-time=\f1 Unload autoloaded sample cache entries after being idle for this time in seconds. Defaults to 20. The \fB--scache-idle-time\f1 command line option takes precedence.
 .SH PATHS
 .TP
 \fBdl-search-path=\f1 The path were to look for dynamic shared objects (DSOs/plugins). You may specify more than one path seperated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
 .TP
-\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/usr/local/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/usr/local/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
+\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
 .TP
 \fBload-default-script-file=\f1 Load the default configuration script file as specified in \fBdefault-script-file=\f1. Defaults to \fByes\f1.
 .SH LOGGING
