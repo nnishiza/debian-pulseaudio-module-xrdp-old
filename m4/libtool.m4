@@ -3450,7 +3450,6 @@ _LT_EOF
 	  eval "$lt_cv_sys_global_symbol_to_cdecl"' < "$nlist" | $GREP -v main >> conftest.$ac_ext'
 
 	  cat <<_LT_EOF >> conftest.$ac_ext
-
 /* The mapping between symbol names and symbols.  */
 const struct {
   const char *name;

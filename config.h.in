@@ -146,6 +146,9 @@
 /* Have HAL. */
 #undef HAVE_HAL
 
+/* Have HAL compatibility. */
+#undef HAVE_HAL_COMPAT
+
 /* Define if you have the iconv() function and it works. */
 #undef HAVE_ICONV
 
@@ -227,8 +230,11 @@
 /* Have OpenSSL */
 #undef HAVE_OPENSSL
 
-/* Have OSS? */
-#undef HAVE_OSS
+/* Have OSS output? */
+#undef HAVE_OSS_OUTPUT
+
+/* Have OSS wrapper (padsp)? */
+#undef HAVE_OSS_WRAPPER
 
 /* Define to 1 if you have the `pipe' function. */
 #undef HAVE_PIPE
@@ -304,6 +310,9 @@
 
 /* Have SIGXCPU? */
 #undef HAVE_SIGXCPU
+
+/* Have simple? */
+#undef HAVE_SIMPLEDB
 
 /* Define to 1 if you have the `sleep' function. */
 #undef HAVE_SLEEP
@@ -448,9 +457,6 @@
 
 /* Define INADDR_NONE if not found in <netinet/in.h> */
 #undef INADDR_NONE
-
-/* I know the API is subject to change. */
-#undef LIBUDEV_I_KNOW_THE_API_IS_SUBJECT_TO_CHANGE
 
 /* Define to the sub-directory in which libtool stores uninstalled libraries.
    */

@@ -881,7 +881,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
                 *((pa_usec_t*) data) = wi > ri ? wi - ri : 0;
             }
 
-            *((pa_usec_t*) data) += u->sink->fixed_latency;
+            *((pa_usec_t*) data) += u->sink->thread_info.fixed_latency;
             return 0;
         }
     }
@@ -943,7 +943,7 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
             wi = pa_smoother_get(u->read_smoother, pa_rtclock_now());
             ri = pa_bytes_to_usec(u->read_index, &u->sample_spec);
 
-            *((pa_usec_t*) data) = (wi > ri ? wi - ri : 0) + u->source->fixed_latency;
+            *((pa_usec_t*) data) = (wi > ri ? wi - ri : 0) + u->source->thread_info.fixed_latency;
             return 0;
         }
 
@@ -1262,10 +1262,10 @@ static void thread_func(void *userdata) {
     if (u->core->realtime_scheduling)
         pa_make_realtime(u->core->realtime_priority);
 
+    pa_thread_mq_install(&u->thread_mq);
+
     if (start_stream_fd(u) < 0)
         goto fail;
-
-    pa_thread_mq_install(&u->thread_mq);
 
     for (;;) {
         struct pollfd *pollfd;
@@ -1319,18 +1319,21 @@ static void thread_func(void *userdata) {
                         if (u->write_index > 0 && audio_to_send > MAX_PLAYBACK_CATCH_UP_USEC) {
                             pa_usec_t skip_usec;
                             uint64_t skip_bytes;
-                            pa_memchunk tmp;
 
                             skip_usec = audio_to_send - MAX_PLAYBACK_CATCH_UP_USEC;
                             skip_bytes = pa_usec_to_bytes(skip_usec, &u->sample_spec);
 
-                            pa_log_warn("Skipping %llu us (= %llu bytes) in audio stream",
-                                        (unsigned long long) skip_usec,
-                                        (unsigned long long) skip_bytes);
+                            if (skip_bytes > 0) {
+                                pa_memchunk tmp;
 
-                            pa_sink_render_full(u->sink, skip_bytes, &tmp);
-                            pa_memblock_unref(tmp.memblock);
-                            u->write_index += skip_bytes;
+                                pa_log_warn("Skipping %llu us (= %llu bytes) in audio stream",
+                                            (unsigned long long) skip_usec,
+                                            (unsigned long long) skip_bytes);
+
+                                pa_sink_render_full(u->sink, skip_bytes, &tmp);
+                                pa_memblock_unref(tmp.memblock);
+                                u->write_index += skip_bytes;
+                            }
                         }
 
                         do_write = 1;
@@ -1446,12 +1449,12 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
             if (u->sink && dbus_message_is_signal(m, "org.bluez.Headset", "SpeakerGainChanged")) {
 
                 pa_cvolume_set(&v, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
-                pa_sink_volume_changed(u->sink, &v, TRUE);
+                pa_sink_volume_changed(u->sink, &v);
 
             } else if (u->source && dbus_message_is_signal(m, "org.bluez.Headset", "MicrophoneGainChanged")) {
 
                 pa_cvolume_set(&v, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
-                pa_source_volume_changed(u->source, &v, TRUE);
+                pa_source_volume_changed(u->source, &v);
             }
         }
     }
@@ -1473,12 +1476,12 @@ static void sink_set_volume_cb(pa_sink *s) {
     if (u->profile != PROFILE_HSP)
         return;
 
-    gain = (pa_cvolume_max(&s->virtual_volume) * 15) / PA_VOLUME_NORM;
+    gain = (pa_cvolume_max(&s->real_volume) * 15) / PA_VOLUME_NORM;
 
     if (gain > 15)
         gain = 15;
 
-    pa_cvolume_set(&s->virtual_volume, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
+    pa_cvolume_set(&s->real_volume, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
 
     pa_assert_se(m = dbus_message_new_method_call("org.bluez", u->path, "org.bluez.Headset", "SetSpeakerGain"));
     pa_assert_se(dbus_message_append_args(m, DBUS_TYPE_UINT16, &gain, DBUS_TYPE_INVALID));
@@ -1497,12 +1500,12 @@ static void source_set_volume_cb(pa_source *s) {
     if (u->profile != PROFILE_HSP)
         return;
 
-    gain = (pa_cvolume_max(&s->virtual_volume) * 15) / PA_VOLUME_NORM;
+    gain = (pa_cvolume_max(&s->volume) * 15) / PA_VOLUME_NORM;
 
     if (gain > 15)
         gain = 15;
 
-    pa_cvolume_set(&s->virtual_volume, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
+    pa_cvolume_set(&s->volume, u->sample_spec.channels, (pa_volume_t) (gain * PA_VOLUME_NORM / 15));
 
     pa_assert_se(m = dbus_message_new_method_call("org.bluez", u->path, "org.bluez.Headset", "SetMicrophoneGain"));
     pa_assert_se(dbus_message_append_args(m, DBUS_TYPE_UINT16, &gain, DBUS_TYPE_INVALID));
@@ -1736,7 +1739,8 @@ static void shutdown_bt(struct userdata *u) {
     if (u->service_fd >= 0) {
         pa_close(u->service_fd);
         u->service_fd = -1;
-        u->service_write_type = u->service_write_type = 0;
+        u->service_write_type = 0;
+        u->service_read_type = 0;
     }
 
     if (u->write_memchunk.memblock) {
@@ -1752,7 +1756,8 @@ static int init_bt(struct userdata *u) {
     shutdown_bt(u);
 
     u->stream_write_type = 0;
-    u->service_write_type = u->service_write_type = 0;
+    u->service_write_type = 0;
+    u->service_read_type = 0;
 
     if ((u->service_fd = bt_audio_service_open()) < 0) {
         pa_log_error("Couldn't connect to bluetooth audio service");

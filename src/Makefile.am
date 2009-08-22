@@ -32,6 +32,7 @@ xdgautostartdir=$(sysconfdir)/xdg/autostart
 alsaprofilesetsdir=$(datadir)/pulseaudio/alsa-mixer/profile-sets
 alsapathsdir=$(datadir)/pulseaudio/alsa-mixer/paths
 udevrulesdir=/lib/udev/rules.d
+dbuspolicydir=$(sysconfdir)/dbus-1/system.d
 
 ###################################
 #            Defines              #
@@ -119,6 +120,7 @@ EXTRA_DIST = \
 		modules/module-defs.h.m4 \
 		daemon/pulseaudio.desktop.in \
 		map-file \
+		daemon/pulseaudio-system.conf \
 		modules/alsa/mixer/profile-sets/default.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf \
@@ -144,6 +146,9 @@ pulseconf_DATA = \
 		system.pa \
 		daemon.conf \
 		client.conf
+
+dbuspolicy_DATA = \
+		daemon/pulseaudio-system.conf
 
 if HAVE_X11
 xdgautostart_in_files = \
@@ -776,7 +781,7 @@ libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version
 #         OSS emulation           #
 ###################################
 
-if HAVE_OSS
+if HAVE_OSS_WRAPPER
 lib_LTLIBRARIES += libpulsedsp.la
 bin_SCRIPTS += utils/padsp
 endif
@@ -865,6 +870,9 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS += $(TDB_CFLAGS)
 libpulsecore_@PA_MAJORMINORMICRO@_la_LIBADD += $(TDB_LIBS)
 endif
 
+if HAVE_SIMPLEDB
+libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES += pulsecore/database-simple.c
+endif
 
 # We split the foreign code off to not be annoyed by warnings we don't care about
 noinst_LTLIBRARIES = libpulsecore-foreign.la
@@ -1031,7 +1039,7 @@ modlibexec_LTLIBRARIES += \
 		module-x11-cork-request.la
 endif
 
-if HAVE_OSS
+if HAVE_OSS_OUTPUT
 modlibexec_LTLIBRARIES += \
 		liboss-util.la \
 		module-oss.la
@@ -1116,6 +1124,11 @@ endif
 #endif
 
 if HAVE_HAL
+modlibexec_LTLIBRARIES += \
+		module-hal-detect.la
+endif
+
+if HAVE_HAL_COMPAT
 modlibexec_LTLIBRARIES += \
 		module-hal-detect.la
 endif
@@ -1576,10 +1589,16 @@ module_jack_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_jack_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la $(JACK_LIBS) libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_jack_source_la_CFLAGS = $(AM_CFLAGS) $(JACK_CFLAGS)
 
+if HAVE_HAL_COMPAT
+module_hal_detect_la_SOURCES = modules/module-hal-detect-compat.c
+module_hal_detect_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_hal_detect_la_CFLAGS = $(AM_CFLAGS)
+else
 module_hal_detect_la_SOURCES = modules/module-hal-detect.c
-module_hal_detect_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_hal_detect_la_LIBADD = $(AM_LIBADD) $(HAL_LIBS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_hal_detect_la_CFLAGS = $(AM_CFLAGS) $(HAL_CFLAGS)
+endif
+module_hal_detect_la_LDFLAGS = $(MODULE_LDFLAGS)
 
 module_udev_detect_la_SOURCES = modules/module-udev-detect.c
 module_udev_detect_la_LDFLAGS = $(MODULE_LDFLAGS)
