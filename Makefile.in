@@ -64,8 +64,8 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/libpulse-mainloop-glib.pc.in \
 	$(srcdir)/libpulse-simple.pc.in $(srcdir)/libpulse.pc.in \
 	$(top_srcdir)/configure $(top_srcdir)/src/pulse/version.h.in \
-	ABOUT-NLS ChangeLog compile config.guess config.rpath \
-	config.sub depcomp install-sh ltmain.sh missing
+	ABOUT-NLS compile config.guess config.rpath config.sub depcomp \
+	install-sh ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/acx_lirc.m4 $(top_srcdir)/m4/acx_pthread.m4 \
@@ -230,11 +230,13 @@ HAVE_GDBM = @HAVE_GDBM@
 HAVE_GLIB20 = @HAVE_GLIB20@
 HAVE_GTK20 = @HAVE_GTK20@
 HAVE_HAL = @HAVE_HAL@
+HAVE_HAL_COMPAT = @HAVE_HAL_COMPAT@
 HAVE_JACK = @HAVE_JACK@
 HAVE_LIBASYNCNS = @HAVE_LIBASYNCNS@
 HAVE_LIBSAMPLERATE = @HAVE_LIBSAMPLERATE@
 HAVE_OPENSSL = @HAVE_OPENSSL@
 HAVE_OSS = @HAVE_OSS@
+HAVE_SIMPLEDB = @HAVE_SIMPLEDB@
 HAVE_SOLARIS = @HAVE_SOLARIS@
 HAVE_TDB = @HAVE_TDB@
 HAVE_UDEV = @HAVE_UDEV@

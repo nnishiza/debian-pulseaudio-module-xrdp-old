@@ -1,7 +1,163 @@
 
+2009-08-19	Lennart Poettering
+	f4f16ab: i18n: run make update-po
+	8f29090: i18n: add ko to LINGUAS
+	b2cb8ef: Merge commit 'origin/master-tx'
+	7af3833: lirc: replace manual code by pa_cvolume_{inc	2f54798: mmkbd: replace manual code by pa_cvolume_{inc	8c31974: sink: volume handling rework, new flat volume logic
+	5207e19: match: document how broken the module-match logic is
+	cfef930: volume: introduce pa_cvolume_{inc	1421eff: volume: use PA_VOLUME_MAX instead of (pa_volume_t) -1
+	d6f598a: udev: allow passing of ignore_dB= parameter to alsa modules
+	24e5828: source: rework volume handling
+	2838b78: macro: extend comments a bit
+	a69b729: voltest: extend test to verify correctness of _multiply() and _divide()
+	2223a9f: dbus: never return DBUS_HANDLER_RESULT_HANDLED in filter callbacks, since other callbacks might stell want to have the messages
+	ef01baf: volume: round properly when showing human readable volume percentages
+	96f01b8: volume: simplify volume multiplifactions, do them in integer only
+	d634555: volume: introduce pa_cvolume_min() and pa_cvolume_min_mask()
+
+2009-08-17	Lennart Poettering
+	8f928b2: macro: simplify page/word alignment macros a bit
+	fe3a21f: macro: add PA_ROUND_UP/PA_ROUND_DOWN macros
+	319d187: bluetooth: fix match syntax
+	90a0743: bluetooth: make NameOwnerChanged filter matches more focussed
+	ffeb1b8: volume: document when arguments of certain functions may overlap
+	caa7928: libpulse: some minor optimizations when checking equality
+	50de2d8: channelmap: minor doxygen fix
+	6dd580d: channelmap: document where the WAVEX channelmap is documented
+	32a1ef3: channelmap: adjust RFC3551 channel maps to follow spec more closely
+	c579cb5: reserver: update from upstream git
+	8208214: volume: add pa_cvolume_merge() call
+
+2009-08-17	pmkovar
+	91e06c1: Sending translation for Czech
+
+2009-08-16	Lennart Poettering
+	01e4b61: aupdate: implicitly call _write_swap() if it wasn't called explicitly
+	8dd0d87: core: add to FIXMEs
+	4c29ba9: modules: add various checks to avoid selecting objects that are not linked or in another unclear state
+	2a39663: bluetooth: move installation of mq's earlier to avoid context asserts to be triggered
+
+2009-08-15	Lennart Poettering
+	de4968c: bluetooth: ask first for Headset and AudioSink properties, followed by Audio
+	fa52a91: bluetooth: recognize only those BT devices that implement both the Audio and either AudioSink or Headset interfaces
+	5c90cf2: bluetooth: drop PA_BT_AUDIO_STATE_LAST since it is unused and we normally call that _MAX anyway
+	011add1: thread-mq: do final q flush only when we aren't dispatching anyway
+	0c20e74: asyncmsgq: introduce pa_asyncmsgq_dispatching()
+	e5b08a8: ladspa/remap: sync latency flags from master sink when moving between sinks
+	0c08dbd: core: introduce pa_{sink
+2009-07-20	Marc-AndrÃ© Lureau
+	d8a90a3: pulse: even in case of record stream, let's initialize req_bytes to 0
+	3ecb80e: bluetooth: fix typo with service_{read,write}_type
+
+2009-07-06	Marc-AndrÃ© Lureau
+	fd32fee: bluetooth: don't call pa_sink_render with 0 bytes request
+
+2009-08-12	Juho HÃ¤mÃ¤lÃ¤inen
+	ea5cdcb: database: simple hashmap based database implementation
+
+2009-08-15	Maarten Bosmans
+	61105df: combine: determine sample parameters of combined sink from underlying sinks
+
+2009-08-15	Lennart Poettering
+	1eeddd8: combine: warn when the latency of a stream gets too high
+	e1f3f5e: combine: big rework
+	8947d65: combine: drop adjust_timestamp variable because it is unused
+	a5b2dee: ladspa: name sink after human readable plugin name, not the id string
+	7638662: module-ladspa: allow moving of sink, forward fixed latency
+	1b3848e: module-remap: allow moving of sink, forward fixed latency
+	c44f518: ladspa: move LADSPA_Data size check to compile time
+	fb5205d: remap: unify argument order with other modules
+	d9e4605: hook-list: make use of PA_LLIST_FOREACH
+	d7d86e3: native-protocol: downgrade volume change log messages
+	3c271ae: core: document difference between IO and main thread view on requested latency
+	c6080d8: core: don't update latency range if not changed
+	3f9c67a: core: call pa_sink_get_latency_within_thread() instead of going directly via process_msg()
+	350a2bc: core: make fixed latency dynamically changeable
+	4eb59fb: core: move rtpoll to thread_info sub structure
+	58d441f: log: place more rate limit invocations
+	fd1266c: rescure-stream: handle failed moves as well as dying sinks/sources
+	e4db56b: core: split of FAIL_ON_SUSPEND into KILL_ON_SUSPEND and NO_CREATE_ON_SUSPEND
+	e53d2fc: native: handle moving() callback with NULL destination properly
+	0989be1: core: introduce pa_{sink_input
+2009-08-14	Lennart Poettering
+	7891f96: module-stream-restore: don't fiddle with sinks/sources/streams that are not fully set up yet
+	0f2a4ed: volume: guarantee dB/linear conversion is reversible
+	72d2540: protocol-native: log explicitly each time a client triggers a volume change
+	a1598c7: daemon: reset gids too, not just uids
+	fecd0dc: resampler: round up when estimating input/output sizes
+	9e21182: thread-mq: never drop queued messages for the main loop
+	446fb2c: asyncmsgq: add pa_asyncmsgq_flush() call
+	a42c597: memblockq: add pa_memblockq_get_maxrewind() API
+	b0cabfe: shm: bump shm size limit to 1GB
+	aae7054: pacmd: handle multi word commands in argv[] properly
+
+2009-08-13	eukim
+	82b7e72: Sending translation for po/ko.po
+
+2009-08-13	Lennart Poettering
+	5ee4069: core: add functions to query max_rewind/max_request values from streams
+	9a95fe4: core: add assert macros for verifying calling context
+
+2009-08-12	Lennart Poettering
+	17d5741: start-child: clean up child environment a bit better
+	5fcb8a3: pacmd: port pacmd from select() to poll() so that we notice writer side hangups
+	286ab2f: memblock: rate limit 'Pool full' message
+	5921324: context: document why we only do minimal cleanups before the autospawn exec()
+	27b8cd7: daemon: reset scheduling priority on startup, too
+	ef176ec: core-util: move personality resetting into core-util
+	9f53aa5: daemon: unconditionally clean up priviliges
+	facae1f: conf: invert all negative boolean configuration option
+	8998cba: conf: add pa_config_parse_not_bool() for parsing inverse boolean configuration options
+	eb40da2: daemon: install D-Bus system policy file for PA system instances
+	e834034: alsa: enable ext. amplifier by default
+	462cdf4: alsa: adjust priority bonus of mappings that match the configured default channel map
+
+2009-08-11	Lennart Poettering
+	d27e26d: volume-restore: forward module load return value of stream-restore back to caller
+	c117feb: hal: replace subdevs= parameter by subdevices= parameter
+	c1039c9: udev: drop definition of LIBUDEV_I_KNOW_THE_API_IS_SUBJECT_TO_CHANGE
+	c904f97: hal: add stub module that loads module-udev-detect instead of module-hal-detect
+
+2009-08-10	Lennart Poettering
+	ebe3596: Revert "build-sys: drop libcap checks, since we don't use caps anymore"
+	a99e3b5: Merge commit 'origin/master-tx'
+	d8d2697: Merge commit 'flameeyes/master'
+
+2009-08-09	Maxim Levitsky
+	23a294c: Correctly deal with events in the past in calc_next_timeout
+
+2009-08-10	logan
+	0f77afe: Sending translation for Spanish
+
+2009-08-08	igor
+	de68d36: Sending translation for Brazilian Portuguese
+
+2009-08-08	Lennart Poettering
+	9bd3398: mix-test: fix test for s24-32 samples
+	9ade136: build-sys: drop libcap checks, since we don't use caps anymore
+
+2009-08-08	Diego Elio 'Flameeyes' PettenÃ²
+	10e4171: Update the end-of-configuration summary for OSS output/wrapper split.
+	4c15115: Split OSS support in output and wrapper.
+
+2009-08-07	Lennart Poettering
+	7d49163: ladspa/remap: make sure we process all requested rewinds unconditionally
+	51b3899: core: save volume/mute changes coming from the hardware automatically
+
 2009-08-05	Lennart Poettering
+	aa7408b: run make update-po
+	42f92a8: Merge commit 'origin/master-tx'
 	8483de4: simple: bump libpulse-simple library revision
 	ff52588: smoother: readd #ifdef protection
+
+2009-08-05	ruigo
+	19f2ffb: Sending translation for Portuguese
+	40b2dde: Sending translation for Portuguese
+
+2009-08-04	ruigo
+	20d62e2: Sending translation for Portuguese
+
+2009-08-05	Lennart Poettering
 	2cab6a2: simple: check for == RUNNING instead of != DONE when waiting for operations
 	5bbeb51: simple: split data/length validity checks into two
 	53fcf3a: simple: call pa_context_disconnect() just to be sure
@@ -43,6 +199,12 @@
 
 2009-07-30	Lennart Poettering
 	4f5e2b7: threaded-mainloop: loop around pa_cond_wait() invocation in pa_threaded_mainloop_signal()
+
+2009-07-28	igor
+	7463edd: Sending translation for Brazilian Portuguese
+
+2009-07-28	raven
+	1cc375c: Sending translation for Polish
 
 2009-07-28	Lennart Poettering
 	f8873ab: build-sys: bump binary version

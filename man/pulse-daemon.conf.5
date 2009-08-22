@@ -18,23 +18,23 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBfail=\f1 Fail to start up if any of the directives in the configuration script \fIdefault.pa\f1 fail. Takes a boolean argument, defaults to "yes". The \fB--fail\f1 command line option takes precedence.
 .TP
-\fBdisallow-module-loading=\f1 Disallow module loading after startup. This is a security feature that makes sure that no further modules may be loaded into the PulseAudio server after startup completed. It is recommended to enable this when \fBsystem-instance\f1 is enabled. Please note that certain features like automatic hot-plug support will not work if this option is enabled. Takes a boolean argument, defaults to \fBno\f1. The \fB--disallow-module-loading\f1 command line option takes precedence.
+\fBallow-module-loading=\f1 Allow/disallow module loading after startup. This is a security feature that if dsabled makes sure that no further modules may be loaded into the PulseAudio server after startup completed. It is recommended to disable this when \fBsystem-instance\f1 is enabled. Please note that certain features like automatic hot-plug support will not work if this option is enabled. Takes a boolean argument, defaults to \fByes\f1. The \fB--disallow-module-loading\f1 command line option takes precedence.
 .TP
-\fBdisallow-exit=\f1 Disallow exit on user request. Defaults to \fBno\f1.
+\fBallow-exit=\f1 Allow/disallow exit on user request. Defaults to \fByes\f1.
 .TP
 \fBresample-method=\f1 The resampling algorithm to use. Use one of \fBsrc-sinc-best-quality\f1, \fBsrc-sinc-medium-quality\f1, \fBsrc-sinc-fastest\f1, \fBsrc-zero-order-hold\f1, \fBsrc-linear\f1, \fBtrivial\f1, \fBspeex-float-N\f1, \fBspeex-fixed-N\f1, \fBffmpeg\f1. See the documentation of libsamplerate for an explanation for the different src- methods. The method \fBtrivial\f1 is the most basic algorithm implemented. If you're tight on CPU consider using this. On the other hand it has the worst quality of them all. The Speex resamplers take an integer quality setting in the range 0..9 (bad...good). They exist in two flavours: \fBfixed\f1 and \fBfloat\f1. The former uses fixed point numbers, the latter relies on floating point numbers. On most desktop CPUs the float point resmampler is a lot faster, and it also offers slightly better quality. See the output of \fBdump-resample-methods\f1 for a complete list of all available resamplers. Defaults to \fBspeex-float-3\f1. The \fB--resample-method\f1 command line option takes precedence. Note that some modules overwrite or allow overwriting of the resampler to use.
 .TP
-\fBdisable-remixing=\f1 Never upmix or downmix channels to different channel maps. Instead, do a simple name-based matching only.
+\fBenable-remixing=\f1 If disabled never upmix or downmix channels to different channel maps. Instead, do a simple name-based matching only. Defaults to \fByes.\f1
 .TP
-\fBdisable-lfe-remixing=\f1 When upmixing or downmixing ignore LFE channels. When this option is on the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to "on".
+\fBenable-lfe-remixing=\f1 if disabeld when upmixing or downmixing ignore LFE channels. When this option is dsabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fBno\f1.
 .TP
 \fBuse-pid-file=\f1 Create a PID file in \fI/tmp/pulse-$USER/pid\f1. Of this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--no-cpu-limit\f1 command line option takes precedence.
 .TP
-\fBno-cpu-limit=\f1 Do not install the CPU load limiter, even on platforms where it is supported. This option is useful when debugging/profiling PulseAudio to disable disturbing SIGXCPU signals. Takes a boolean argument, defaults to \fBno\f1. The \fB--no-cpu-limit\f1 command line argument takes precedence.
+\fBcpu-limit=\f1 If disabled d not install the CPU load limiter, even on platforms where it is supported. This option is useful when debugging/profiling PulseAudio to disable disturbing SIGXCPU signals. Takes a boolean argument, defaults to \fByes\f1. The \fB--no-cpu-limit\f1 command line argument takes precedence.
 .TP
 \fBsystem-instance=\f1 Run the daemon as system-wide instance, requires root priviliges. Takes a boolean argument, defaults to \fBno\f1. The \fB--system\f1 command line argument takes precedence.
 .TP
-\fBdisable-shm=\f1 Disable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fBno\f1. The \fB--disable-shm\f1 command line argument takes precedence.
+\fBenable-shm=\f1 Enable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fByes\f1. The \fB--disable-shm\f1 command line argument takes precedence.
 .TP
 \fBshm-size-bytes=\f1 Sets the shared memory segment size for the daemon, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
 .TP
