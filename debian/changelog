@@ -1,8 +1,9 @@
 pulseaudio (0.9.16-1) UNRELEASED; urgency=low
 
   * New upstream release
+  * debian/copyright: updated
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 10 Sep 2009 19:47:54 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 10 Sep 2009 19:48:36 +0100
 
 pulseaudio (0.9.16~test5-1) experimental; urgency=low
 
