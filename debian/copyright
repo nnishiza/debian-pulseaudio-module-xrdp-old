@@ -98,7 +98,7 @@ License: LGPL-2.1+
 Files: src/modules/bluetooth/module-bluetooth-{device,discover}.c,
        src/modules/bluetooth/bluetooth-util.*
 Copyright:
- Copyright (C) 2008 Joao Paulo Rechi Vita
+ Copyright (C) 2008-2009 Joao Paulo Rechi Vita
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2 can be found in
  /usr/share/common-licenses/LGPL-2.
@@ -253,8 +253,10 @@ License: LGPL-2+
 File: po/ca.po
 Copyright:
   Copyright (C) 2008 Xavier Conde Rueda <xavi.conde@gmail.com>
-  Copyright (C) Agustí Grau <fletxa@gmail.com>, 2009.
+  Copyright (C) 2009 Agustí Grau <fletxa@gmail.com>, 2009.
   Copyright (C) Judith Pintó Subirada <judithp@gmail.com>
+  Copyright (C) 2009 Josep Torné Llavall <josep.torne@gmail.com>
+
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -332,7 +334,9 @@ File: po/it.po
 Copyright:
   Copyright (C) 2008,2009 Luca Ferretti <elle.uca@libero.it>
   Copyright (C) 2009 Milo Casagrande <milo@ubuntu.com>
-  Copyright C() 2009 ario_santagiuliana <mario at marionline.it>
+  Copyright (C) 2009 ario_santagiuliana <mario at marionline.it>
+  Copyright (C) 2009 Milo Casagrande <milo@ubuntu.com>
+
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -347,6 +351,7 @@ License: LGPL-2.1+
 File: po/mr.po
 Copyright:
   Copyright (C) 2009 Sandeep Shedmake <sandeep.shedmake@gmail.com>
+  Copyright (C) 2009 Sandeep Shedmake <sshedmak@redhat.com>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -438,3 +443,31 @@ Copyright:
 License: GPL-2+
  On Debian systems, the complete text of the GPL-2 can be found in
   /usr/share/common-licenses/GPL-2.
+
+Files: src/pulsecore/cpu-*, src/pulsecore/remap*,
+       src/pulsecore/svolume_{arm,mmx,sse}.c
+Copyright:
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2009 Wim Taymans <wim.taymans@collabora.co.uk>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+
+Files: src/pulsecore/sconv_sse.c
+Copyright:
+  Copyright 2004-2006 Lennart Poettering
+  Copyright 2006 Pierre Ossman <ossman@cendio.se> for Cendio AB
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+
+Files: src/pulsecore/usergroup.*
+Copyright:
+  Copyright 2009 Ted Percival
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+
