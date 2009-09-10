@@ -1,4 +1,404 @@
 
+2009-09-10	Lennart Poettering
+	12c7460: libpulse: don't support pa_context_get_card_info_list() on servers that cannot handle it
+	807f2a9: native: send PA_COMMAND_PLAYBACK_BUFFER_ATTR_CHANGED messages only to clients that understand it
+	b043207: i18n: run make update-po
+	a41c510: Merge remote branch 'origin/master-tx'
+	f3879f8: i18n: run make update-po
+	b2de8d8: i18n: get rid of ko.po/ru.po since they contain exactly 0 translated strings
+	9c65e5b: add ml to LINGUAS
+	43c3164: Merge remote branch 'origin/master-tx'
+
+2009-09-09	Lennart Poettering
+	d5f43bd: alsa: disable tsched for software devices before we configure the buffer metrics so that we don't accidently set a buffer size that is suitable for tsched where we don't use tsched
+	8364b95: alsa: when probing for profiles configure buffer/period sizes since some broken drivers apparently need that
+	84ade21: alsa: pass SND_PCM_NONBLOCK when opening device during unsuspend, the same way we do it for initial opening
+	557c429: alsa: rework buffer/period configuration
+	71e066c: simd: be more precise which SIMD optimizations we activate
+	1f0904b: sample-util: add pa_convert_size() call for converting sizes between two sample specs
+	c2f1994: udev: ratelimit device initializations
+	12df686: ratelimit: allow non-static ratelimit structs
+
+2009-09-09	kmilos
+	4f24a62: Sending translation for Serbian (Latin)
+	8a9166f: Sending translation for Serbian
+
+2009-09-09	soko
+	4dee032: Sending translation for Serbian (Latin)
+	3984dd5: Sending translation for Serbian
+
+2009-09-09	mgiri
+	399b0ad: Sending translation for Oriya
+
+2009-09-09	kkrothap
+	4539250: Sending translation for Telugu
+
+2009-09-09	pmkovar
+	3a47c80: Sending translation for Czech
+
+2009-09-08	Lennart Poettering
+	7cc100d: padsp: properly return return values (llvm-clang-analyzer)
+	b51f5e5: pacat: don't convert stream name twice (llvm-clang-analyzer)
+	49bc6bc: stripnul: initialize 'found' bool properly (llvm-clang-analyzer)
+	31d1d90: protocol-native: log explicitly when someone asks us to quit
+	31ae7de: core-util: properly fill in exception array for pa_reset_sigs() (llvm-clang-analyzer)
+	1516b7c: conf-parser: properly initialize variable we free() later (llvm-clang-analyzer)
+	3c9a09b: cli-command: don't necessarily ovveride failure code of files (llvm-clang-analyzer)
+	5fd751f: cli-command: modernizations
+	05506d7: utf8: minor simplification
+	f3be47f: rtsp: document that rtsp_exec() needs fixing (llvm-clang-analyzer)
+	157ec79: hal: check properly for failure of libhal_find_device_by_capability() (llvm-clang-analyzer)
+	1380f18: blueooth: actually honour 'room' variable (llvm-clang-analyzer)
+	382eced: alsa-sink: init after_avail earlier (llvm-clang-analyzer)
+	f504675: llvm-clang-analyzer: drop a few unnecessary assignments and other trivial fixes
+
+2009-09-08	shanky
+	98fcf4e: Sending translation for Kannada
+
+2009-09-08	mvdz
+	6bdda4c: Sending translation for Ukrainian
+
+2009-09-07	Lennart Poettering
+	b2606cf: i18n: move \r out of translatable string
+	508c462: Merge remote branch 'wtay/optimize'
+	08a4d57: libpulse: allow invocation of pa_context_play_sample_with_proplist() with NULL proplist
+	f8f8cdc: vala: reindent
+	b705a9b: vector: don't try to build vector stuff on altivec
+	a02861e: vala: s/PropList/Proplist/g since the C version does not use an underscore there
+	0b8f239: vala: add vala .vapi file for the PulseAudio APIs, but don't include them in the tarball for now
+	41a0dc1: volume: if pa_cvolume_set_{balance	d000dd6: volume: when passing NULL as channel map to pa_cvolume_scale_mask() handle this the same way as pa_cvolume_scale()
+	9755bfa: volume: drop some redundant but expensive validity checks
+	cc6c4fe: volume: add a couple of validity checks for pa_volume_t arguments
+	3bbc5e6: volume: fix definition of PA_VOLUME_MAX and introduce PA_VOLUME_INVALID and use it wherever applicable
+
+2009-09-07	shanky
+	6c385eb: Sending translation for Kannada
+
+2009-09-07	jassy
+	b96de8e: Sending translation for Punjabi
+
+2009-09-07	Wim Taymans
+	7234994: x86: also call see init for SSE2
+	b5ac383: x86: only install some functions when SSE2
+
+2009-09-07	warrink
+	942bd46: Sending translation for Dutch
+
+2009-09-07	mgiri
+	f969ce6: Sending translation for Oriya
+
+2009-09-07	sandeeps
+	35ffd1b: Sending translation for Marathi
+
+2009-09-07	ifelix
+	efebe09: Sending translation for Tamil
+
+2009-09-06	Lennart Poettering
+	5cf0c1e: introspect: rearrange order of functions a bit
+	e6a666d: libpulse: introduce PA_BYTES_SNPRINT_MAX and make use of it wherever applicable
+
+2009-09-05	xconde
+	646f666: Sending translation for Catalan
+
+2009-09-04	vpv
+	14ec32f: Sending translation for Finnish
+
+2009-09-04	warrink
+	124e3dc: Sending translation for Dutch
+
+2009-09-04	runab
+	d5fb6d3: Sending translation for Bengali (India)
+	8d03381: Sending translation for Bengali (India)
+
+2009-09-04	anipeter
+	b6030d3: Sending translation for po/ml.po
+
+2009-09-04	rajesh
+	2ad5e33: Sending translation for Hindi
+
+2009-09-04	Lennart Poettering
+	812be32: daemon: disable CPU load limiter by default
+	5daecea: always-sink: rename null sink created to 'dummy sink' and make it translatable
+	0ad6a57: null: make name of null sink translatable
+
+2009-09-03	beckerde
+	ab1af38: Sending translation for Spanish
+
+2009-09-03	raven
+	71dd5a0: Sending translation for Polish
+
+2009-09-03	swkothar
+	ef9138d: Sending translation for Gujarati
+
+2009-09-03	Lennart Poettering
+	8cd635b: alsa: add more input sources to path set
+	7ca81bd: i18n: run make update-po
+	8539539: i18n: fix LINGUAS
+	1213a7c: Merge commit 'origin/master-tx'
+	6f396c8: remap: build sse code only on x86
+	14a9771: core: drop unnecessary variable initialization
+	d088c8f: daemon: make use of SIMD optional via config variable to ease debugging
+	9f4f374: remap_sse: fix inner loop increment on SSE
+	51423ca: remap_sse: reindent macro so that diff to MMX is nicer
+
+2009-09-02	Wim Taymans
+	26164ff: sconv_sse: fix leftover counter
+
+2009-09-02	Lennart Poettering
+	51fc176: Merge branch 'master' of ssh://rootserver/home/lennart/git/public/pulseaudio
+	39e4652: daemon: drop polkit code from git repo we weren't using anymore
+	297afad: core-util: don't leak memory in pa_unset_env_recorded()
+	767c7c7: core-util: call dbus_connection_set_exit_on_disconnect() on shared busses to make sure dbus_shutdown() isn't fatal
+	470e9a8: build-sys: drop LIBOIL_{FLAGS	1200a0b: sink: simplify pa_sink_render_full() by replacing it by a pa_sink_render() plus a couple of pa_sink_render_full()
+	a8c0f65: daemon: clean up environment when forking off children
+	5f92996: core-util: add api for setting env vars and record them so that we can undo them n fork
+
+2009-09-01	Lennart Poettering
+	45513a2: core: fill up memblock with pa_sink_render_into_full() in pa_sink_render_full() instead of doing our own loop
+	17f609a: core: handle suspended state in pa_sink_render_full() similar to the other render functions
+	ce6dff4: core: add missing sink_unref()
+	b245b54: ladspa,remap: make description of sink follow moves
+	46b9ca7: alsa: by default increase watermarks only on real underruns, don't try to be smart
+	6b6d146: alsa: distuingish real underruns from left_to_play=0
+	dfe3f90: daemon: don't override path env vars if they are already set
+
+2009-09-01	sandeeps
+	350b8ac: Sending translation for Marathi
+
+2009-09-01	ifelix
+	605fa59: Sending translation for Tamil
+
+2009-08-29	Wim Taymans
+	dc221f2: remap: fix counters for mmx and sse remap
+
+2009-08-31	Lennart Poettering
+	dee2aa3: pactl: drop unnecessary newlines from pa_log() invocations
+	5b61a19: pactl: implement pactl commands for changing volumes/mute stati
+	e20d906: cli: make sure 'dump' uses pa_cvolume_max() to deduce a single-channel volume from a multi-channel volume
+	7c6a0ec: cli: apply single-channel volume changes equally to all channels
+	2970c11: core: always allow volume setting with single-channel pa_cvolume
+
+2009-08-31	perplex
+	9efc2af: Sending translation for Italian
+
+2009-08-30	vpv
+	b143a8f: Sending translation for Finnish
+	8774166: Sending translation for Finnish
+
+2009-08-29	raven
+	844399d: Sending translation for po/LINGUAS
+
+2009-08-29	Lennart Poettering
+	e1ce365: native: make sure clients cannot trigger an assert by sending us invalid volume info
+	8bf2e3f: core: initialize sink/source priorities automatically based on their proplists
+	18b13a8: namereg: select default sink by priority
+	a7b3125: protocol-native: replace use of pa_namereg_is_valid_name() by pa_namereg_is_valid_name_or_wildcard() where applicable to allow use of @@ wildcards
+	85a683f: namereg: add new pa_namereg_is_valid_name_or_wildcard() call
+
+2009-08-28	pmkovar
+	5111101: Sending translation for Czech
+
+2009-08-28	Lennart Poettering
+	3b54849: core: add priority field to pa_sink/pa_source
+	ca2c0f2: sconv: quieten gcc a bit
+	f029041: suspend-on-idle: don't resume devices for corked streams
+	84eb661: core: move 'flags' field into 'pa_sink_input_new_data' structure so that hooks can access it
+	9011c4e: build-sys: make proximity helper properly suid
+	63f3dc0: bluetooth: remove left-over debug line
+
+2009-08-28	Andy Shevchenko
+	300384c: Fix checking for NULL after usage
+	ae38353: core-util: Fix logic of pa_make_path_absolute()
+	4e8562c: raop: Fix memory leak
+
+2009-08-27	Lennart Poettering
+	db835de: Merge commit 'vudentz/master'
+
+2009-08-27	Luiz Augusto von Dentz
+	8169a6a: Handle DisconnectRequested in bluetooth module.
+
+2009-08-26	Wim Taymans
+	beb180b: convert: add sse/sse2 s16 to float32ne conversions
+	27bfb76: macro: add macro to align variables
+	5907089: remap: cleanup assembler a little
+
+2009-08-25	Wim Taymans
+	9d25467: sample-util: avoid stack overrun
+	509d9f0: remap: add sse optimized mono to stereo
+
+2009-08-24	Wim Taymans
+	26bd090: sconv: fix indentation
+
+2009-08-27	Lennart Poettering
+	35fcb27: proplist: allow setting of zero-length data properties
+	5df842d: sink-input: extend comments on rewinding logic a bit
+	c372b52: protocol-native: print more volume change debug messages to easy tracking down of feedback loops
+	cab48d4: protocol-native: compare uint64_t variable with (uint64_t) -1 instead of (size_t) -1 for compat with 32bit archs
+
+2009-08-26	Lennart Poettering
+	44b7982: pdispatch: various modernizations
+	34829eb: pdispatch: add missing commands to command table
+	4e1298d: llist: add PA_LLIST_FOREACH_SAFE macro for iteration that allows deleting
+	368c3e3: loopback: quieten gcc on 32bit
+	4614412: loopback: update description and icons when moving loopback streams
+	d909f59: loopback: make sure a monitor can't be looped back to its sink
+	99d3e6b: combine: store adjust time in usec
+	ea4b65b: loopback: add loopback module for direct connections of sinks and sources
+	827ae07: macro: add PA_CLIP_SUB() for saturated subtraction
+
+2009-08-25	mvdz
+	4544873: Sending translation for Ukrainian
+
+2009-08-25	giallu
+	956ff24: Sending translation for Italian
+
+2009-08-25	ypoyarko
+	cdf7e02: Sending translation for po/ru.po
+
+2009-08-25	Finn Thain
+	457b973: Solaris: debug my latest enbugging, take 2
+
+2009-08-24	igor
+	7a2d1d3: Sending translation for Brazilian Portuguese
+
+2009-08-24	Lennart Poettering
+	57e1f84: Merge commit 'jprvita2/master'
+	57fb771: remap: fix build for non-x86 builds
+	419b071: detect: recommend module-udev-detect instead of module-hal-detect
+	ba17ff4: build-sys: add missing header files to tarball
+
+2009-07-24	JoÃ£o Paulo Rechi Vita
+	2772521: bluetooth: add discover of bluetooth sources
+
+2009-07-30	JoÃ£o Paulo Rechi Vita
+	65c3e65: bluetooth: handle bluetooth source
+
+2009-08-24	Lennart Poettering
+	be46eaa: i18n: run make update-po
+	60a3502: Merge commit 'origin/master-tx'
+	050a3a9: alsa: automatically decrease watermark after a time of stability
+
+2009-08-23	Lennart Poettering
+	80c6937: alsa: increase interval between smoother updates exponentially for alsa sources, following the scheme for sinks
+	a0f01dd: port a few things over to use xmalloc and friends instead of low-level libc malloc/free directly
+	ab5ac06: Merge commit 'wtay/optimize'
+
+2009-08-23	beckerde
+	57117d4: Sending translation for Spanish
+
+2009-08-22	Lennart Poettering
+	d6fb8d1: udev: check busy status of alsa cards before loading alsa modules and hence initiating profile probing
+	560da5b: udev: process all inotify events queued up, not just the first one in the queue
+	1a05d67: core: relex validity checks when destructing half-set up source outputs/sink inputs
+	5b0683d: ladspa/remap: handle failing stream moves properly
+	2595b9d: add usergroup-test to .gitignore
+	aa54298: daemon: don't free script_commands twice
+
+2009-08-22	raven
+	857e055: Sending translation for Polish
+
+2009-08-21	Ted Percival
+	17dc410: core: Remove wrong doc on how to free returned data
+	15eb03a: core: Add thread-safe group info functions with dynamic buffers
+
+2009-08-21	Finn Thain
+	601fb63: Solaris: fixed latency (resent)
+	87d2dde: Solaris: use smoother (resent)
+	44c7aa5: Solaris: build fixes (resent)
+	b96390f: Solaris: bootstrap portability
+
+2009-08-22	Lennart Poettering
+	9d1cc13: i18n: run make update-po
+	aaf0d5a: Merge commit 'origin/master-tx'
+
+2009-08-21	Scott Reeves
+	de19bdd: daemon: fix leak of script_commands
+
+2009-08-21	Lennart Poettering
+	066e160: udev: tell inotify to actually inform us about ACL changes
+	2d01204: udev: watch for both ACL changes and processes closing devices
+	4ec701a: udev: don't access string after free()
+	d06680a: udev: always verify access before loading modules
+	14c27c7: gconf: use correct path for gconf-helper tool when running from build tree
+	9abc010: object: speed up type verification by not relying on strcmp()
+	5317e35: udev: when a device appears that we cannot access right-away try again later on inotify
+	fe9a577: alsa: leave headphone jack enabled in normal mixer paths
+	ac05619: combine: quieten gcc a bit
+	8a2a6b2: adjust various data/library paths automatically if we are run from a build tree
+	a562978: ladspa: forward volume changes from ladspa sink to stream and hence via flat volume logic to master sink
+	9f97b7c: sink-input: add callbacks that are called whenever the mute/volume changes
+
+2009-08-21	igor
+	c5d7860: Sending translation for Brazilian Portuguese
+
+2009-08-20	Wim Taymans
+	6076cef: remap: make the MMX code pretier
+	6e5dbed: remap: add MMX mono to stereo
+	e961efc: remap: init the do_remap function to NULL
+	28baa53: remap: allow specialisations to install NULL
+	ac1f2e0: remap: move remapping code in separate file
+	a3f4a4f: resamples; refactor the channel remapping bits
+	05fef5f: sconv: allow for setting custom functions
+	c1b6a87: alsa-sink: reduce the amount of smoother updates
+	f8ffe0d: svolume: cleanups
+	f09b511: whitespace fixes
+
+2009-08-19	Wim Taymans
+	3cc1278: resampler: avoid some multiplies when we can
+	aeae567: svolume: add comment
+	8aa86f5: arm: implement ARM cpu detection
+	078bde1: x86: keep the cpu flags local
+	370016c: svolume: fix compilation in 32bits
+	d2389ef: sample: manually inline table lookups
+	548b735: resampler: fix identity check
+	d04a6e9: resample: fix counters
+	b4e9942: resample: refactor the channel remapping a little
+	bd49d43: svolume: add CPU guards around code
+	951bf1b: svolume: add ARM optimized volume scaling
+	a98fa95: svolume: remove unneeded compare
+
+2009-08-17	Wim Taymans
+	601e5f1: resampler: cache integer channel_map
+
+2009-08-14	Wim Taymans
+	25724cd: Get rid of liboil
+	591baac: volume: remove ref functions
+	f24c24c: volume: improved comments
+	a123544: volume: make the benchmark more meaningfull
+	dcae9a3: svolume: add some comments
+
+2009-08-13	Wim Taymans
+	e396fe6: cpu-x86: guard header with ifdef
+	563cb2d: main: hook up cpu detection code
+	a83f552: cpu-x86: add cpu detection code and helpers
+	5998cf9: svolume: improve SSE and MMX code
+
+2009-08-12	Wim Taymans
+	7086784: volume_sse: add sse optimisations
+	08f3e16: volume_mmx: fix mmx code a bit
+	3a0b012: volume: add first mmx optimized function
+	2d73f13: samples-util: add padding to volume array
+
+2009-08-11	Wim Taymans
+	3d00896: sample-util: move volume code to separate file
+	e71e644: sample-util: move some functions around
+	5b8b654: sample-utils: coding style cleanup
+	26839c4: sample-utils: split out functions from case
+
+2009-06-30	Xabier Rodriguez Calvar
+	52e5d4b: Modification of the thread-mainloop doc to ensure that nobody frees the api as it is owned by the loop.
+	65f86ef: Modification of the mainloop doc to ensure that nobody frees the api as it is owned by the loop.
+	30ba903: Modification of the glib-mainloop doc to ensure that nobody frees the api as it is owned by the loop.
+
+2009-08-20	Lennart Poettering
+	c5bd725: core: check return value of getgrnam_r() instead of errno
+
+2009-08-19	raven
+	d2f50ea: Sending translation for Polish
+
+2009-08-19	beckerde
+	9b6add3: Sending translation for Spanish
+
 2009-08-19	Lennart Poettering
 	f4f16ab: i18n: run make update-po
 	8f29090: i18n: add ko to LINGUAS

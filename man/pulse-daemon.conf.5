@@ -30,7 +30,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBuse-pid-file=\f1 Create a PID file in \fI/tmp/pulse-$USER/pid\f1. Of this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--no-cpu-limit\f1 command line option takes precedence.
 .TP
-\fBcpu-limit=\f1 If disabled d not install the CPU load limiter, even on platforms where it is supported. This option is useful when debugging/profiling PulseAudio to disable disturbing SIGXCPU signals. Takes a boolean argument, defaults to \fByes\f1. The \fB--no-cpu-limit\f1 command line argument takes precedence.
+\fBcpu-limit=\f1 If disabled do not install the CPU load limiter, even on platforms where it is supported. This option is useful when debugging/profiling PulseAudio to disable disturbing SIGXCPU signals. Takes a boolean argument, defaults to \fBno\f1. The \fB--no-cpu-limit\f1 command line argument takes precedence.
 .TP
 \fBsystem-instance=\f1 Run the daemon as system-wide instance, requires root priviliges. Takes a boolean argument, defaults to \fBno\f1. The \fB--system\f1 command line argument takes precedence.
 .TP

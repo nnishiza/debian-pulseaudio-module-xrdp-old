@@ -39,8 +39,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include <liboil/liboil.h>
-
 #ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
 #endif
@@ -95,6 +93,8 @@
 #ifdef HAVE_DBUS
 #include <pulsecore/dbus-shared.h>
 #endif
+#include <pulsecore/cpu-arm.h>
+#include <pulsecore/cpu-x86.h>
 
 #include "cmdline.h"
 #include "cpulimit.h"
@@ -259,9 +259,14 @@ static int change_user(void) {
     pa_set_env("HOME", PA_SYSTEM_RUNTIME_PATH);
 
     /* Relevant for pa_runtime_path() */
-    pa_set_env("PULSE_RUNTIME_PATH", PA_SYSTEM_RUNTIME_PATH);
-    pa_set_env("PULSE_CONFIG_PATH", PA_SYSTEM_CONFIG_PATH);
-    pa_set_env("PULSE_STATE_PATH", PA_SYSTEM_STATE_PATH);
+    if (!getenv("PULSE_RUNTIME_PATH"))
+        pa_set_env("PULSE_RUNTIME_PATH", PA_SYSTEM_RUNTIME_PATH);
+
+    if (!getenv("PULSE_CONFIG_PATH"))
+        pa_set_env("PULSE_CONFIG_PATH", PA_SYSTEM_CONFIG_PATH);
+
+    if (!getenv("PULSE_STATE_PATH"))
+        pa_set_env("PULSE_STATE_PATH", PA_SYSTEM_STATE_PATH);
 
     pa_log_info(_("Successfully dropped root privileges."));
 
@@ -701,7 +706,7 @@ int main(int argc, char *argv[]) {
 #endif
     }
 
-    pa_set_env("PULSE_INTERNAL", "1");
+    pa_set_env_and_record("PULSE_INTERNAL", "1");
     pa_assert_se(chdir("/") == 0);
     umask(0022);
 
@@ -716,7 +721,7 @@ int main(int argc, char *argv[]) {
         if (change_user() < 0)
             goto finish;
 
-    pa_set_env("PULSE_SYSTEM", conf->system_instance ? "1" : "0");
+    pa_set_env_and_record("PULSE_SYSTEM", conf->system_instance ? "1" : "0");
 
     pa_log_info(_("This is PulseAudio %s"), PACKAGE_VERSION);
     pa_log_debug(_("Compilation host: %s"), CANONICAL_HOST);
@@ -774,6 +779,8 @@ int main(int argc, char *argv[]) {
     pa_log_info(_("Using state directory %s."), s);
     pa_xfree(s);
 
+    pa_log_info(_("Using modules directory %s."), conf->dl_search_path);
+
     pa_log_info(_("Running in system mode: %s"), pa_yes_no(pa_in_system_mode()));
 
     if (pa_in_system_mode())
@@ -821,6 +828,11 @@ int main(int argc, char *argv[]) {
 
     pa_memtrap_install();
 
+    if (!getenv("PULSE_NO_SIMD")) {
+        pa_cpu_init_x86();
+        pa_cpu_init_arm();
+    }
+
     pa_assert_se(mainloop = pa_mainloop_new());
 
     if (!(c = pa_core_new(pa_mainloop_get_api(mainloop), !conf->disable_shm, conf->shm_size))) {
@@ -859,8 +871,6 @@ int main(int argc, char *argv[]) {
 #ifdef OS_IS_WIN32
     win32_timer = pa_mainloop_get_api(mainloop)->rtclock_time_new(pa_mainloop_get_api(mainloop), pa_gettimeofday(&win32_tv), message_cb, NULL);
 #endif
-
-    oil_init();
 
     if (!conf->no_cpu_limit)
         pa_assert_se(pa_cpu_limit_init(pa_mainloop_get_api(mainloop)) == 0);
@@ -959,6 +969,9 @@ finish:
 
     if (valid_pid_file)
         pa_pid_file_remove();
+
+    /* This has no real purpose except making things valgrind-clean */
+    pa_unset_env_recorded();
 
 #ifdef OS_IS_WIN32
     WSACleanup();

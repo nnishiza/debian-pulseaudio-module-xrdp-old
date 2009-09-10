@@ -192,8 +192,16 @@ struct pa_sink_input {
     pa_bool_t (*may_move_to) (pa_sink_input *i, pa_sink *s); /* may be NULL */
 
     /* If non-NULL this function is used to dispatch asynchronous
-     * control events. */
-    void (*send_event)(pa_sink_input *i, const char *event, pa_proplist* data);
+     * control events. Called from main context. */
+    void (*send_event)(pa_sink_input *i, const char *event, pa_proplist* data); /* may be NULL */
+
+    /* If non-NULL this function is called whenever the sink input
+     * volume changes. Called from main context */
+    void (*volume_changed)(pa_sink_input *i); /* may be NULL */
+
+    /* If non-NULL this function is called whenever the sink input
+     * mute status changes. Called from main context */
+    void (*mute_changed)(pa_sink_input *i); /* may be NULL */
 
     struct {
         pa_sink_input_state_t state;
@@ -204,7 +212,7 @@ struct pa_sink_input {
 
         pa_bool_t attached:1; /* True only between ->attach() and ->detach() calls */
 
-        /* 0: rewrite nothing, (size_t) -1: rewrite everything, otherwise how many bytes to rewrite */
+        /* rewrite_nbytes: 0: rewrite nothing, (size_t) -1: rewrite everything, otherwise how many bytes to rewrite */
         pa_bool_t rewrite_flush:1, dont_rewind_render:1;
         size_t rewrite_nbytes;
         uint64_t underrun_for, playing_for;
@@ -227,7 +235,7 @@ struct pa_sink_input {
     void *userdata;
 };
 
-PA_DECLARE_CLASS(pa_sink_input);
+PA_DECLARE_PUBLIC_CLASS(pa_sink_input);
 #define PA_SINK_INPUT(o) pa_sink_input_cast(o)
 
 enum {
@@ -248,6 +256,8 @@ typedef struct pa_sink_input_send_event_hook_data {
 } pa_sink_input_send_event_hook_data;
 
 typedef struct pa_sink_input_new_data {
+    pa_sink_input_flags_t flags;
+
     pa_proplist *proplist;
 
     const char *driver;
@@ -290,8 +300,7 @@ void pa_sink_input_new_data_done(pa_sink_input_new_data *data);
 int pa_sink_input_new(
         pa_sink_input **i,
         pa_core *core,
-        pa_sink_input_new_data *data,
-        pa_sink_input_flags_t flags);
+        pa_sink_input_new_data *data);
 
 void pa_sink_input_put(pa_sink_input *i);
 void pa_sink_input_unlink(pa_sink_input* i);

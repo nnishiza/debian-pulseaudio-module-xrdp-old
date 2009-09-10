@@ -46,7 +46,7 @@
 #define ABSOLUTE_MAX_LATENCY (10*PA_USEC_PER_SEC)
 #define DEFAULT_FIXED_LATENCY (250*PA_USEC_PER_MSEC)
 
-static PA_DEFINE_CHECK_TYPE(pa_source, pa_msgobject);
+PA_DEFINE_PUBLIC_CLASS(pa_source, pa_msgobject);
 
 static void source_free(pa_object *o);
 
@@ -205,12 +205,15 @@ pa_source* pa_source_new(
     s->core = core;
     s->state = PA_SOURCE_INIT;
     s->flags = flags;
+    s->priority = 0;
     s->suspend_cause = 0;
     s->name = pa_xstrdup(name);
     s->proplist = pa_proplist_copy(data->proplist);
     s->driver = pa_xstrdup(pa_path_get_filename(data->driver));
     s->module = data->module;
     s->card = data->card;
+
+    s->priority = pa_device_init_priority(s->proplist);
 
     s->sample_spec = data->sample_spec;
     s->channel_map = data->channel_map;
@@ -757,15 +760,22 @@ void pa_source_set_volume(
         pa_bool_t save) {
 
     pa_bool_t real_changed;
+    pa_cvolume old_volume;
 
     pa_source_assert_ref(s);
     pa_assert_ctl_context();
     pa_assert(PA_SOURCE_IS_LINKED(s->state));
     pa_assert(pa_cvolume_valid(volume));
-    pa_assert(pa_cvolume_compatible(volume, &s->sample_spec));
+    pa_assert(volume->channels == 1 || pa_cvolume_compatible(volume, &s->sample_spec));
 
-    real_changed = !pa_cvolume_equal(volume, &s->volume);
-    s->volume = *volume;
+    old_volume = s->volume;
+
+    if (pa_cvolume_compatible(volume, &s->sample_spec))
+        s->volume = *volume;
+    else
+        pa_cvolume_scale(&s->volume, pa_cvolume_max(volume));
+
+    real_changed = !pa_cvolume_equal(&old_volume, &s->volume);
     s->save_volume = (!real_changed && s->save_volume) || save;
 
     if (s->set_volume) {
