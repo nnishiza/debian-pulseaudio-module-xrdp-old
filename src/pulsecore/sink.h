@@ -109,6 +109,8 @@ struct pa_sink {
     pa_hashmap *ports;
     pa_device_port *active_port;
 
+    unsigned priority;
+
     /* Called when the main loop requests a state change. Called from
      * main loop context. If returns -1 the state change will be
      * inhibited */
@@ -191,7 +193,7 @@ struct pa_sink {
     void *userdata;
 };
 
-PA_DECLARE_CLASS(pa_sink);
+PA_DECLARE_PUBLIC_CLASS(pa_sink);
 #define PA_SINK(s) (pa_sink_cast(s))
 
 typedef enum pa_sink_message {
@@ -288,6 +290,7 @@ void pa_sink_update_flags(pa_sink *s, pa_sink_flags_t mask, pa_sink_flags_t valu
 pa_bool_t pa_device_init_description(pa_proplist *p);
 pa_bool_t pa_device_init_icon(pa_proplist *p, pa_bool_t is_sink);
 pa_bool_t pa_device_init_intended_roles(pa_proplist *p);
+unsigned pa_device_init_priority(pa_proplist *p);
 
 /**** May be called by everyone, from main context */
 

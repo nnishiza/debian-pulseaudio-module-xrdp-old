@@ -406,7 +406,6 @@ static void context_state_callback(pa_context *c, void *userdata) {
             break;
 
         case PA_CONTEXT_READY: {
-            int r;
             pa_buffer_attr buffer_attr;
 
             pa_assert(c);
@@ -443,13 +442,13 @@ static void context_state_callback(pa_context *c, void *userdata) {
 
             if (mode == PLAYBACK) {
                 pa_cvolume cv;
-                if ((r = pa_stream_connect_playback(stream, device, latency > 0 ? &buffer_attr : NULL, flags, volume_is_set ? pa_cvolume_set(&cv, sample_spec.channels, volume) : NULL, NULL)) < 0) {
+                if (pa_stream_connect_playback(stream, device, latency > 0 ? &buffer_attr : NULL, flags, volume_is_set ? pa_cvolume_set(&cv, sample_spec.channels, volume) : NULL, NULL) < 0) {
                     pa_log(_("pa_stream_connect_playback() failed: %s"), pa_strerror(pa_context_errno(c)));
                     goto fail;
                 }
 
             } else {
-                if ((r = pa_stream_connect_record(stream, device, latency > 0 ? &buffer_attr : NULL, flags)) < 0) {
+                if (pa_stream_connect_record(stream, device, latency > 0 ? &buffer_attr : NULL, flags) < 0) {
                     pa_log(_("pa_stream_connect_record() failed: %s"), pa_strerror(pa_context_errno(c)));
                     goto fail;
                 }
@@ -574,9 +573,10 @@ static void stream_update_timing_callback(pa_stream *s, int success, void *userd
         return;
     }
 
-    pa_log(_("Time: %0.3f sec; Latency: %0.0f usec.  \r"),
+    fprintf(stderr, _("Time: %0.3f sec; Latency: %0.0f usec."),
             (float) usec / 1000000,
             (float) l * (negative?-1.0f:1.0f));
+    fprintf(stderr, "        \r");
 }
 
 /* Someone requested that the latency is shown */
@@ -768,7 +768,6 @@ int main(int argc, char *argv[]) {
 
             case ARG_STREAM_NAME: {
                 char *t;
-                t = pa_locale_to_utf8(optarg);
 
                 if (!(t = pa_locale_to_utf8(optarg)) ||
                     pa_proplist_sets(proplist, PA_PROP_MEDIA_NAME, t) < 0) {

@@ -81,7 +81,8 @@ TESTS = mainloop-test$(EXEEXT) strlist-test$(EXEEXT) \
 	resampler-test$(EXEEXT) smoother-test$(EXEEXT) \
 	mix-test$(EXEEXT) remix-test$(EXEEXT) envelope-test$(EXEEXT) \
 	proplist-test$(EXEEXT) lock-autospawn-test$(EXEEXT) \
-	prioq-test$(EXEEXT) sigbus-test$(EXEEXT) $(am__EXEEXT_5)
+	prioq-test$(EXEEXT) sigbus-test$(EXEEXT) \
+	usergroup-test$(EXEEXT) $(am__EXEEXT_5)
 
 #TESTS += \
 #		cpulimit-test \
@@ -593,7 +594,8 @@ am__libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES_DIST =  \
 	pulsecore/strlist.c pulsecore/strlist.h pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/tokenizer.c \
-	pulsecore/tokenizer.h pulsecore/sndfile-util.c \
+	pulsecore/tokenizer.h pulsecore/usergroup.c \
+	pulsecore/usergroup.h pulsecore/sndfile-util.c \
 	pulsecore/sndfile-util.h pulsecore/winsock.h \
 	pulsecore/mutex-win32.c pulsecore/mutex.h \
 	pulsecore/thread-win32.c pulsecore/thread.h \
@@ -662,6 +664,7 @@ am_libpulsecommon_@PA_MAJORMINORMICRO@_la_OBJECTS =  \
 	libpulsecommon_@PA_MAJORMINORMICRO@_la-tagstruct.lo \
 	libpulsecommon_@PA_MAJORMINORMICRO@_la-time-smoother.lo \
 	libpulsecommon_@PA_MAJORMINORMICRO@_la-tokenizer.lo \
+	libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.lo \
 	libpulsecommon_@PA_MAJORMINORMICRO@_la-sndfile-util.lo \
 	$(am__objects_5) $(am__objects_6) $(am__objects_7) \
 	$(am__objects_8) $(am__objects_9)
@@ -678,8 +681,8 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_DEPENDENCIES =  \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libpulsecommon-@PA_MAJORMINORMICRO@.la \
-	libpulse.la libpulsecore-foreign.la $(am__DEPENDENCIES_5) \
+	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la \
+	libpulsecore-foreign.la $(am__DEPENDENCIES_5) \
 	$(am__DEPENDENCIES_7) $(am__DEPENDENCIES_8)
 am__libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES_DIST =  \
 	pulsecore/asyncmsgq.c pulsecore/asyncmsgq.h pulsecore/asyncq.c \
@@ -700,19 +703,25 @@ am__libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES_DIST =  \
 	pulsecore/namereg.c pulsecore/namereg.h pulsecore/object.c \
 	pulsecore/object.h pulsecore/play-memblockq.c \
 	pulsecore/play-memblockq.h pulsecore/play-memchunk.c \
-	pulsecore/play-memchunk.h pulsecore/resampler.c \
-	pulsecore/resampler.h pulsecore/rtpoll.c pulsecore/rtpoll.h \
-	pulsecore/sample-util.c pulsecore/sample-util.h \
+	pulsecore/play-memchunk.h pulsecore/remap.c pulsecore/remap.h \
+	pulsecore/remap_mmx.c pulsecore/remap_sse.c \
+	pulsecore/resampler.c pulsecore/resampler.h pulsecore/rtpoll.c \
+	pulsecore/rtpoll.h pulsecore/sample-util.c \
+	pulsecore/sample-util.h pulsecore/cpu-arm.c \
+	pulsecore/cpu-arm.h pulsecore/cpu-x86.c pulsecore/cpu-x86.h \
+	pulsecore/svolume_c.c pulsecore/svolume_arm.c \
+	pulsecore/svolume_mmx.c pulsecore/svolume_sse.c \
 	pulsecore/sconv-s16be.c pulsecore/sconv-s16be.h \
 	pulsecore/sconv-s16le.c pulsecore/sconv-s16le.h \
-	pulsecore/sconv.c pulsecore/sconv.h pulsecore/shared.c \
-	pulsecore/shared.h pulsecore/shm.c pulsecore/shm.h \
-	pulsecore/sink-input.c pulsecore/sink-input.h pulsecore/sink.c \
-	pulsecore/sink.h pulsecore/sioman.c pulsecore/sioman.h \
-	pulsecore/sound-file-stream.c pulsecore/sound-file-stream.h \
-	pulsecore/sound-file.c pulsecore/sound-file.h \
-	pulsecore/source-output.c pulsecore/source-output.h \
-	pulsecore/source.c pulsecore/source.h pulsecore/start-child.c \
+	pulsecore/sconv_sse.c pulsecore/sconv.c pulsecore/sconv.h \
+	pulsecore/shared.c pulsecore/shared.h pulsecore/shm.c \
+	pulsecore/shm.h pulsecore/sink-input.c pulsecore/sink-input.h \
+	pulsecore/sink.c pulsecore/sink.h pulsecore/sioman.c \
+	pulsecore/sioman.h pulsecore/sound-file-stream.c \
+	pulsecore/sound-file-stream.h pulsecore/sound-file.c \
+	pulsecore/sound-file.h pulsecore/source-output.c \
+	pulsecore/source-output.h pulsecore/source.c \
+	pulsecore/source.h pulsecore/start-child.c \
 	pulsecore/start-child.h pulsecore/thread-mq.c \
 	pulsecore/thread-mq.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/database.h \
@@ -749,11 +758,21 @@ am_libpulsecore_@PA_MAJORMINORMICRO@_la_OBJECTS =  \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-object.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-play-memblockq.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-play-memchunk.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-remap.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-rtpoll.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-sample-util.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16le.lo \
+	libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-sconv.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-shared.lo \
 	libpulsecore_@PA_MAJORMINORMICRO@_la-shm.lo \
@@ -1186,6 +1205,15 @@ module_lirc_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(module_lirc_la_CFLAGS) $(CFLAGS) $(module_lirc_la_LDFLAGS) \
 	$(LDFLAGS) -o $@
 @HAVE_LIRC_TRUE@am_module_lirc_la_rpath = -rpath $(modlibexecdir)
+module_loopback_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	libpulsecore-@PA_MAJORMINORMICRO@.la \
+	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+am_module_loopback_la_OBJECTS = module-loopback.lo
+module_loopback_la_OBJECTS = $(am_module_loopback_la_OBJECTS)
+module_loopback_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(module_loopback_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 module_match_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	libpulsecore-@PA_MAJORMINORMICRO@.la \
 	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
@@ -1590,8 +1618,8 @@ am__EXEEXT_8 = mainloop-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	mix-test$(EXEEXT) remix-test$(EXEEXT) envelope-test$(EXEEXT) \
 	proplist-test$(EXEEXT) rtstutter$(EXEEXT) stripnul$(EXEEXT) \
 	lock-autospawn-test$(EXEEXT) prioq-test$(EXEEXT) \
-	sigbus-test$(EXEEXT) $(am__EXEEXT_4) $(am__EXEEXT_5) \
-	$(am__EXEEXT_6) $(am__EXEEXT_7)
+	sigbus-test$(EXEEXT) usergroup-test$(EXEEXT) $(am__EXEEXT_4) \
+	$(am__EXEEXT_5) $(am__EXEEXT_6) $(am__EXEEXT_7)
 @HAVE_GCONF_TRUE@am__EXEEXT_9 = gconf-helper$(EXEEXT)
 @HAVE_BLUEZ_TRUE@am__EXEEXT_10 = proximity-helper$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS) $(pulselibexec_PROGRAMS)
@@ -1972,6 +2000,14 @@ thread_test_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 thread_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(thread_test_CFLAGS) \
 	$(CFLAGS) $(thread_test_LDFLAGS) $(LDFLAGS) -o $@
+am_usergroup_test_OBJECTS = usergroup_test-usergroup-test.$(OBJEXT)
+usergroup_test_OBJECTS = $(am_usergroup_test_OBJECTS)
+usergroup_test_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	libpulsecore-@PA_MAJORMINORMICRO@.la
+usergroup_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(usergroup_test_CFLAGS) $(CFLAGS) $(usergroup_test_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_utf8_test_OBJECTS = utf8_test-utf8-test.$(OBJEXT)
 utf8_test_OBJECTS = $(am_utf8_test_OBJECTS)
 utf8_test_DEPENDENCIES = $(am__DEPENDENCIES_2) \
@@ -2063,7 +2099,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
 	$(module_jack_sink_la_SOURCES) \
 	$(module_jack_source_la_SOURCES) \
 	$(module_ladspa_sink_la_SOURCES) $(module_lirc_la_SOURCES) \
-	$(module_match_la_SOURCES) $(module_mmkbd_evdev_la_SOURCES) \
+	$(module_loopback_la_SOURCES) $(module_match_la_SOURCES) \
+	$(module_mmkbd_evdev_la_SOURCES) \
 	$(module_native_protocol_fd_la_SOURCES) \
 	$(module_native_protocol_tcp_la_SOURCES) \
 	$(module_native_protocol_unix_la_SOURCES) \
@@ -2113,8 +2150,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
 	$(sigbus_test_SOURCES) $(smoother_test_SOURCES) \
 	$(stripnul_SOURCES) $(strlist_test_SOURCES) \
 	$(sync_playback_SOURCES) $(thread_mainloop_test_SOURCES) \
-	$(thread_test_SOURCES) $(utf8_test_SOURCES) \
-	$(vector_test_SOURCES) $(voltest_SOURCES)
+	$(thread_test_SOURCES) $(usergroup_test_SOURCES) \
+	$(utf8_test_SOURCES) $(vector_test_SOURCES) $(voltest_SOURCES)
 DIST_SOURCES = $(am__libalsa_util_la_SOURCES_DIST) \
 	$(libavahi_wrap_la_SOURCES) $(libbluetooth_ipc_la_SOURCES) \
 	$(libbluetooth_sbc_la_SOURCES) $(libbluetooth_util_la_SOURCES) \
@@ -2157,7 +2194,8 @@ DIST_SOURCES = $(am__libalsa_util_la_SOURCES_DIST) \
 	$(module_jack_sink_la_SOURCES) \
 	$(module_jack_source_la_SOURCES) \
 	$(module_ladspa_sink_la_SOURCES) $(module_lirc_la_SOURCES) \
-	$(module_match_la_SOURCES) $(module_mmkbd_evdev_la_SOURCES) \
+	$(module_loopback_la_SOURCES) $(module_match_la_SOURCES) \
+	$(module_mmkbd_evdev_la_SOURCES) \
 	$(module_native_protocol_fd_la_SOURCES) \
 	$(module_native_protocol_tcp_la_SOURCES) \
 	$(module_native_protocol_unix_la_SOURCES) \
@@ -2207,8 +2245,8 @@ DIST_SOURCES = $(am__libalsa_util_la_SOURCES_DIST) \
 	$(sigbus_test_SOURCES) $(smoother_test_SOURCES) \
 	$(stripnul_SOURCES) $(strlist_test_SOURCES) \
 	$(sync_playback_SOURCES) $(thread_mainloop_test_SOURCES) \
-	$(thread_test_SOURCES) $(utf8_test_SOURCES) \
-	$(vector_test_SOURCES) $(voltest_SOURCES)
+	$(thread_test_SOURCES) $(usergroup_test_SOURCES) \
+	$(utf8_test_SOURCES) $(vector_test_SOURCES) $(voltest_SOURCES)
 DATA = $(alsapaths_DATA) $(alsaprofilesets_DATA) $(dbuspolicy_DATA) \
 	$(pulseconf_DATA) $(udevrules_DATA) $(xdgautostart_DATA)
 am__pulseinclude_HEADERS_DIST = pulse/cdecl.h pulse/channelmap.h \
@@ -2322,8 +2360,6 @@ LIBASYNCNS_LIBS = @LIBASYNCNS_LIBS@
 LIBICONV = @LIBICONV@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
-LIBOIL_CFLAGS = @LIBOIL_CFLAGS@
-LIBOIL_LIBS = @LIBOIL_LIBS@
 LIBPULSE_BROWSE_VERSION_INFO = @LIBPULSE_BROWSE_VERSION_INFO@
 LIBPULSE_MAINLOOP_GLIB_VERSION_INFO = @LIBPULSE_MAINLOOP_GLIB_VERSION_INFO@
 LIBPULSE_SIMPLE_VERSION_INFO = @LIBPULSE_SIMPLE_VERSION_INFO@
@@ -2504,6 +2540,7 @@ AM_CFLAGS = \
 	$(LIBSAMPLERATE_CFLAGS) \
 	$(LIBSNDFILE_CFLAGS) \
 	$(LIBSPEEX_CFLAGS) \
+	-DPA_BUILDDIR=\"$(abs_builddir)\" \
 	-DPA_DLSEARCHPATH=\"$(modlibexecdir)\" \
 	-DPA_DEFAULT_CONFIG_DIR=\"$(PA_DEFAULT_CONFIG_DIR)\" \
 	-DPA_BINARY=\"$(PA_BINARY)\" \
@@ -2513,8 +2550,8 @@ AM_CFLAGS = \
 	-DAO_REQUIRE_CAS \
 	-DPULSE_LOCALEDIR=\"$(pulselocaledir)\" \
 	-DPA_MACHINE_ID=\"$(localstatedir)/lib/dbus/machine-id\" \
-	-DPA_ALSA_PATHS_DIR=\"$(alsapathsdir)\" \
-	-DPA_ALSA_PROFILE_SETS_DIR=\"$(alsaprofilesetsdir)\"
+        -DPA_ALSA_PATHS_DIR=\"$(alsapathsdir)\" \
+        -DPA_ALSA_PROFILE_SETS_DIR=\"$(alsaprofilesetsdir)\"
 
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
@@ -2576,8 +2613,8 @@ pulseaudio_SOURCES = \
 		daemon/ltdl-bind-now.c daemon/ltdl-bind-now.h \
 		daemon/main.c
 
-pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) $(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) $(LIBOIL_CFLAGS) $(DBUS_CFLAGS)
-pulseaudio_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSPEEX_LIBS) $(LIBSNDFILE_LIBS) $(CAP_LIBS) $(LIBOIL_LIBS) $(DBUS_LIBS)
+pulseaudio_CFLAGS = $(AM_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) $(LIBSNDFILE_CFLAGS) $(CAP_CFLAGS) $(DBUS_CFLAGS)
+pulseaudio_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSPEEX_LIBS) $(LIBSNDFILE_LIBS) $(CAP_LIBS) $(DBUS_LIBS)
 # This is needed because automake doesn't properly expand the foreach below
 pulseaudio_DEPENDENCIES = libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la $(PREOPEN_LIBS)
 @PREOPEN_MODS_FALSE@PREOPEN_LIBS = $(modlibexec_LTLIBRARIES)
@@ -2617,8 +2654,8 @@ TESTS_BINARIES = mainloop-test mcalign-test pacat-simple parec-simple \
 	asyncq-test asyncmsgq-test queue-test rtpoll-test sig2str-test \
 	resampler-test smoother-test mix-test remix-test envelope-test \
 	proplist-test rtstutter stripnul lock-autospawn-test \
-	prioq-test sigbus-test $(am__append_5) $(am__append_7) \
-	$(am__append_8) $(am__append_9)
+	prioq-test sigbus-test usergroup-test $(am__append_5) \
+	$(am__append_7) $(am__append_8) $(am__append_9)
 mainloop_test_SOURCES = tests/mainloop-test.c
 mainloop_test_CFLAGS = $(AM_CFLAGS)
 mainloop_test_LDADD = $(AM_LDADD) libpulse.la
@@ -2733,48 +2770,48 @@ sig2str_test_CFLAGS = $(AM_CFLAGS)
 sig2str_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 resampler_test_SOURCES = tests/resampler-test.c
 resampler_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-resampler_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-resampler_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+resampler_test_CFLAGS = $(AM_CFLAGS)
+resampler_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 mix_test_SOURCES = tests/mix-test.c
 mix_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-mix_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-mix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+mix_test_CFLAGS = $(AM_CFLAGS)
+mix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 remix_test_SOURCES = tests/remix-test.c
 remix_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-remix_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-remix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+remix_test_CFLAGS = $(AM_CFLAGS)
+remix_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 smoother_test_SOURCES = tests/smoother-test.c
 smoother_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
 smoother_test_CFLAGS = $(AM_CFLAGS)
 smoother_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 envelope_test_SOURCES = tests/envelope-test.c
 envelope_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-envelope_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-envelope_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+envelope_test_CFLAGS = $(AM_CFLAGS)
+envelope_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 proplist_test_SOURCES = tests/proplist-test.c
 proplist_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-proplist_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-proplist_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+proplist_test_CFLAGS = $(AM_CFLAGS)
+proplist_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 rtstutter_SOURCES = tests/rtstutter.c
 rtstutter_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-rtstutter_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-rtstutter_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+rtstutter_CFLAGS = $(AM_CFLAGS)
+rtstutter_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 stripnul_SOURCES = tests/stripnul.c
 stripnul_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-stripnul_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-stripnul_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+stripnul_CFLAGS = $(AM_CFLAGS)
+stripnul_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 lock_autospawn_test_SOURCES = tests/lock-autospawn-test.c
 lock_autospawn_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-lock_autospawn_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-lock_autospawn_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+lock_autospawn_test_CFLAGS = $(AM_CFLAGS)
+lock_autospawn_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 prioq_test_SOURCES = tests/prioq-test.c
 prioq_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-prioq_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-prioq_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+prioq_test_CFLAGS = $(AM_CFLAGS)
+prioq_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 sigbus_test_SOURCES = tests/sigbus-test.c
 sigbus_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la
-sigbus_test_CFLAGS = $(AM_CFLAGS) $(LIBOIL_CFLAGS)
-sigbus_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBOIL_LIBS)
+sigbus_test_CFLAGS = $(AM_CFLAGS)
+sigbus_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 gtk_test_SOURCES = tests/gtk-test.c
 gtk_test_LDADD = $(AM_LDADD) libpulse.la libpulse-mainloop-glib.la
 gtk_test_CFLAGS = $(AM_CFLAGS) $(GTK20_CFLAGS)
@@ -2783,6 +2820,10 @@ alsa_time_test_SOURCES = tests/alsa-time-test.c
 alsa_time_test_LDADD = $(AM_LDADD)
 alsa_time_test_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
 alsa_time_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(ASOUNDLIB_LIBS)
+usergroup_test_SOURCES = tests/usergroup-test.c
+usergroup_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINORMICRO@.la
+usergroup_test_CFLAGS = $(AM_CFLAGS)
+usergroup_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 ###################################
 #         Common library          #
@@ -2836,7 +2877,8 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_SOURCES = pulse/client-conf.c \
 	pulsecore/strlist.c pulsecore/strlist.h pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/tokenizer.c \
-	pulsecore/tokenizer.h pulsecore/sndfile-util.c \
+	pulsecore/tokenizer.h pulsecore/usergroup.c \
+	pulsecore/usergroup.h pulsecore/sndfile-util.c \
 	pulsecore/sndfile-util.h pulsecore/winsock.h $(am__append_10) \
 	$(am__append_11) $(am__append_12) $(am__append_17) \
 	$(am__append_18)
@@ -2923,19 +2965,24 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES = pulsecore/asyncmsgq.c \
 	pulsecore/object.c pulsecore/object.h \
 	pulsecore/play-memblockq.c pulsecore/play-memblockq.h \
 	pulsecore/play-memchunk.c pulsecore/play-memchunk.h \
-	pulsecore/resampler.c pulsecore/resampler.h pulsecore/rtpoll.c \
-	pulsecore/rtpoll.h pulsecore/sample-util.c \
-	pulsecore/sample-util.h pulsecore/sconv-s16be.c \
+	pulsecore/remap.c pulsecore/remap.h pulsecore/remap_mmx.c \
+	pulsecore/remap_sse.c pulsecore/resampler.c \
+	pulsecore/resampler.h pulsecore/rtpoll.c pulsecore/rtpoll.h \
+	pulsecore/sample-util.c pulsecore/sample-util.h \
+	pulsecore/cpu-arm.c pulsecore/cpu-arm.h pulsecore/cpu-x86.c \
+	pulsecore/cpu-x86.h pulsecore/svolume_c.c \
+	pulsecore/svolume_arm.c pulsecore/svolume_mmx.c \
+	pulsecore/svolume_sse.c pulsecore/sconv-s16be.c \
 	pulsecore/sconv-s16be.h pulsecore/sconv-s16le.c \
-	pulsecore/sconv-s16le.h pulsecore/sconv.c pulsecore/sconv.h \
-	pulsecore/shared.c pulsecore/shared.h pulsecore/shm.c \
-	pulsecore/shm.h pulsecore/sink-input.c pulsecore/sink-input.h \
-	pulsecore/sink.c pulsecore/sink.h pulsecore/sioman.c \
-	pulsecore/sioman.h pulsecore/sound-file-stream.c \
-	pulsecore/sound-file-stream.h pulsecore/sound-file.c \
-	pulsecore/sound-file.h pulsecore/source-output.c \
-	pulsecore/source-output.h pulsecore/source.c \
-	pulsecore/source.h pulsecore/start-child.c \
+	pulsecore/sconv-s16le.h pulsecore/sconv_sse.c \
+	pulsecore/sconv.c pulsecore/sconv.h pulsecore/shared.c \
+	pulsecore/shared.h pulsecore/shm.c pulsecore/shm.h \
+	pulsecore/sink-input.c pulsecore/sink-input.h pulsecore/sink.c \
+	pulsecore/sink.h pulsecore/sioman.c pulsecore/sioman.h \
+	pulsecore/sound-file-stream.c pulsecore/sound-file-stream.h \
+	pulsecore/sound-file.c pulsecore/sound-file.h \
+	pulsecore/source-output.c pulsecore/source-output.h \
+	pulsecore/source.c pulsecore/source.h pulsecore/start-child.c \
 	pulsecore/start-child.h pulsecore/thread-mq.c \
 	pulsecore/thread-mq.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/database.h \
@@ -2943,16 +2990,15 @@ libpulsecore_@PA_MAJORMINORMICRO@_la_SOURCES = pulsecore/asyncmsgq.c \
 	$(am__append_39) $(am__append_42)
 libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS = $(AM_CFLAGS) \
 	$(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) $(WINSOCK_CFLAGS) \
-	$(LIBOIL_CFLAGS) $(am__append_31) $(am__append_34) \
-	$(am__append_37) $(am__append_40)
+	$(am__append_31) $(am__append_34) $(am__append_37) \
+	$(am__append_40)
 libpulsecore_@PA_MAJORMINORMICRO@_la_LDFLAGS = -avoid-version \
 	$(am__append_32)
 libpulsecore_@PA_MAJORMINORMICRO@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) \
 	$(LIBSAMPLERATE_LIBS) $(LIBSPEEX_LIBS) $(WINSOCK_LIBS) \
-	$(LIBOIL_LIBS) $(LTLIBICONV) \
-	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la \
-	libpulsecore-foreign.la $(am__append_35) $(am__append_38) \
-	$(am__append_41)
+	$(LTLIBICONV) libpulsecommon-@PA_MAJORMINORMICRO@.la \
+	libpulse.la libpulsecore-foreign.la $(am__append_35) \
+	$(am__append_38) $(am__append_41)
 
 # We split the foreign code off to not be annoyed by warnings we don't care about
 noinst_LTLIBRARIES = libpulsecore-foreign.la
@@ -2986,13 +3032,14 @@ modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	module-esound-sink.la module-tunnel-sink.la \
 	module-tunnel-source.la module-position-event-sounds.la \
 	module-augment-properties.la module-cork-music-on-phone.la \
-	$(am__append_46) $(am__append_47) $(am__append_48) \
-	$(am__append_49) $(am__append_50) $(am__append_51) \
-	$(am__append_52) $(am__append_53) $(am__append_54) \
-	$(am__append_55) $(am__append_56) $(am__append_57) \
-	$(am__append_58) $(am__append_59) $(am__append_61) \
-	$(am__append_62) $(am__append_63) $(am__append_64) \
-	$(am__append_65) $(am__append_67) $(am__append_68)
+	module-loopback.la $(am__append_46) $(am__append_47) \
+	$(am__append_48) $(am__append_49) $(am__append_50) \
+	$(am__append_51) $(am__append_52) $(am__append_53) \
+	$(am__append_54) $(am__append_55) $(am__append_56) \
+	$(am__append_57) $(am__append_58) $(am__append_59) \
+	$(am__append_61) $(am__append_62) $(am__append_63) \
+	$(am__append_64) $(am__append_65) $(am__append_67) \
+	$(am__append_68)
 libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
 libprotocol_simple_la_LDFLAGS = -avoid-version
 libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
@@ -3127,7 +3174,8 @@ SYMDEF_FILES = \
 		modules/module-position-event-sounds-symdef.h \
 		modules/module-augment-properties-symdef.h \
 		modules/module-cork-music-on-phone-symdef.h \
-		modules/module-console-kit-symdef.h
+		modules/module-console-kit-symdef.h \
+		modules/module-loopback-symdef.h
 
 
 # Simple protocol
@@ -3236,6 +3284,9 @@ module_tunnel_sink_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la
 module_tunnel_source_la_SOURCES = modules/module-tunnel.c
 module_tunnel_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_tunnel_source_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_loopback_la_SOURCES = modules/module-loopback.c
+module_loopback_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_loopback_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 
 # X11
 module_x11_bell_la_SOURCES = modules/x11/module-x11-bell.c
@@ -3716,6 +3767,8 @@ module-ladspa-sink.la: $(module_ladspa_sink_la_OBJECTS) $(module_ladspa_sink_la_
 	$(AM_V_CCLD)$(module_ladspa_sink_la_LINK) -rpath $(modlibexecdir) $(module_ladspa_sink_la_OBJECTS) $(module_ladspa_sink_la_LIBADD) $(LIBS)
 module-lirc.la: $(module_lirc_la_OBJECTS) $(module_lirc_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_lirc_la_LINK) $(am_module_lirc_la_rpath) $(module_lirc_la_OBJECTS) $(module_lirc_la_LIBADD) $(LIBS)
+module-loopback.la: $(module_loopback_la_OBJECTS) $(module_loopback_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(module_loopback_la_LINK) -rpath $(modlibexecdir) $(module_loopback_la_OBJECTS) $(module_loopback_la_LIBADD) $(LIBS)
 module-match.la: $(module_match_la_OBJECTS) $(module_match_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_match_la_LINK) $(am_module_match_la_rpath) $(module_match_la_OBJECTS) $(module_match_la_LIBADD) $(LIBS)
 module-mmkbd-evdev.la: $(module_mmkbd_evdev_la_OBJECTS) $(module_mmkbd_evdev_la_DEPENDENCIES) 
@@ -4029,6 +4082,9 @@ thread-mainloop-test$(EXEEXT): $(thread_mainloop_test_OBJECTS) $(thread_mainloop
 thread-test$(EXEEXT): $(thread_test_OBJECTS) $(thread_test_DEPENDENCIES) 
 	@rm -f thread-test$(EXEEXT)
 	$(AM_V_CCLD)$(thread_test_LINK) $(thread_test_OBJECTS) $(thread_test_LDADD) $(LIBS)
+usergroup-test$(EXEEXT): $(usergroup_test_OBJECTS) $(usergroup_test_DEPENDENCIES) 
+	@rm -f usergroup-test$(EXEEXT)
+	$(AM_V_CCLD)$(usergroup_test_LINK) $(usergroup_test_OBJECTS) $(usergroup_test_LDADD) $(LIBS)
 utf8-test$(EXEEXT): $(utf8_test_OBJECTS) $(utf8_test_DEPENDENCIES) 
 	@rm -f utf8-test$(EXEEXT)
 	$(AM_V_CCLD)$(utf8_test_LINK) $(utf8_test_OBJECTS) $(utf8_test_LDADD) $(LIBS)
@@ -4199,6 +4255,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-thread-win32.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-time-smoother.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-tokenizer.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-x11prop.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-asyncmsgq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-asyncq.Plo@am__quote@
@@ -4210,6 +4267,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-core-scache.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-core-subscribe.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-core.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-database-gdbm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-database-simple.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-database-tdb.Plo@am__quote@
@@ -4227,12 +4286,16 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-object.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-play-memblockq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-play-memchunk.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-rtpoll.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sample-util.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16le.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-shared.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-shm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sink-input.Plo@am__quote@
@@ -4243,6 +4306,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-source-output.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-start-child.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-thread-mq.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-time-smoother.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-x11wrap.Plo@am__quote@
@@ -4263,6 +4330,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-compat-spawnfd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-compat-spawnpid.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-esound-sink.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-loopback.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-match.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-null-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-oss.Plo@am__quote@
@@ -4366,6 +4434,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sync_playback-sync-playback.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread_mainloop_test-thread-mainloop-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/thread_test-thread-test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/usergroup_test-usergroup-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utf8_test-utf8-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/vector_test-vector-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/voltest-voltest.Po@am__quote@
@@ -5186,6 +5255,14 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la-tokenizer.lo: pulsecore/tokenizer.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINORMICRO@_la-tokenizer.lo `test -f 'pulsecore/tokenizer.c' || echo '$(srcdir)/'`pulsecore/tokenizer.c
 
+libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.lo: pulsecore/usergroup.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.Tpo -c -o libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.lo `test -f 'pulsecore/usergroup.c' || echo '$(srcdir)/'`pulsecore/usergroup.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.Tpo $(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/usergroup.c' object='libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINORMICRO@_la-usergroup.lo `test -f 'pulsecore/usergroup.c' || echo '$(srcdir)/'`pulsecore/usergroup.c
+
 libpulsecommon_@PA_MAJORMINORMICRO@_la-sndfile-util.lo: pulsecore/sndfile-util.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINORMICRO@_la-sndfile-util.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-sndfile-util.Tpo -c -o libpulsecommon_@PA_MAJORMINORMICRO@_la-sndfile-util.lo `test -f 'pulsecore/sndfile-util.c' || echo '$(srcdir)/'`pulsecore/sndfile-util.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-sndfile-util.Tpo $(DEPDIR)/libpulsecommon_@PA_MAJORMINORMICRO@_la-sndfile-util.Plo
@@ -5458,6 +5535,30 @@ libpulsecore_@PA_MAJORMINORMICRO@_la-play-memchunk.lo: pulsecore/play-memchunk.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-play-memchunk.lo `test -f 'pulsecore/play-memchunk.c' || echo '$(srcdir)/'`pulsecore/play-memchunk.c
 
+libpulsecore_@PA_MAJORMINORMICRO@_la-remap.lo: pulsecore/remap.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-remap.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-remap.lo `test -f 'pulsecore/remap.c' || echo '$(srcdir)/'`pulsecore/remap.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/remap.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-remap.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-remap.lo `test -f 'pulsecore/remap.c' || echo '$(srcdir)/'`pulsecore/remap.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.lo: pulsecore/remap_mmx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.lo `test -f 'pulsecore/remap_mmx.c' || echo '$(srcdir)/'`pulsecore/remap_mmx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/remap_mmx.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-remap_mmx.lo `test -f 'pulsecore/remap_mmx.c' || echo '$(srcdir)/'`pulsecore/remap_mmx.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.lo: pulsecore/remap_sse.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.lo `test -f 'pulsecore/remap_sse.c' || echo '$(srcdir)/'`pulsecore/remap_sse.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/remap_sse.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-remap_sse.lo `test -f 'pulsecore/remap_sse.c' || echo '$(srcdir)/'`pulsecore/remap_sse.c
+
 libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.lo: pulsecore/resampler.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.lo `test -f 'pulsecore/resampler.c' || echo '$(srcdir)/'`pulsecore/resampler.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-resampler.Plo
@@ -5482,6 +5583,54 @@ libpulsecore_@PA_MAJORMINORMICRO@_la-sample-util.lo: pulsecore/sample-util.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-sample-util.lo `test -f 'pulsecore/sample-util.c' || echo '$(srcdir)/'`pulsecore/sample-util.c
 
+libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.lo: pulsecore/cpu-arm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.lo `test -f 'pulsecore/cpu-arm.c' || echo '$(srcdir)/'`pulsecore/cpu-arm.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/cpu-arm.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-arm.lo `test -f 'pulsecore/cpu-arm.c' || echo '$(srcdir)/'`pulsecore/cpu-arm.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.lo: pulsecore/cpu-x86.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.lo `test -f 'pulsecore/cpu-x86.c' || echo '$(srcdir)/'`pulsecore/cpu-x86.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/cpu-x86.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-cpu-x86.lo `test -f 'pulsecore/cpu-x86.c' || echo '$(srcdir)/'`pulsecore/cpu-x86.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.lo: pulsecore/svolume_c.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.lo `test -f 'pulsecore/svolume_c.c' || echo '$(srcdir)/'`pulsecore/svolume_c.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/svolume_c.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_c.lo `test -f 'pulsecore/svolume_c.c' || echo '$(srcdir)/'`pulsecore/svolume_c.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.lo: pulsecore/svolume_arm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.lo `test -f 'pulsecore/svolume_arm.c' || echo '$(srcdir)/'`pulsecore/svolume_arm.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/svolume_arm.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_arm.lo `test -f 'pulsecore/svolume_arm.c' || echo '$(srcdir)/'`pulsecore/svolume_arm.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.lo: pulsecore/svolume_mmx.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.lo `test -f 'pulsecore/svolume_mmx.c' || echo '$(srcdir)/'`pulsecore/svolume_mmx.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/svolume_mmx.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_mmx.lo `test -f 'pulsecore/svolume_mmx.c' || echo '$(srcdir)/'`pulsecore/svolume_mmx.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.lo: pulsecore/svolume_sse.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.lo `test -f 'pulsecore/svolume_sse.c' || echo '$(srcdir)/'`pulsecore/svolume_sse.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/svolume_sse.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-svolume_sse.lo `test -f 'pulsecore/svolume_sse.c' || echo '$(srcdir)/'`pulsecore/svolume_sse.c
+
 libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.lo: pulsecore/sconv-s16be.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.lo `test -f 'pulsecore/sconv-s16be.c' || echo '$(srcdir)/'`pulsecore/sconv-s16be.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16be.Plo
@@ -5497,6 +5646,14 @@ libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16le.lo: pulsecore/sconv-s16le.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/sconv-s16le.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16le.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-sconv-s16le.lo `test -f 'pulsecore/sconv-s16le.c' || echo '$(srcdir)/'`pulsecore/sconv-s16le.c
+
+libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.lo: pulsecore/sconv_sse.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.lo `test -f 'pulsecore/sconv_sse.c' || echo '$(srcdir)/'`pulsecore/sconv_sse.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.Tpo $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/sconv_sse.c' object='libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-sconv_sse.lo `test -f 'pulsecore/sconv_sse.c' || echo '$(srcdir)/'`pulsecore/sconv_sse.c
 
 libpulsecore_@PA_MAJORMINORMICRO@_la-sconv.lo: pulsecore/sconv.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecore_@PA_MAJORMINORMICRO@_la_CFLAGS) $(CFLAGS) -MT libpulsecore_@PA_MAJORMINORMICRO@_la-sconv.lo -MD -MP -MF $(DEPDIR)/libpulsecore_@PA_MAJORMINORMICRO@_la-sconv.Tpo -c -o libpulsecore_@PA_MAJORMINORMICRO@_la-sconv.lo `test -f 'pulsecore/sconv.c' || echo '$(srcdir)/'`pulsecore/sconv.c
@@ -5977,6 +6134,14 @@ module_lirc_la-module-lirc.lo: modules/module-lirc.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-lirc.c' object='module_lirc_la-module-lirc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_lirc_la_CFLAGS) $(CFLAGS) -c -o module_lirc_la-module-lirc.lo `test -f 'modules/module-lirc.c' || echo '$(srcdir)/'`modules/module-lirc.c
+
+module-loopback.lo: modules/module-loopback.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-loopback.lo -MD -MP -MF $(DEPDIR)/module-loopback.Tpo -c -o module-loopback.lo `test -f 'modules/module-loopback.c' || echo '$(srcdir)/'`modules/module-loopback.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/module-loopback.Tpo $(DEPDIR)/module-loopback.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-loopback.c' object='module-loopback.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-loopback.lo `test -f 'modules/module-loopback.c' || echo '$(srcdir)/'`modules/module-loopback.c
 
 module-match.lo: modules/module-match.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-match.lo -MD -MP -MF $(DEPDIR)/module-match.Tpo -c -o module-match.lo `test -f 'modules/module-match.c' || echo '$(srcdir)/'`modules/module-match.c
@@ -7130,6 +7295,22 @@ thread_test-thread-test.obj: tests/thread-test.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(thread_test_CFLAGS) $(CFLAGS) -c -o thread_test-thread-test.obj `if test -f 'tests/thread-test.c'; then $(CYGPATH_W) 'tests/thread-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/thread-test.c'; fi`
 
+usergroup_test-usergroup-test.o: tests/usergroup-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usergroup_test_CFLAGS) $(CFLAGS) -MT usergroup_test-usergroup-test.o -MD -MP -MF $(DEPDIR)/usergroup_test-usergroup-test.Tpo -c -o usergroup_test-usergroup-test.o `test -f 'tests/usergroup-test.c' || echo '$(srcdir)/'`tests/usergroup-test.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/usergroup_test-usergroup-test.Tpo $(DEPDIR)/usergroup_test-usergroup-test.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/usergroup-test.c' object='usergroup_test-usergroup-test.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usergroup_test_CFLAGS) $(CFLAGS) -c -o usergroup_test-usergroup-test.o `test -f 'tests/usergroup-test.c' || echo '$(srcdir)/'`tests/usergroup-test.c
+
+usergroup_test-usergroup-test.obj: tests/usergroup-test.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usergroup_test_CFLAGS) $(CFLAGS) -MT usergroup_test-usergroup-test.obj -MD -MP -MF $(DEPDIR)/usergroup_test-usergroup-test.Tpo -c -o usergroup_test-usergroup-test.obj `if test -f 'tests/usergroup-test.c'; then $(CYGPATH_W) 'tests/usergroup-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/usergroup-test.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/usergroup_test-usergroup-test.Tpo $(DEPDIR)/usergroup_test-usergroup-test.Po
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='tests/usergroup-test.c' object='usergroup_test-usergroup-test.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(usergroup_test_CFLAGS) $(CFLAGS) -c -o usergroup_test-usergroup-test.obj `if test -f 'tests/usergroup-test.c'; then $(CYGPATH_W) 'tests/usergroup-test.c'; else $(CYGPATH_W) '$(srcdir)/tests/usergroup-test.c'; fi`
+
 utf8_test-utf8-test.o: tests/utf8-test.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(utf8_test_CFLAGS) $(CFLAGS) -MT utf8_test-utf8-test.o -MD -MP -MF $(DEPDIR)/utf8_test-utf8-test.Tpo -c -o utf8_test-utf8-test.o `test -f 'tests/utf8-test.c' || echo '$(srcdir)/'`tests/utf8-test.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/utf8_test-utf8-test.Tpo $(DEPDIR)/utf8_test-utf8-test.Po
@@ -7693,7 +7874,7 @@ daemon.conf: daemon/daemon.conf.in Makefile
 		-e 's,@PA_DEFAULT_CONFIG_FILE\@,$(DEFAULT_CONFIG_DIR),g' < $< > $@
 
 install-exec-hook:
-	chown root $(DESTDIR)$(bindir)/pulseaudio ; true
+	-chown root $(DESTDIR)$(pulselibexecdir)/proximity-helper
 	-chmod u+s $(DESTDIR)$(pulselibexecdir)/proximity-helper
 	ln -sf pacat $(DESTDIR)$(bindir)/parec
 	ln -sf pacat $(DESTDIR)$(bindir)/pamon

@@ -44,7 +44,7 @@
 #define MEMBLOCKQ_MAXLENGTH (32*1024*1024)
 #define CONVERT_BUFFER_LENGTH (PA_PAGE_SIZE)
 
-static PA_DEFINE_CHECK_TYPE(pa_sink_input, pa_msgobject);
+PA_DEFINE_PUBLIC_CLASS(pa_sink_input, pa_msgobject);
 
 static void sink_input_free(pa_object *o);
 static void set_real_ratio(pa_sink_input *i, const pa_cvolume *v);
@@ -126,14 +126,15 @@ static void reset_callbacks(pa_sink_input *i) {
     i->state_change = NULL;
     i->may_move_to = NULL;
     i->send_event = NULL;
+    i->volume_changed = NULL;
+    i->mute_changed = NULL;
 }
 
 /* Called from main context */
 int pa_sink_input_new(
         pa_sink_input **_i,
         pa_core *core,
-        pa_sink_input_new_data *data,
-        pa_sink_input_flags_t flags) {
+        pa_sink_input_new_data *data) {
 
     pa_sink_input *i;
     pa_resampler *resampler = NULL;
@@ -196,15 +197,15 @@ int pa_sink_input_new(
     if (!data->muted_is_set)
         data->muted = FALSE;
 
-    if (flags & PA_SINK_INPUT_FIX_FORMAT)
+    if (data->flags & PA_SINK_INPUT_FIX_FORMAT)
         data->sample_spec.format = data->sink->sample_spec.format;
 
-    if (flags & PA_SINK_INPUT_FIX_RATE)
+    if (data->flags & PA_SINK_INPUT_FIX_RATE)
         data->sample_spec.rate = data->sink->sample_spec.rate;
 
     original_cm = data->channel_map;
 
-    if (flags & PA_SINK_INPUT_FIX_CHANNELS) {
+    if (data->flags & PA_SINK_INPUT_FIX_CHANNELS) {
         data->sample_spec.channels = data->sink->sample_spec.channels;
         data->channel_map = data->sink->channel_map;
     }
@@ -223,7 +224,7 @@ int pa_sink_input_new(
     if ((r = pa_hook_fire(&core->hooks[PA_CORE_HOOK_SINK_INPUT_FIXATE], data)) < 0)
         return r;
 
-    if ((flags & PA_SINK_INPUT_NO_CREATE_ON_SUSPEND) &&
+    if ((data->flags & PA_SINK_INPUT_NO_CREATE_ON_SUSPEND) &&
         pa_sink_get_state(data->sink) == PA_SINK_SUSPENDED) {
         pa_log_warn("Failed to create sink input: sink is suspended.");
         return -PA_ERR_BADSTATE;
@@ -234,7 +235,7 @@ int pa_sink_input_new(
         return -PA_ERR_TOOLARGE;
     }
 
-    if ((flags & PA_SINK_INPUT_VARIABLE_RATE) ||
+    if ((data->flags & PA_SINK_INPUT_VARIABLE_RATE) ||
         !pa_sample_spec_equal(&data->sample_spec, &data->sink->sample_spec) ||
         !pa_channel_map_equal(&data->channel_map, &data->sink->channel_map)) {
 
@@ -243,9 +244,9 @@ int pa_sink_input_new(
                       &data->sample_spec, &data->channel_map,
                       &data->sink->sample_spec, &data->sink->channel_map,
                       data->resample_method,
-                      ((flags & PA_SINK_INPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
-                      ((flags & PA_SINK_INPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
-                      (core->disable_remixing || (flags & PA_SINK_INPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0) |
+                      ((data->flags & PA_SINK_INPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
+                      ((data->flags & PA_SINK_INPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
+                      (core->disable_remixing || (data->flags & PA_SINK_INPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0) |
                       (core->disable_lfe_remixing ? PA_RESAMPLER_NO_LFE : 0)))) {
             pa_log_warn("Unsupported resampling operation.");
             return -PA_ERR_NOTSUPPORTED;
@@ -258,7 +259,7 @@ int pa_sink_input_new(
 
     i->core = core;
     i->state = PA_SINK_INPUT_INIT;
-    i->flags = flags;
+    i->flags = data->flags;
     i->proplist = pa_proplist_copy(data->proplist);
     i->driver = pa_xstrdup(pa_path_get_filename(data->driver));
     i->module = data->module;
@@ -485,7 +486,10 @@ static void sink_input_free(pa_object *o) {
 
     pa_log_info("Freeing input %u \"%s\"", i->index, pa_strnull(pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME)));
 
-    pa_assert(!i->thread_info.attached);
+    /* Side note: this function must be able to destruct properly any
+     * kind of sink input in any state, even those which are
+     * "half-moved" or are connected to sinks that have no asyncmsgq
+     * and are hence half-destructed themselves! */
 
     if (i->thread_info.render_memblockq)
         pa_memblockq_free(i->thread_info.render_memblockq);
@@ -937,12 +941,22 @@ void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume, pa_boo
     pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
     pa_assert(volume);
     pa_assert(pa_cvolume_valid(volume));
-    pa_assert(pa_cvolume_compatible(volume, &i->sample_spec));
+    pa_assert(volume->channels == 1 || pa_cvolume_compatible(volume, &i->sample_spec));
 
     if ((i->sink->flags & PA_SINK_FLAT_VOLUME) && !absolute) {
         v = i->sink->reference_volume;
         pa_cvolume_remap(&v, &i->sink->channel_map, &i->channel_map);
-        volume = pa_sw_cvolume_multiply(&v, &v, volume);
+
+        if (pa_cvolume_compatible(volume, &i->sample_spec))
+            volume = pa_sw_cvolume_multiply(&v, &v, volume);
+        else
+            volume = pa_sw_cvolume_multiply_scalar(&v, &v, pa_cvolume_max(volume));
+    } else {
+
+        if (!pa_cvolume_compatible(volume, &i->sample_spec)) {
+            v = i->volume;
+            volume = pa_cvolume_scale(&v, pa_cvolume_max(volume));
+        }
     }
 
     if (pa_cvolume_equal(volume, &i->volume)) {
@@ -968,7 +982,10 @@ void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume, pa_boo
         pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_SOFT_VOLUME, NULL, 0, NULL) == 0);
     }
 
-    /* The virtual volume changed, let's tell people so */
+    /* The volume changed, let's tell people so */
+    if (i->volume_changed)
+        i->volume_changed(i);
+
     pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
 }
 
@@ -999,6 +1016,11 @@ void pa_sink_input_set_mute(pa_sink_input *i, pa_bool_t mute, pa_bool_t save) {
     i->save_muted = save;
 
     pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_SOFT_MUTE, NULL, 0, NULL) == 0);
+
+    /* The mute status changed, let's tell people so */
+    if (i->mute_changed)
+        i->mute_changed(i);
+
     pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
 }
 
@@ -1130,7 +1152,6 @@ pa_bool_t pa_sink_input_may_move_to(pa_sink_input *i, pa_sink *dest) {
 /* Called from main context */
 int pa_sink_input_start_move(pa_sink_input *i) {
     pa_source_output *o, *p = NULL;
-    pa_sink *origin;
     int r;
 
     pa_sink_input_assert_ref(i);
@@ -1143,8 +1164,6 @@ int pa_sink_input_start_move(pa_sink_input *i) {
 
     if ((r = pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_MOVE_START], i)) < 0)
         return r;
-
-    origin = i->sink;
 
     /* Kill directly connected outputs */
     while ((o = pa_idxset_first(i->direct_outputs, NULL))) {
@@ -1263,6 +1282,10 @@ int pa_sink_input_finish_move(pa_sink_input *i, pa_sink *dest, pa_bool_t save) {
 
     /* Notify everyone */
     pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_MOVE_FINISH], i);
+
+    if (i->volume_changed)
+        i->volume_changed(i);
+
     pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
 
     return 0;
@@ -1455,7 +1478,13 @@ pa_bool_t pa_sink_input_safe_to_remove(pa_sink_input *i) {
 }
 
 /* Called from IO context */
-void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sample spec */, pa_bool_t rewrite, pa_bool_t flush, pa_bool_t dont_rewind_render) {
+void pa_sink_input_request_rewind(
+        pa_sink_input *i,
+        size_t nbytes  /* in our sample spec */,
+        pa_bool_t rewrite,
+        pa_bool_t flush,
+        pa_bool_t dont_rewind_render) {
+
     size_t lbq;
 
     /* If 'rewrite' is TRUE the sink is rewound as far as requested
@@ -1470,19 +1499,20 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
      * dont_rewind_render is TRUE then the render memblockq is not
      * rewound. */
 
+    /* nbytes = 0 means maximum rewind request */
+
     pa_sink_input_assert_ref(i);
     pa_sink_input_assert_io_context(i);
-
-    nbytes = PA_MAX(i->thread_info.rewrite_nbytes, nbytes);
-
-/*     pa_log_debug("request rewrite %lu", (unsigned long) nbytes); */
+    pa_assert(rewrite || flush);
+    pa_assert(!dont_rewind_render || !rewrite);
 
     /* We don't take rewind requests while we are corked */
     if (i->thread_info.state == PA_SINK_INPUT_CORKED)
         return;
 
-    pa_assert(rewrite || flush);
-    pa_assert(!dont_rewind_render || !rewrite);
+    nbytes = PA_MAX(i->thread_info.rewrite_nbytes, nbytes);
+
+    /* pa_log_debug("request rewrite %zu", nbytes); */
 
     /* Calculate how much we can rewind locally without having to
      * touch the sink */
@@ -1502,6 +1532,7 @@ void pa_sink_input_request_rewind(pa_sink_input *i, size_t nbytes  /* in our sam
             nbytes = pa_resampler_request(i->thread_info.resampler, nbytes);
     }
 
+    /* Remember how much we actually want to rewrite */
     if (i->thread_info.rewrite_nbytes != (size_t) -1) {
         if (rewrite) {
             /* Make sure to not overwrite over underruns */
