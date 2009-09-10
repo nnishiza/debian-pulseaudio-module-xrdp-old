@@ -27,13 +27,6 @@ case "$1" in
     if ! getent group pulse-access >/dev/null; then
       addgroup --quiet --system pulse-access
     fi
-    if ! getent group pulse-rt >/dev/null; then
-      addgroup --quiet --system pulse-rt
-    fi
-
-    if ! dpkg-statoverride --list "$PULSEAUDIO" > /dev/null 2>&1; then
-       chmod 4755 "$PULSEAUDIO"
-    fi
   ;;
   abort-upgrade|abort-remove|abort-deconfigure)
   ;;
