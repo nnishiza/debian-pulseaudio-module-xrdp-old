@@ -1,4 +1,4 @@
-pulseaudio (0.9.16-1) UNRELEASED; urgency=low
+pulseaudio (0.9.16-1) unstable; urgency=low
 
   * New upstream release
   * debian/copyright: updated
@@ -8,7 +8,7 @@ pulseaudio (0.9.16-1) UNRELEASED; urgency=low
     create the pulse-rt group. Setting realtime priorities is now handled by
     rtkit.
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 10 Sep 2009 20:08:53 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 10 Sep 2009 21:53:15 +0100
 
 pulseaudio (0.9.16~test5-1) experimental; urgency=low
 
