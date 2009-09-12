@@ -341,6 +341,13 @@ License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
 
+File: po/ja.po
+Copyright:
+  Copyright (C) 2009 Hyu_gabaru Ryu_ichi <hyu_gabaru@yahoo.co.jp>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
 File: po/kn.po
 Copyright:
   Copyright (C) 2009 Shankar Prasad <svenkate@redhat.com>
@@ -469,5 +476,3 @@ Copyright:
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
-
-
