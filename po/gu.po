@@ -1,14 +1,14 @@
-# translation of pulseaudio.po to Gujarati
+# translation of pulaudio.po to Gujarati
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
 #
 # Sweta Kothari <swkothar@redhat.com>, 2009.
 msgid ""
 msgstr ""
-"Project-Id-Version: pulseaudio\n"
+"Project-Id-Version: pulaudio\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-09-10 01:54+0200\n"
-"PO-Revision-Date: 2009-09-03 15:31+0530\n"
+"POT-Creation-Date: 2009-09-11 01:26+0200\n"
+"PO-Revision-Date: 2009-09-10 15:26+0530\n"
 "Last-Translator: Sweta Kothari <swkothar@redhat.com>\n"
 "Language-Team: Gujarati\n"
 "MIME-Version: 1.0\n"
@@ -62,11 +62,11 @@ msgstr ""
 
 #: ../src/modules/module-always-sink.c:39
 msgid "Always keeps at least one sink loaded even if it's a null one"
-msgstr ""
+msgstr "હંમેશા ઓછામાં ઓછુ એક સિંક લોડ થયેલ રાખો જો તે શૂન્ય હોય તો પણ"
 
 #: ../src/modules/module-always-sink.c:83
 msgid "Dummy Output"
-msgstr ""
+msgstr "ડમી આઉટપુટ"
 
 #: ../src/modules/module-ladspa-sink.c:49
 msgid "Virtual LADSPA sink"
@@ -88,11 +88,11 @@ msgstr ""
 
 #: ../src/modules/module-null-sink.c:55
 msgid "Clocked NULL sink"
-msgstr ""
+msgstr "ક્લોક થયેલ NULL સિંક"
 
 #: ../src/modules/module-null-sink.c:291
 msgid "Null Output"
-msgstr ""
+msgstr "શૂન્ય આઉટપુટ"
 
 #: ../src/pulsecore/sink.c:2613
 msgid "Internal Audio"
@@ -1086,6 +1086,14 @@ msgstr "ગુમ થયેલ અમલીકરણ"
 msgid "Client forked"
 msgstr "ક્લાઇન્ટમાં ફાટા પડેલ છે"
 
+#: ../src/pulse/error.c:68
+msgid "Input/Output error"
+msgstr ""
+
+#: ../src/pulse/error.c:69
+msgid "Device or resource busy"
+msgstr ""
+
 #: ../src/pulse/sample.c:172
 #, c-format
 msgid "%s %uch %uHz"
@@ -1293,9 +1301,9 @@ msgid "Failed to get latency: %s"
 msgstr "ગુપ્તતા મેળવવામાં નિષ્ફળતા: %s"
 
 #: ../src/utils/pacat.c:576
-#, fuzzy, c-format
+#, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec."
-msgstr "Time: %0.3f sec; Latency: %0.0f usec.  \r"
+msgstr "Time: %0.3f sec; Latency: %0.0f usec."
 
 #: ../src/utils/pacat.c:595
 #, c-format
