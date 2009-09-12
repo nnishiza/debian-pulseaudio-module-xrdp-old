@@ -7,8 +7,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pulseaudio.master-tx\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-09-10 01:54+0200\n"
-"PO-Revision-Date: 2009-09-04 10:48+0530\n"
+"POT-Creation-Date: 2009-09-11 01:26+0200\n"
+"PO-Revision-Date: 2009-09-10 17:01+0530\n"
 "Last-Translator: Rajesh Ranjan <rajesh672@gmail.com>\n"
 "Language-Team: Hindi <hindi.sf.net>\n"
 "MIME-Version: 1.0\n"
@@ -16,6 +16,7 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "X-Generator: KBabel 1.11.4\n"
 "Plural-Forms: nplurals=2; plural=(n!=1);\n"
+"\n"
 "\n"
 "\n"
 "\n"
@@ -65,11 +66,11 @@ msgstr ""
 
 #: ../src/modules/module-always-sink.c:39
 msgid "Always keeps at least one sink loaded even if it's a null one"
-msgstr ""
+msgstr "हमेशा कम से मक एक सिंक को लोडेड रखें हालांकि यह एक रिक्त है"
 
 #: ../src/modules/module-always-sink.c:83
 msgid "Dummy Output"
-msgstr ""
+msgstr "डमी आउटपुट"
 
 #: ../src/modules/module-ladspa-sink.c:49
 msgid "Virtual LADSPA sink"
@@ -91,11 +92,11 @@ msgstr ""
 
 #: ../src/modules/module-null-sink.c:55
 msgid "Clocked NULL sink"
-msgstr ""
+msgstr "क्लॉक्ड रिक्त सिंक"
 
 #: ../src/modules/module-null-sink.c:291
 msgid "Null Output"
-msgstr ""
+msgstr "रिक्त आउटपुट"
 
 #: ../src/pulsecore/sink.c:2613
 msgid "Internal Audio"
@@ -1087,6 +1088,14 @@ msgstr "अनुपस्थित कार्यान्वयन"
 msgid "Client forked"
 msgstr "क्लाएंट विभाजित"
 
+#: ../src/pulse/error.c:68
+msgid "Input/Output error"
+msgstr ""
+
+#: ../src/pulse/error.c:69
+msgid "Device or resource busy"
+msgstr ""
+
 #: ../src/pulse/sample.c:172
 #, c-format
 msgid "%s %uch %uHz"
@@ -1294,9 +1303,9 @@ msgid "Failed to get latency: %s"
 msgstr "लेटेंसी पाने में विफल: %s"
 
 #: ../src/utils/pacat.c:576
-#, fuzzy, c-format
+#, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec."
-msgstr "समय: %0.3f sec; लैटेंसी: %0.0f usec.  \r"
+msgstr "समय: %0.3f सेकेंड; लैटेंसी: %0.0f usec."
 
 #: ../src/utils/pacat.c:595
 #, c-format

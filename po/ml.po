@@ -1,3 +1,4 @@
+# translation of pulseaudio.master-tx.ml.po to
 # translation of pulseaudio.master-tx.pulseaudio.ml.po to
 # Copyright (C) YEAR THE PACKAGE'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the PACKAGE package.
@@ -5,10 +6,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: pulseaudio.master-tx.pulseaudio.ml\n"
+"Project-Id-Version: pulseaudio.master-tx.ml\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-09-10 01:54+0200\n"
-"PO-Revision-Date: 2009-09-04 14:57+0530\n"
+"POT-Creation-Date: 2009-09-11 01:26+0200\n"
+"PO-Revision-Date: 2009-09-10 11:19+0530\n"
 "Last-Translator: \n"
 "Language-Team:  <en@li.org>\n"
 "MIME-Version: 1.0\n"
@@ -56,11 +57,11 @@ msgstr ""
 
 #: ../src/modules/module-always-sink.c:39
 msgid "Always keeps at least one sink loaded even if it's a null one"
-msgstr ""
+msgstr "നള്‍ ആണെങ്കിലും ഒരു സിങ്കെങ്കിലും എപ്പോഴും ലഭ്യമാക്കുക"
 
 #: ../src/modules/module-always-sink.c:83
 msgid "Dummy Output"
-msgstr ""
+msgstr "ഡമ്മി ഔട്ട്പുട്ട്"
 
 #: ../src/modules/module-ladspa-sink.c:49
 msgid "Virtual LADSPA sink"
@@ -82,11 +83,11 @@ msgstr ""
 
 #: ../src/modules/module-null-sink.c:55
 msgid "Clocked NULL sink"
-msgstr ""
+msgstr "ക്ലോക്കഡ് NULL സിങ്ക്"
 
 #: ../src/modules/module-null-sink.c:291
 msgid "Null Output"
-msgstr ""
+msgstr "നള്‍ ഔട്ട്പുട്ട്"
 
 #: ../src/pulsecore/sink.c:2613
 msgid "Internal Audio"
@@ -1082,6 +1083,14 @@ msgstr "പ്രവര്‍ത്തനം ലഭ്യമല്ല"
 msgid "Client forked"
 msgstr "ക്ലൈന്റ് ഫോര്‍ക്ക് ചെയ്തിരിക്കുന്നു"
 
+#: ../src/pulse/error.c:68
+msgid "Input/Output error"
+msgstr ""
+
+#: ../src/pulse/error.c:69
+msgid "Device or resource busy"
+msgstr ""
+
 #: ../src/pulse/sample.c:172
 #, c-format
 msgid "%s %uch %uHz"
@@ -1289,9 +1298,9 @@ msgid "Failed to get latency: %s"
 msgstr "ലാറ്റന്‍സി ലഭ്യമാക്കുന്നതില്‍ പരാജയപ്പെട്ടു: %s"
 
 #: ../src/utils/pacat.c:576
-#, fuzzy, c-format
+#, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec."
-msgstr "സമയം: %0.3f sec; ലാറ്റന്‍സി: %0.0f usec.  \r"
+msgstr "സമയം: %0.3f sec; ലാറ്റന്‍സി: %0.0f usec."
 
 #: ../src/utils/pacat.c:595
 #, c-format

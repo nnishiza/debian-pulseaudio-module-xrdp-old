@@ -8,8 +8,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pulseaudio.master-tx.bn_IN\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-09-10 01:54+0200\n"
-"PO-Revision-Date: 2009-09-04 19:33+0530\n"
+"POT-Creation-Date: 2009-09-11 01:26+0200\n"
+"PO-Revision-Date: 2009-09-10 17:08+0530\n"
 "Last-Translator: Runa Bhattacharjee <runab@redhat.com>\n"
 "Language-Team: Bengali INDIA <anubad@lists.ankur.org.in>\n"
 "MIME-Version: 1.0\n"
@@ -62,10 +62,11 @@ msgstr ""
 #: ../src/modules/module-always-sink.c:39
 msgid "Always keeps at least one sink loaded even if it's a null one"
 msgstr ""
+"সর্বদা অন্তত একটি sink লোড করে রাখা হবে, প্রয়োজনে null sink ব্যবহার করা হবে"
 
 #: ../src/modules/module-always-sink.c:83
 msgid "Dummy Output"
-msgstr ""
+msgstr "ডামি আউটপুট"
 
 #: ../src/modules/module-ladspa-sink.c:49
 msgid "Virtual LADSPA sink"
@@ -87,11 +88,11 @@ msgstr ""
 
 #: ../src/modules/module-null-sink.c:55
 msgid "Clocked NULL sink"
-msgstr ""
+msgstr "NULL sink-র সময় নির্ধারণ"
 
 #: ../src/modules/module-null-sink.c:291
 msgid "Null Output"
-msgstr ""
+msgstr "Null ফলাফল"
 
 #: ../src/pulsecore/sink.c:2613
 msgid "Internal Audio"
@@ -1096,6 +1097,14 @@ msgstr "অনুপস্থিত বাস্তবায়ন"
 msgid "Client forked"
 msgstr "ক্লায়েন্ট ফর্ক করা হয়েছে"
 
+#: ../src/pulse/error.c:68
+msgid "Input/Output error"
+msgstr ""
+
+#: ../src/pulse/error.c:69
+msgid "Device or resource busy"
+msgstr ""
+
 #: ../src/pulse/sample.c:172
 #, c-format
 msgid "%s %uch %uHz"
@@ -1307,9 +1316,9 @@ msgid "Failed to get latency: %s"
 msgstr "লেটেন্সির পরিমাণ প্রাপ্ত করতে ব্যর্থ: %s"
 
 #: ../src/utils/pacat.c:576
-#, fuzzy, c-format
+#, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec."
-msgstr "সময়: %0.3f সেকেন্ড; লেটেন্সি: %0.0f usec.  \r"
+msgstr "সময়: %0.3f সেকেন্ড; লেটেন্সি: %0.0f usec।"
 
 #: ../src/utils/pacat.c:595
 #, c-format

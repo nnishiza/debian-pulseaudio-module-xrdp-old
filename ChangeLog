@@ -1,4 +1,53 @@
 
+2009-09-11	Lennart Poettering
+	180ef1e: position-event-sounds: apply volume factor after, not before resampling
+	a015d56: core: add an additional volume factor that is applied after resampling took place
+	6fa2445: position-event-sounds: honour window position if set, position both vertically and horizontally
+	5919337: proplist: define properties for storing window position
+	42b795b: doxygen: don't confuse doxygen with spurious ..
+	4e3f7d5: doxygen: add rtclock.h to documentation
+	297f318: doxygen: drop references to pacat.c and paplay.c as examples since tehy are not useful as such and in the case of paplay not even existant anymore
+	7e43371: build-sys: increase library version
+	a7ab04f: i18n: run make update-po
+	2f11884: i18n: add ja to LINGUAS
+	67bed86: Merge remote branch 'origin/master-tx'
+	80b4457: alsa: properly report suspension error codes
+	bb36bb4: alsa: properly convert sample buffer sizes
+	5460967: libpulse: add new error code PA_ERR_BUSY
+
+2009-09-10	warrink
+	64e8eb7: Sending translation for Dutch
+
+2009-09-10	hyuuga
+	8bdec63: Sending translation for po/ja.po
+
+2009-09-10	kkrothap
+	27b3a74: Sending translation for Telugu
+
+2009-09-10	runab
+	5d264fd: Sending translation for Bengali (India)
+
+2009-09-10	rajesh
+	c67c46e: Sending translation for Hindi
+
+2009-09-10	ifelix
+	d0df346: Sending translation for Tamil
+
+2009-09-10	sandeeps
+	a81ee39: Sending translation for Marathi
+
+2009-09-10	swkothar
+	c49f3f9: Sending translation for Gujarati
+
+2009-09-10	anipeter
+	c471d4d: Sending translation for Malayalam
+
+2009-09-10	jassy
+	3fd8e7d: Sending translation for Punjabi
+
+2009-09-10	amitakhya
+	7f799d4: Sending translation for Assamese
+
 2009-09-10	Lennart Poettering
 	12c7460: libpulse: don't support pa_context_get_card_info_list() on servers that cannot handle it
 	807f2a9: native: send PA_COMMAND_PLAYBACK_BUFFER_ATTR_CHANGED messages only to clients that understand it
