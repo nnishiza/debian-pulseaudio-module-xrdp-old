@@ -38,7 +38,7 @@ update-patch-series:
 	done
 
 DEB_CONFIGURE_EXTRA_FLAGS = --with-realtime-group=pulse-rt
-DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9.16/modules
+DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9.17/modules
 DEB_DH_SHLIBDEPS_ARGS_libpulse0 = -u -L/dev/null
 DEB_DH_SHLIBDEPS_ARGS_pulseaudio = -u -Ldebian/shlibs_pulseaudio.local
 DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp

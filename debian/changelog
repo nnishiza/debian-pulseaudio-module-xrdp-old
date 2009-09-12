@@ -2,8 +2,9 @@ pulseaudio (0.9.17-1) UNRELEASED; urgency=low
 
   * New upstream release
   * debian/copyright: updated
+  * Update various shlibs files to use 0.9.17
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 12 Sep 2009 09:49:41 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 12 Sep 2009 10:09:00 +0100
 
 pulseaudio (0.9.16-1) unstable; urgency=low
 
