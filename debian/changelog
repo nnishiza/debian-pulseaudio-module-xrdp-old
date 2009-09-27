@@ -10,7 +10,8 @@ pulseaudio (0.9.18-1) UNRELEASED; urgency=low
   * d/p/0003-svolume-tweak-constraints-for-32-bits.patch
     + Added. Fixes gcc and the inline assembly using the same register.
       From the upstream 0.9.18-stable branch
-  * debian/control: Build-Depend on libudev-dev instead of libhal-dev
+  * debian/control: Build-Depend on libudev-dev instead of libhal-dev.
+    Pulseaudio now uses udev for device detection (Closes: #546721)
   * debian/control: Enable hal->udev compat module
   * Update various shlibs files to use 0.9.18
   * debian/pulseaudio.install, debian/rules: Add udev and loopback modules
