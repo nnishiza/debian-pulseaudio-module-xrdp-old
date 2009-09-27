@@ -15,8 +15,10 @@ pulseaudio (0.9.18-1) UNRELEASED; urgency=low
   * Update various shlibs files to use 0.9.18
   * debian/pulseaudio.install, debian/rules: Add udev and loopback modules
   * debian/pulseaudio-utils.install: Add pamon and parecord
+  * debian/pulseaudio.install: Add dbus configuration file for system-wide
+      pulse instance
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 16:32:01 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 16:35:38 +0200
 
 pulseaudio (0.9.17-1) unstable; urgency=low
 
