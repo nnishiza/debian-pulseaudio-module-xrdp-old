@@ -1,4 +1,107 @@
 
+2009-09-19	Lennart Poettering
+	6c0317d: build-sys: bump soname for release
+	ab6ed06: vala: install .vapi file by default
+	3fe9f8f: vala: numerous updates
+	996051e: memtrap: properly add items to linked list
+
+2009-09-18	Lennart Poettering
+	56e1290: gconf: run the wrapper script when running gconf-helper from build tree
+	8ad8e39: namereg: choose default sink/source as soon as one becomes available
+	1d19d6b: i18n: run make update-po
+	3cb8e01: Merge remote branch 'origin/master-tx'
+	9697c5d: memblock: don't try to reuse PA_MEMBLOCK_APPENDED memblocks since they usually are much bigger than we want them
+	f84d755: mainloop: fix detection of rt clocks
+	cd5d6e7: socket-client: modernizations
+	c010172: memblock: modernizations
+	d629151: mainloop: pass monotonic times back to user if he passed monotonic times to us
+	c024aea: timeval: make timeval conversion routines handle PA_USEC_INVALID special
+	a1da83b: timeval: add UNLIKELY annotation
+	05f6236: timeval: make pa_timeval_sub saturating
+	fdec460: core-rtclock: introduce pa_timespec_store() akin pa_timeval_store()
+	f7d3896: timeval: introduce PA_USEC_MAX
+	56f217f: macro: introduce PA_INT_TYPE_MIN, PA_INT_TYPE_MAX, PA_INT_TYPE_SIGNED macros
+	fb4a2a1: mainloop: sum up dispatched events in an unsigned to clarify range
+	18d69c5: mainloop: use PA_LLIST_FOREACH macros where applicable
+	b32f599: mainloop: don't initialize fields we don't have to
+	a049909: mainloop: calculate in pa_usec_t everywhere
+	a43118b: mainloop: properly convert time to wallclock time when handing it to the user
+	a37e48a: alsa: fix Surround mixer element name
+
+2009-09-18	Colin Guthrie
+	8f29968: conf: Fix typo in daemon.conf: rlimit-rtttime - too many t's
+	fd25e8f: alsa: Give all ports a human name to allow UI tools to present the choice to users.
+	0323e48: rtp: Remove 'fix me' comment after it was actually fixed in [56b6e1]
+	56b6e18: rtp: Factor out direct io writing and use ioline instead.
+
+2009-09-18	ifelix
+	62b8780: Sending translation for Tamil
+
+2009-09-18	ricardopinto
+	774b37e: Sending translation for Portuguese
+
+2009-09-16	Colin Guthrie
+	94d20a5: raop: Use pa_module_unload_request_by_index as per module-zeroconf-discover
+
+2009-09-17	Lennart Poettering
+	7b76ea3: core-util: unify how we determine the temporary directory
+	2d9168c: Improve TMPDIR handling
+	3de5c49: cli: properly destruct cli object
+	b4d4f2b: cli: don't accidentaly set O_NDELAY on stderr
+	94f28b9: proplist: introduce PA_PROP_WINDOW_DESKTOP property
+	add4cbf: position-event-sounds: don't warn that loud about vpos/hpos out of range
+	cdbeac6: libpulse: as a special exception, don't require a non-NULL context in pa_context_errno
+	231c17b: svolume_mmx: disable test accidentaly left on
+	4e6dce5: Merge remote branch 'wtay/optimize'
+	1a6974a: pacat: use fully automatic buffer sizes if possible
+	e2899f8: memblock: make it easy to disable mempool usage with $PULSE_MEMPOOL_DISABLE
+	6b8fdc4: CANCELLED vs. CANCELED
+
+2009-09-17	Vladimir Kokarev
+	e63c867: alsa: correct assumptions about channels an element lacks
+
+2009-09-16	kmilos
+	15da2f2: Sending translation for Serbian (Latin)
+	0c8498a: Sending translation for Serbian
+
+2009-09-12	Wim Taymans
+	3d5a572: svolume_mmx: optimize some more
+	d397a82: svolume_sse: fix comment
+
+2009-09-15	vpv
+	3c89dc0: Sending translation for Finnish
+
+2009-09-15	Lennart Poettering
+	12f2111: gccmacro: enable weakrefs only on ELF
+
+2009-09-14	fab
+	19968fe: Sending translation for Swiss German
+	7c80d2c: Sending translation for German
+
+2009-09-14	mvdz
+	4382519: Sending translation for Ukrainian
+
+2009-09-12	xconde
+	e35101b: Sending translation for Catalan
+
+2009-09-12	raven
+	6e76544: Sending translation for Polish
+
+2009-09-11	warrink
+	66eb022: Sending translation for Dutch
+
+2009-09-11	beckerde
+	cc597d6: Sending translation for Spanish
+
+2009-09-11	swkothar
+	030dfad: Sending translation for Gujarati
+
+2009-09-11	mgiri
+	9267201: Sending translation for Oriya
+
+2009-09-11	jassy
+	e706a84: Sending translation for Punjabi
+
 2009-09-11	Lennart Poettering
 	180ef1e: position-event-sounds: apply volume factor after, not before resampling
 	a015d56: core: add an additional volume factor that is applied after resampling took place

@@ -122,8 +122,8 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(pkgconfigdir)"
-DATA = $(noinst_DATA) $(pkgconfig_DATA)
+am__installdirs = "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(vapidir)"
+DATA = $(noinst_DATA) $(pkgconfig_DATA) $(vapi_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
@@ -399,10 +399,24 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 ACLOCAL_AMFLAGS = -I m4
-EXTRA_DIST = bootstrap.sh git-version-gen LICENSE GPL LGPL doxygen/Makefile.am doxygen/Makefile.in doxygen/doxygen.conf.in README todo
+EXTRA_DIST = \
+	bootstrap.sh \
+	git-version-gen \
+	LICENSE \
+	GPL \
+	LGPL \
+	doxygen/Makefile.am \
+	doxygen/Makefile.in \
+	doxygen/doxygen.conf.in \
+	README \
+	todo \
+	vala/libpulse.vapi
+
 SUBDIRS = src doxygen man po
 MAINTAINERCLEANFILES = 
 noinst_DATA = 
+vapidir = $(datadir)/vala/vapi
+vapi_DATA = vala/libpulse.vapi
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libpulse.pc libpulse-simple.pc $(am__append_1) \
 	$(am__append_2)
@@ -506,6 +520,26 @@ uninstall-pkgconfigDATA:
 	test -n "$$files" || exit 0; \
 	echo " ( cd '$(DESTDIR)$(pkgconfigdir)' && rm -f" $$files ")"; \
 	cd "$(DESTDIR)$(pkgconfigdir)" && rm -f $$files
+install-vapiDATA: $(vapi_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(vapidir)" || $(MKDIR_P) "$(DESTDIR)$(vapidir)"
+	@list='$(vapi_DATA)'; test -n "$(vapidir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(vapidir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(vapidir)" || exit $$?; \
+	done
+
+uninstall-vapiDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(vapi_DATA)'; test -n "$(vapidir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(vapidir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(vapidir)" && rm -f $$files
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -825,7 +859,7 @@ check: $(BUILT_SOURCES)
 all-am: Makefile $(DATA) config.h
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(pkgconfigdir)"; do \
+	for dir in "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(vapidir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -879,7 +913,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-pkgconfigDATA
+install-data-am: install-pkgconfigDATA install-vapiDATA
 
 install-dvi: install-dvi-recursive
 
@@ -925,7 +959,7 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-pkgconfigDATA
+uninstall-am: uninstall-pkgconfigDATA uninstall-vapiDATA
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) all check \
 	ctags-recursive install install-am install-strip \
@@ -942,11 +976,12 @@ uninstall-am: uninstall-pkgconfigDATA
 	install-dvi-am install-exec install-exec-am install-html \
 	install-html-am install-info install-info-am install-man \
 	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
+	install-ps-am install-strip install-vapiDATA installcheck \
+	installcheck-am installdirs installdirs-am maintainer-clean \
 	maintainer-clean-generic mostlyclean mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am uninstall-pkgconfigDATA
+	uninstall uninstall-am uninstall-pkgconfigDATA \
+	uninstall-vapiDATA
 
 
 homepage: all dist doxygen
