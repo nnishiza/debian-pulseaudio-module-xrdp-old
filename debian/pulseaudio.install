@@ -33,7 +33,6 @@ usr/lib/pulse-*/modules/module-mmkbd-evdev.so
 usr/lib/pulse-*/modules/module-native-protocol-fd.so
 usr/lib/pulse-*/modules/module-native-protocol-tcp.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
-usr/share/lintian/overrides/pulseaudio
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-oss.so
 usr/lib/pulse-*/modules/liboss-util.so
@@ -56,7 +55,10 @@ usr/lib/pulse-*/modules/module-augment-properties.so
 usr/lib/pulse-*/modules/module-card-restore.so
 usr/lib/pulse-*/modules/module-cork-music-on-phone.so
 usr/lib/pulse-*/modules/module-sine-source.so
+usr/lib/pulse-*/modules/module-udev-detect.so
+usr/lib/pulse-*/modules/module-loopback.so
 usr/share/man/man5/default.pa.5
 usr/share/locale
 usr/share/pulseaudio
 usr/lib/libpulsecore-*.so
+usr/share/lintian/overrides/pulseaudio
