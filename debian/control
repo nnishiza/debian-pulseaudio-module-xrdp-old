@@ -25,7 +25,7 @@ Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   lsb-base (>= 3.2-13), consolekit
 Conflicts: libltdl3 (<< 1.5.24-1)
-Recommends: pulseaudio-module-hal, pulseaudio-module-x11,
+Recommends: pulseaudio-module-x11,
     libasound2-plugins, gstreamer0.10-pulseaudio,
     pulseaudio-esound-compat
 Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman, paprefs
@@ -158,13 +158,13 @@ Description: Zeroconf module for PulseAudio sound server debugging symbols
 Package: pulseaudio-module-hal
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, hal
-Description: HAL device detection module for PulseAudio sound server
+Description: HAL to udev transitioning module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
  much better latency, mixing/re-sampling quality and overall architecture.
  .
- This module enables PulseAudio to detect new sound devices dynamically via
- the HAL API.
+ This module is purely for transiting purposes from device detection using hal
+ to device detection using udev.
  .
  The module is called module-hal-detect.
 
@@ -178,7 +178,8 @@ Description: HAL module for PulseAudio sound server debugging symbols
  WIN32 systems. It is a drop in replacement for the ESD sound server with
  much better latency, mixing/re-sampling quality and overall architecture.
  .
- This package contains debugging symbols for the HAL module for PulseAudio.
+ This package contains debugging symbols for the HAL compat module for
+ PulseAudio.
 
 Package: pulseaudio-module-jack
 Architecture: any
