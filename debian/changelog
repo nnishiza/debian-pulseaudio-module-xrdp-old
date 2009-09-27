@@ -1,4 +1,4 @@
-pulseaudio (0.9.18-1) UNRELEASED; urgency=low
+pulseaudio (0.9.18-1) unstable; urgency=low
 
   * New upstream release
   * d/p/0001-tunnel-fix-parsing-of-sink-info-from-newer-servers.patch
@@ -23,7 +23,7 @@ pulseaudio (0.9.18-1) UNRELEASED; urgency=low
   * debian/rules: Add -march=armv6 to the CFLAGS on arm and armel
     (Closes: #546322)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 18:46:04 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 23:46:37 +0200
 
 pulseaudio (0.9.17-1) unstable; urgency=low
 
