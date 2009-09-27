@@ -17,11 +17,11 @@ pulseaudio (0.9.18-1) UNRELEASED; urgency=low
   * debian/pulseaudio.install, debian/rules: Add udev and loopback modules
   * debian/pulseaudio-utils.install: Add pamon and parecord
   * debian/pulseaudio.install: Add dbus configuration file for system-wide
-      pulse instance
+      pulse instance (Closes: #529989)
   * debian/control: Bump libsndfile1-dev build-depend to >= 1.0.20.
     (Closes: #546734)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 17:08:46 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 17:39:29 +0200
 
 pulseaudio (0.9.17-1) unstable; urgency=low
 
