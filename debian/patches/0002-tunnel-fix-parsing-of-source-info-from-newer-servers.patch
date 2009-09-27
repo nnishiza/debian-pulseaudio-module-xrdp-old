@@ -1,0 +1,65 @@
+From f61ccd599856d527a281101686b6359f273f491f Mon Sep 17 00:00:00 2001
+From: Colin Guthrie <cguthrie@mandriva.org>
+Date: Sun, 20 Sep 2009 21:36:14 +0100
+Subject: [PATCH 2/3] tunnel: fix parsing of source info from newer servers
+
+---
+ src/modules/module-tunnel.c |   31 +++++++++++++++++++++++++++++--
+ 1 files changed, 29 insertions(+), 2 deletions(-)
+
+diff --git a/src/modules/module-tunnel.c b/src/modules/module-tunnel.c
+index 1740448..c97de3a 100644
+--- a/src/modules/module-tunnel.c
++++ b/src/modules/module-tunnel.c
+@@ -1070,7 +1070,7 @@ static void sink_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag, pa_t
+     }
+ 
+     if (u->version >= 16) {
+-        uint32_t n_ports, j;
++        uint32_t n_ports;
+         const char *s;
+ 
+         if (pa_tagstruct_getu32(t, &n_ports)) {
+@@ -1078,7 +1078,7 @@ static void sink_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag, pa_t
+             goto fail;
+         }
+ 
+-        for (j = 0; j < n_ports; j++) {
++        for (uint32_t j = 0; j < n_ports; j++) {
+             uint32_t priority;
+ 
+             if (pa_tagstruct_gets(t, &s) < 0 || /* name */
+@@ -1272,6 +1272,33 @@ static void source_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag, pa
+         }
+     }
+ 
++    if (u->version >= 16) {
++        uint32_t n_ports;
++        const char *s;
++
++        if (pa_tagstruct_getu32(t, &n_ports)) {
++            pa_log("Parse failure");
++            goto fail;
++        }
++
++        for (uint32_t j = 0; j < n_ports; j++) {
++            uint32_t priority;
++
++            if (pa_tagstruct_gets(t, &s) < 0 || /* name */
++                pa_tagstruct_gets(t, &s) < 0 || /* description */
++                pa_tagstruct_getu32(t, &priority) < 0) {
++
++                pa_log("Parse failure");
++                goto fail;
++            }
++        }
++
++        if (pa_tagstruct_gets(t, &s) < 0) { /* active port */
++            pa_log("Parse failure");
++            goto fail;
++        }
++    }
++
+     if (!pa_tagstruct_eof(t)) {
+         pa_log("Packet too long");
+         goto fail;

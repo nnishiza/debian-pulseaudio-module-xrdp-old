@@ -1,0 +1,57 @@
+From a449061ed1b4282c9e8899079bf8da59129fc9ab Mon Sep 17 00:00:00 2001
+From: Wim Taymans <wim.taymans@collabora.co.uk>
+Date: Wed, 23 Sep 2009 17:16:04 +0200
+Subject: [PATCH 3/3] svolume: tweak constraints for 32 bits
+
+Tweak the constraints a little so that register starved 32bit systems
+can select a stack variable for the channel paramter instead of reusing one of
+the registers we're using in the code.
+---
+ src/pulsecore/svolume_mmx.c |    4 ++--
+ src/pulsecore/svolume_sse.c |    4 ++--
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/src/pulsecore/svolume_mmx.c b/src/pulsecore/svolume_mmx.c
+index 62f3397..1768eb5 100644
+--- a/src/pulsecore/svolume_mmx.c
++++ b/src/pulsecore/svolume_mmx.c
+@@ -152,7 +152,7 @@ pa_volume_s16ne_mmx (int16_t *samples, int32_t *volumes, unsigned channels, unsi
+         " emms                          \n\t"
+ 
+         : "+r" (samples), "+r" (volumes), "+r" (length), "=D" ((pa_reg_x86)channel), "=&r" (temp)
+-        : "r" ((pa_reg_x86)channels)
++        : "X" ((pa_reg_x86)channels)
+         : "cc"
+     );
+ }
+@@ -228,7 +228,7 @@ pa_volume_s16re_mmx (int16_t *samples, int32_t *volumes, unsigned channels, unsi
+         " emms                          \n\t"
+ 
+         : "+r" (samples), "+r" (volumes), "+r" (length), "=D" ((pa_reg_x86)channel), "=&r" (temp)
+-        : "r" ((pa_reg_x86)channels)
++        : "X" ((pa_reg_x86)channels)
+         : "cc"
+     );
+ }
+diff --git a/src/pulsecore/svolume_sse.c b/src/pulsecore/svolume_sse.c
+index 5276bda..ab9394f 100644
+--- a/src/pulsecore/svolume_sse.c
++++ b/src/pulsecore/svolume_sse.c
+@@ -149,7 +149,7 @@ pa_volume_s16ne_sse2 (int16_t *samples, int32_t *volumes, unsigned channels, uns
+         "8:                             \n\t"
+ 
+         : "+r" (samples), "+r" (volumes), "+r" (length), "=D" (channel), "=&r" (temp)
+-        : "r" ((pa_reg_x86)channels)
++        : "X" ((pa_reg_x86)channels)
+         : "cc"
+     );
+ }
+@@ -237,7 +237,7 @@ pa_volume_s16re_sse2 (int16_t *samples, int32_t *volumes, unsigned channels, uns
+         "8:                             \n\t"
+ 
+         : "+r" (samples), "+r" (volumes), "+r" (length), "=D" (channel), "=&r" (temp)
+-        : "r" ((pa_reg_x86)channels)
++        : "X" ((pa_reg_x86)channels)
+         : "cc"
+     );
+ }
