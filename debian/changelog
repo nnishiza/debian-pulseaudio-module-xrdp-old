@@ -20,8 +20,10 @@ pulseaudio (0.9.18-1) UNRELEASED; urgency=low
       pulse instance (Closes: #529989)
   * debian/control: Bump libsndfile1-dev build-depend to >= 1.0.20.
     (Closes: #546734)
+  * debian/rules: Add -march=armv6 to the CFLAGS on arm and armel
+    (Closes: #546322)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 17:39:29 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 18:46:04 +0200
 
 pulseaudio (0.9.17-1) unstable; urgency=low
 
