@@ -14,8 +14,9 @@ pulseaudio (0.9.18-1) UNRELEASED; urgency=low
   * debian/control: Enable hal->udev compat module
   * Update various shlibs files to use 0.9.18
   * debian/pulseaudio.install, debian/rules: Add udev and loopback modules
+  * debian/pulseaudio-utils.install: Add pamon and parecord
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 16:29:59 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Sep 2009 16:32:01 +0200
 
 pulseaudio (0.9.17-1) unstable; urgency=low
 
