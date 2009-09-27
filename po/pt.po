@@ -2,9 +2,9 @@ msgid ""
 msgstr ""
 "Project-Id-Version: pulseaudio\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2009-09-11 01:26+0200\n"
+"POT-Creation-Date: 2009-09-18 22:17+0200\n"
 "PO-Revision-Date: \n"
-"Last-Translator: Rui Gouveia <rui.gouveia@globaltek.pt>\n"
+"Last-Translator: Ricardo Pinto <ricardo.bigote@gmail.com>\n"
 "Language-Team: pt <fedora-trans-pt@redhat.com>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -13,7 +13,7 @@ msgstr ""
 "X-Poedit-Country: PORTUGAL\n"
 
 #: ../src/modules/alsa/alsa-util.c:858 ../src/pulsecore/sink.c:2629
-#, fuzzy, c-format
+#, c-format
 msgid "%s %s"
 msgstr "%s %s"
 
@@ -242,7 +242,7 @@ msgstr "pipe falhou: %s"
 msgid "fork() failed: %s"
 msgstr "fork() falhou: %s"
 
-#: ../src/daemon/main.c:641 ../src/utils/pacat.c:504
+#: ../src/daemon/main.c:641 ../src/utils/pacat.c:508
 #, c-format
 msgid "read() failed: %s"
 msgstr "read() falhou: %s"
@@ -328,9 +328,9 @@ msgid "Machine ID is %s."
 msgstr "O ID da máquina é %s."
 
 #: ../src/daemon/main.c:768
-#, fuzzy, c-format
+#, c-format
 msgid "Session ID is %s."
-msgstr "A sessão está fechada"
+msgstr "O ID da sessão é %s."
 
 #: ../src/daemon/main.c:774
 #, c-format
@@ -343,9 +343,9 @@ msgid "Using state directory %s."
 msgstr "A manter o estado no directório %s."
 
 #: ../src/daemon/main.c:782
-#, fuzzy, c-format
+#, c-format
 msgid "Using modules directory %s."
-msgstr "Execução a utilizar o directório %s"
+msgstr "A utilizar o directório de módulos %s"
 
 #: ../src/daemon/main.c:784
 #, c-format
@@ -681,7 +681,7 @@ msgstr "[%s:%u] Nível do ficheiro de registo inválido '%s'."
 #: ../src/daemon/daemon-conf.c:264
 #, fuzzy, c-format
 msgid "[%s:%u] Invalid resample method '%s'."
-msgstr "nome do método de acesso"
+msgstr "[%s:%u] Método de reamostragem inválido '%s'."
 
 #: ../src/daemon/daemon-conf.c:287
 #, c-format
@@ -699,19 +699,19 @@ msgid "[%s:%u] Invalid sample format '%s'."
 msgstr "[%s:%u] Formato da amostra inválido '%s'."
 
 #: ../src/daemon/daemon-conf.c:328
-#, fuzzy, c-format
+#, c-format
 msgid "[%s:%u] Invalid sample rate '%s'."
-msgstr "Taxa de amostragem em kHz"
+msgstr "[%s:%u] Taxa de amostragem '%s' inválida."
 
 #: ../src/daemon/daemon-conf.c:352
-#, fuzzy, c-format
+#, c-format
 msgid "[%s:%u] Invalid sample channels '%s'."
-msgstr "Número de canais de audio"
+msgstr "[%s:%u] Canais de amostragem inválidos '%s'."
 
 #: ../src/daemon/daemon-conf.c:370
-#, fuzzy, c-format
+#, c-format
 msgid "[%s:%u] Invalid channel map '%s'."
-msgstr "Activar mapa de _radar"
+msgstr "[%s:%u] Mapa de canais inválido '%s'."
 
 #: ../src/daemon/daemon-conf.c:388
 #, c-format
@@ -1099,7 +1099,7 @@ msgstr ""
 
 #: ../src/pulse/error.c:69
 msgid "Device or resource busy"
-msgstr ""
+msgstr "Dispositivo ou recurso ocupado"
 
 #: ../src/pulse/sample.c:172
 #, c-format
@@ -1153,15 +1153,15 @@ msgstr "fork(): %s"
 msgid "waitpid(): %s"
 msgstr "waitpid(): %s"
 
-#: ../src/pulse/context.c:1435
+#: ../src/pulse/context.c:1438
 #, c-format
 msgid "Received message for unknown extension '%s'"
 msgstr "Recebida mensagem para extensão desconhecida '%s'"
 
 #: ../src/utils/pacat.c:108
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to drain stream: %s"
-msgstr "Falhou ao esvaziar fluxo: %s\n"
+msgstr "Falha ao esvaziar fluxo: %s"
 
 #: ../src/utils/pacat.c:113
 #, fuzzy
@@ -1174,59 +1174,58 @@ msgid "Draining connection to server."
 msgstr "Ligação ao Servidor Recusada"
 
 #: ../src/utils/pacat.c:136
-#, fuzzy, c-format
+#, c-format
 msgid "pa_stream_drain(): %s"
-msgstr "pa_stream_drain(): %s\n"
+msgstr "pa_stream_drain(): %s"
 
 #: ../src/utils/pacat.c:159
-#, fuzzy, c-format
+#, c-format
 msgid "pa_stream_write() failed: %s"
-msgstr "pa_stream_write() falhou: %s\n"
+msgstr "pa_stream_write() falhou: %s"
 
 #: ../src/utils/pacat.c:197
-#, fuzzy, c-format
+#, c-format
 msgid "pa_stream_begin_write() failed: %s"
-msgstr "pa_stream_write() falhou: %s\n"
+msgstr "pa_stream_write() falhou: %s"
 
 #: ../src/utils/pacat.c:237 ../src/utils/pacat.c:267
-#, fuzzy, c-format
+#, c-format
 msgid "pa_stream_peek() failed: %s"
-msgstr "pa_stream_peek() falhou: %s\n"
+msgstr "pa_stream_peek() falhou: %s"
 
 #: ../src/utils/pacat.c:307
-#, fuzzy
 msgid "Stream successfully created."
-msgstr "Fluxo criado com sucesso.\n"
+msgstr "Fluxo criado com sucesso."
 
 #: ../src/utils/pacat.c:310
-#, fuzzy, c-format
+#, c-format
 msgid "pa_stream_get_buffer_attr() failed: %s"
-msgstr "pa_stream_get_buffer_attr() falhou: %s\n"
+msgstr "pa_stream_get_buffer_attr() falhou: %s"
 
 #: ../src/utils/pacat.c:314
-#, fuzzy, c-format
+#, c-format
 msgid "Buffer metrics: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u"
-msgstr "Métricas do Buffer: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u\n"
+msgstr "Métricas do Buffer: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u"
 
 #: ../src/utils/pacat.c:317
-#, fuzzy, c-format
+#, c-format
 msgid "Buffer metrics: maxlength=%u, fragsize=%u"
-msgstr "Métricas do Buffer: maxlength=%u, fragsize=%u\n"
+msgstr "Métricas do Buffer: maxlength=%u, fragsize=%u"
 
 #: ../src/utils/pacat.c:321
-#, fuzzy, c-format
+#, c-format
 msgid "Using sample spec '%s', channel map '%s'."
-msgstr "Utilizando especificação da amostra '%s'\n"
+msgstr "Utilizando especificação da amostra '%s', mapa de canal '%s'."
 
 #: ../src/utils/pacat.c:325
-#, fuzzy, c-format
+#, c-format
 msgid "Connected to device %s (%u, %ssuspended)."
-msgstr "Ligado ao dispositivo %s (%u, %ssuspended).\n"
+msgstr "Ligado ao dispositivo %s (%u, %ssuspended)."
 
 #: ../src/utils/pacat.c:335
-#, fuzzy, c-format
+#, c-format
 msgid "Stream error: %s"
-msgstr "Erro de fluxo: %s\n"
+msgstr "Erro de fluxo: %s"
 
 #: ../src/utils/pacat.c:345
 #, fuzzy, c-format
@@ -1239,24 +1238,24 @@ msgid "Stream device resumed.%s"
 msgstr "Nenhum dispositivo configurado"
 
 #: ../src/utils/pacat.c:355
-#, fuzzy, c-format
+#, c-format
 msgid "Stream underrun.%s"
-msgstr "Fluxo com falta de dados.%s \n"
+msgstr "Fluxo com falta de dados.%s"
 
 #: ../src/utils/pacat.c:362
-#, fuzzy, c-format
+#, c-format
 msgid "Stream overrun.%s"
-msgstr "Fluxo com excesso de dados.%s \n"
+msgstr "Fluxo com excesso de dados.%s"
 
 #: ../src/utils/pacat.c:369
-#, fuzzy, c-format
+#, c-format
 msgid "Stream started.%s"
-msgstr "Fluxo iniciado.%s \n"
+msgstr "Fluxo iniciado.%s"
 
 #: ../src/utils/pacat.c:376
-#, fuzzy, c-format
+#, c-format
 msgid "Stream moved to device %s (%u, %ssuspended).%s"
-msgstr "Ligado ao dispositivo %s (%u, %ssuspended).\n"
+msgstr "Fluxo movido para o dispositivo %s (%u, %ssuspended).%s"
 
 #: ../src/utils/pacat.c:376
 msgid "not "
@@ -1268,61 +1267,60 @@ msgid "Stream buffer attributes changed.%s"
 msgstr ""
 
 #: ../src/utils/pacat.c:415
-#, fuzzy, c-format
+#, c-format
 msgid "Connection established.%s"
-msgstr "Ligação Estabelecida.%s \n"
+msgstr "Ligação estabelecida.%s"
 
 #: ../src/utils/pacat.c:418
-#, fuzzy, c-format
+#, c-format
 msgid "pa_stream_new() failed: %s"
-msgstr "pa_stream_new() falhou: %s\n"
+msgstr "pa_stream_new() falhou: %s"
 
-#: ../src/utils/pacat.c:446
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:450
+#, c-format
 msgid "pa_stream_connect_playback() failed: %s"
-msgstr "pa_stream_connect_playback() falhou: %s\n"
+msgstr "pa_stream_connect_playback() falhou: %s"
 
-#: ../src/utils/pacat.c:452
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:456
+#, c-format
 msgid "pa_stream_connect_record() failed: %s"
-msgstr "pa_stream_connect_record() falhou: %s\n"
+msgstr "pa_stream_connect_record() falhou: %s"
 
-#: ../src/utils/pacat.c:466 ../src/utils/pactl.c:857
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:470 ../src/utils/pactl.c:857
+#, c-format
 msgid "Connection failure: %s"
-msgstr "Ligação falhou: %s\n"
+msgstr "Ligação falhou: %s"
 
-#: ../src/utils/pacat.c:499
+#: ../src/utils/pacat.c:503
 #, fuzzy
 msgid "Got EOF."
-msgstr "Obtive EOF.\n"
+msgstr "Obtive EOF."
 
-#: ../src/utils/pacat.c:536
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:540
+#, c-format
 msgid "write() failed: %s"
-msgstr "write() falhou: %s\n"
+msgstr "write() falhou: %s"
 
-#: ../src/utils/pacat.c:557
-#, fuzzy
+#: ../src/utils/pacat.c:561
 msgid "Got signal, exiting."
-msgstr "Recebido sinal, a sair.\n"
+msgstr "Recebido sinal, a sair."
 
-#: ../src/utils/pacat.c:571
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:575
+#, c-format
 msgid "Failed to get latency: %s"
-msgstr "Falhou a obtenção da latência: %s\n"
+msgstr "Falhou a obtenção da latência: %s"
 
-#: ../src/utils/pacat.c:576
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:580
+#, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec."
-msgstr "Tempo: %0.3f sec; Latency: %0.0f usec.  \r"
+msgstr "Tempo: %0.3f sec; Latência: %0.0f usec."
 
-#: ../src/utils/pacat.c:595
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:599
+#, c-format
 msgid "pa_stream_update_timing_info() failed: %s"
-msgstr "pa_stream_update_timing_info() falhou: %s\n"
+msgstr "pa_stream_update_timing_info() falhou: %s"
 
-#: ../src/utils/pacat.c:605
+#: ../src/utils/pacat.c:609
 #, c-format
 msgid ""
 "%s [options]\n"
@@ -1382,7 +1380,7 @@ msgid ""
 "      --list-file-formats               List available file formats.\n"
 msgstr ""
 
-#: ../src/utils/pacat.c:727
+#: ../src/utils/pacat.c:731
 #, c-format
 msgid ""
 "pacat %s\n"
@@ -1393,139 +1391,128 @@ msgstr ""
 "Compilado com libpulse %s\n"
 "Ligado com libpulse %s\n"
 
-#: ../src/utils/pacat.c:760 ../src/utils/pactl.c:953
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:764 ../src/utils/pactl.c:953
+#, c-format
 msgid "Invalid client name '%s'"
-msgstr "Nome de máquina inválido"
+msgstr "Nome de cliente inválido '%s'"
 
-#: ../src/utils/pacat.c:775
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:779
+#, c-format
 msgid "Invalid stream name '%s'"
-msgstr "Nome de máquina inválido"
+msgstr "Nome de fluxo inválido '%s'"
 
-#: ../src/utils/pacat.c:812
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:816
+#, c-format
 msgid "Invalid channel map '%s'"
-msgstr "Mapa de canais inválido '%s'\n"
+msgstr "Mapa de canais inválido '%s'"
 
-#: ../src/utils/pacat.c:841
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:845
+#, c-format
 msgid "Invalid latency specification '%s'"
-msgstr "Especificação da latência inválida '%s'\n"
+msgstr "Especificação da latência inválida '%s'"
 
-#: ../src/utils/pacat.c:848
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:852
+#, c-format
 msgid "Invalid process time specification '%s'"
-msgstr "Especificação da infra-estrutura da impressora inválida: %1"
+msgstr "Especificação de tempo de processamento inválido '%s'"
 
-#: ../src/utils/pacat.c:860
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:864
+#, c-format
 msgid "Invalid property '%s'"
-msgstr "Tipo de propriedade inválido %s para propriedade %s"
+msgstr "Propriedade inválida '%s'"
 
-#: ../src/utils/pacat.c:877
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:881
+#, c-format
 msgid "Unknown file format %s."
-msgstr "Formato de ficheiro desconhecido"
+msgstr "Formato de ficheiro desconhecido %s."
 
-#: ../src/utils/pacat.c:896
-#, fuzzy
+#: ../src/utils/pacat.c:900
 msgid "Invalid sample specification"
-msgstr "Especificação da amostra inválida\n"
+msgstr "Especificação de amostra inválida"
 
-#: ../src/utils/pacat.c:906
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:910
+#, c-format
 msgid "open(): %s"
-msgstr "open(): %s\n"
+msgstr "open(): %s"
 
-#: ../src/utils/pacat.c:911
-#, fuzzy, c-format
+#: ../src/utils/pacat.c:915
+#, c-format
 msgid "dup2(): %s"
-msgstr "dup2(): %s\n"
+msgstr "dup2(): %s"
 
-#: ../src/utils/pacat.c:918
-#, fuzzy
+#: ../src/utils/pacat.c:922
 msgid "Too many arguments."
-msgstr "demasiados argumentos.\n"
+msgstr "Demasiados argumentos."
 
-#: ../src/utils/pacat.c:929
-#, fuzzy
+#: ../src/utils/pacat.c:933
 msgid "Failed to generate sample specification for file."
-msgstr "não foi possível obter informações da amostra: %s\n"
+msgstr "Falha ao gerar especificação de amostragem para o ficheiro."
 
-#: ../src/utils/pacat.c:949
-#, fuzzy
+#: ../src/utils/pacat.c:953
 msgid "Failed to open audio file."
-msgstr "Falha ao abrir ficheiro temporário"
+msgstr "Falha ao abrir ficheiro de audio"
 
-#: ../src/utils/pacat.c:955
+#: ../src/utils/pacat.c:959
 msgid ""
 "Warning: specified sample specification will be overwritten with "
 "specification from file."
 msgstr ""
 
-#: ../src/utils/pacat.c:958 ../src/utils/pactl.c:997
-#, fuzzy
+#: ../src/utils/pacat.c:962 ../src/utils/pactl.c:997
 msgid "Failed to determine sample specification from file."
-msgstr "não foi possível obter informações da amostra: %s\n"
+msgstr ""
+"Falha ao determinar a especificação de amostragem a partir do ficheiro."
 
-#: ../src/utils/pacat.c:967
-#, fuzzy
+#: ../src/utils/pacat.c:971
 msgid "Warning: Failed to determine channel map from file."
-msgstr "não foi possível obter informações da amostra: %s\n"
+msgstr "Aviso: Falha a determinar o mapa de canal do ficheiro."
 
-#: ../src/utils/pacat.c:978
-#, fuzzy
+#: ../src/utils/pacat.c:982
 msgid "Channel map doesn't match sample specification"
-msgstr "Mapa de canais não corresponde com ficheiro.\n"
+msgstr "Mapa de canais não corresponde à especificação de amostragem"
 
-#: ../src/utils/pacat.c:989
+#: ../src/utils/pacat.c:993
 msgid "Warning: failed to write channel map to file."
 msgstr ""
 
-#: ../src/utils/pacat.c:1004
+#: ../src/utils/pacat.c:1008
 #, c-format
 msgid ""
 "Opening a %s stream with sample specification '%s' and channel map '%s'."
 msgstr ""
 
-#: ../src/utils/pacat.c:1005
+#: ../src/utils/pacat.c:1009
 msgid "recording"
 msgstr "a gravar"
 
-#: ../src/utils/pacat.c:1005
+#: ../src/utils/pacat.c:1009
 msgid "playback"
 msgstr "reprodução"
 
-#: ../src/utils/pacat.c:1031 ../src/utils/pactl.c:1267
-#, fuzzy
+#: ../src/utils/pacat.c:1035 ../src/utils/pactl.c:1267
 msgid "pa_mainloop_new() failed."
-msgstr "pa_mainloop_new() falhou.\n"
+msgstr "pa_mainloop_new() falhou."
 
-#: ../src/utils/pacat.c:1050
-#, fuzzy
+#: ../src/utils/pacat.c:1054
 msgid "io_new() failed."
-msgstr "io_new() falhou.\n"
+msgstr "io_new() falhou."
 
-#: ../src/utils/pacat.c:1057 ../src/utils/pactl.c:1279
-#, fuzzy
+#: ../src/utils/pacat.c:1061 ../src/utils/pactl.c:1279
 msgid "pa_context_new() failed."
-msgstr "pa_context_new() falhou.\n"
+msgstr "pa_context_new() falhou."
 
-#: ../src/utils/pacat.c:1065 ../src/utils/pactl.c:1285
+#: ../src/utils/pacat.c:1069 ../src/utils/pactl.c:1285
 #, c-format
 msgid "pa_context_connect() failed: %s"
 msgstr "pa_context_connect() falhou: %s"
 
-#: ../src/utils/pacat.c:1071
-#, fuzzy
+#: ../src/utils/pacat.c:1075
 msgid "pa_context_rttime_new() failed."
-msgstr "não foi possível obter o novo contexto.\n"
+msgstr "pa_context_rttime_new() falhou."
 
-#: ../src/utils/pacat.c:1078 ../src/utils/pactl.c:1290
-#, fuzzy
+#: ../src/utils/pacat.c:1082 ../src/utils/pactl.c:1290
 msgid "pa_mainloop_run() failed."
-msgstr "pa_mainloop_run() falhou.\n"
+msgstr "pa_mainloop_run() falhou."
 
 #: ../src/utils/pasuspender.c:81
 #, c-format
@@ -1603,9 +1590,9 @@ msgid "pa_mainloop_run() failed.\n"
 msgstr "pa_mainloop_run() falhou.\n"
 
 #: ../src/utils/pactl.c:135
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get statistics: %s"
-msgstr "Falhou a obtenção de estatísticas: %s\n"
+msgstr "Falhou a obtenção de estatísticas: %s"
 
 #: ../src/utils/pactl.c:141
 #, c-format
@@ -1623,9 +1610,9 @@ msgid "Sample cache size: %s\n"
 msgstr "Tamanho cache da amostra: %s\n"
 
 #: ../src/utils/pactl.c:156
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get server information: %s"
-msgstr "Não foi possível obter informações do servidor: %s\n"
+msgstr "Falha ao obter informações do servidor: %s"
 
 #: ../src/utils/pactl.c:164
 #, c-format
@@ -1642,9 +1629,9 @@ msgid ""
 msgstr ""
 
 #: ../src/utils/pactl.c:205
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get sink information: %s"
-msgstr "não foi possível obter informações do depósito: %s\n"
+msgstr "Falha ao obter informações do depósito: %s"
 
 #: ../src/utils/pactl.c:221
 #, c-format
@@ -1669,19 +1656,19 @@ msgid ""
 msgstr ""
 
 #: ../src/utils/pactl.c:268 ../src/utils/pactl.c:360
-#, fuzzy, c-format
+#, c-format
 msgid "\tPorts:\n"
-msgstr "\tPrefis:\n"
+msgstr "\tPorto:\n"
 
 #: ../src/utils/pactl.c:274 ../src/utils/pactl.c:366
-#, fuzzy, c-format
+#, c-format
 msgid "\tActive Port: %s\n"
-msgstr "MÁQUINA:PORTO"
+msgstr "\tPorto Activo: %s\n"
 
 #: ../src/utils/pactl.c:297
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get source information: %s"
-msgstr "não foi possível obter informações da fonte: %s\n"
+msgstr "Falha ao obter informações da fonte: %s"
 
 #: ../src/utils/pactl.c:313
 #, c-format
@@ -1714,9 +1701,9 @@ msgid "n/a"
 msgstr "n/d"
 
 #: ../src/utils/pactl.c:375
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get module information: %s"
-msgstr "não foi possível obter informações do módulo: %s\n"
+msgstr "Falha ao obter informações do módulo: %s"
 
 #: ../src/utils/pactl.c:393
 #, c-format
@@ -1730,9 +1717,9 @@ msgid ""
 msgstr ""
 
 #: ../src/utils/pactl.c:412
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get client information: %s"
-msgstr "não foi possível obter informações do cliente: %s\n"
+msgstr "Falha ao obter informações do cliente: %s"
 
 #: ../src/utils/pactl.c:430
 #, c-format
@@ -1745,9 +1732,9 @@ msgid ""
 msgstr ""
 
 #: ../src/utils/pactl.c:447
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get card information: %s"
-msgstr "não foi possível obter informações da carta: %s\n"
+msgstr "Falha ao obter informações da carta: %s"
 
 #: ../src/utils/pactl.c:465
 #, c-format
@@ -1771,10 +1758,9 @@ msgid "\tActive Profile: %s\n"
 msgstr "\tPerfil Activo: %s\n"
 
 #: ../src/utils/pactl.c:496
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get sink input information: %s"
-msgstr ""
-"Não foi possível obter informações sobre o Método de Introdução de Dados"
+msgstr "Falha ao obter informação de entrada do depósito: %s"
 
 #: ../src/utils/pactl.c:515
 #, c-format
@@ -1798,9 +1784,9 @@ msgid ""
 msgstr ""
 
 #: ../src/utils/pactl.c:554
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get source output information: %s"
-msgstr "não foi possível obter informações da fonte: %s\n"
+msgstr "Falha ao obter informações da fonte: %s"
 
 #: ../src/utils/pactl.c:574
 #, c-format
@@ -1820,9 +1806,9 @@ msgid ""
 msgstr ""
 
 #: ../src/utils/pactl.c:605
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to get sample information: %s"
-msgstr "não foi possível obter informações da amostra: %s\n"
+msgstr "Falha ao obter informações da amostra: %s"
 
 #: ../src/utils/pactl.c:623
 #, c-format
@@ -1843,24 +1829,22 @@ msgid ""
 msgstr ""
 
 #: ../src/utils/pactl.c:653 ../src/utils/pactl.c:663
-#, fuzzy, c-format
+#, c-format
 msgid "Failure: %s"
-msgstr "Falhou: %s\n"
+msgstr "Falha: %s"
 
 #: ../src/utils/pactl.c:687
-#, fuzzy, c-format
+#, c-format
 msgid "Failed to upload sample: %s"
-msgstr "Não foi possível enviar amostra: %s\n"
+msgstr "Falha ao enviar amostra: %s"
 
 #: ../src/utils/pactl.c:704
-#, fuzzy
 msgid "Premature end of file"
-msgstr "Fim prematuro de ficheiro\n"
+msgstr "Fim prematuro do ficheiro"
 
 #: ../src/utils/pactl.c:863
-#, fuzzy
 msgid "Got SIGINT, exiting."
-msgstr "Obtido SIGINT, a sair.\n"
+msgstr "Obtido SIGINT, a sair."
 
 #: ../src/utils/pactl.c:869
 #, c-format
@@ -1908,14 +1892,12 @@ msgstr ""
 "Linkado com libpulse %s\n"
 
 #: ../src/utils/pactl.c:979
-#, fuzzy
 msgid "Please specify a sample file to load"
-msgstr "Por favor, especifique um ficheiro de amostra para carregar\n"
+msgstr "Por favor, especifique um ficheiro de amostra para carregar"
 
 #: ../src/utils/pactl.c:992
-#, fuzzy
 msgid "Failed to open sound file."
-msgstr "Falha ao abrir ficheiro de som.\n"
+msgstr "Falha ao abrir ficheiro de som."
 
 #: ../src/utils/pactl.c:1004
 #, fuzzy
