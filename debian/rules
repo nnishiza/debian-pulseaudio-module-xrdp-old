@@ -16,6 +16,11 @@ common-install-arch::
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian
 	cp -a $(CURDIR)/debian/overrides $(CURDIR)/debian/tmp/usr/share/lintian
 
+common-configure-arch::
+ifneq (,$(findstring $(DEB_HOST_ARCH), "arm armel"))
+	make -C src libpulsecore_0.9.18_la-svolume_arm.lo CFLAGS+=-march=armv6
+endif
+
 pulseaudio-install-arch::
 	dh_installman --language=C debian/tmp/usr/share/man/man5/default.pa.5
 
@@ -44,7 +49,3 @@ DEB_DH_SHLIBDEPS_ARGS_libpulse0 = -u -L/dev/null
 DEB_DH_SHLIBDEPS_ARGS_pulseaudio = -u -Ldebian/shlibs_pulseaudio.local
 DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
 DEB_UPDATE_RCD_PARAMS = start 25 2 3 4 5 . stop 15 1 .
-
-ifneq (,$(findstring $(DEB_HOST_ARCH), "arm armel"))
-  CFLAGS += -march=armv6
-endif
