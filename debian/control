@@ -22,7 +22,7 @@ Homepage: http://www.pulseaudio.org
 Package: pulseaudio
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
-  lsb-base (>= 3.2-13), consolekit
+  lsb-base (>= 3.2-13), consolekit, udev (>= 143)
 Conflicts: libltdl3 (<< 1.5.24-1)
 Recommends: pulseaudio-module-x11,
     libasound2-plugins, gstreamer0.10-pulseaudio,

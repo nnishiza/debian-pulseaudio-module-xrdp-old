@@ -1,8 +1,9 @@
 pulseaudio (0.9.18-2) UNRELEASED; urgency=low
 
   * Only compile the ARMv6 optimized code with -march=armv6  (Closes: #546322)
+  * Depend on udev (>= 143) for device detection (Closes: #548821, #549001)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 03 Oct 2009 17:39:20 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 03 Oct 2009 17:43:18 +0100
 
 pulseaudio (0.9.18-1) unstable; urgency=low
 
