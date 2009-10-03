@@ -7,6 +7,7 @@ pulseaudio (0.9.19-1) UNRELEASED; urgency=low
     d/p/0003-svolume-tweak-constraints-for-32-bits.patch
   * Only compile the ARMv6 optimized code with -march=armv6  (Closes: #546322)
   * Depend on udev (>= 143) for device detection (Closes: #548821, #549001)
+  * Update various shlibs files to use 0.9.19
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sat, 03 Oct 2009 18:22:56 +0100
 
