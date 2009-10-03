@@ -1,9 +1,14 @@
-pulseaudio (0.9.18-2) UNRELEASED; urgency=low
+pulseaudio (0.9.19-1) UNRELEASED; urgency=low
 
+  * New upstream release
+  * Remove patches that were merged upstream:
+    d/p/0001-tunnel-fix-parsing-of-sink-info-from-newer-servers.patch
+    d/p/0002-tunnel-fix-parsing-of-source-info-from-newer-servers.patch
+    d/p/0003-svolume-tweak-constraints-for-32-bits.patch
   * Only compile the ARMv6 optimized code with -march=armv6  (Closes: #546322)
   * Depend on udev (>= 143) for device detection (Closes: #548821, #549001)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 03 Oct 2009 17:43:18 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 03 Oct 2009 18:22:56 +0100
 
 pulseaudio (0.9.18-1) unstable; urgency=low
 
