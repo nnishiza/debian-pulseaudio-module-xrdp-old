@@ -1,8 +1,74 @@
 
+2009-09-30	Lennart Poettering
+	afd1b6d: build-sys: bump soname
+	c622f77: i18n: run make update-po
+
+2009-09-29	Lennart Poettering
+	6a3b51a: i18n: ad more .c files to POTFILES.in
+	b8de3bd: polkit: drop left-over polkit policy file from git tree
+
+2009-09-26	Nix
+	eac5662: Don't refuse to start on systems using GNU stow, graft, STORE et al
+
+2009-09-29	Lennart Poettering
+	faf113d: i18n: run make update-po
+	0c84757: Merge remote branch 'origin/master-tx'
+
+2009-09-28	Lennart Poettering
+	d06f2ea: reserve: downgrade reserve logic messages, so that reusing pa in two sessions does not create spew in syslog
+
+2009-09-28	jsimon
+	c992ad2: Sending translation for German
+	966a259: Sending translation for German
+
+2009-09-27	raven
+	31d59de: Sending translation for Polish
+
+2009-09-23	Wim Taymans
+	5eecd8e: svolume: tweak constraints for 32 bits
+
+2009-09-22	ruigo
+	c04b75a: Sending translation for Portuguese
+
+2009-09-22	Colin Guthrie
+	8f4940b: libpulse: Add *_NOFLAGS flags with value 0 for various enums
+
+2009-09-22	shanky
+	183c9ab: Sending translation for Kannada
+
+2009-09-21	anipeter
+	c4b154b: Sending translation for Malayalam
+
+2009-09-21	sandeeps
+	f078e69: Sending translation for Marathi
+
+2009-09-21	kkrothap
+	20a5b0e: Sending translation for Telugu
+
+2009-09-21	rajesh
+	e8692bc: Sending translation for Hindi
+
+2009-09-20	Colin Guthrie
+	c194db7: tunnel: fix parsing of source info from newer servers
+	cc6932c: stream-restore: Comment fix
+
+2009-09-20	Emil Renner Berthing
+	592345f: tunnel: fix parsing of sink info from newer servers
+
+2009-09-20	Lennart Poettering
+	e7686a6: core: dump proplist when creating stream similar to how we already to it for sinks/sources
+	88b7773: alsa: make build gcc clean on 32bit
+
 2009-09-19	Lennart Poettering
+	33b45cd: Merge remote branch 'origin/master-tx'
 	6c0317d: build-sys: bump soname for release
 	ab6ed06: vala: install .vapi file by default
 	3fe9f8f: vala: numerous updates
+
+2009-09-18	ricardopinto
+	e141ddc: Sending translation for Portuguese
+
+2009-09-19	Lennart Poettering
 	996051e: memtrap: properly add items to linked list
 
 2009-09-18	Lennart Poettering
