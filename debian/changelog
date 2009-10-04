@@ -1,4 +1,4 @@
-pulseaudio (0.9.19-1) UNRELEASED; urgency=low
+pulseaudio (0.9.19-1) unstable; urgency=low
 
   * New upstream release
   * Remove patches that were merged upstream:
