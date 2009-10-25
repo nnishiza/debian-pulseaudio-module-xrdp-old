@@ -58,6 +58,7 @@ usr/lib/pulse-*/modules/module-cork-music-on-phone.so
 usr/lib/pulse-*/modules/module-sine-source.so
 usr/lib/pulse-*/modules/module-udev-detect.so
 usr/lib/pulse-*/modules/module-loopback.so
+lib/udev/rules.d/90-pulseaudio.rules
 usr/share/man/man5/default.pa.5
 usr/share/locale
 usr/share/pulseaudio
