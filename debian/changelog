@@ -2,9 +2,10 @@ pulseaudio (0.9.19-2) UNRELEASED; urgency=low
 
   * Built with normal old-style hal support on kfreebsd and the hurd
   * debian/patches/0001-Work-around-some-platforms-not-having-O_CLOEXEC.patch:
-    + Added. Don't use O_CLOEXEC on platforms that support it.
+    + Added. Don't use O_CLOEXEC on platforms that don't support it.
+      (Closes: #550826)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Oct 2009 12:38:58 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Oct 2009 12:41:31 +0000
 
 pulseaudio (0.9.19-1) unstable; urgency=low
 
