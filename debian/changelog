@@ -1,10 +1,10 @@
-pulseaudio (0.9.20-1) UNRELEASED; urgency=low
+pulseaudio (0.9.20-1) unstable; urgency=low
 
   * New upstream release
   * d/p/0002-Fix-makefiles-to-include-all-alsa-path-files-on-inst.patch
     + Added. Make sure all alsa path configuration files are installed
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 14 Nov 2009 22:32:29 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 14 Nov 2009 22:50:52 +0000
 
 pulseaudio (0.9.19-2) unstable; urgency=low
 
