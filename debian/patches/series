@@ -1,1 +1,2 @@
 0001-Work-around-some-platforms-not-having-O_CLOEXEC.patch
+0002-Fix-makefiles-to-include-all-alsa-path-files-on-inst.patch
