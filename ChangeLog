@@ -1,4 +1,132 @@
 
+2009-11-11	Lennart Poettering
+	a79585e: i18n: fix LINGUAS
+	5471643: Merge remote branch 'origin/master-tx' into 0.9.19-stable
+	de2654c: daemon: add missing tty_fd definition
+	bff94c1: build-sys: bump soname
+	2c12df9: core: make cpuid code compile cleanly with 32bit PIC
+	ed5af77: core: adjust volume only when there is actually a memory block
+
+2009-11-10	Wim Taymans
+	9ad5671: protocol: use the right sample rate for sources
+
+2009-11-05	Lennart Poettering
+	409a9d0: jack: never try to autoconnect to MIDI ports
+	75f3b19: man: fix build with --disable-manpages
+	3b25302: alsa: disable timer-based scheduling inside a VM
+	5da0297: daemon: during startup say whether we run in a VM
+	1460374: core-util: add call to detect if we are called from within a VM
+	b47a9e7: alsa: introduce more standard path names
+
+2009-11-04	Lennart Poettering
+	ab573f2: alsa: cover 'Analog Output' control
+
+2009-10-31	Lennart Poettering
+	4323c9f: alsa: create a seperate mixer path for Speaker elements
+	8a26fbf: alsa: leave other headphone control enabled if possible
+	08d0654: alsa: lower priority for Headphone2 path
+	18018b3: alsa: cover Input Source:AUX IN
+	d711caa: alsa: cover Headphone2 mixer element
+	82d7b75: alsa: cover 'Digital Input Source' element
+	6fad765: alsa: cover Mic Jack Mode element
+	70da8d6: bluetooth: do not hand out access to devices that are not fully configured yet
+
+2009-10-30	David Yoder
+	bfb1735: daemon: realpath segfault fix
+
+2009-10-29	Wim Taymans
+	973a4eb: sink: simplify silence checks
+
+2009-10-30	Lennart Poettering
+	320d76f: daemon: don't crash if pa_realpath() fails
+
+2009-10-28	Lennart Poettering
+	732b468: protocol-native: if a client set volume/mute/device store it since it is user input
+	3dcdab6: libpulse: explain semantics of pa_stream_connect_playback() in more detail
+	0c31723: protocol-native: declare that user configured volumes are always absolute
+
+2009-10-12	Lennart Poettering
+	84e77cb: libpulse: add missing includes
+
+2009-10-07	Diego Elio 'Flameeyes' PettenÃ²
+	8d612d5: Fix build when using -fweb, accept both register and memory constraints.
+
+2009-10-06	Lennart Poettering
+	3201aec: position-event-sounds: never position test sounds in space
+	833bf30: alsa: disable period event only with tsched=1
+
+2009-10-02	Tor-BjÃ¶rn Claesson
+	c15bd97: loopback: Setting latency of module-loopback
+
+2009-10-04	Lennart Poettering
+	df49370: bluetooth: don't set auto_connect flag when discovering bt devices
+
+2009-11-09	vpv
+	ecaf971: Sending translation for Finnish
+	05ccf10: Sending translation for Finnish
+	7d5d76e: Sending translation for Finnish
+
+2009-10-30	kmilos
+	151c746: Sending translation for Serbian (Latin)
+	4392888: Sending translation for Serbian
+
+2009-10-29	Wim Taymans
+	cc1e90f: svolume: fix MMX error
+
+2009-10-26	thalia
+	e4259e7: Sending translation for Greek
+
+2009-10-23	igor
+	99dcbc7: Sending translation for Brazilian Portuguese
+
+2009-10-22	igor
+	6d8d0ff: Sending translation for Brazilian Portuguese
+
+2009-10-22	kami911
+	037df85: Sending translation for Hungarian
+	80e43f6: Sending translation for Hungarian
+
+2009-10-18	perplex
+	45409d5: Sending translation for Italian
+
+2009-10-17	pmkovar
+	662986f: Sending translation for Czech
+
+2009-10-17	kami911
+	6e8c64f: Sending translation for Hungarian
+	6614be9: Sending translation for Hungarian
+	497b981: Sending translation for Hungarian
+
+2009-10-15	kami911
+	55ccda6: Sending translation for Hungarian
+
+2009-10-14	reinouts
+	a620a39: Sending translation for Dutch
+
+2009-10-09	kami911
+	72ac187: Sending translation for Hungarian
+
+2009-10-06	mvdz
+	5331e60: Sending translation for Ukrainian
+
+2009-10-04	fgonz
+	3aec580: Sending translation for Spanish
+
+2009-10-02	warrink
+	e8bab13: Sending translation for Dutch
+
+2009-10-01	kami911
+	8cfd01e: Sending translation for po/hu.po
+
+2009-09-30	pmkovar
+	7e0bccf: Sending translation for Czech
+
+2009-09-30	raven
+	fc74fc1: Sending translation for Polish
+
+2009-09-30	warrink
+	f2f37b5: Sending translation for Dutch
+
 2009-09-30	Lennart Poettering
 	afd1b6d: build-sys: bump soname
 	c622f77: i18n: run make update-po

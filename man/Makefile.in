@@ -342,21 +342,6 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 pulseconfdir = $(sysconfdir)/pulse
 CLEANFILES = $(noinst_DATA) $(am__append_1)
-dist_man_MANS = \
-	pulseaudio.1 \
-	esdcompat.1 \
-	pax11publish.1 \
-	paplay.1 \
-	pacat.1 \
-	pacmd.1 \
-	pactl.1 \
-	pasuspender.1 \
-	padsp.1 \
-	pabrowse.1 \
-	pulse-daemon.conf.5 \
-	pulse-client.conf.5 \
-	default.pa.5
-
 noinst_DATA = \
 	pulseaudio.1.xml \
 	esdcompat.1.xml \
@@ -371,6 +356,21 @@ noinst_DATA = \
 	pulse-daemon.conf.5.xml \
 	pulse-client.conf.5.xml \
 	default.pa.5.xml
+
+@BUILD_MANPAGES_TRUE@dist_man_MANS = \
+@BUILD_MANPAGES_TRUE@	pulseaudio.1 \
+@BUILD_MANPAGES_TRUE@	esdcompat.1 \
+@BUILD_MANPAGES_TRUE@	pax11publish.1 \
+@BUILD_MANPAGES_TRUE@	paplay.1 \
+@BUILD_MANPAGES_TRUE@	pacat.1 \
+@BUILD_MANPAGES_TRUE@	pacmd.1 \
+@BUILD_MANPAGES_TRUE@	pactl.1 \
+@BUILD_MANPAGES_TRUE@	pasuspender.1 \
+@BUILD_MANPAGES_TRUE@	padsp.1 \
+@BUILD_MANPAGES_TRUE@	pabrowse.1 \
+@BUILD_MANPAGES_TRUE@	pulse-daemon.conf.5 \
+@BUILD_MANPAGES_TRUE@	pulse-client.conf.5 \
+@BUILD_MANPAGES_TRUE@	default.pa.5
 
 EXTRA_DIST = \
 	pulseaudio.1.xml.in \
@@ -673,18 +673,18 @@ uninstall-man: uninstall-man1 uninstall-man5
 	uninstall-man5
 
 
-@BUILD_MANPAGES_TRUE@%.xml: %.xml.in Makefile
-@BUILD_MANPAGES_TRUE@	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-@BUILD_MANPAGES_TRUE@	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-@BUILD_MANPAGES_TRUE@            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
+%.xml: %.xml.in Makefile
+	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
+	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
+            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
+
+xmllint: $(noinst_DATA)
+	for f in $(noinst_DATA) ; do \
+			xmllint --noout --valid "$$f" || exit 1 ; \
+	done
 
 @BUILD_MANPAGES_TRUE@%: %.xml Makefile
 @BUILD_MANPAGES_TRUE@	perl $(srcdir)/xmltoman $< > $@ || rm -f $@
-
-@BUILD_MANPAGES_TRUE@xmllint: $(noinst_DATA)
-@BUILD_MANPAGES_TRUE@	for f in $(noinst_DATA) ; do \
-@BUILD_MANPAGES_TRUE@			xmllint --noout --valid "$$f" || exit 1 ; \
-@BUILD_MANPAGES_TRUE@	done
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
