@@ -927,7 +927,7 @@ static int update_sw_params(struct userdata *u) {
 
     pa_log_debug("setting avail_min=%lu", (unsigned long) avail_min);
 
-    if ((err = pa_alsa_set_sw_params(u->pcm_handle, avail_min)) < 0) {
+    if ((err = pa_alsa_set_sw_params(u->pcm_handle, avail_min, !u->use_tsched)) < 0) {
         pa_log("Failed to set software parameters: %s", pa_alsa_strerror(err));
         return err;
     }
@@ -1698,10 +1698,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         goto fail;
     }
 
-    if (use_tsched && !pa_rtclock_hrtimer()) {
-        pa_log_notice("Disabling timer-based scheduling because high-resolution timers are not available from the kernel.");
-        use_tsched = FALSE;
-    }
+    use_tsched = pa_alsa_may_tsched(use_tsched);
 
     u = pa_xnew0(struct userdata, 1);
     u->core = m->core;

@@ -1044,13 +1044,21 @@ static playback_stream* playback_stream_new(
     data.driver = __FILE__;
     data.module = c->options->module;
     data.client = c->client;
-    data.sink = sink;
+    if (sink) {
+        data.sink = sink;
+        data.save_sink = TRUE;
+    }
     pa_sink_input_new_data_set_sample_spec(&data, ss);
     pa_sink_input_new_data_set_channel_map(&data, map);
-    if (volume)
+    if (volume) {
         pa_sink_input_new_data_set_volume(&data, volume);
-    if (muted_set)
+        data.volume_is_absolute = TRUE;
+        data.save_volume = TRUE;
+    }
+    if (muted_set) {
         pa_sink_input_new_data_set_muted(&data, muted);
+        data.save_muted = TRUE;
+    }
     data.sync_base = ssync ? ssync->sink_input : NULL;
     data.flags = flags;
 
@@ -2612,7 +2620,7 @@ static void command_get_record_latency(pa_pdispatch *pd, uint32_t command, uint3
     pa_tagstruct_put_usec(reply, s->current_monitor_latency);
     pa_tagstruct_put_usec(reply,
                           s->current_source_latency +
-                          pa_bytes_to_usec(s->on_the_fly_snapshot, &s->source_output->sample_spec));
+                          pa_bytes_to_usec(s->on_the_fly_snapshot, &s->source_output->source->sample_spec));
     pa_tagstruct_put_boolean(reply,
                              pa_source_get_state(s->source_output->source) == PA_SOURCE_RUNNING &&
                              pa_source_output_get_state(s->source_output) == PA_SOURCE_OUTPUT_RUNNING);
