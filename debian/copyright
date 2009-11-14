@@ -287,6 +287,7 @@ License: LGPL-2.1+
 File: po/el.po
 Copyright:
   Copyright (C) 2008 Dimitris Glezos <dimitris@glezos.com>
+  Copyright (C) 2009 Thalia Papoutsaki <saliyath@gmail.com>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -295,6 +296,7 @@ File: po/es.po
 Copyright:
   Copyright (C) 2009 Domingo Becker <domingobecker@gmail.com>
   Copyright (C) 2008 Hector Daniel Cabrera <h.daniel.cabrera@gmail.com>
+  Copyright (C) 2009 Fernando Gonzalez Blanco <fgonz@fedoraproject.org>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
@@ -367,6 +369,7 @@ License: LGPL-2.1+
 File: po/nl.po
 Copyright:
   Copyright (C) 2009 Geert Warrink <geert.warrink@onsnet.nu>
+  Copyright (C) 2009 Reinout van Schouwen <reinout@gmail.com>
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.

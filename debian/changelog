@@ -1,3 +1,9 @@
+pulseaudio (0.9.20-1) UNRELEASED; urgency=low
+
+  * New upstream release
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 14 Nov 2009 14:30:42 +0000
+
 pulseaudio (0.9.19-2) unstable; urgency=low
 
   * Built with normal old-style hal support on kfreebsd and the hurd
