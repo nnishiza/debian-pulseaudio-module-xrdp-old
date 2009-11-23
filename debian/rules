@@ -18,7 +18,7 @@ common-install-arch::
 
 common-configure-arch::
 ifneq (,$(findstring $(DEB_HOST_ARCH), "arm armel"))
-	make -C src libpulsecore_0.9.20-svolume_arm.lo CFLAGS+=-march=armv6
+	make -C src libpulsecore_0.9.21-svolume_arm.lo CFLAGS+=-march=armv6
 endif
 
 pulseaudio-install-arch::
@@ -46,7 +46,7 @@ ifneq (,$(findstring $(DEB_HOST_ARCH_OS), "linux"))
   DEB_CONFIGURE_EXTRA_FLAGS = --enable-hal-compat --disable-hal
 endif
 
-DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9.20/modules
+DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9.21/modules
 DEB_DH_SHLIBDEPS_ARGS_libpulse0 = -u -L/dev/null
 DEB_DH_SHLIBDEPS_ARGS_pulseaudio = -u -Ldebian/shlibs_pulseaudio.local
 DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
