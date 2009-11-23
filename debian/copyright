@@ -121,6 +121,14 @@ License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
 
+Files: src/modules/module-device-manager.*
+Copyright:
+ Copyright 2006-2008 Lennart Poettering
+ Copyright (C) 2009 Colin Guthrie
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
 Files: src/pulsecore/dbus-*.*, src/modules/module-hal-detect.c
 Copyright:
  Copyright 2006 Lennart Poettering
@@ -217,6 +225,14 @@ Copyright:
  Copyright (C) 2006-2007 Pierre Ossman <ossman@cendio.se> for Cendio AB
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+Files: src/pulse/ext-device-manager.*
+Copyright:
+ Copyright (C) 2008 Lennart Poettering
+ Copyright (C) 2009 Colin Guthrie
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2 can be found in
  /usr/share/common-licenses/LGPL-2.1.
 
 File: src/pulsecore/ffmpeg/avcodec.h
