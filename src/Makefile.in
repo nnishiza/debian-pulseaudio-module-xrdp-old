@@ -516,7 +516,8 @@ libpulse_la_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) libpulsecommon-@PA_MAJORMINORMICRO@.la
 am__libpulse_la_SOURCES_DIST = pulse/cdecl.h pulse/channelmap.c \
 	pulse/channelmap.h pulse/context.c pulse/context.h pulse/def.h \
-	pulse/error.c pulse/error.h pulse/ext-stream-restore.c \
+	pulse/error.c pulse/error.h pulse/ext-device-manager.c \
+	pulse/ext-device-manager.h pulse/ext-stream-restore.c \
 	pulse/ext-stream-restore.h pulse/gccmacro.h pulse/internal.h \
 	pulse/introspect.c pulse/introspect.h pulse/mainloop-api.c \
 	pulse/mainloop-api.h pulse/mainloop-signal.c \
@@ -533,6 +534,7 @@ am__libpulse_la_SOURCES_DIST = pulse/cdecl.h pulse/channelmap.c \
 @HAVE_X11_TRUE@am__objects_4 = libpulse_la-client-conf-x11.lo
 am_libpulse_la_OBJECTS = libpulse_la-channelmap.lo \
 	libpulse_la-context.lo libpulse_la-error.lo \
+	libpulse_la-ext-device-manager.lo \
 	libpulse_la-ext-stream-restore.lo libpulse_la-introspect.lo \
 	libpulse_la-mainloop-api.lo libpulse_la-mainloop-signal.lo \
 	libpulse_la-mainloop.lo libpulse_la-operation.lo \
@@ -1024,6 +1026,17 @@ module_detect_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(module_detect_la_CFLAGS) $(CFLAGS) \
 	$(module_detect_la_LDFLAGS) $(LDFLAGS) -o $@
+module_device_manager_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	libprotocol-native.la libpulsecore-@PA_MAJORMINORMICRO@.la \
+	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+am_module_device_manager_la_OBJECTS =  \
+	module_device_manager_la-module-device-manager.lo
+module_device_manager_la_OBJECTS =  \
+	$(am_module_device_manager_la_OBJECTS)
+module_device_manager_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(module_device_manager_la_CFLAGS) $(CFLAGS) \
+	$(module_device_manager_la_LDFLAGS) $(LDFLAGS) -o $@
 module_device_restore_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	libpulsecore-@PA_MAJORMINORMICRO@.la \
 	libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
@@ -2086,6 +2099,7 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
 	$(module_cork_music_on_phone_la_SOURCES) \
 	$(module_default_device_restore_la_SOURCES) \
 	$(module_detect_la_SOURCES) \
+	$(module_device_manager_la_SOURCES) \
 	$(module_device_restore_la_SOURCES) \
 	$(module_esound_compat_spawnfd_la_SOURCES) \
 	$(module_esound_compat_spawnpid_la_SOURCES) \
@@ -2181,6 +2195,7 @@ DIST_SOURCES = $(am__libalsa_util_la_SOURCES_DIST) \
 	$(module_cork_music_on_phone_la_SOURCES) \
 	$(module_default_device_restore_la_SOURCES) \
 	$(module_detect_la_SOURCES) \
+	$(module_device_manager_la_SOURCES) \
 	$(module_device_restore_la_SOURCES) \
 	$(module_esound_compat_spawnfd_la_SOURCES) \
 	$(module_esound_compat_spawnpid_la_SOURCES) \
@@ -2251,14 +2266,14 @@ DATA = $(alsapaths_DATA) $(alsaprofilesets_DATA) $(dbuspolicy_DATA) \
 	$(pulseconf_DATA) $(udevrules_DATA) $(xdgautostart_DATA)
 am__pulseinclude_HEADERS_DIST = pulse/cdecl.h pulse/channelmap.h \
 	pulse/context.h pulse/def.h pulse/error.h \
-	pulse/ext-stream-restore.h pulse/gccmacro.h pulse/introspect.h \
-	pulse/mainloop-api.h pulse/mainloop-signal.h pulse/mainloop.h \
-	pulse/operation.h pulse/proplist.h pulse/pulseaudio.h \
-	pulse/rtclock.h pulse/sample.h pulse/scache.h pulse/simple.h \
-	pulse/stream.h pulse/subscribe.h pulse/thread-mainloop.h \
-	pulse/timeval.h pulse/utf8.h pulse/util.h pulse/version.h \
-	pulse/volume.h pulse/xmalloc.h pulse/browser.h \
-	pulse/glib-mainloop.h
+	pulse/ext-device-manager.h pulse/ext-stream-restore.h \
+	pulse/gccmacro.h pulse/introspect.h pulse/mainloop-api.h \
+	pulse/mainloop-signal.h pulse/mainloop.h pulse/operation.h \
+	pulse/proplist.h pulse/pulseaudio.h pulse/rtclock.h \
+	pulse/sample.h pulse/scache.h pulse/simple.h pulse/stream.h \
+	pulse/subscribe.h pulse/thread-mainloop.h pulse/timeval.h \
+	pulse/utf8.h pulse/util.h pulse/version.h pulse/volume.h \
+	pulse/xmalloc.h pulse/browser.h pulse/glib-mainloop.h
 HEADERS = $(pulseinclude_HEADERS)
 ETAGS = etags
 CTAGS = ctags
@@ -2564,34 +2579,39 @@ MODULE_LDFLAGS = -module -disable-static -avoid-version $(LDFLAGS_NOUNDEFINED)
 ###################################
 #          Extra files            #
 ###################################
+ALSA_PROFILES = \
+		modules/alsa/mixer/profile-sets/default.conf \
+		modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
+		modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf
+
+ALSA_PATHS = \
+		modules/alsa/mixer/paths/analog-input-aux.conf \
+		modules/alsa/mixer/paths/analog-input.conf \
+		modules/alsa/mixer/paths/analog-input.conf.common \
+		modules/alsa/mixer/paths/analog-input-fm.conf \
+		modules/alsa/mixer/paths/analog-input-linein.conf \
+		modules/alsa/mixer/paths/analog-input-mic.conf \
+		modules/alsa/mixer/paths/analog-input-mic.conf.common \
+		modules/alsa/mixer/paths/analog-input-mic-line.conf \
+		modules/alsa/mixer/paths/analog-input-tvtuner.conf \
+		modules/alsa/mixer/paths/analog-input-video.conf \
+		modules/alsa/mixer/paths/analog-output.conf \
+		modules/alsa/mixer/paths/analog-output-speaker.conf \
+		modules/alsa/mixer/paths/analog-output.conf.common \
+		modules/alsa/mixer/paths/analog-output-headphones.conf \
+		modules/alsa/mixer/paths/analog-output-headphones-2.conf \
+		modules/alsa/mixer/paths/analog-output-lfe-on-mono.conf \
+		modules/alsa/mixer/paths/analog-output-mono.conf
+
 EXTRA_DIST = pulse/client.conf.in pulse/version.h.in \
 	daemon/daemon.conf.in daemon/default.pa.in daemon/system.pa.in \
 	daemon/default.pa.win32 depmod.py daemon/esdcompat.in \
-	daemon/start-pulseaudio-x11.in utils/padsp \
-	modules/module-defs.h.m4 daemon/pulseaudio.desktop.in map-file \
-	daemon/pulseaudio-system.conf \
-	modules/alsa/mixer/profile-sets/default.conf \
-	modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
-	modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf \
+	daemon/start-pulseaudio-x11.in daemon/start-pulseaudio-kde.in \
+	utils/padsp modules/module-defs.h.m4 \
+	daemon/pulseaudio.desktop.in daemon/pulseaudio-kde.desktop.in \
+	map-file daemon/pulseaudio-system.conf \
 	modules/alsa/mixer/profile-sets/90-pulseaudio.rules \
-	modules/alsa/mixer/paths/analog-input-aux.conf \
-	modules/alsa/mixer/paths/analog-input.conf \
-	modules/alsa/mixer/paths/analog-input.conf.common \
-	modules/alsa/mixer/paths/analog-input-fm.conf \
-	modules/alsa/mixer/paths/analog-input-linein.conf \
-	modules/alsa/mixer/paths/analog-input-mic.conf \
-	modules/alsa/mixer/paths/analog-input-mic.conf.common \
-	modules/alsa/mixer/paths/analog-input-mic-line.conf \
-	modules/alsa/mixer/paths/analog-input-tvtuner.conf \
-	modules/alsa/mixer/paths/analog-input-video.conf \
-	modules/alsa/mixer/paths/analog-output.conf \
-	modules/alsa/mixer/paths/analog-output-speaker.conf \
-	modules/alsa/mixer/paths/analog-output.conf.common \
-	modules/alsa/mixer/paths/analog-output-headphones.conf \
-	modules/alsa/mixer/paths/analog-output-headphones-2.conf \
-	modules/alsa/mixer/paths/analog-output-lfe-on-mono.conf \
-	modules/alsa/mixer/paths/analog-output-mono.conf \
-	$(SYMDEF_FILES)
+	${ALSA_PROFILES} ${ALSA_PATHS} $(SYMDEF_FILES)
 pulseconf_DATA = \
 		default.pa \
 		system.pa \
@@ -2602,7 +2622,8 @@ dbuspolicy_DATA = \
 		daemon/pulseaudio-system.conf
 
 @HAVE_X11_TRUE@xdgautostart_in_files = \
-@HAVE_X11_TRUE@		daemon/pulseaudio.desktop.in
+@HAVE_X11_TRUE@		daemon/pulseaudio.desktop.in \
+@HAVE_X11_TRUE@		daemon/pulseaudio-kde.desktop.in
 
 xdgautostart_DATA = $(xdgautostart_in_files:.desktop.in=.desktop)
 BUILT_SOURCES = pulse/version.h $(SYMDEF_FILES)
@@ -2623,7 +2644,8 @@ pulseaudio_DEPENDENCIES = libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@P
 @PREOPEN_MODS_TRUE@PREOPEN_LIBS = $(PREOPEN_MODS)
 @FORCE_PREOPEN_FALSE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(IMMEDIATE_LDFLAGS) -dlopen force $(foreach f,$(PREOPEN_LIBS),-dlopen $(f))
 @FORCE_PREOPEN_TRUE@pulseaudio_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(IMMEDIATE_LDFLAGS) -dlpreopen force $(foreach f,$(PREOPEN_LIBS),-dlpreopen $(f))
-bin_SCRIPTS = esdcompat start-pulseaudio-x11 $(am__append_29)
+bin_SCRIPTS = esdcompat start-pulseaudio-x11 start-pulseaudio-kde \
+	$(am__append_29)
 pacat_SOURCES = utils/pacat.c
 pacat_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la $(LIBSNDFILE_LIBS)
 pacat_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
@@ -2900,19 +2922,20 @@ libpulsecommon_@PA_MAJORMINORMICRO@_la_LIBADD = $(AM_LIBADD) \
 ###################################
 pulseinclude_HEADERS = pulse/cdecl.h pulse/channelmap.h \
 	pulse/context.h pulse/def.h pulse/error.h \
-	pulse/ext-stream-restore.h pulse/gccmacro.h pulse/introspect.h \
-	pulse/mainloop-api.h pulse/mainloop-signal.h pulse/mainloop.h \
-	pulse/operation.h pulse/proplist.h pulse/pulseaudio.h \
-	pulse/rtclock.h pulse/sample.h pulse/scache.h pulse/simple.h \
-	pulse/stream.h pulse/subscribe.h pulse/thread-mainloop.h \
-	pulse/timeval.h pulse/utf8.h pulse/util.h pulse/version.h \
-	pulse/volume.h pulse/xmalloc.h $(am__append_21) \
-	$(am__append_23)
+	pulse/ext-device-manager.h pulse/ext-stream-restore.h \
+	pulse/gccmacro.h pulse/introspect.h pulse/mainloop-api.h \
+	pulse/mainloop-signal.h pulse/mainloop.h pulse/operation.h \
+	pulse/proplist.h pulse/pulseaudio.h pulse/rtclock.h \
+	pulse/sample.h pulse/scache.h pulse/simple.h pulse/stream.h \
+	pulse/subscribe.h pulse/thread-mainloop.h pulse/timeval.h \
+	pulse/utf8.h pulse/util.h pulse/version.h pulse/volume.h \
+	pulse/xmalloc.h $(am__append_21) $(am__append_23)
 
 # Public interface
 libpulse_la_SOURCES = pulse/cdecl.h pulse/channelmap.c \
 	pulse/channelmap.h pulse/context.c pulse/context.h pulse/def.h \
-	pulse/error.c pulse/error.h pulse/ext-stream-restore.c \
+	pulse/error.c pulse/error.h pulse/ext-device-manager.c \
+	pulse/ext-device-manager.h pulse/ext-stream-restore.c \
 	pulse/ext-stream-restore.h pulse/gccmacro.h pulse/internal.h \
 	pulse/introspect.c pulse/introspect.h pulse/mainloop-api.c \
 	pulse/mainloop-api.h pulse/mainloop-signal.c \
@@ -3023,14 +3046,15 @@ modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	$(am__append_44) $(am__append_45) module-cli.la \
 	module-cli-protocol-tcp.la module-simple-protocol-tcp.la \
 	module-null-sink.la module-sine-source.la module-detect.la \
-	module-volume-restore.la module-device-restore.la \
-	module-stream-restore.la module-card-restore.la \
-	module-default-device-restore.la module-always-sink.la \
-	module-rescue-streams.la module-intended-roles.la \
-	module-suspend-on-idle.la module-http-protocol-tcp.la \
-	module-sine.la module-native-protocol-tcp.la \
-	module-native-protocol-fd.la module-esound-protocol-tcp.la \
-	module-combine.la module-remap-sink.la module-ladspa-sink.la \
+	module-volume-restore.la module-device-manager.la \
+	module-device-restore.la module-stream-restore.la \
+	module-card-restore.la module-default-device-restore.la \
+	module-always-sink.la module-rescue-streams.la \
+	module-intended-roles.la module-suspend-on-idle.la \
+	module-http-protocol-tcp.la module-sine.la \
+	module-native-protocol-tcp.la module-native-protocol-fd.la \
+	module-esound-protocol-tcp.la module-combine.la \
+	module-remap-sink.la module-ladspa-sink.la \
 	module-esound-sink.la module-tunnel-sink.la \
 	module-tunnel-source.la module-position-event-sounds.la \
 	module-augment-properties.la module-cork-music-on-phone.la \
@@ -3082,31 +3106,11 @@ libavahi_wrap_la_SOURCES = pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h
 libavahi_wrap_la_LDFLAGS = -avoid-version
 libavahi_wrap_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
-@HAVE_ALSA_TRUE@alsaprofilesets_DATA = \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/default.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf
-
+@HAVE_ALSA_TRUE@alsaprofilesets_DATA = ${ALSA_PROFILES}
 @HAVE_ALSA_TRUE@@HAVE_UDEV_TRUE@udevrules_DATA = \
 @HAVE_ALSA_TRUE@@HAVE_UDEV_TRUE@		modules/alsa/mixer/profile-sets/90-pulseaudio.rules
 
-@HAVE_ALSA_TRUE@alsapaths_DATA = \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-aux.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input.conf.common \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-fm.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-linein.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-mic.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-mic.conf.common \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-mic-line.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-tvtuner.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-video.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output.conf.common \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output-headphones.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output-lfe-on-mono.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output-mono.conf
-
+@HAVE_ALSA_TRUE@alsapaths_DATA = ${ALSA_PATHS}
 
 # These are generated by an M4 script
 SYMDEF_FILES = \
@@ -3157,6 +3161,7 @@ SYMDEF_FILES = \
 		modules/jack/module-jack-sink-symdef.h \
 		modules/jack/module-jack-source-symdef.h \
 		modules/module-volume-restore-symdef.h \
+		modules/module-device-manager-symdef.h \
 		modules/module-device-restore-symdef.h \
 		modules/module-stream-restore-symdef.h \
 		modules/module-card-restore-symdef.h \
@@ -3409,6 +3414,12 @@ module_cork_music_on_phone_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_cork_music_on_phone_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
 module_cork_music_on_phone_la_CFLAGS = $(AM_CFLAGS)
 
+# Device description restore module
+module_device_manager_la_SOURCES = modules/module-device-manager.c
+module_device_manager_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_device_manager_la_LIBADD = $(AM_LIBADD) libprotocol-native.la libpulsecore-@PA_MAJORMINORMICRO@.la libpulsecommon-@PA_MAJORMINORMICRO@.la libpulse.la
+module_device_manager_la_CFLAGS = $(AM_CFLAGS)
+
 # Device volume/muted restore module
 module_device_restore_la_SOURCES = modules/module-device-restore.c
 module_device_restore_la_LDFLAGS = $(MODULE_LDFLAGS)
@@ -3554,7 +3565,7 @@ module_rygel_media_server_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
 ###################################
 #        Some minor stuff         #
 ###################################
-CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11 daemon/pulseaudio.desktop
+CLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pulseaudio-x11 start-pulseaudio-kde daemon/pulseaudio.desktop daemon/pulseaudio-kde.desktop
 all: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) all-am
 
@@ -3739,6 +3750,8 @@ module-default-device-restore.la: $(module_default_device_restore_la_OBJECTS) $(
 	$(AM_V_CCLD)$(module_default_device_restore_la_LINK) -rpath $(modlibexecdir) $(module_default_device_restore_la_OBJECTS) $(module_default_device_restore_la_LIBADD) $(LIBS)
 module-detect.la: $(module_detect_la_OBJECTS) $(module_detect_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_detect_la_LINK) -rpath $(modlibexecdir) $(module_detect_la_OBJECTS) $(module_detect_la_LIBADD) $(LIBS)
+module-device-manager.la: $(module_device_manager_la_OBJECTS) $(module_device_manager_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(module_device_manager_la_LINK) -rpath $(modlibexecdir) $(module_device_manager_la_OBJECTS) $(module_device_manager_la_LIBADD) $(LIBS)
 module-device-restore.la: $(module_device_restore_la_OBJECTS) $(module_device_restore_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_device_restore_la_LINK) -rpath $(modlibexecdir) $(module_device_restore_la_OBJECTS) $(module_device_restore_la_LIBADD) $(LIBS)
 module-esound-compat-spawnfd.la: $(module_esound_compat_spawnfd_la_OBJECTS) $(module_esound_compat_spawnfd_la_DEPENDENCIES) 
@@ -4178,6 +4191,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-client-conf-x11.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-context.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-error.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-ext-device-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-ext-stream-restore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-introspect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-mainloop-api.Plo@am__quote@
@@ -4359,6 +4373,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_cork_music_on_phone_la-module-cork-music-on-phone.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_default_device_restore_la-module-default-device-restore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_detect_la-module-detect.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_device_manager_la-module-device-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_device_restore_la-module-device-restore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_esound_protocol_tcp_la-module-protocol-stub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_esound_protocol_unix_la-module-protocol-stub.Plo@am__quote@
@@ -4712,6 +4727,14 @@ libpulse_la-error.lo: pulse/error.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/error.c' object='libpulse_la-error.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -c -o libpulse_la-error.lo `test -f 'pulse/error.c' || echo '$(srcdir)/'`pulse/error.c
+
+libpulse_la-ext-device-manager.lo: pulse/ext-device-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -MT libpulse_la-ext-device-manager.lo -MD -MP -MF $(DEPDIR)/libpulse_la-ext-device-manager.Tpo -c -o libpulse_la-ext-device-manager.lo `test -f 'pulse/ext-device-manager.c' || echo '$(srcdir)/'`pulse/ext-device-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulse_la-ext-device-manager.Tpo $(DEPDIR)/libpulse_la-ext-device-manager.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/ext-device-manager.c' object='libpulse_la-ext-device-manager.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -c -o libpulse_la-ext-device-manager.lo `test -f 'pulse/ext-device-manager.c' || echo '$(srcdir)/'`pulse/ext-device-manager.c
 
 libpulse_la-ext-stream-restore.lo: pulse/ext-stream-restore.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -MT libpulse_la-ext-stream-restore.lo -MD -MP -MF $(DEPDIR)/libpulse_la-ext-stream-restore.Tpo -c -o libpulse_la-ext-stream-restore.lo `test -f 'pulse/ext-stream-restore.c' || echo '$(srcdir)/'`pulse/ext-stream-restore.c
@@ -6008,6 +6031,14 @@ module_detect_la-module-detect.lo: modules/module-detect.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-detect.c' object='module_detect_la-module-detect.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_detect_la_CFLAGS) $(CFLAGS) -c -o module_detect_la-module-detect.lo `test -f 'modules/module-detect.c' || echo '$(srcdir)/'`modules/module-detect.c
+
+module_device_manager_la-module-device-manager.lo: modules/module-device-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_device_manager_la_CFLAGS) $(CFLAGS) -MT module_device_manager_la-module-device-manager.lo -MD -MP -MF $(DEPDIR)/module_device_manager_la-module-device-manager.Tpo -c -o module_device_manager_la-module-device-manager.lo `test -f 'modules/module-device-manager.c' || echo '$(srcdir)/'`modules/module-device-manager.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/module_device_manager_la-module-device-manager.Tpo $(DEPDIR)/module_device_manager_la-module-device-manager.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-device-manager.c' object='module_device_manager_la-module-device-manager.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_device_manager_la_CFLAGS) $(CFLAGS) -c -o module_device_manager_la-module-device-manager.lo `test -f 'modules/module-device-manager.c' || echo '$(srcdir)/'`modules/module-device-manager.c
 
 module_device_restore_la-module-device-restore.lo: modules/module-device-restore.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_device_restore_la_CFLAGS) $(CFLAGS) -MT module_device_restore_la-module-device-restore.lo -MD -MP -MF $(DEPDIR)/module_device_restore_la-module-device-restore.Tpo -c -o module_device_restore_la-module-device-restore.lo `test -f 'modules/module-device-restore.c' || echo '$(srcdir)/'`modules/module-device-restore.c
@@ -7854,6 +7885,11 @@ start-pulseaudio-x11: daemon/start-pulseaudio-x11.in Makefile
 	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' \
 		-e 's,@PACTL_BINARY\@,$(bindir)/pactl,g' < $< > $@
 	chmod +x start-pulseaudio-x11
+
+start-pulseaudio-kde: daemon/start-pulseaudio-kde.in Makefile
+	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' \
+		-e 's,@PACTL_BINARY\@,$(bindir)/pactl,g' < $< > $@
+	chmod +x start-pulseaudio-kde
 
 client.conf: pulse/client.conf.in Makefile
 	sed -e 's,@PA_BINARY\@,$(PA_BINARY),g' < $< > $@
