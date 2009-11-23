@@ -1,8 +1,10 @@
 pulseaudio (0.9.21-1) UNRELEASED; urgency=low
 
   * New upstream release
+  * d/p/0002-Fix-makefiles-to-include-all-alsa-path-files-on-inst.patch
+    + Removed, merged upstream
 
- -- Sjoerd Simons <sjoerd@debian.org>  Mon, 23 Nov 2009 22:35:39 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Mon, 23 Nov 2009 22:39:24 +0000
 
 pulseaudio (0.9.20-1) unstable; urgency=low
 
