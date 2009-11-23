@@ -1,4 +1,109 @@
 
+2009-11-23	Lennart Poettering
+	06327b1: bump soname
+
+2009-11-20	Lennart Poettering
+	7ab8e83: alsa: fix minor sampling rate deviations before adjusting the buffer size
+	366e3eb: alsa: fix log output when the audio device refuses to give us again the same period settings we had before
+	a281aad: pulse: ask for timing updates both *before* and *after* triggering a stream state change so that in the STARTED/UNDERFLOW callbacks we accurate transport latency information
+	c13bf3d: pulse: delay smoother update only when unpausing, not when pausing, since we don't want the timer to advance when we are supposedly already paused
+	d6a851c: pulse: try to fix inaccuracy with uncork timing for streams that are created in corked state
+	5c90723: daemon: complain if user passes too many arguments
+
+2009-11-20	Colin Guthrie
+	3014081: Merge branch '0.9.20-stable' into stable-queue
+
+2009-11-18	Lennart Poettering
+	231417c: rygel: fix itemCount property for sources
+
+2009-11-16	Colin Guthrie
+	9f41584: build-sys: Fix missing trailing slash in 14eaf2
+
+2009-11-14	Sjoerd Simons
+	8edf2f0: build-sys: Make sure all alsa path config files are installed
+
+2009-11-11	Colin Guthrie
+	25537ff: device-manager: Update docs version -> 0.9.20
+
+2009-11-09	Colin Guthrie
+	725ab6c: device-manager: Update docs version -> 0.9.20
+
+2009-10-19	Colin Guthrie
+	ff71cbf: device-manager: Fix compiler warning.
+
+2009-10-10	Colin Guthrie
+	5382455: device-manager: Rather than flagging the device as available, just include the sink/source index with PA_INVALID_INDEX meaning unavailable
+
+2009-10-02	Colin Guthrie
+	af55f07: device-manager: Play nice with module-stream-restore.
+	1b31d8a: device-manager: Make use of PA_IDXSET_FOREACH when applying entries.
+	ab3502f: device-manager: Keep track as to whether or not the user specifically renamed the device.
+	654df0f: device-manager: No need to check the version after calling read_entry()
+	324eb21: device-manager: Fix typo in module loading script.
+
+2009-10-01	Colin Guthrie
+	3130403: device-manager: Add some scripts that are only run under KDE to load/initialise module-device-manager with routing turned on.
+	996fc1f: device-manager: Misc fixes to co-exist with other stream management/routing modules.
+	6e0dde1: device-manager: Misc fixes.
+	763de9e: device-manager: Fix the writing of the database when priority doesn't change.
+	d5dc700: device-manager: Add extra debug messages
+	8a5778d: device-manager: Change the prefer/defer options to a single 'reorder' command.
+
+2009-09-27	Colin Guthrie
+	45a4d26: device-manager: Don't notify clients on every subscription (it happens all the time).
+	ff633cb: device-manager: Save icon and report current availability over protocol.
+
+2009-09-26	Colin Guthrie
+	055ad89: device-manager: Expose the priority lists in the protocol extension.
+
+2009-09-21	Colin Guthrie
+	aa93410: device-manager: Add a function to dump the database which we do whenever we save it (and on startup)
+
+2009-09-20	Colin Guthrie
+	d9a3131: device-manager: Reroute streams when they change allowing the media.role to be updated mid-stream.
+	3072f65: device-manager: Refactor the routing method to allow the routing of a single stream
+	888a515: device-manager: More sensible names for internal functions
+	d81fa00: device-manager: Reroute the streams on startup and update our cache on enable.
+	df893f6: device-manager: Keep a cache of the highest priority devices for each role.
+	009d087: device-manager: Fix the database write mode
+	8863dbe: device-manager: Update exports
+	6e67653: device-manager: Some efficiency and safety tweaks
+	26f1ec7: device-manager: Allow the routing component to be turned on via a module argument as well as via protocol extn.
+	8d3d0d3: device-manager: Remove unused variables
+	5077fe1: device-manager: Set the most appropriate sink/source when new streams are created
+	470b625: device-manager: Add routing functions that are triggered when sinks/soruces are added/removed.
+	8c99667: device-manager: Add a function to get a list of the highest priority device indexes for each role.
+	d69eba3: device-manager: Remove unneeded logic for checking for and (un)loading module-stream-restore. We can co-exist
+	a0567fb: device-manager: Rough framework (slots etc.) for handling routing.
+	fd5a508: device-manager: debug and comments
+	2b71480: device-manager: Fix the freeing of the datum on prefer/defer.
+	0541028: device-manager: When a new device is encountered, initialise the priority list to an appropriate value
+	5e3f1c2: device-manager: Let subscribed clients know when something changes.
+	6d4afac: device-manager: Change the write function to a rename function.
+
+2009-09-19	Colin Guthrie
+	4981268: device-manager: Provide a method for prefering/defering a device.
+	a9bd1ab: device-manager: Fix copy+paste code that looped over the tagstruct when not necessary
+	c1ece6c: device-manager: Provide a way for clients to enable/disable role-based device-priority routing.
+	25f0545: device-manager: Update docs version -> 0.9.19 (predicted)
+
+2009-07-05	Colin Guthrie
+	bddebbf: device-manager: Fix copy+paste leftover
+
+2009-06-29	Colin Guthrie
+	58bc037: device-manager: Only store and save details for non-monitor sources
+
+2009-06-28	Colin Guthrie
+	276e953: device-restore: Fix the application of an entry to allow changing the name of devices.
+	b8b28ef: device-manager: Fix tagstruct description extraction (copy+paste blunder)
+	89c1f57: device-manager: Link native protocol library.
+	11f01de: device-manager: Export device-manager extension functions
+
+2009-06-27	Colin Guthrie
+	97eb065: device-manager: Fix indentation
+	0f6ace7: device-manager: Add an untested protocol extension.
+	4c68fe7: device-manager: Add a new module to keep track of the names and descriptions of various sinks.
+
 2009-11-11	Lennart Poettering
 	a79585e: i18n: fix LINGUAS
 	5471643: Merge remote branch 'origin/master-tx' into 0.9.19-stable
