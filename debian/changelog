@@ -10,6 +10,8 @@ pulseaudio (0.9.21-2) UNRELEASED; urgency=low
   * d/p/0004-In-KDE-only-start-pulseaudio-from-the-KDE-specific-d.patch
     + Added. When running KDE use the KDE specific autostart desktop file
     instead of the generic pulseaudio-x11 file
+  *  Fix two typos in debian/pulseaudio.default, patch by Paul Menzel
+    (Closes: #566332)
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 15:18:37 +0100
 

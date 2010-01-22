@@ -3,7 +3,7 @@
 # System mode is not the recommended way to run PulseAudio as it has some
 # limitations (such as no shared memory access) and could potentially allow
 # users to disconnect or redirect each others audio streams. The
-# recommend way to run PulseAudio is as a per-session daemon. For GNOME
+# recommended way to run PulseAudio is as a per-session daemon. For GNOME
 # sessions you can install pulseaudio-esound-compat and GNOME will
 # automatically start PulseAudio on login (if ESD is enabled in
 # System->Preferences->Sound). For other sessions, you can simply start
@@ -12,7 +12,7 @@
 PULSEAUDIO_SYSTEM_START=0
 
 # Prevent users from dynamically loading modules into the PulseAudio sound
-# server. Dynamic module loading enhances the flexibilty of the PulseAudio
+# server. Dynamic module loading enhances the flexibility of the PulseAudio
 # system, but may pose a security risk.
 # 0 = no, 1 = yes
 DISALLOW_MODULE_LOADING=1
