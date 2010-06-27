@@ -13,8 +13,10 @@ pulseaudio (0.9.21-2) UNRELEASED; urgency=low
     instead of the generic pulseaudio-x11 file
   *  Fix two typos in debian/pulseaudio.default, patch by Paul Menzel
     (Closes: #566332)
+  *  Prepare the debian package for building on HURD again (needs some upstream
+     fixes as well). Patch by Pino Toscano (Closes: #573339)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 15:18:37 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 15:51:31 +0100
 
 pulseaudio (0.9.21-1.2) unstable; urgency=high
 

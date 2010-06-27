@@ -10,6 +10,8 @@ common-build-arch::
 	    debian/pulseaudio.install.kfreebsd-i386
 	grep -v -e alsa -e evdev -e udev debian/pulseaudio.install > \
 	    debian/pulseaudio.install.kfreebsd-amd64
+	grep -v -e alsa -e evdev -e udev debian/pulseaudio.install > \
+	    debian/pulseaudio.install.hurd-i386
 
 common-install-arch::
 	find $(DEB_DESTDIR) -name "*.la" -delete
@@ -29,6 +31,7 @@ common-binary-post-install-arch:: list-missing
 clean::
 	rm -f debian/pulseaudio.install.kfreebsd-i386
 	rm -f debian/pulseaudio.install.kfreebsd-amd64
+	rm -f debian/pulseaudio.install.hurd-i386
 
 update-patch-series:
 	mkdir -p $(CURDIR)/debian/patches
