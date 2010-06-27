@@ -15,8 +15,10 @@ pulseaudio (0.9.21-2) UNRELEASED; urgency=low
     (Closes: #566332)
   *  Prepare the debian package for building on HURD again (needs some upstream
      fixes as well). Patch by Pino Toscano (Closes: #573339)
+  * Use the pulseaudio.1 manpage from the source tree instead of the older (and
+    outdated) debian specific one.
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 15:51:31 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 17:19:18 +0100
 
 pulseaudio (0.9.21-1.2) unstable; urgency=high
 
