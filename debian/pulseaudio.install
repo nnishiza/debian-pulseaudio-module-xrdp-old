@@ -3,8 +3,10 @@ etc/pulse/system.pa
 etc/pulse/daemon.conf
 etc/dbus-1/system.d/pulseaudio-system.conf
 etc/xdg/autostart/pulseaudio.desktop
+etc/xdg/autostart/pulseaudio-kde.desktop
 usr/bin/pulseaudio
 usr/bin/start-pulseaudio-x11
+usr/bin/start-pulseaudio-kde
 usr/lib/pulse-*/modules/libalsa-util.so
 usr/lib/pulse-*/modules/libcli.so
 usr/lib/pulse-*/modules/libprotocol-cli.so
@@ -16,6 +18,7 @@ usr/lib/pulse-*/modules/module-alsa-sink.so
 usr/lib/pulse-*/modules/module-alsa-source.so
 usr/lib/pulse-*/modules/module-always-sink.so
 usr/lib/pulse-*/modules/module-console-kit.so
+usr/lib/pulse-*/modules/module-device-manager.so
 usr/lib/pulse-*/modules/module-device-restore.so
 usr/lib/pulse-*/modules/module-stream-restore.so
 usr/lib/pulse-*/modules/module-cli-protocol-tcp.so

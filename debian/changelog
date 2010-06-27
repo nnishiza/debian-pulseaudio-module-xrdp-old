@@ -4,8 +4,14 @@ pulseaudio (0.9.21-2) UNRELEASED; urgency=low
   * debian/patches/0003-Re-bootstrap.patch
     + Added. Update configure so we don't have to re-run autotools when
     building the package (Closes: #576457, #576546, #576769)
+  * Install a KDE specific startup file and module-device-manager.
+    Thanks to Daniel Schaal and Zsolt Rizsanyi for patches and tips.
+    (Closes: #570487)
+  * d/p/0004-In-KDE-only-start-pulseaudio-from-the-KDE-specific-d.patch
+    + Added. When running KDE use the KDE specific autostart desktop file
+    instead of the generic pulseaudio-x11 file
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 13:40:56 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 15:18:37 +0100
 
 pulseaudio (0.9.21-1.2) unstable; urgency=high
 

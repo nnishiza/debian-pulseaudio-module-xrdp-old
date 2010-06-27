@@ -1,3 +1,4 @@
 0001-Work-around-some-platforms-not-having-O_CLOEXEC.patch
 0002-CVE-2009-1299.patch
 0003-Re-bootstrap.patch
+0004-In-KDE-only-start-pulseaudio-from-the-KDE-specific-d.patch
