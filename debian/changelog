@@ -1,3 +1,19 @@
+pulseaudio (0.9.21-1.2) unstable; urgency=high
+
+  * Non-maintainer upload by the Security Team.
+  * Added autoconf, automake, and libtool in Build-Depends to regenerate
+    configure and auto* files at build time, and fixed a regression introduced
+    in previous NMU (Closes: #576457)
+
+ -- Giuseppe Iuculano <iuculano@debian.org>  Mon, 05 Apr 2010 23:02:56 +0200
+
+pulseaudio (0.9.21-1.1) unstable; urgency=high
+
+  * Non-maintainer upload.
+  * Fix insecure temporary file creation security issue (closes: #573615).
+
+ -- Michael Gilbert <michael.s.gilbert@gmail.com>  Sat, 27 Mar 2010 14:32:13 -0400
+
 pulseaudio (0.9.21-1) unstable; urgency=low
 
   * New upstream release
