@@ -3,7 +3,7 @@ pulseaudio (0.9.21-2) UNRELEASED; urgency=low
   * Import NMU patches into git
   * debian/patches/0003-Re-bootstrap.patch
     + Added. Update configure so we don't have to re-run autotools when
-    building the package (Closes: #576457)
+    building the package (Closes: #576457, #576546, #576769)
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sun, 27 Jun 2010 13:40:56 +0100
 
