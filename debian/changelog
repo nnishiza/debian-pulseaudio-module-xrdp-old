@@ -1,3 +1,10 @@
+pulseaudio (0.9.21-3) UNRELEASED; urgency=low
+
+  * debian/rules: Compile with -g0 on mips{,el} to work around #519006 in
+    gcc-4.4
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 03 Jul 2010 14:53:12 +0100
+
 pulseaudio (0.9.21-2) unstable; urgency=low
 
   * Import NMU patches into pkg-pulse git, thanks to the security team for
