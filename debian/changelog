@@ -1,4 +1,4 @@
-pulseaudio (0.9.22-1) UNRELEASED; urgency=low
+pulseaudio (0.9.22-1) experimental; urgency=low
 
   * New upstream release
   * debian/patches/0002-CVE-2009-1299.patch:
