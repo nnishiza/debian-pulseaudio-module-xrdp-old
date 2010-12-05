@@ -12148,6 +12148,7 @@ fi
 fi
 
 
+fi
 
 
 fi
@@ -12407,53 +12408,13 @@ fi
 
 
 
-for ac_header in netinet/ip.h
-do :
-  ac_fn_c_check_header_compile "$LINENO" "netinet/ip.h" "ac_cv_header_netinet_ip_h" "#include <sys/types.h>
-                  #if HAVE_NETINET_IN_H
-                  # include <netinet/in.h>
-                  #endif
-                  #if HAVE_NETINET_IN_SYSTM_H
-                  # include <netinet/in_systm.h>
-                  #endif
 
-"
-if test "x$ac_cv_header_netinet_ip_h" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_NETINET_IP_H 1
-_ACEOF
 
-fi
 
-done
 
-for ac_header in regex.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "regex.h" "ac_cv_header_regex_h" "$ac_includes_default"
-if test "x$ac_cv_header_regex_h" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_REGEX_H 1
-_ACEOF
- HAVE_REGEX=1
-else
-  HAVE_REGEX=0
-fi
 
-done
 
-for ac_header in sys/un.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "sys/un.h" "ac_cv_header_sys_un_h" "$ac_includes_default"
-if test "x$ac_cv_header_sys_un_h" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_SYS_UN_H 1
-_ACEOF
- HAVE_AF_UNIX=1
-else
-  HAVE_AF_UNIX=0
-fi
 
-done
 
 
 striplib=
@@ -12486,38 +12447,11 @@ $as_echo "no" >&6; }
   esac
 fi
 
- if test "x$HAVE_AF_UNIX" = "x1"; then
-  HAVE_AF_UNIX_TRUE=
-  HAVE_AF_UNIX_FALSE='#'
-else
-  HAVE_AF_UNIX_TRUE='#'
-  HAVE_AF_UNIX_FALSE=
-fi
 
 
-# Linux
-for ac_header in linux/input.h
-do :
-  ac_fn_c_check_header_mongrel "$LINENO" "linux/input.h" "ac_cv_header_linux_input_h" "$ac_includes_default"
-if test "x$ac_cv_header_linux_input_h" = x""yes; then :
-  cat >>confdefs.h <<_ACEOF
-#define HAVE_LINUX_INPUT_H 1
-_ACEOF
- HAVE_EVDEV=1
-else
-  HAVE_EVDEV=0
-fi
-
-done
 
 
- if test "x$HAVE_EVDEV" = "x1"; then
-  HAVE_EVDEV_TRUE=
-  HAVE_EVDEV_FALSE='#'
-else
-  HAVE_EVDEV_TRUE='#'
-  HAVE_EVDEV_FALSE=
-fi
+
 
 
 
@@ -12573,12 +12507,10 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 CC="$lt_save_CC"
 
-# NetBSD
 
 
 
 
-# Other
 
 
 
@@ -21877,7 +21809,7 @@ if test "x$ac_cr" = x; then
 fi
 ac_cs_awk_cr=`$AWK 'BEGIN { print "a\rb" }' </dev/null 2>/dev/null`
 if test "$ac_cs_awk_cr" = "a${ac_cr}b"; then
-  ac_cs_awk_cr='\r'
+  ac_cs_awk_cr='\\r'
 else
   ac_cs_awk_cr=$ac_cr
 fi
