@@ -103,6 +103,63 @@ static const char *path_get_card_id(const char *path) {
     return e + 5;
 }
 
+static char *card_get_sysattr(const char *card_idx, const char *name) {
+    struct udev *udev;
+    struct udev_device *card = NULL;
+    char *t, *r = NULL;
+    const char *v;
+
+    pa_assert(card_idx);
+    pa_assert(name);
+
+    if (!(udev = udev_new())) {
+        pa_log_error("Failed to allocate udev context.");
+        goto finish;
+    }
+
+    t = pa_sprintf_malloc("%s/class/sound/card%s", udev_get_sys_path(udev), card_idx);
+    card = udev_device_new_from_syspath(udev, t);
+    pa_xfree(t);
+
+    if (!card) {
+        pa_log_error("Failed to get card object.");
+        goto finish;
+    }
+
+    if ((v = udev_device_get_sysattr_value(card, name)) && *v)
+        r = pa_xstrdup(v);
+
+finish:
+
+    if (card)
+        udev_device_unref(card);
+
+    if (udev)
+        udev_unref(udev);
+
+    return r;
+}
+
+static pa_bool_t pcm_is_modem(const char *card_idx, const char *pcm) {
+    char *sysfs_path, *pcm_class;
+    pa_bool_t is_modem;
+
+    pa_assert(card_idx);
+    pa_assert(pcm);
+
+    /* Check /sys/class/sound/card.../pcmC...../pcm_class. An HDA
+     * modem can be used simultaneously with generic
+     * playback/record. */
+
+    sysfs_path = pa_sprintf_malloc("pcmC%sD%s/pcm_class", card_idx, pcm);
+    pcm_class = card_get_sysattr(card_idx, sysfs_path);
+    is_modem = pcm_class && pa_streq(pcm_class, "modem");
+    pa_xfree(pcm_class);
+    pa_xfree(sysfs_path);
+
+    return is_modem;
+}
+
 static pa_bool_t is_card_busy(const char *id) {
     char *card_path = NULL, *pcm_path = NULL, *sub_status = NULL;
     DIR *card_dir = NULL, *pcm_dir = NULL;
@@ -139,6 +196,9 @@ static pa_bool_t is_card_busy(const char *id) {
             break;
 
         if (!pa_startswith(de->d_name, "pcm"))
+            continue;
+
+        if (pcm_is_modem(id, de->d_name + 3))
             continue;
 
         pa_xfree(pcm_path);
@@ -366,7 +426,7 @@ static void process_device(struct userdata *u, struct udev_device *dev) {
         return;
     }
 
-    if ((ff = udev_device_get_property_value(dev, "SOUND_FORM_FACTOR")) &&
+    if ((ff = udev_device_get_property_value(dev, "SOUND_CLASS")) &&
         pa_streq(ff, "modem")) {
         pa_log_debug("Ignoring %s, because it is a modem.", udev_device_get_devpath(dev));
         return;
@@ -416,8 +476,10 @@ static void monitor_cb(
         goto fail;
     }
 
-    if (!path_get_card_id(udev_device_get_devpath(dev)))
+    if (!path_get_card_id(udev_device_get_devpath(dev))) {
+        udev_device_unref(dev);
         return;
+    }
 
     process_device(u, dev);
     udev_device_unref(dev);
@@ -634,6 +696,11 @@ int pa__init(pa_module *m) {
 
     if (!(u->monitor = udev_monitor_new_from_netlink(u->udev, "udev"))) {
         pa_log("Failed to initialize monitor.");
+        goto fail;
+    }
+
+    if (udev_monitor_filter_add_match_subsystem_devtype(u->monitor, "sound", NULL) < 0) {
+        pa_log("Failed to subscribe to sound devices.");
         goto fail;
     }
 

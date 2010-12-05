@@ -45,7 +45,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 16)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [12:2:12])
+AC_SUBST(LIBPULSE_VERSION_INFO, [12:3:12])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -424,7 +424,7 @@ AC_CHECK_FUNCS_ONCE([lrintf strtof])
 AC_FUNC_FORK
 AC_FUNC_GETGROUPS
 AC_FUNC_SELECT_ARGTYPES
-AC_CHECK_FUNCS_ONCE([chmod chown clock_gettime getaddrinfo getgrgid_r getgrnam_r \
+AC_CHECK_FUNCS_ONCE([chmod chown fstat fchown fchmod clock_gettime getaddrinfo getgrgid_r getgrnam_r \
     getpwnam_r getpwuid_r gettimeofday getuid inet_ntop inet_pton mlock nanosleep \
     pipe posix_fadvise posix_madvise posix_memalign setpgid setsid shm_open \
     sigaction sleep sysconf pthread_setaffinity_np])
@@ -516,7 +516,7 @@ AC_ARG_ENABLE([x11],
         [x11=auto])
 
 if test "x${x11}" != xno ; then
-    PKG_CHECK_MODULES(X11, [ x11 ice sm xtst ],
+    PKG_CHECK_MODULES(X11, [ x11-xcb ice sm xtst xcb-atom ],
         HAVE_X11=1,
         [
             HAVE_X11=0
@@ -893,7 +893,7 @@ AC_ARG_ENABLE([gconf],
         [gconf=auto])
 
 if test "x${gconf}" != xno ; then
-    PKG_CHECK_MODULES(GCONF, [ gconf-2.0 >= 2.4.0 ],
+    PKG_CHECK_MODULES(GCONF, [ gconf-2.0 >= 2.4.0 gobject-2.0 ],
         HAVE_GCONF=1,
         [
             HAVE_GCONF=0
@@ -1373,6 +1373,13 @@ AC_ARG_WITH(
         [modlibexecdir=$withval], [modlibexecdir="${libdir}/pulse-${PA_MAJORMINORMICRO}/modules"])
 
 AC_SUBST(modlibexecdir)
+
+AC_ARG_WITH(
+        [udev-rules-dir],
+        AS_HELP_STRING([--with-udev-rules-dir],[Directory where to install udev rules to (defaults to /lib/udev/rules.d)]),
+        [udevrulesdir=$withval], [udevrulesdir="/lib/udev/rules.d"])
+
+AC_SUBST(udevrulesdir)
 
 AC_ARG_ENABLE(
         [force-preopen],

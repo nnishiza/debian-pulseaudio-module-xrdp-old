@@ -37,6 +37,7 @@ struct pa_bluetooth_discovery {
     PA_LLIST_HEAD(pa_dbus_pending, pending);
     pa_hashmap *devices;
     pa_hook hook;
+    pa_bool_t filter_added;
 };
 
 static void get_properties_reply(DBusPendingCall *pending, void *userdata);
@@ -341,7 +342,13 @@ static void get_properties_reply(DBusPendingCall *pending, void *userdata) {
 /*                  dbus_message_get_interface(p->message), */
 /*                  dbus_message_get_path(p->message)); */
 
-    d = p->call_data;
+    /* We don't use p->call_data here right-away since the device
+     * might already be invalidated at this point */
+
+    if (!(d = pa_hashmap_get(y->devices, dbus_message_get_path(p->message))))
+        return;
+
+    pa_assert(p->call_data == d);
 
     valid = dbus_message_get_type(r) == DBUS_MESSAGE_TYPE_ERROR ? -1 : 1;
 
@@ -788,6 +795,7 @@ pa_bluetooth_discovery* pa_bluetooth_discovery_get(pa_core *c) {
         pa_log_error("Failed to add filter function");
         goto fail;
     }
+    y->filter_added = TRUE;
 
     if (pa_dbus_add_matches(
                 pa_dbus_connection_get(y->connection), &err,
@@ -856,7 +864,8 @@ void pa_bluetooth_discovery_unref(pa_bluetooth_discovery *y) {
                                "type='signal',sender='org.bluez',interface='org.bluez.AudioSink',member='PropertyChanged'",
                                "type='signal',sender='org.bluez',interface='org.bluez.AudioSource',member='PropertyChanged'", NULL);
 
-        dbus_connection_remove_filter(pa_dbus_connection_get(y->connection), filter_cb, y);
+        if (y->filter_added)
+            dbus_connection_remove_filter(pa_dbus_connection_get(y->connection), filter_cb, y);
 
         pa_dbus_connection_unref(y->connection);
     }

@@ -46,7 +46,7 @@ namespace PulseAudio {
         [CCode (cname="PA_CHECK_VERSION")]
         public bool CHECK_VERSION(int major, int minor, int micro);
 
-        [CCode (cname="INVALID_INDEX")]
+        [CCode (cname="PA_INVALID_INDEX")]
         public const uint32 INVALID_INDEX;
 
         [CCode (cname="pa_free_cb_t")]
@@ -879,11 +879,11 @@ namespace PulseAudio {
         }
 
         [Compact]
-        [CCode (cname="pa_glib_mainloop", cprefix="pa_glib_mainloop_", free_function="pa_glib_mainloop_free")]
+        [CCode (cheader_filename="pulse/glib-mainloop.h", cname="pa_glib_mainloop", cprefix="pa_glib_mainloop_", free_function="pa_glib_mainloop_free")]
         public class GLibMainLoop {
 
                 [CCode (cname="pa_glib_mainloop_new")]
-                public GLibMainLoop();
+                public GLibMainLoop(MainContext? c = null);
 
                 public unowned MainLoopApi get_api();
         }
@@ -1024,7 +1024,7 @@ namespace PulseAudio {
                 public Operation? suspend_sink_by_index(uint32 idx, bool suspend, SuccessCb? cb = null);
 
                 public Operation? set_sink_port_by_name(string name, string port, SuccessCb? cb = null);
-                public Operation? set_sink_port_by_index(string idx, string port, SuccessCb? cb = null);
+                public Operation? set_sink_port_by_index(uint32 idx, string port, SuccessCb? cb = null);
 
                 public Operation? get_source_info_by_name(string name, SourceInfoCb cb);
                 public Operation? get_source_info_by_index(uint32 idx, SourceInfoCb cb);
@@ -1039,7 +1039,7 @@ namespace PulseAudio {
                 public Operation? suspend_source_by_index(uint32 idx, bool suspend, SuccessCb? cb = null);
 
                 public Operation? set_source_port_by_name(string name, string port, SuccessCb? cb = null);
-                public Operation? set_source_port_by_index(string idx, string port, SuccessCb? cb = null);
+                public Operation? set_source_port_by_index(uint32 idx, string port, SuccessCb? cb = null);
 
                 public Operation? get_server_info(ServerInfoCb cb);
 

@@ -78,10 +78,16 @@
 #define TSCHED_MIN_SLEEP_USEC (10*PA_USEC_PER_MSEC)                /* 10ms  -- Sleep at least 10ms on each iteration */
 #define TSCHED_MIN_WAKEUP_USEC (4*PA_USEC_PER_MSEC)                /* 4ms   -- Wakeup at least this long before the buffer runs empty*/
 
+#define SMOOTHER_WINDOW_USEC  (10*PA_USEC_PER_SEC)                 /* 10s   -- smoother windows size */
+#define SMOOTHER_ADJUST_USEC  (1*PA_USEC_PER_SEC)                  /* 1s    -- smoother adjust time */
+
 #define SMOOTHER_MIN_INTERVAL (2*PA_USEC_PER_MSEC)                 /* 2ms   -- min smoother update interval */
-#define SMOOTHER_MAX_INTERVAL (200*PA_USEC_PER_MSEC)               /* 200ms -- max smoother update inteval */
+#define SMOOTHER_MAX_INTERVAL (200*PA_USEC_PER_MSEC)               /* 200ms -- max smoother update interval */
 
 #define VOLUME_ACCURACY (PA_VOLUME_NORM/100)  /* don't require volume adjustments to be perfectly correct. don't necessarily extend granularity in software unless the differences get greater than this level */
+
+#define DEFAULT_REWIND_SAFEGUARD_BYTES (256U) /* 1.33ms @48kHz, we'll never rewind less than this */
+#define DEFAULT_REWIND_SAFEGUARD_USEC (1330) /* 1.33ms, depending on channels/rate/sample we may rewind more than 256 above */
 
 struct userdata {
     pa_core *core;
@@ -112,7 +118,8 @@ struct userdata {
         watermark_inc_step,
         watermark_dec_step,
         watermark_inc_threshold,
-        watermark_dec_threshold;
+        watermark_dec_threshold,
+        rewind_safeguard;
 
     pa_usec_t watermark_dec_not_before;
 
@@ -607,6 +614,9 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polle
 
             if (PA_UNLIKELY((sframes = snd_pcm_mmap_commit(u->pcm_handle, offset, frames)) < 0)) {
 
+                if (!after_avail && (int) sframes == -EAGAIN)
+                    break;
+
                 if ((r = try_recover(u, "snd_pcm_mmap_commit", (int) sframes)) == 0)
                     continue;
 
@@ -629,11 +639,14 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polle
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec);
+    if (u->use_tsched) {
+        *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec);
 
-    if (*sleep_usec > process_usec)
-        *sleep_usec -= process_usec;
-    else
+        if (*sleep_usec > process_usec)
+            *sleep_usec -= process_usec;
+        else
+            *sleep_usec = 0;
+    } else
         *sleep_usec = 0;
 
     return work_done ? 1 : 0;
@@ -766,11 +779,14 @@ static int unix_write(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polle
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec);
+    if (u->use_tsched) {
+        *sleep_usec = pa_bytes_to_usec(left_to_play, &u->sink->sample_spec);
 
-    if (*sleep_usec > process_usec)
-        *sleep_usec -= process_usec;
-    else
+        if (*sleep_usec > process_usec)
+            *sleep_usec -= process_usec;
+        else
+            *sleep_usec = 0;
+    } else
         *sleep_usec = 0;
 
     return work_done ? 1 : 0;
@@ -790,7 +806,7 @@ static void update_smoother(struct userdata *u) {
 
     /* Let's update the time smoother */
 
-    if (PA_UNLIKELY((err = pa_alsa_safe_delay(u->pcm_handle, &delay, u->hwbuf_size, &u->sink->sample_spec)) < 0)) {
+    if (PA_UNLIKELY((err = pa_alsa_safe_delay(u->pcm_handle, &delay, u->hwbuf_size, &u->sink->sample_spec, FALSE)) < 0)) {
         pa_log_warn("Failed to query DSP status data: %s", pa_alsa_strerror(err));
         return;
     }
@@ -876,6 +892,14 @@ static int suspend(struct userdata *u) {
         u->alsa_rtpoll_item = NULL;
     }
 
+    /* We reset max_rewind/max_request here to make sure that while we
+     * are suspended the old max_request/max_rewind values set before
+     * the suspend can influence the per-stream buffer of newly
+     * created streams, without their requirements having any
+     * influence on them. */
+    pa_sink_set_max_rewind_within_thread(u->sink, 0);
+    pa_sink_set_max_request_within_thread(u->sink, 0);
+
     pa_log_info("Device suspended...");
 
     return 0;
@@ -933,6 +957,12 @@ static int update_sw_params(struct userdata *u) {
     }
 
     pa_sink_set_max_request_within_thread(u->sink, u->hwbuf_size - u->hwbuf_unused);
+     if (pa_alsa_pcm_is_hw(u->pcm_handle))
+         pa_sink_set_max_rewind_within_thread(u->sink, u->hwbuf_size);
+    else {
+        pa_log_info("Disabling rewind_within_thread for device %s", u->device_name);
+        pa_sink_set_max_rewind_within_thread(u->sink, 0);
+    }
 
     return 0;
 }
@@ -1103,6 +1133,9 @@ static int mixer_callback(snd_mixer_elem_t *elem, unsigned int mask) {
     if (mask == SND_CTL_EVENT_MASK_REMOVE)
         return 0;
 
+    if (u->sink->suspend_cause & PA_SUSPEND_SESSION)
+        return 0;
+
     if (mask & SND_CTL_EVENT_MASK_VALUE) {
         pa_sink_get_volume(u->sink, TRUE);
         pa_sink_get_mute(u->sink, TRUE);
@@ -1255,6 +1288,9 @@ static void sink_update_requested_latency_cb(pa_sink *s) {
     struct userdata *u = s->userdata;
     size_t before;
     pa_assert(u);
+    pa_assert(u->use_tsched); /* only when timer scheduling is used
+                               * we can dynamically adjust the
+                               * latency */
 
     if (!u->pcm_handle)
         return;
@@ -1289,7 +1325,10 @@ static int process_rewind(struct userdata *u) {
         return -1;
     }
 
-    unused_nbytes = u->tsched_watermark + (size_t) unused * u->frame_size;
+    unused_nbytes = (size_t) unused * u->frame_size;
+
+    /* make sure rewind doesn't go too far, can cause issues with DMAs */
+    unused_nbytes += u->rewind_safeguard;
 
     if (u->hwbuf_size > unused_nbytes)
         limit_nbytes = u->hwbuf_size - unused_nbytes;
@@ -1381,6 +1420,8 @@ static void thread_func(void *userdata) {
                     snd_pcm_start(u->pcm_handle);
 
                     pa_smoother_resume(u->smoother, pa_rtclock_now(), TRUE);
+
+                    u->first = FALSE;
                 }
 
                 update_smoother(u);
@@ -1418,7 +1459,6 @@ static void thread_func(void *userdata) {
                 pa_rtpoll_set_timer_relative(u->rtpoll, PA_MIN(sleep_usec, cusec));
             }
 
-            u->first = FALSE;
             u->after_rewind = FALSE;
 
         } else if (u->use_tsched)
@@ -1642,7 +1682,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     const char *dev_id = NULL;
     pa_sample_spec ss, requested_ss;
     pa_channel_map map;
-    uint32_t nfrags, frag_size, buffer_size, tsched_size, tsched_watermark;
+    uint32_t nfrags, frag_size, buffer_size, tsched_size, tsched_watermark, rewind_safeguard;
     snd_pcm_uframes_t period_frames, buffer_frames, tsched_frames;
     size_t frame_size;
     pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d, ignore_dB = FALSE;
@@ -1698,6 +1738,12 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         goto fail;
     }
 
+    rewind_safeguard = PA_MAX(DEFAULT_REWIND_SAFEGUARD_BYTES, pa_usec_to_bytes(DEFAULT_REWIND_SAFEGUARD_USEC, &ss));
+    if (pa_modargs_get_value_u32(ma, "rewind_safeguard", &rewind_safeguard) < 0) {
+        pa_log("Failed to parse rewind_safeguard argument");
+        goto fail;
+    }
+
     use_tsched = pa_alsa_may_tsched(use_tsched);
 
     u = pa_xnew0(struct userdata, 1);
@@ -1706,12 +1752,13 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     u->use_mmap = use_mmap;
     u->use_tsched = use_tsched;
     u->first = TRUE;
+    u->rewind_safeguard = rewind_safeguard;
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
     u->smoother = pa_smoother_new(
-            DEFAULT_TSCHED_BUFFER_USEC*2,
-            DEFAULT_TSCHED_BUFFER_USEC*2,
+            SMOOTHER_ADJUST_USEC,
+            SMOOTHER_WINDOW_USEC,
             TRUE,
             TRUE,
             5,
@@ -1850,7 +1897,8 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     }
 
     u->sink->parent.process_msg = sink_process_msg;
-    u->sink->update_requested_latency = sink_update_requested_latency_cb;
+    if (u->use_tsched)
+        u->sink->update_requested_latency = sink_update_requested_latency_cb;
     u->sink->set_state = sink_set_state_cb;
     u->sink->set_port = sink_set_port_cb;
     u->sink->userdata = u;
@@ -1871,7 +1919,12 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
                 (double) pa_bytes_to_usec(u->hwbuf_size, &ss) / PA_USEC_PER_MSEC);
 
     pa_sink_set_max_request(u->sink, u->hwbuf_size);
-    pa_sink_set_max_rewind(u->sink, u->hwbuf_size);
+    if (pa_alsa_pcm_is_hw(u->pcm_handle))
+        pa_sink_set_max_rewind(u->sink, u->hwbuf_size);
+    else {
+        pa_log_info("Disabling rewind for device %s", u->device_name);
+        pa_sink_set_max_rewind(u->sink, 0);
+    }
 
     if (u->use_tsched) {
         u->tsched_watermark = pa_usec_to_bytes_round_up(pa_bytes_to_usec_round_up(tsched_watermark, &requested_ss), &u->sink->sample_spec);
@@ -1894,7 +1947,6 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     } else
         pa_sink_set_fixed_latency(u->sink, pa_bytes_to_usec(u->hwbuf_size, &ss));
 
-
     reserve_update(u);
 
     if (update_sw_params(u) < 0)
@@ -1905,7 +1957,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
 
     pa_alsa_dump(PA_LOG_DEBUG, u->pcm_handle);
 
-    if (!(u->thread = pa_thread_new(thread_func, u))) {
+    if (!(u->thread = pa_thread_new("alsa-sink", thread_func, u))) {
         pa_log("Failed to create thread.");
         goto fail;
     }

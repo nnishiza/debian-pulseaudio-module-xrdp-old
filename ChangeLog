@@ -1,4 +1,272 @@
 
+2010-11-26	Lennart Poettering
+	70f69ac: build-sys: simplify things for building on fedora
+	1af3253: i18n: update POTFILES.in
+	3a67dde: build-sys: bump soname
+
+2010-11-25	Daniel T Chen
+	dad4b4e: Handle 'Internal Mic 1' as an 'Input Source'
+
+2010-11-19	David Henningsson
+	167a9a4: Add "Rear Mic" to alsa mixer paths.
+
+2010-11-25	Lennart Poettering
+	b53f06a: alsa-source: fix enum types
+	9472d7a: alsa-mixer: make a few strings translatable
+
+2010-11-25	Jan Kratochvil
+	745f59a: pulse: make sure legacy_dir is not static
+
+2010-11-18	Wanming.Zhang@tieto.com
+	b173f9c: man: Remove repeated lines
+
+2010-11-14	Stephen Moehle
+	8036598: upnp: Implement the MediaServer2 D-Bus interface
+
+2010-11-17	Colin Guthrie
+	70a060d: combine: Only check if the sink is h/w etc. in automatic mode
+
+2010-11-12	Antti-Ville Jansson
+	33ea7b7: combine: Handle reappearing slave sinks in non-automatic mode.
+
+2010-11-11	Pierre-Louis Bossart
+	34fd605: alsa: remove redundant call to snd_pcm_nonblock()
+
+2010-10-03	David Fries
+	2c9c908: doxygen: Add 'See also' linking to the overview page
+
+2010-10-12	David Fries
+	f2593da: doxygen: Documentation improvements
+	14bc454: doxygen: Fix the "all" comments regarding volume helper functions.
+
+2010-09-18	David Fries
+	b7303e2: doxygen: Fix documentation typos
+
+2010-10-01	Colin Guthrie
+	352ae22: sink-input: Fix comment
+
+2010-10-16	Colin Guthrie
+	848dd37: intended-roles: Mark devices with a form factor of 'headset' as being appropriate for 'phone' streams
+
+2010-10-15	Daniel Mack
+	8a30d4c: alsa-mixer: add profile for Native Instruments Korecontroller
+
+2010-10-08	David Henningsson
+	a8d76e9: SSE/MMX/ARM: Fix high frequency noise with unusual number of channels
+
+2010-10-06	Colin Guthrie
+	a378c02: augment-properties: Fix debug messages and statement bracketing.
+
+2010-10-01	Colin Guthrie
+	9109a18: suspend: Do not assert when checking for device suspended status and a stream is not linked.
+
+2010-06-04	Colin Guthrie
+	a21b832: device-manager: Ensure that sinks/sources populate the device manager lists in order of their priority.
+
+2010-01-31	Colin Guthrie
+	858abe6: augment-properties: Search for .desktop files in subfolders too.
+
+2010-02-05	Colin Guthrie
+	a7a6f44: stream-restore: Clear the save_sink/save_source flags on apply_entry.
+
+2009-12-06	Arun Raghavan
+	9729966: Add a configure option to change 'udevrulesdir'
+
+2010-09-18	Colin Guthrie
+	165cb87: x11: Use the default screen for X11 properties.
+	5c0bc09: xcb: xcb_get_setup() can return 0, so make sure we check it before using
+	2c564f2: xcb: Ensure the XCB connection is valid before using it.
+
+2010-09-14	Colin Guthrie
+	eef247b: alsa: Only set the 'first' flag to false when we actually call snd_pcm_start()
+
+2010-09-11	Daniel Mack
+	28f4aeb: alsa-mixer: add profile for Traktor Kontrol S4
+
+2010-09-09	Wim Taymans
+	1ff360c: alsa: make defines for smoother configuration
+
+2010-09-08	Wim Taymans
+	1c29f55: alsa: work around slightly broken _delay implementations
+
+2010-09-06	Wim Taymans
+	74c117f: alsa-time-test: make test usable for capture too
+	1503b8c: alsa-source: refactor smoother and device start
+	3d9b710: smoother: avoid losing precision
+
+2010-09-04	Colin Guthrie
+	a65825f: alsa: Set the rewind safeguard proportionally to sample spec
+
+2010-08-24	Tanu Kaskinen
+	8748ebd: alsa-sink: Get rid of a compiler warning regarding rewind_safeguard type.
+
+2010-04-29	Pierre-Louis Bossart
+	514fd1e: add rewind-safeguard parameter
+
+2010-02-23	Lennart Poettering
+	e2ef3a1: alsa: don't make use of tsched related variables when tsched is disabled
+
+2010-09-03	Wim Taymans
+	4fb02d8: alsa: increase the smoother window
+
+2010-08-23	Wim Taymans
+	9375019: alsa: resume smoother after unsuspend
+
+2010-05-29	Colin Guthrie
+	2b88634: x11: Partially convert to XCB.
+
+2010-07-19	Lennart Poettering
+	4a1072e: udev: fix hex decoding
+
+2010-07-13	Pierre-Louis Bossart
+	aaae99d: alsa: disable rewinds when using ALSA plugins
+
+2010-06-06	Colin Guthrie
+	6c8660a: alsa: Fix assertion on mmap_write (triggered via a52 plugin)
+
+2010-05-08	Colin Guthrie
+	65f89dc: rtp: Fix bracketing in pa_rtp_recv.
+
+2010-05-03	David Henningsson
+	d519ca4: jack: Prevent crash on jack server shutdown
+
+2010-05-03	Lennart Poettering
+	bc7314f: thread: name all threads so that the names appear in /proc/$PID/task/$TID/comm
+
+2010-03-22	Lennart Poettering
+	22f708a: Revert "Fix crash on jack server shutdown"
+
+2010-03-22	Jez Austin
+	e8b83fa: socket-client: properly handle asyncns failures
+
+2010-03-17	Colin Guthrie
+	a7c1778: intended-roles: Do not pick monitor sources when doing automatic role-based device selection
+
+2010-03-14	David Henningsson
+	e756467: Fix crash on jack server shutdown
+
+2010-03-10	Daniel T Chen
+	29845be: Handle 'Digital Mic' as an 'Input Source'
+
+2010-03-02	Kees Cook
+	d3efa43: core-util: ensure that we chmod only the dir we ourselves created
+
+2010-02-23	Lennart Poettering
+	0d1154d: core: rework how stream volumes affect sink volumes
+	30f28eb: esd,simple: use pa_memblockq_pop_missing()
+
+2010-02-21	Lennart Poettering
+	195069c: core-util: introduce generic function pa_strip()
+
+2010-02-22	Lennart Poettering
+	dd682d6: alsa: reset max_rewind/max_request while suspending
+
+2010-02-21	Lennart Poettering
+	522c446: alsa-util: strip spaces from ALSA card/pcm names
+
+2010-02-22	Lennart Poettering
+	4a32103: native: improve logging for buffer_attrs
+	a469d44: suspend-on-idle: resume audio device even for initially corked streams
+
+2010-02-21	Lennart Poettering
+	b2e9fb6: pacat: pass buffer_attr to recording streams too
+	f9b9579: scache: when playing a sample from the cache make sure not queue them up when the sink is suspended
+	1805895: sample-cache: use the sample name as unmodified fallback in the properties when playing a sample from the cache
+	8adf536: stream-restore: be a little bit more verbose why we don't reastore a sink
+	ddabaa3: proplist: explicitly mention a role 'test'
+	117c99d: vala: fix wrapping of port setting calls
+	3f44bf0: channelmap: Use "Subwoofer" as pretty name for LFE
+
+2010-02-19	Daniel T Chen
+	047e16f: Add missing profile and alsa-mixer/paths to src/Makefile.am
+
+2010-02-19	Lennart Poettering
+	6bbdd20: vala: fix definition of the GLib mainloop adapter
+	5ce18c3: vala: fix definition of INVALID_INDEX
+	dfe27f6: shm: don't complain about missing SHM segments
+
+2010-02-18	Lennart Poettering
+	6e064d1: pacmd: don't enter busy loop when reading from stdin very early
+	96ec29c: pacmd: store away fd type
+	19fa81b: pacat: always fully fulfill write requests
+
+2010-02-16	Lennart Poettering
+	5e2af2d: fdsem: be more verbose when reading from eventfd fails.
+	96592c2: dbus: first restart timer, then dispatch it
+	ff2474e: padsp: emulate /dev/audio, too
+	f9b31fe: build-sys: add gobject to build dependencies
+	307bd14: alsa: use default output port names
+	0c836aa: alsa: cover "Internal Mic" elements
+
+2010-02-15	Lennart Poettering
+	7d6bab0: alsa: cover 'Shared Mic/Line in', 'Analog Source'
+	e8cb96c: alsa: cover "Desktop Speaker" mixer elements
+
+2010-02-09	Colin Guthrie
+	a631bee: core: Fix macro typo - PA_SINK_IS_LINKED -> PA_SINK_INPUT_IS_LINKED
+
+2010-01-18	Lennart Poettering
+	84782f2: native: rework handling of seeks that depend on variables the client does not know anything about
+
+2009-12-03	Tanu Kaskinen
+	52c66b4: libpulse: Store pa_stream pointers to hashmaps instead of dynarrays.
+
+2009-12-16	Daniel T Chen
+	fd5c802: Fix the following warnings (which now cause buildd failures in Ubuntu 10.04):
+	09c416e: More src/pulsecore/cpu-arm.c FTBFS fixes
+
+2010-01-04	Daniel T Chen
+	8c7148a: udev: Use SOUND_CLASS instead of SOUND_FORM_FACTOR when checking for modem
+	a2418ef: threaded-mainloop: Properly initialise m->n_waiting_for_accept to prevent deadlock
+
+2010-01-05	David KÃ¥gedal
+	66e1a2d: alsa: add profile set for M-Audio FastTrack Pro USB
+
+2010-01-14	Lennart Poettering
+	86144ee: client: include dolby channel names in comments
+
+2010-01-15	Lennart Poettering
+	fa64230: client: implement $PULSE_LATENCY_MSEC
+	27df027: pacat: allow configuration of latency in msec
+
+2010-01-14	Lennart Poettering
+	e129f85: udev: use ID_MODEL_ENC instead of ID_MODEL if it is set
+
+2009-12-06	Arun Raghavan
+	366e6d7: Mark shared variables as volatile
+
+2010-01-14	Lennart Poettering
+	48e0f68: alsa: cover bass boost mixer element
+	93cb75d: daemon: first take name on the bus, then return in starter process
+	acb4996: udev: rework modem detection a bit
+
+2010-01-14	Daniel T. Chen
+	63c968b: udev: handle sound cards with both modem and audio properly
+
+2010-01-13	Colin Guthrie
+	291cd09: alsa: Cover the 'Int Mic Boost' element.
+	67c6535: alsa: cover Input Source:Int Mic
+
+2010-01-13	Lennart Poettering
+	1708127: cpu: check for CMOV flag before using this intsruction in assembly
+	540ec7b: alsa: ignore volume changes from the hw if we are not on the active console
+	9b37dce: udev: make sure we get events only for sound devices
+	21b484e: log: add an easy way to disable log rate limiting
+	4bcb1a9: bluetooth: fix invalid memory access
+
+2010-01-12	Lennart Poettering
+	73ae1fc: once: make once related variables volatile
+	15a3018: udev: don't forget to unref devices we are not interested in
+	78811c5: client: verify connection state in pa_stream_connect_upload()
+	bf50dc4: client: detect forking in sample cache API, too
+
+2010-01-08	Lennart Poettering
+	e7d9f89: bluetooth: don't hit an assert if latency is queried for a stooped recording stream
+	11688ec: bluetooth: destruct stream only if it is not already destructed
+	3eed219: core: make sure we always return a valid memblock in sink_input_pop() callbacks
+	8d35665: native: fix request counter miscalculations
+	c41ee00: dbus: remove filter functions only if they were actually set before
+
 2009-11-23	Lennart Poettering
 	06327b1: bump soname
 

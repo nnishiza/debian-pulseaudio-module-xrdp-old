@@ -310,7 +310,10 @@
  */
 
 /** \file
- * Audio streams for input, output and sample upload */
+ * Audio streams for input, output and sample upload
+ *
+ * See also \subpage streams
+ */
 
 PA_C_DECL_BEGIN
 
@@ -486,8 +489,8 @@ int pa_stream_cancel_write(
  * data is not copied. If NULL, the data is copied into an internal
  * buffer. The client may freely seek around in the output buffer. For
  * most applications passing 0 and PA_SEEK_RELATIVE as arguments for
- * offset and seek should be useful. Afte ther write call succeeded
- * the write index will be a the position after where this chunk of
+ * offset and seek should be useful. After the write call succeeded
+ * the write index will be at the position after where this chunk of
  * data has been written to.
  *
  * As an optimization for avoiding needless memory copies you may call
@@ -529,9 +532,10 @@ size_t pa_stream_writable_size(pa_stream *p);
 /** Return the number of bytes that may be read using pa_stream_peek()*/
 size_t pa_stream_readable_size(pa_stream *p);
 
-/** Drain a playback stream. Use this for notification when the buffer
- * is empty. Please note that only one drain operation per stream may
- * be issued at a time. */
+/** Drain a playback stream.  Use this for notification when the
+ * playback buffer is empty after playing all the audio in the buffer.
+ * Please note that only one drain operation per stream may be issued
+ * at a time. */
 pa_operation* pa_stream_drain(pa_stream *s, pa_stream_success_cb_t cb, void *userdata);
 
 /** Request a timing info structure update for a stream. Use
@@ -609,10 +613,10 @@ void pa_stream_set_buffer_attr_callback(pa_stream *p, pa_stream_notify_cb_t cb, 
  * of the stream it will be created in corked state. */
 pa_operation* pa_stream_cork(pa_stream *s, int b, pa_stream_success_cb_t cb, void *userdata);
 
-/** Flush the playback buffer of this stream. Most of the time you're
- * better off using the parameter delta of pa_stream_write() instead
- * of this function. Available on both playback and recording
- * streams. */
+/** Flush the playback buffer of this stream. This discards any audio
+ * in the buffer.  Most of the time you're better off using the parameter
+ * delta of pa_stream_write() instead of this function. Available on both
+ * playback and recording streams. */
 pa_operation* pa_stream_flush(pa_stream *s, pa_stream_success_cb_t cb, void *userdata);
 
 /** Reenable prebuffering as specified in the pa_buffer_attr
@@ -739,8 +743,9 @@ pa_operation *pa_stream_proplist_remove(pa_stream *s, const char *const keys[], 
  * 0.9.11 */
 int pa_stream_set_monitor_stream(pa_stream *s, uint32_t sink_input_idx);
 
-/** Return what has been set with pa_stream_set_monitor_stream()
- * ebfore. \since 0.9.11 */
+/** Return the sink input index previously set with
+ * pa_stream_set_monitor_stream().
+ * \since 0.9.11 */
 uint32_t pa_stream_get_monitor_stream(pa_stream *s);
 
 PA_C_DECL_END

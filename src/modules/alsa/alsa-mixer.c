@@ -62,7 +62,7 @@ static const char *lookup_description(const char *name, const struct description
 
     for (i = 0; i < n; i++)
         if (pa_streq(dm[i].name, name))
-            return dm[i].description;
+            return _(dm[i].description);
 
     return NULL;
 }
@@ -1713,6 +1713,8 @@ static int option_verify(pa_alsa_option *o) {
         { "input-boost-off",           N_("No Boost") },
         { "output-amplifier-on",       N_("Amplifier") },
         { "output-amplifier-off",      N_("No Amplifier") },
+        { "output-bass-boost-on",      N_("Bass Boost") },
+        { "output-bass-boost-off",     N_("No Bass Boost") },
         { "output-speaker",            N_("Speaker") },
         { "output-headphones",         N_("Headphones") }
     };
@@ -1781,8 +1783,7 @@ static int path_verify(pa_alsa_path *p) {
         { "analog-output-headphones",   N_("Analog Headphones") },
         { "analog-output-lfe-on-mono",  N_("Analog Output (LFE)") },
         { "analog-output-mono",         N_("Analog Mono Output") },
-        { "analog-output-headphones-2", N_("Analog Headphones 2") },
-        { "analog-output-speaker",      N_("Analog Speaker") }
+        { "analog-output-speaker",      N_("Analog Speakers") }
     };
 
     pa_alsa_element *e;
@@ -3031,7 +3032,7 @@ static int profile_verify(pa_alsa_profile *p) {
                 if (!pa_strbuf_isempty(sb))
                     pa_strbuf_puts(sb, " + ");
 
-                pa_strbuf_printf(sb, "%s Output", m->description);
+                pa_strbuf_printf(sb, _("%s Output"), m->description);
             }
 
         if (p->input_mappings)
@@ -3039,7 +3040,7 @@ static int profile_verify(pa_alsa_profile *p) {
                 if (!pa_strbuf_isempty(sb))
                     pa_strbuf_puts(sb, " + ");
 
-                pa_strbuf_printf(sb, "%s Input", m->description);
+                pa_strbuf_printf(sb, _("%s Input"), m->description);
             }
 
         p->description = pa_strbuf_tostring_free(sb);

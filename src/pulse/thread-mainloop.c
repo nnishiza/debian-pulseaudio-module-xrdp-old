@@ -51,7 +51,7 @@
 
 struct pa_threaded_mainloop {
     pa_mainloop *real_mainloop;
-    int n_waiting, n_waiting_for_accept;
+    volatile int n_waiting, n_waiting_for_accept;
 
     pa_thread* thread;
     pa_mutex* mutex;
@@ -116,6 +116,7 @@ pa_threaded_mainloop *pa_threaded_mainloop_new(void) {
     pa_mainloop_set_poll_func(m->real_mainloop, poll_func, m->mutex);
 
     m->n_waiting = 0;
+    m->n_waiting_for_accept = 0;
 
     return m;
 }
@@ -145,7 +146,7 @@ int pa_threaded_mainloop_start(pa_threaded_mainloop *m) {
 
     pa_assert(!m->thread || !pa_thread_is_running(m->thread));
 
-    if (!(m->thread = pa_thread_new(thread, m)))
+    if (!(m->thread = pa_thread_new("threaded-ml", thread, m)))
         return -1;
 
     return 0;
@@ -185,6 +186,7 @@ void pa_threaded_mainloop_unlock(pa_threaded_mainloop *m) {
     pa_mutex_unlock(m->mutex);
 }
 
+/* Called with the lock taken */
 void pa_threaded_mainloop_signal(pa_threaded_mainloop *m, int wait_for_accept) {
     pa_assert(m);
 
@@ -198,6 +200,7 @@ void pa_threaded_mainloop_signal(pa_threaded_mainloop *m, int wait_for_accept) {
     }
 }
 
+/* Called with the lock taken */
 void pa_threaded_mainloop_wait(pa_threaded_mainloop *m) {
     pa_assert(m);
 
@@ -212,6 +215,7 @@ void pa_threaded_mainloop_wait(pa_threaded_mainloop *m) {
     m->n_waiting --;
 }
 
+/* Called with the lock taken */
 void pa_threaded_mainloop_accept(pa_threaded_mainloop *m) {
     pa_assert(m);
 

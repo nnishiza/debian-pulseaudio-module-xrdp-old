@@ -801,7 +801,7 @@ void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sam
         /* We were asked to drop all buffered data, and rerequest new
          * data from implementor the next time push() is called */
 
-        pa_memblockq_flush_write(i->thread_info.render_memblockq);
+        pa_memblockq_flush_write(i->thread_info.render_memblockq, TRUE);
 
     } else if (i->thread_info.rewrite_nbytes > 0) {
         size_t max_rewrite, amount;
@@ -1086,7 +1086,7 @@ void pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_p
     if (p)
         pa_proplist_update(i->proplist, mode, p);
 
-    if (PA_SINK_IS_LINKED(i->state)) {
+    if (PA_SINK_INPUT_IS_LINKED(i->state)) {
         pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED], i);
         pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
     }

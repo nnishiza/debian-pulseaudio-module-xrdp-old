@@ -78,9 +78,6 @@ Load the specified module with the specified arguments into the running sound se
 \fBunload-module\f1 \fIID\f1
 Unload the module instance identified by the specified numeric index.
 .TP
-\fBunload-module\f1 \fIID\f1
-Unload the module instance identified by the specified numeric index.
-.TP
 \fBsuspend-sink\f1 \fISINK\f1 \fI1|0\f1
 Suspend or resume the specified sink (which my be specified either by its symbolic name, or by its numeric index), depending whether 1 (suspend) or 0 (resume) is passed as last argument. Suspending a sink will pause all playback. Depending on the module implementing the sink this might have the effect that the underlying device is closed, making it available for other applications to use. The exact behaviour depends on the module.
 .TP
