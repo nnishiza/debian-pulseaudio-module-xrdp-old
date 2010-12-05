@@ -1,8 +1,12 @@
 pulseaudio (0.9.22-1) UNRELEASED; urgency=low
 
   * New upstream release
+  * debian/patches/0002-CVE-2009-1299.patch:
+    + Dropped, fixed upstream
+  * debian/patches/0003-Re-bootstrap.patch
+    + Dropped, not needed anymore
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 10:44:28 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 10:59:57 +0000
 
 pulseaudio (0.9.21-3) unstable; urgency=low
 

@@ -1,7 +1,7 @@
-From 041bcda2518671a4375e77659c80d1be43625904 Mon Sep 17 00:00:00 2001
+From b7fb5904c5eab9fce20dc598dfd60f3349e90190 Mon Sep 17 00:00:00 2001
 From: Clint Adams <schizo@debian.org>
 Date: Sun, 25 Oct 2009 12:35:14 +0000
-Subject: [PATCH 1/3] Work around some platforms not having O_CLOEXEC
+Subject: [PATCH 1/2] Work around some platforms not having O_CLOEXEC
 
 ---
  src/modules/module-cli.c |    5 +++++
