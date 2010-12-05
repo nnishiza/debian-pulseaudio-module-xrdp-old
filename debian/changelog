@@ -6,8 +6,10 @@ pulseaudio (0.9.22-1) UNRELEASED; urgency=low
   * debian/patches/0003-Re-bootstrap.patch
     + Dropped, not needed anymore
   * debian/rules: Stop using -g0 on mips{,el} the toolchain has been fixed
+  * debian/rules, debian/control: Update build-depends and force building
+    with X11
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 11:07:44 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 11:27:43 +0000
 
 pulseaudio (0.9.21-3) unstable; urgency=low
 
