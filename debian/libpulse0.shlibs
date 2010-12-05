@@ -1,3 +1,3 @@
-libpulse 0 libpulse0 (>= 0.9.21)
+libpulse 0 libpulse0 (>= 0.9.22)
 libpulse-simple 0 libpulse0
-libpulsecommon 0.9.21 libpulse0
+libpulsecommon 0.9.22 libpulse0
