@@ -9,8 +9,9 @@ pulseaudio (0.9.22-1) UNRELEASED; urgency=low
   * debian/rules, debian/control: Update build-depends and force building
     with X11
   * debian/control: Suggest rtkit
+  * debian/control: Prune unneeded depends of libpulse-dev
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 11:28:54 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 12:01:37 +0000
 
 pulseaudio (0.9.21-3) unstable; urgency=low
 

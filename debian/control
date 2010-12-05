@@ -421,9 +421,6 @@ Depends: ${misc:Depends},
   libpulse0 (= ${binary:Version}),
   libpulse-mainloop-glib0 (= ${binary:Version}),
   libpulse-browse0 (= ${binary:Version}),
-  libx11-dev,
-  x11proto-core-dev,
-  libxt-dev,
   libglib2.0-dev,
   libavahi-client-dev
 Description: PulseAudio client development headers and libraries
