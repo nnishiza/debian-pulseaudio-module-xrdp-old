@@ -31,7 +31,7 @@ Conflicts: libltdl3 (<< 1.5.24-1)
 Recommends: pulseaudio-module-x11,
     libasound2-plugins, gstreamer0.10-pulseaudio,
     pulseaudio-esound-compat
-Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman, paprefs
+Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman, paprefs, rtkit
 Description: PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with

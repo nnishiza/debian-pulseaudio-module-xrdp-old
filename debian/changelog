@@ -8,8 +8,9 @@ pulseaudio (0.9.22-1) UNRELEASED; urgency=low
   * debian/rules: Stop using -g0 on mips{,el} the toolchain has been fixed
   * debian/rules, debian/control: Update build-depends and force building
     with X11
+  * debian/control: Suggest rtkit
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 11:27:43 +0000
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 05 Dec 2010 11:28:54 +0000
 
 pulseaudio (0.9.21-3) unstable; urgency=low
 
