@@ -98,9 +98,10 @@ pa_volume_s16ne_mmx (int16_t *samples, int32_t *volumes, unsigned channels, unsi
 {
     pa_reg_x86 channel, temp;
 
-    /* the max number of samples we process at a time, this is also the max amount
-     * we overread the volume array, which should have enough padding. */
-    channels = PA_MAX (4U, channels);
+    /* Channels must be at least 4, and always a multiple of the original number.
+     * This is also the max amount we overread the volume array, which should
+     * have enough padding. */
+    channels = channels == 3 ? 6 : PA_MAX (4U, channels);
 
     __asm__ __volatile__ (
         " xor %3, %3                    \n\t"
@@ -164,9 +165,10 @@ pa_volume_s16re_mmx (int16_t *samples, int32_t *volumes, unsigned channels, unsi
 {
     pa_reg_x86 channel, temp;
 
-    /* the max number of samples we process at a time, this is also the max amount
-     * we overread the volume array, which should have enough padding. */
-    channels = PA_MAX (4U, channels);
+    /* Channels must be at least 4, and always a multiple of the original number.
+     * This is also the max amount we overread the volume array, which should
+     * have enough padding. */
+    channels = channels == 3 ? 6 : PA_MAX (4U, channels);
 
     __asm__ __volatile__ (
         " xor %3, %3                    \n\t"
@@ -305,7 +307,7 @@ void pa_volume_func_init_mmx (pa_cpu_x86_flag_t flags) {
     run_test ();
 #endif
 
-    if (flags & PA_CPU_X86_MMX) {
+    if ((flags & PA_CPU_X86_MMX) && (flags & PA_CPU_X86_CMOV)) {
         pa_log_info("Initialising MMX optimized functions.");
 
         pa_set_volume_func (PA_SAMPLE_S16NE, (pa_do_volume_func_t) pa_volume_s16ne_mmx);

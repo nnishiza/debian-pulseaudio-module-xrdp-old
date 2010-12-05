@@ -858,6 +858,18 @@ static void fix_playback_buffer_attr(playback_stream *s) {
 
     pa_assert(s);
 
+    /* pa_log("Client requested: maxlength=%li bytes tlength=%li bytes minreq=%li bytes prebuf=%li bytes", */
+    /*        (long) s->buffer_attr.maxlength, */
+    /*        (long) s->buffer_attr.tlength, */
+    /*        (long) s->buffer_attr.minreq, */
+    /*        (long) s->buffer_attr.prebuf); */
+
+    /* pa_log("Client requested: maxlength=%lu ms tlength=%lu ms minreq=%lu ms prebuf=%lu ms", */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.maxlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.tlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.minreq, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.prebuf, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC)); */
+
     /* This function will be called from the main thread, before as
      * well as after the sink input has been activated using
      * pa_sink_input_put()! That means it may not touch any
@@ -984,6 +996,12 @@ static void fix_playback_buffer_attr(playback_stream *s) {
     if (s->buffer_attr.prebuf == (uint32_t) -1 ||
         s->buffer_attr.prebuf > max_prebuf)
         s->buffer_attr.prebuf = max_prebuf;
+
+    /* pa_log("Client accepted: maxlength=%lu ms tlength=%lu ms minreq=%lu ms prebuf=%lu ms", */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.maxlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.tlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.minreq, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
+    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.prebuf, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC)); */
 }
 
 /* Called from main context */
@@ -1113,6 +1131,8 @@ static playback_stream* playback_stream_new(
 
     *missing = (uint32_t) pa_memblockq_pop_missing(s->memblockq);
 
+    /* pa_log("missing original: %li", (long int) *missing); */
+
     *ss = s->sink_input->sample_spec;
     *map = s->sink_input->channel_map;
 
@@ -1137,11 +1157,12 @@ static void playback_stream_request_bytes(playback_stream *s) {
 
     m = pa_memblockq_pop_missing(s->memblockq);
 
-    /* pa_log("request_bytes(%lu) (tlength=%lu minreq=%lu length=%lu)", */
+    /* pa_log("request_bytes(%lu) (tlength=%lu minreq=%lu length=%lu really missing=%lli)", */
     /*        (unsigned long) m, */
     /*        pa_memblockq_get_tlength(s->memblockq), */
     /*        pa_memblockq_get_minreq(s->memblockq), */
-    /*        pa_memblockq_get_length(s->memblockq)); */
+    /*        pa_memblockq_get_length(s->memblockq), */
+    /*        (long long) pa_memblockq_get_tlength(s->memblockq) - (long long) pa_memblockq_get_length(s->memblockq)); */
 
     if (m <= 0)
         return;
@@ -1322,6 +1343,10 @@ static void handle_seek(playback_stream *s, int64_t indexw) {
     playback_stream_request_bytes(s);
 }
 
+static void flush_write_no_account(pa_memblockq *q) {
+    pa_memblockq_flush_write(q, FALSE);
+}
+
 /* Called from thread context */
 static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offset, pa_memchunk *chunk) {
     pa_sink_input *i = PA_SINK_INPUT(o);
@@ -1383,7 +1408,7 @@ static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int
 
             switch  (code) {
                 case SINK_INPUT_MESSAGE_FLUSH:
-                    func = pa_memblockq_flush_write;
+                    func = flush_write_no_account;
                     break;
 
                 case SINK_INPUT_MESSAGE_PREBUF_FORCE:

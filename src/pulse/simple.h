@@ -98,7 +98,10 @@
 /** \file
  * A simple but limited synchronous playback and recording
  * API. This is a synchronous, simplified wrapper around the standard
- * asynchronous API. */
+ * asynchronous API.
+ *
+ * See also \subpage simple
+ */
 
 /** \example pacat-simple.c
  * A simple playback tool using the simple API */
@@ -140,7 +143,7 @@ int pa_simple_read(pa_simple *s, void*data, size_t bytes, int *error);
 /** Return the playback latency. */
 pa_usec_t pa_simple_get_latency(pa_simple *s, int *error);
 
-/** Flush the playback buffer. */
+/** Flush the playback buffer.  This discards any audio in the buffer. */
 int pa_simple_flush(pa_simple *s, int *error);
 
 PA_C_DECL_END

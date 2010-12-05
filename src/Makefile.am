@@ -31,7 +31,6 @@ pulselibexecdir=$(libexecdir)/pulse
 xdgautostartdir=$(sysconfdir)/xdg/autostart
 alsaprofilesetsdir=$(datadir)/pulseaudio/alsa-mixer/profile-sets
 alsapathsdir=$(datadir)/pulseaudio/alsa-mixer/paths
-udevrulesdir=/lib/udev/rules.d
 dbuspolicydir=$(sysconfdir)/dbus-1/system.d
 
 ###################################
@@ -109,14 +108,18 @@ MODULE_LDFLAGS = -module -disable-static -avoid-version $(LDFLAGS_NOUNDEFINED)
 
 ALSA_PROFILES = \
 		modules/alsa/mixer/profile-sets/default.conf \
+		modules/alsa/mixer/profile-sets/maudio-fasttrack-pro.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
-		modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf
+		modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf \
+		modules/alsa/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf \
+		modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf
 
 ALSA_PATHS = \
 		modules/alsa/mixer/paths/analog-input-aux.conf \
 		modules/alsa/mixer/paths/analog-input.conf \
 		modules/alsa/mixer/paths/analog-input.conf.common \
 		modules/alsa/mixer/paths/analog-input-fm.conf \
+		modules/alsa/mixer/paths/analog-input-internal-mic.conf \
 		modules/alsa/mixer/paths/analog-input-linein.conf \
 		modules/alsa/mixer/paths/analog-input-mic.conf \
 		modules/alsa/mixer/paths/analog-input-mic.conf.common \
@@ -126,6 +129,7 @@ ALSA_PATHS = \
 		modules/alsa/mixer/paths/analog-output.conf \
 		modules/alsa/mixer/paths/analog-output-speaker.conf \
 		modules/alsa/mixer/paths/analog-output.conf.common \
+		modules/alsa/mixer/paths/analog-output-desktop-speaker.conf \
 		modules/alsa/mixer/paths/analog-output-headphones.conf \
 		modules/alsa/mixer/paths/analog-output-headphones-2.conf \
 		modules/alsa/mixer/paths/analog-output-lfe-on-mono.conf \

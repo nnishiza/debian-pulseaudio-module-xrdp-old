@@ -126,6 +126,9 @@
 #define MSG_NOSIGNAL 0
 #endif
 
+#define NEWLINE "\r\n"
+#define WHITESPACE "\n\r \t"
+
 static pa_strlist *recorded_env = NULL;
 
 #ifdef OS_IS_WIN32
@@ -196,7 +199,7 @@ void pa_make_fd_cloexec(int fd) {
 /** Creates a directory securely */
 int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
     struct stat st;
-    int r, saved_errno;
+    int r, saved_errno, fd;
 
     pa_assert(dir);
 
@@ -214,16 +217,45 @@ int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
     if (r < 0 && errno != EEXIST)
         return -1;
 
-#ifdef HAVE_CHOWN
+#ifdef HAVE_FSTAT
+    if ((fd = open(dir,
+#ifdef O_CLOEXEC
+                   O_CLOEXEC|
+#endif
+#ifdef O_NOCTTY
+                   O_NOCTTY|
+#endif
+#ifdef O_NOFOLLOW
+                   O_NOFOLLOW|
+#endif
+                   O_RDONLY)) < 0)
+        goto fail;
+
+    if (fstat(fd, &st) < 0) {
+        pa_assert_se(pa_close(fd) >= 0);
+        goto fail;
+    }
+
+    if (!S_ISDIR(st.st_mode)) {
+        pa_assert_se(pa_close(fd) >= 0);
+        errno = EEXIST;
+        goto fail;
+    }
+
+#ifdef HAVE_FCHOWN
     if (uid == (uid_t)-1)
         uid = getuid();
     if (gid == (gid_t)-1)
         gid = getgid();
-    (void) chown(dir, uid, gid);
+    (void) fchown(fd, uid, gid);
 #endif
 
-#ifdef HAVE_CHMOD
-    chmod(dir, m);
+#ifdef HAVE_FCHMOD
+    (void) fchmod(fd, m);
+#endif
+
+    pa_assert_se(pa_close(fd) >= 0);
+
 #endif
 
 #ifdef HAVE_LSTAT
@@ -830,9 +862,6 @@ char *pa_split(const char *c, const char *delimiter, const char**state) {
     return pa_xstrndup(current, l);
 }
 
-/* What is interpreted as whitespace? */
-#define WHITESPACE " \t\n"
-
 /* Split a string into words. Otherwise similar to pa_split(). */
 char *pa_split_spaces(const char *c, const char **state) {
     const char *current = *state ? *state : c;
@@ -1189,7 +1218,27 @@ int pa_lock_fd(int fd, int b) {
 char* pa_strip_nl(char *s) {
     pa_assert(s);
 
-    s[strcspn(s, "\r\n")] = 0;
+    s[strcspn(s, NEWLINE)] = 0;
+    return s;
+}
+
+char *pa_strip(char *s) {
+    char *e, *l = NULL;
+
+    /* Drops trailing whitespace. Modifies the string in
+     * place. Returns pointer to first non-space character */
+
+    s += strspn(s, WHITESPACE);
+
+    for (e = s; *e; e++)
+        if (!strchr(WHITESPACE, *e))
+            l = e;
+
+    if (l)
+        *(l+1) = 0;
+    else
+        *s = 0;
+
     return s;
 }
 

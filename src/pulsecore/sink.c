@@ -1162,6 +1162,46 @@ pa_usec_t pa_sink_get_latency_within_thread(pa_sink *s) {
     return usec;
 }
 
+static pa_cvolume* cvolume_remap_minimal_impact(
+        pa_cvolume *v,
+        const pa_cvolume *template,
+        const pa_channel_map *from,
+        const pa_channel_map *to) {
+
+    pa_cvolume t;
+
+    pa_assert(v);
+    pa_assert(template);
+    pa_assert(from);
+    pa_assert(to);
+
+    pa_return_val_if_fail(pa_cvolume_compatible_with_channel_map(v, from), NULL);
+    pa_return_val_if_fail(pa_cvolume_compatible_with_channel_map(template, to), NULL);
+
+    /* Much like pa_cvolume_remap(), but tries to minimize impact when
+     * mapping from sink input to sink volumes:
+     *
+     * If template is a possible remapping from v it is used instead
+     * of remapping anew.
+     *
+     * If the channel maps don't match we set an all-channel volume on
+     * the sink to ensure that changing a volume on one stream has no
+     * effect that cannot be compensated for in another stream that
+     * does not have the same channel map as the sink. */
+
+    if (pa_channel_map_equal(from, to))
+        return v;
+
+    t = *template;
+    if (pa_cvolume_equal(pa_cvolume_remap(&t, to, from), v)) {
+        *v = *template;
+        return v;
+    }
+
+    pa_cvolume_set(v, to->channels, pa_cvolume_max(v));
+    return v;
+}
+
 /* Called from main context */
 static void compute_reference_ratios(pa_sink *s) {
     uint32_t idx;
@@ -1289,7 +1329,7 @@ static void compute_real_volume(pa_sink *s) {
         pa_cvolume remapped;
 
         remapped = i->volume;
-        pa_cvolume_remap(&remapped, &i->channel_map, &s->channel_map);
+        cvolume_remap_minimal_impact(&remapped, &s->real_volume, &i->channel_map, &s->channel_map);
         pa_cvolume_merge(&s->real_volume, &s->real_volume, &remapped);
     }
 
@@ -1705,7 +1745,14 @@ unsigned pa_sink_check_suspend(pa_sink *s) {
         pa_sink_input_state_t st;
 
         st = pa_sink_input_get_state(i);
-        pa_assert(PA_SINK_INPUT_IS_LINKED(st));
+
+        /* We do not assert here. It is perfectly valid for a sink input to
+         * be in the INIT state (i.e. created, marked done but not yet put)
+         * and we should not care if it's unlinked as it won't contribute
+         * towarards our busy status.
+         */
+        if (!PA_SINK_INPUT_IS_LINKED(st))
+            continue;
 
         if (st == PA_SINK_INPUT_CORKED)
             continue;
@@ -2639,7 +2686,8 @@ pa_bool_t pa_device_init_intended_roles(pa_proplist *p) {
         return TRUE;
 
     if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_FORM_FACTOR)))
-        if (pa_streq(s, "handset") || pa_streq(s, "hands-free")) {
+        if (pa_streq(s, "handset") || pa_streq(s, "hands-free")
+            || pa_streq(s, "headset")) {
             pa_proplist_sets(p, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
             return TRUE;
         }

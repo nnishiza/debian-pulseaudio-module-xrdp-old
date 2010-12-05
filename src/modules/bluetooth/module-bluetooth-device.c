@@ -179,6 +179,8 @@ struct userdata {
 
     int stream_write_type;
     int service_write_type, service_read_type;
+
+    pa_bool_t filter_added;
 };
 
 #define FIXED_LATENCY_PLAYBACK_A2DP (25*PA_USEC_PER_MSEC)
@@ -821,23 +823,25 @@ static int stop_stream_fd(struct userdata *u) {
 
     pa_assert(u);
     pa_assert(u->rtpoll);
-    pa_assert(u->rtpoll_item);
-    pa_assert(u->stream_fd >= 0);
 
-    pa_rtpoll_item_free(u->rtpoll_item);
-    u->rtpoll_item = NULL;
+    if (u->rtpoll_item) {
+        pa_rtpoll_item_free(u->rtpoll_item);
+        u->rtpoll_item = NULL;
+    }
 
-    memset(msg.buf, 0, BT_SUGGESTED_BUFFER_SIZE);
-    msg.start_req.h.type = BT_REQUEST;
-    msg.start_req.h.name = BT_STOP_STREAM;
-    msg.start_req.h.length = sizeof(msg.start_req);
+    if (u->stream_fd >= 0) {
+        memset(msg.buf, 0, BT_SUGGESTED_BUFFER_SIZE);
+        msg.start_req.h.type = BT_REQUEST;
+        msg.start_req.h.name = BT_STOP_STREAM;
+        msg.start_req.h.length = sizeof(msg.start_req);
 
-    if (service_send(u, &msg.start_req.h) < 0 ||
-        service_expect(u, &msg.rsp, sizeof(msg), BT_STOP_STREAM, sizeof(msg.start_rsp)) < 0)
-        r = -1;
+        if (service_send(u, &msg.start_req.h) < 0 ||
+            service_expect(u, &msg.rsp, sizeof(msg), BT_STOP_STREAM, sizeof(msg.start_rsp)) < 0)
+            r = -1;
 
-    pa_close(u->stream_fd);
-    u->stream_fd = -1;
+        pa_close(u->stream_fd);
+        u->stream_fd = -1;
+    }
 
     if (u->read_smoother) {
         pa_smoother_free(u->read_smoother);
@@ -968,10 +972,14 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
         case PA_SOURCE_MESSAGE_GET_LATENCY: {
             pa_usec_t wi, ri;
 
-            wi = pa_smoother_get(u->read_smoother, pa_rtclock_now());
-            ri = pa_bytes_to_usec(u->read_index, &u->sample_spec);
+            if (u->read_smoother) {
+                wi = pa_smoother_get(u->read_smoother, pa_rtclock_now());
+                ri = pa_bytes_to_usec(u->read_index, &u->sample_spec);
 
-            *((pa_usec_t*) data) = (wi > ri ? wi - ri : 0) + u->source->thread_info.fixed_latency;
+                *((pa_usec_t*) data) = (wi > ri ? wi - ri : 0) + u->source->thread_info.fixed_latency;
+            } else
+                *((pa_usec_t*) data) = 0;
+
             return 0;
         }
 
@@ -2033,7 +2041,7 @@ static int start_thread(struct userdata *u) {
     }
 #endif
 
-    if (!(u->thread = pa_thread_new(thread_func, u))) {
+    if (!(u->thread = pa_thread_new("bluetooth", thread_func, u))) {
         pa_log_error("Failed to create IO thread");
         stop_thread(u);
         return -1;
@@ -2405,6 +2413,7 @@ int pa__init(pa_module* m) {
         pa_log_error("Failed to add filter function");
         goto fail;
     }
+    u->filter_added = TRUE;
 
     speaker = pa_sprintf_malloc("type='signal',sender='org.bluez',interface='org.bluez.Headset',member='SpeakerGainChanged',path='%s'", u->path);
     mike = pa_sprintf_malloc("type='signal',sender='org.bluez',interface='org.bluez.Headset',member='MicrophoneGainChanged',path='%s'", u->path);
@@ -2494,7 +2503,9 @@ void pa__done(pa_module *m) {
             pa_xfree(mike);
         }
 
-        dbus_connection_remove_filter(pa_dbus_connection_get(u->connection), filter_cb, u);
+        if (u->filter_added)
+            dbus_connection_remove_filter(pa_dbus_connection_get(u->connection), filter_cb, u);
+
         pa_dbus_connection_unref(u->connection);
     }
 

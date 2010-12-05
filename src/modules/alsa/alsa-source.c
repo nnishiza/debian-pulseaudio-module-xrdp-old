@@ -73,6 +73,9 @@
 #define TSCHED_MIN_SLEEP_USEC (10*PA_USEC_PER_MSEC)                /* 10ms */
 #define TSCHED_MIN_WAKEUP_USEC (4*PA_USEC_PER_MSEC)                /* 4ms */
 
+#define SMOOTHER_WINDOW_USEC  (10*PA_USEC_PER_SEC)                 /* 10s */
+#define SMOOTHER_ADJUST_USEC  (1*PA_USEC_PER_SEC)                  /* 1s */
+
 #define SMOOTHER_MIN_INTERVAL (2*PA_USEC_PER_MSEC)                 /* 2ms */
 #define SMOOTHER_MAX_INTERVAL (200*PA_USEC_PER_MSEC)               /* 200ms */
 
@@ -115,6 +118,8 @@ struct userdata {
     char *control_device;
 
     pa_bool_t use_mmap:1, use_tsched:1;
+
+    pa_bool_t first;
 
     pa_rtpoll_item *alsa_rtpoll_item;
 
@@ -397,7 +402,7 @@ static int try_recover(struct userdata *u, const char *call, int err) {
         return -1;
     }
 
-    snd_pcm_start(u->pcm_handle);
+    u->first = TRUE;
     return 0;
 }
 
@@ -603,12 +608,14 @@ static int mmap_read(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
+    if (u->use_tsched) {
+        *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
 
-    if (*sleep_usec > process_usec)
-        *sleep_usec -= process_usec;
-    else
-        *sleep_usec = 0;
+        if (*sleep_usec > process_usec)
+            *sleep_usec -= process_usec;
+        else
+            *sleep_usec = 0;
+    }
 
     return work_done ? 1 : 0;
 }
@@ -730,12 +737,14 @@ static int unix_read(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled
         }
     }
 
-    *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
+    if (u->use_tsched) {
+        *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
 
-    if (*sleep_usec > process_usec)
-        *sleep_usec -= process_usec;
-    else
-        *sleep_usec = 0;
+        if (*sleep_usec > process_usec)
+            *sleep_usec -= process_usec;
+        else
+            *sleep_usec = 0;
+    }
 
     return work_done ? 1 : 0;
 }
@@ -754,7 +763,7 @@ static void update_smoother(struct userdata *u) {
 
     /* Let's update the time smoother */
 
-    if (PA_UNLIKELY((err = pa_alsa_safe_delay(u->pcm_handle, &delay, u->hwbuf_size, &u->source->sample_spec)) < 0)) {
+    if (PA_UNLIKELY((err = pa_alsa_safe_delay(u->pcm_handle, &delay, u->hwbuf_size, &u->source->sample_spec, TRUE)) < 0)) {
         pa_log_warn("Failed to get delay: %s", pa_alsa_strerror(err));
         return;
     }
@@ -942,12 +951,12 @@ static int unsuspend(struct userdata *u) {
 
     /* FIXME: We need to reload the volume somehow */
 
-    snd_pcm_start(u->pcm_handle);
-
     u->read_count = 0;
     pa_smoother_reset(u->smoother, pa_rtclock_now(), TRUE);
     u->smoother_interval = SMOOTHER_MIN_INTERVAL;
     u->last_smoother_update = 0;
+
+    u->first = TRUE;
 
     pa_log_info("Resumed successfully...");
 
@@ -999,8 +1008,6 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
                     if (u->source->thread_info.state == PA_SOURCE_INIT) {
                         if (build_pollfd(u) < 0)
                             return -PA_ERR_IO;
-
-                        snd_pcm_start(u->pcm_handle);
                     }
 
                     if (u->source->thread_info.state == PA_SOURCE_SUSPENDED) {
@@ -1033,9 +1040,9 @@ static int source_set_state_cb(pa_source *s, pa_source_state_t new_state) {
 
     old_state = pa_source_get_state(u->source);
 
-    if (PA_SINK_IS_OPENED(old_state) && new_state == PA_SINK_SUSPENDED)
+    if (PA_SOURCE_IS_OPENED(old_state) && new_state == PA_SOURCE_SUSPENDED)
         reserve_done(u);
-    else if (old_state == PA_SINK_SUSPENDED && PA_SINK_IS_OPENED(new_state))
+    else if (old_state == PA_SOURCE_SUSPENDED && PA_SOURCE_IS_OPENED(new_state))
         if (reserve_init(u, u->device_name) < 0)
             return -PA_ERR_BUSY;
 
@@ -1049,6 +1056,9 @@ static int mixer_callback(snd_mixer_elem_t *elem, unsigned int mask) {
     pa_assert(u->mixer_handle);
 
     if (mask == SND_CTL_EVENT_MASK_REMOVE)
+        return 0;
+
+    if (u->source->suspend_cause & PA_SUSPEND_SESSION)
         return 0;
 
     if (mask & SND_CTL_EVENT_MASK_VALUE) {
@@ -1202,6 +1212,7 @@ static int source_set_port_cb(pa_source *s, pa_device_port *p) {
 static void source_update_requested_latency_cb(pa_source *s) {
     struct userdata *u = s->userdata;
     pa_assert(u);
+    pa_assert(u->use_tsched);
 
     if (!u->pcm_handle)
         return;
@@ -1234,6 +1245,15 @@ static void thread_func(void *userdata) {
             int work_done;
             pa_usec_t sleep_usec = 0;
             pa_bool_t on_timeout = pa_rtpoll_timer_elapsed(u->rtpoll);
+
+            if (u->first) {
+                pa_log_info("Starting capture.");
+                snd_pcm_start(u->pcm_handle);
+
+                pa_smoother_resume(u->smoother, pa_rtclock_now(), TRUE);
+
+                u->first = FALSE;
+            }
 
             if (u->use_mmap)
                 work_done = mmap_read(u, &sleep_usec, revents & POLLIN, on_timeout);
@@ -1294,7 +1314,7 @@ static void thread_func(void *userdata) {
                 if (pa_alsa_recover_from_poll(u->pcm_handle, revents) < 0)
                     goto fail;
 
-                snd_pcm_start(u->pcm_handle);
+                u->first = TRUE;
             } else if (revents && u->use_tsched && pa_log_ratelimit())
                 pa_log_debug("Wakeup from ALSA!");
 
@@ -1548,17 +1568,18 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     u->module = m;
     u->use_mmap = use_mmap;
     u->use_tsched = use_tsched;
+    u->first = TRUE;
     u->rtpoll = pa_rtpoll_new();
     pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
 
     u->smoother = pa_smoother_new(
-            DEFAULT_TSCHED_WATERMARK_USEC*2,
-            DEFAULT_TSCHED_WATERMARK_USEC*2,
+            SMOOTHER_ADJUST_USEC,
+            SMOOTHER_WINDOW_USEC,
             TRUE,
             TRUE,
             5,
             pa_rtclock_now(),
-            FALSE);
+            TRUE);
     u->smoother_interval = SMOOTHER_MIN_INTERVAL;
 
     dev_id = pa_modargs_get_value(
@@ -1690,7 +1711,8 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     }
 
     u->source->parent.process_msg = source_process_msg;
-    u->source->update_requested_latency = source_update_requested_latency_cb;
+    if (u->use_tsched)
+        u->source->update_requested_latency = source_update_requested_latency_cb;
     u->source->set_state = source_set_state_cb;
     u->source->set_port = source_set_port_cb;
     u->source->userdata = u;
@@ -1741,7 +1763,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
 
     pa_alsa_dump(PA_LOG_DEBUG, u->pcm_handle);
 
-    if (!(u->thread = pa_thread_new(thread_func, u))) {
+    if (!(u->thread = pa_thread_new("alsa-source", thread_func, u))) {
         pa_log("Failed to create thread.");
         goto fail;
     }

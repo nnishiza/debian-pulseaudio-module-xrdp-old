@@ -399,8 +399,6 @@ success:
 
     ret = 0;
 
-    snd_pcm_nonblock(pcm_handle, 1);
-
 finish:
 
     return ret;
@@ -874,12 +872,12 @@ void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card) {
     pa_proplist_setf(p, "alsa.card", "%i", card);
 
     if (snd_card_get_name(card, &cn) >= 0) {
-        pa_proplist_sets(p, "alsa.card_name", cn);
+        pa_proplist_sets(p, "alsa.card_name", pa_strip(cn));
         free(cn);
     }
 
     if (snd_card_get_longname(card, &lcn) >= 0) {
-        pa_proplist_sets(p, "alsa.long_card_name", lcn);
+        pa_proplist_sets(p, "alsa.long_card_name", pa_strip(lcn));
         free(lcn);
     }
 
@@ -937,8 +935,11 @@ void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *
         if (alsa_subclass_table[subclass])
             pa_proplist_sets(p, "alsa.subclass", alsa_subclass_table[subclass]);
 
-    if ((n = snd_pcm_info_get_name(pcm_info)))
-        pa_proplist_sets(p, "alsa.name", n);
+    if ((n = snd_pcm_info_get_name(pcm_info))) {
+        char *t = pa_xstrdup(n);
+        pa_proplist_sets(p, "alsa.name", pa_strip(t));
+        pa_xfree(t);
+    }
 
     if ((id = snd_pcm_info_get_id(pcm_info)))
         pa_proplist_sets(p, "alsa.id", id);
@@ -1122,10 +1123,11 @@ snd_pcm_sframes_t pa_alsa_safe_avail(snd_pcm_t *pcm, size_t hwbuf_size, const pa
     return n;
 }
 
-int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_size, const pa_sample_spec *ss) {
+int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_size, const pa_sample_spec *ss, pa_bool_t capture) {
     ssize_t k;
     size_t abs_k;
     int r;
+    snd_pcm_sframes_t avail = 0;
 
     pa_assert(pcm);
     pa_assert(delay);
@@ -1133,9 +1135,10 @@ int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_si
     pa_assert(ss);
 
     /* Some ALSA driver expose weird bugs, let's inform the user about
-     * what is going on */
+     * what is going on. We're going to get both the avail and delay values so
+     * that we can compare and check them for capture */
 
-    if ((r = snd_pcm_delay(pcm, delay)) < 0)
+    if ((r = snd_pcm_avail_delay(pcm, &avail, delay)) < 0)
         return r;
 
     k = (ssize_t) *delay * (ssize_t) pa_frame_size(ss);
@@ -1162,6 +1165,44 @@ int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_si
             *delay = -(snd_pcm_sframes_t) (hwbuf_size / pa_frame_size(ss));
         else
             *delay = (snd_pcm_sframes_t) (hwbuf_size / pa_frame_size(ss));
+    }
+
+    if (capture) {
+        abs_k = (size_t) avail * pa_frame_size(ss);
+
+        if (abs_k >= hwbuf_size * 5 ||
+            abs_k >= pa_bytes_per_second(ss)*10) {
+
+            PA_ONCE_BEGIN {
+                char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
+                pa_log(_("snd_pcm_avail() returned a value that is exceptionally large: %lu bytes (%lu ms).\n"
+                         "Most likely this is a bug in the ALSA driver '%s'. Please report this issue to the ALSA developers."),
+                       (unsigned long) k,
+                       (unsigned long) (pa_bytes_to_usec(k, ss) / PA_USEC_PER_MSEC),
+                       pa_strnull(dn));
+                pa_xfree(dn);
+                pa_alsa_dump(PA_LOG_ERROR, pcm);
+            } PA_ONCE_END;
+
+            /* Mhmm, let's try not to fail completely */
+            avail = (snd_pcm_sframes_t) (hwbuf_size / pa_frame_size(ss));
+        }
+
+        if (*delay < avail) {
+            PA_ONCE_BEGIN {
+                char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
+                pa_log(_("snd_pcm_avail_delay() returned strange values: delay %lu is less than avail %lu.\n"
+                         "Most likely this is a bug in the ALSA driver '%s'. Please report this issue to the ALSA developers."),
+                       (unsigned long) *delay,
+                       (unsigned long) avail,
+                       pa_strnull(dn));
+                pa_xfree(dn);
+                pa_alsa_dump(PA_LOG_ERROR, pcm);
+            } PA_ONCE_END;
+
+            /* try to fixup */
+            *delay = avail;
+        }
     }
 
     return 0;
@@ -1330,7 +1371,6 @@ pa_bool_t pa_alsa_may_tsched(pa_bool_t want) {
         pa_log_notice("Disabling timer-based scheduling because running inside a VM.");
         return FALSE;
     }
-
 
     return TRUE;
 }
