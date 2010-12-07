@@ -317,7 +317,7 @@ Description: X11 module for PulseAudio sound server
  much better latency, mixing/re-sampling quality and overall architecture.
  .
  This module enables PulseAudio to publish itself as the default sound
- server to the X11 root window automatically upon startup. The is also a
+ server to the X11 root window automatically upon startup. There is also a
  module to playback a sound file in place of the X11 bell beep.
  .
  The modules are called module-x11-publish and module-x11-bell.
