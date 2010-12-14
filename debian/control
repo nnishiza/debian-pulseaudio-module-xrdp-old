@@ -117,8 +117,10 @@ Description: PulseAudio ESD compatibility layer
  WIN32 systems. It is a drop in replacement for the ESD sound server with
  much better latency, mixing/re-sampling quality and overall architecture.
  .
- This package contains the ESD compatibility components and enables a
- PulseAudio sound server to fully replace ESD.
+ This package contains the ESD compatibility components used by some
+ older versions of complete desktop environments, e.g., GNOME, and
+ many useful applications. It enables a PulseAudio sound server to
+ fully replace ESD.
 
 Package: pulseaudio-esound-compat-dbg
 Architecture: any
