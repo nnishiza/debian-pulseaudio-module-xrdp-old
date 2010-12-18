@@ -8,6 +8,8 @@ pulseaudio (0.9.22-2) UNRELEASED; urgency=low
       (Closes: #601725)
   * debian/pulseaudio-utils.links: Also add pamon(1), parec(1), and
     parecord(1) (Closes: #599696)
+  * debian/README.Debian: Clarify historical pulse-rt use and document
+    current recommendation of RealtimeKit (Closes: #548363)
 
  -- Daniel T Chen <crimsun@ubuntu.com>  Mon, 13 Dec 2010 19:30:01 -0500
 
