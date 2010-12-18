@@ -1,0 +1,13 @@
+Index: pulseaudio-0.9.22/man/pulse-daemon.conf.5.xml.in
+===================================================================
+--- pulseaudio-0.9.22.orig/man/pulse-daemon.conf.5.xml.in	2010-12-17 20:38:20.000000000 -0500
++++ pulseaudio-0.9.22/man/pulse-daemon.conf.5.xml.in	2010-12-17 20:40:12.000000000 -0500
+@@ -89,7 +89,7 @@
+       <opt>src-zero-order-hold</opt>, <opt>src-linear</opt>,
+       <opt>trivial</opt>, <opt>speex-float-N</opt>,
+       <opt>speex-fixed-N</opt>, <opt>ffmpeg</opt>. See the
+-      documentation of libsamplerate for an explanation for the
++      documentation of libsamplerate and speex for explanations of the
+       different src- methods. The method <opt>trivial</opt> is the most basic
+       algorithm implemented. If you're tight on CPU consider using
+       this. On the other hand it has the worst quality of them
