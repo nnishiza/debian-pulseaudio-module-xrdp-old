@@ -6,7 +6,10 @@ pulseaudio (0.9.22-2) UNRELEASED; urgency=low
     + Clarify long description of pulseaudio-esound-compat. Many apps
       still in use require functionality from this package
       (Closes: #601725)
-  * debian/patches/+0003-Mention-speex-and-libsamplerate-in-pulse-daemon.conf.patch:
+  * debian/libpulse-dev.examples: Apply patch from Mario Lang to include
+    simple examples in the dev package. Thanks! (Closes: #561258)
+  * debian/patches/
+    0003-Mention-speex-and-libsamplerate-in-pulse-daemon.conf.patch:
     + Mention speex in the resampling section. Currently the Resampler
       section of "Programming with Speex (the libspeex API)" contains
       the relevant information (Closes: #541206)
@@ -15,7 +18,7 @@ pulseaudio (0.9.22-2) UNRELEASED; urgency=low
   * debian/README.Debian: Clarify historical pulse-rt use and document
     current recommendation of RealtimeKit (Closes: #548363)
 
- -- Daniel T Chen <crimsun@ubuntu.com>  Mon, 13 Dec 2010 19:30:01 -0500
+ -- Daniel T Chen <crimsun@ubuntu.com>  Sat, 18 Dec 2010 20:26:47 -0500
 
 pulseaudio (0.9.22-1) experimental; urgency=low
 
