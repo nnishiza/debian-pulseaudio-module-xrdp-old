@@ -1,3 +1,12 @@
+pulseaudio (0.9.21-4) unstable; urgency=low
+
+  * Team upload.
+  * Fix pacmd hanging in poll() when reading from stdin very early.
+    Patch extracted from upstream by Alexander Wuerstlein <arw@arw.name>
+    (Closes: #574589)
+
+ -- Reinhard Tartler <siretart@tauware.de>  Mon, 14 Feb 2011 10:26:09 +0100
+
 pulseaudio (0.9.21-3) unstable; urgency=low
 
   * debian/rules: Compile with -g0 on mips{,el} to work around #519006 in
