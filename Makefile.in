@@ -63,9 +63,9 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/libpulse-browse.pc.in \
 	$(srcdir)/libpulse-mainloop-glib.pc.in \
 	$(srcdir)/libpulse-simple.pc.in $(srcdir)/libpulse.pc.in \
-	$(top_srcdir)/configure $(top_srcdir)/src/pulse/version.h.in \
-	ABOUT-NLS ChangeLog compile config.guess config.rpath \
-	config.sub depcomp install-sh ltmain.sh missing
+	$(top_srcdir)/configure ABOUT-NLS ChangeLog compile \
+	config.guess config.rpath config.sub depcomp install-sh \
+	ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/acx_lirc.m4 $(top_srcdir)/m4/acx_pthread.m4 \
@@ -84,7 +84,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES = libpulse.pc libpulse-simple.pc libpulse-browse.pc \
-	libpulse-mainloop-glib.pc src/pulse/version.h
+	libpulse-mainloop-glib.pc
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
@@ -284,6 +284,7 @@ LTLIBICONV = @LTLIBICONV@
 LTLIBOBJS = @LTLIBOBJS@
 M4 = @M4@
 MAKEINFO = @MAKEINFO@
+MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
 MKINSTALLDIRS = @MKINSTALLDIRS@
 MSGFMT = @MSGFMT@
@@ -349,6 +350,7 @@ abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
 abs_top_builddir = @abs_top_builddir@
 abs_top_srcdir = @abs_top_srcdir@
+ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 acx_pthread_config = @acx_pthread_config@
@@ -412,13 +414,19 @@ EXTRA_DIST = \
 	doxygen/doxygen.conf.in \
 	README \
 	todo \
-	vala/libpulse.vapi
+	vala/libpulse.deps \
+	vala/libpulse.vapi \
+	vala/libpulse-mainloop-glib.deps \
+	vala/libpulse-mainloop-glib.vapi
 
 SUBDIRS = src doxygen man po
 MAINTAINERCLEANFILES = 
 noinst_DATA = 
 vapidir = $(datadir)/vala/vapi
-vapi_DATA = vala/libpulse.vapi
+vapi_DATA = \
+		vala/libpulse.deps vala/libpulse.vapi \
+		vala/libpulse-mainloop-glib.deps vala/libpulse-mainloop-glib.vapi
+
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libpulse.pc libpulse-simple.pc $(am__append_1) \
 	$(am__append_2)
@@ -428,6 +436,7 @@ BUILT_SOURCES = $(top_srcdir)/.version
 DISTCLEANFILES = \
         po/.intltool-merge-cache
 
+DISTCHECK_CONFIGURE_FLAGS = --with-udev-rules-dir="$$dc_install_base/lib/udev/rules.d"
 all: $(BUILT_SOURCES) config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -490,8 +499,6 @@ libpulse-simple.pc: $(top_builddir)/config.status $(srcdir)/libpulse-simple.pc.i
 libpulse-browse.pc: $(top_builddir)/config.status $(srcdir)/libpulse-browse.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 libpulse-mainloop-glib.pc: $(top_builddir)/config.status $(srcdir)/libpulse-mainloop-glib.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-src/pulse/version.h: $(top_builddir)/config.status $(top_srcdir)/src/pulse/version.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
@@ -1013,6 +1020,7 @@ dist-hook:
 		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
 	fi
 	echo $(VERSION) > $(distdir)/.tarball-version
+	echo $(VERSION) > $(distdir)/.version
 
 .PHONY: homepage distcleancheck doxygen
 $(top_srcdir)/.version:

@@ -28,7 +28,10 @@ EXTRA_DIST = \
 	doxygen/doxygen.conf.in \
 	README \
 	todo \
-	vala/libpulse.vapi
+	vala/libpulse.deps \
+	vala/libpulse.vapi \
+	vala/libpulse-mainloop-glib.deps \
+	vala/libpulse-mainloop-glib.vapi
 
 SUBDIRS = src doxygen man po
 
@@ -36,7 +39,9 @@ MAINTAINERCLEANFILES =
 noinst_DATA =
 
 vapidir = $(datadir)/vala/vapi
-vapi_DATA = vala/libpulse.vapi
+vapi_DATA = \
+		vala/libpulse.deps vala/libpulse.vapi \
+		vala/libpulse-mainloop-glib.deps vala/libpulse-mainloop-glib.vapi
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libpulse.pc libpulse-simple.pc
@@ -77,6 +82,7 @@ dist-hook:
 		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
 	fi
 	echo $(VERSION) > $(distdir)/.tarball-version
+	echo $(VERSION) > $(distdir)/.version
 
 .PHONY: homepage distcleancheck doxygen
 
@@ -87,3 +93,5 @@ $(top_srcdir)/.version:
 
 DISTCLEANFILES = \
         po/.intltool-merge-cache
+
+DISTCHECK_CONFIGURE_FLAGS = --with-udev-rules-dir="$$dc_install_base/lib/udev/rules.d"

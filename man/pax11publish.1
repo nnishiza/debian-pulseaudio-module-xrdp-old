@@ -32,7 +32,7 @@ Read the PulseAudio server credentials currently set on the X11 root window and 
 Similar to \fB-d\f1, however dumps them in a Bourne shell compatible format so they may be used together with the \fIeval\f1 shell command to set the $PULSE_SERVER, $PULSE_SINK, $PULSE_SOURCE environment variables. Also reads the authentication cookie from the root window and stores it in \fI~/.pulse-cookie\f1. 
 .TP
 \fB-e\f1
-Export the currently locally used sound server, sink, source configuration to the X11 root window. This takes the data from the $PULSE_SERVER, $PULSE_SINK, $PULSE_SOURCE environment variables and combines them with the data from \fI~/.pulse/client.conf\f1 (or \fI/etc/pulse/client.conf\f1 if that file does not exist). If specific options are passed on the command line (\fB-S\f1, \fB-O\f1, \fB-I\f1, \fB-c\f1, see below), they take precedence. Also uploads the local authentication cookie \fI~/.pulse-cookie\f1 to the X11 server.
+Export the currently locally used sound server, sink, source configuration to the X11 root window. This takes the data from the $PULSE_SERVER, $PULSE_SINK, $PULSE_SOURCE environment variables and combines them with the data from \fI~/.pulse/client.conf\f1 (or \fI/usr/local/etc/pulse/client.conf\f1 if that file does not exist). If specific options are passed on the command line (\fB-S\f1, \fB-O\f1, \fB-I\f1, \fB-c\f1, see below), they take precedence. Also uploads the local authentication cookie \fI~/.pulse-cookie\f1 to the X11 server.
 .TP
 \fB-r\f1
 Removes the configured PulseAudio configuration from the X11 root window.

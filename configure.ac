@@ -240,7 +240,7 @@ else
                     [pulseaudio_cv_support_arm_atomic_ops=no])
                  ])
                AS_IF([test "$pulseaudio_cv_support_arm_atomic_ops" = "yes"], [
-                   AC_DEFINE([ATOMIC_ARM_INLINE_ASM], 1, [Have ARMv6 instructions.])
+                   AC_DEFINE([ATOMIC_ARM_INLINE_ASM], 1, [Have ARM atomic instructions.])
                    need_libatomic_ops=no
                  ])
            fi
@@ -256,6 +256,37 @@ else
         ;;
     esac
 fi
+
+# If we're on ARM, check for the ARMV6 instructions we need */
+case $host in
+  arm*)
+    AC_CACHE_CHECK([support for required armv6 instructions],
+      pulseaudio_cv_support_armv6,
+      [AC_COMPILE_IFELSE(
+         AC_LANG_PROGRAM([],
+           [[volatile int a = -60000, b = 0xaaaabbbb, c = 0xccccdddd;
+             asm volatile ("ldr r0, %2 \n"
+                           "ldr r2, %3 \n"
+                           "ldr r3, %4 \n"
+                           "ssat r1, #8, r0 \n"
+                           "str r1, %0 \n"
+                           "pkhbt r1, r3, r2, LSL #8 \n"
+                           "str r1, %1 \n"
+                           : "=m" (a), "=m" (b)
+                           : "m" (a), "m" (b), "m" (c)
+                           : "r0", "r1", "r2", "r3", "cc");
+             return (a == -128 && b == 0xaabbdddd) ? 0 : -1;
+           ]]),
+         [pulseaudio_cv_support_armv6=yes],
+         [pulseaudio_cv_support_armv6=no])
+      ])
+    AS_IF([test "$pulseaudio_cv_support_armv6" = "yes"], [
+        AC_DEFINE([HAVE_ARMV6], 1, [Have ARMv6 instructions.])
+      ])
+  ;;
+  *)
+  ;;
+esac
 
 CC_CHECK_TLS
 
@@ -1123,28 +1154,6 @@ AC_SUBST(UDEV_LIBS)
 AC_SUBST(HAVE_UDEV)
 AM_CONDITIONAL([HAVE_UDEV], [test "x$HAVE_UDEV" = x1])
 
-#### HAL compat support (optional) ####
-
-AC_ARG_ENABLE([hal-compat],
-    AS_HELP_STRING([--disable-hal-compat],[Disable optional HAL->udev transition compatibility support]),
-        [
-            case "${enableval}" in
-                yes) halcompat=yes ;;
-                no) halcompat=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-hal-compat) ;;
-            esac
-        ],
-        [halcompat=auto])
-if test "x${halcompat}" != xno -a "x$HAVE_HAL" = "x0" -a "x$HAVE_UDEV" = "x1" ; then
-    HAVE_HAL_COMPAT=1
-    AC_DEFINE([HAVE_HAL_COMPAT], 1, [Have HAL compatibility.])
-else
-    HAVE_HAL_COMPAT=0
-fi
-
-AC_SUBST(HAVE_HAL_COMPAT)
-AM_CONDITIONAL([HAVE_HAL_COMPAT], [test "x$HAVE_HAL_COMPAT" = x1])
-
 #### BlueZ support (optional) ####
 
 AC_ARG_ENABLE([bluez],
@@ -1188,11 +1197,7 @@ AC_ARG_ENABLE([dbus],
         ],
         [dbus=auto])
 
-if test "x$HAVE_HAL" = x1 ; then
-   dbus=yes
-fi
-
-if test "x${dbus}" != xno || test "x${bluez}" != xno || test "x${hal}" != xno ; then
+if test "x${dbus}" != xno ; then
 
     PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.0.0 ],
         [
@@ -1217,6 +1222,43 @@ AC_SUBST(DBUS_CFLAGS)
 AC_SUBST(DBUS_LIBS)
 AC_SUBST(HAVE_DBUS)
 AM_CONDITIONAL([HAVE_DBUS], [test "x$HAVE_DBUS" = x1])
+
+
+# udev and HAL depend on DBUS: So double check if they were explicitly enabled.
+if test "x$HAVE_DBUS" != "x1" ; then
+    HAVE_HAL=0
+    if test "x${hal}" = xyes ; then
+        AC_MSG_ERROR([*** D-Bus support is required by HAL])
+    fi
+
+    HAVE_BLUEZ=0
+    if test "x${bluez}" = xyes ; then
+        AC_MSG_ERROR([*** D-Bus support is required by BLUEZ])
+    fi
+fi
+
+
+#### HAL compat support (optional) ####
+
+AC_ARG_ENABLE([hal-compat],
+    AS_HELP_STRING([--disable-hal-compat],[Disable optional HAL->udev transition compatibility support]),
+        [
+            case "${enableval}" in
+                yes) halcompat=yes ;;
+                no) halcompat=no ;;
+                *) AC_MSG_ERROR(bad value ${enableval} for --disable-hal-compat) ;;
+            esac
+        ],
+        [halcompat=auto])
+if test "x${halcompat}" != xno -a "x$HAVE_HAL" = "x0" -a "x$HAVE_UDEV" = "x1" ; then
+    HAVE_HAL_COMPAT=1
+    AC_DEFINE([HAVE_HAL_COMPAT], 1, [Have HAL compatibility.])
+else
+    HAVE_HAL_COMPAT=0
+fi
+
+AC_SUBST(HAVE_HAL_COMPAT)
+AM_CONDITIONAL([HAVE_HAL_COMPAT], [test "x$HAVE_HAL_COMPAT" = x1])
 
 ### IPv6 connection support (optional) ###
 
@@ -1399,6 +1441,24 @@ doxygen/Makefile
 doxygen/doxygen.conf
 src/pulse/version.h
 po/Makefile.in
+src/daemon/Makefile
+src/modules/Makefile
+src/modules/alsa/Makefile
+src/modules/alsa/mixer/Makefile
+src/modules/alsa/mixer/paths/Makefile
+src/modules/alsa/mixer/profile-sets/Makefile
+src/modules/bluetooth/Makefile
+src/modules/gconf/Makefile
+src/modules/jack/Makefile
+src/modules/oss/Makefile
+src/modules/raop/Makefile
+src/modules/rtp/Makefile
+src/modules/x11/Makefile
+src/pulse/Makefile
+src/pulsecore/Makefile
+src/pulsecore/ffmpeg/Makefile
+src/tests/Makefile
+src/utils/Makefile
 ])
 
 AC_OUTPUT
@@ -1463,6 +1523,11 @@ fi
 ENABLE_LIRC=no
 if test "x$HAVE_LIRC" = "x1" ; then
    ENABLE_LIRC=yes
+fi
+
+ENABLE_DBUS=no
+if test "x$HAVE_DBUS" = "x1" ; then
+   ENABLE_DBUS=yes
 fi
 
 ENABLE_HAL=no
@@ -1549,10 +1614,11 @@ echo "
     Enable Jack:                   ${ENABLE_JACK}
     Enable Async DNS:              ${ENABLE_LIBASYNCNS}
     Enable LIRC:                   ${ENABLE_LIRC}
-    Enable HAL:                    ${ENABLE_HAL}
+    Enable DBUS:                   ${ENABLE_DBUS}
+      Enable HAL:                  ${ENABLE_HAL}
+      Enable BlueZ:                ${ENABLE_BLUEZ}
     Enable udev:                   ${ENABLE_UDEV}
-    Enable HAL->udev compat:       ${ENABLE_HAL_COMPAT}
-    Enable BlueZ:                  ${ENABLE_BLUEZ}
+      Enable HAL->udev compat:     ${ENABLE_HAL_COMPAT}
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable IPv6:                   ${ENABLE_IPV6}
@@ -1568,3 +1634,27 @@ echo "
     Force preopen:                 ${FORCE_PREOPEN}
     Preopened modules:             ${PREOPEN_MODS}
 "
+
+if test "${ENABLE_DBUS}" = "no" ; then
+   echo "
+===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
+You do not have DBUS support enabled. It is strongly recommended
+that you enable DBUS support if you platform supports it.
+Many parts of PulseAudio use udev, from Console Kit interaction
+to the Device Reservation Protocol to speak to JACK, Bluetooth
+support and even a native control protocol for communicating and
+controling the PulseAudio daemon itself.
+===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
+"
+fi
+
+if test "${ENABLE_UDEV}" = "no" ; then
+   echo "
+===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
+You do not have udev support enabled. It is strongly recommended
+that you enable udev support if you platform supports it as it is
+the primary method used to detect hardware audio devices (on Linux)
+and is thus a critical part of PulseAudio on that platform.
+===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
+"
+fi

@@ -3,7 +3,7 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
-/* Have ARMv6 instructions. */
+/* Have ARM atomic instructions. */
 #undef ATOMIC_ARM_INLINE_ASM
 
 /* special arm linux implementation */
@@ -45,6 +45,9 @@
 
 /* Have ALSA? */
 #undef HAVE_ALSA
+
+/* Have ARMv6 instructions. */
+#undef HAVE_ARMV6
 
 /* Define to 1 if you have the <arpa/inet.h> header file. */
 #undef HAVE_ARPA_INET_H
