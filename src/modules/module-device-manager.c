@@ -1463,7 +1463,7 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    pa_log_info("Sucessfully opened database file '%s'.", fname);
+    pa_log_info("Successfully opened database file '%s'.", fname);
     pa_xfree(fname);
 
     /* Attempt to inject the devices into the list in priority order */
@@ -1575,6 +1575,9 @@ void pa__done(pa_module*m) {
         pa_hook_slot_free(u->sink_unlink_hook_slot);
     if (u->source_unlink_hook_slot)
         pa_hook_slot_free(u->source_unlink_hook_slot);
+
+    if (u->connection_unlink_hook_slot)
+        pa_hook_slot_free(u->connection_unlink_hook_slot);
 
     if (u->save_time_event)
         u->core->mainloop->time_free(u->save_time_event);

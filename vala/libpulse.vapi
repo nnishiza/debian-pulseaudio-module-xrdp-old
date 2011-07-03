@@ -49,7 +49,7 @@ namespace PulseAudio {
         [CCode (cname="PA_INVALID_INDEX")]
         public const uint32 INVALID_INDEX;
 
-        [CCode (cname="pa_free_cb_t")]
+        [CCode (cname="pa_free_cb_t", has_target=false)]
         public delegate void FreeCb(void *p);
 
         [CCode (cname="pa_sample_format_t", cprefix="PA_SAMPLE_")]
@@ -237,13 +237,14 @@ namespace PulseAudio {
         [CCode (cname="PA_CHANNELS_MAX")]
         public const int CHANNELS_MAX;
 
-        [CCode (cname="PA_CHANNELS_MAX")]
+        [CCode (cname="PA_RATE_MAX")]
         public const int RATE_MAX;
 
         [CCode (cname="pa_cvolume")]
         public struct CVolume {
                 public uint8 channels;
-                public Volume values[];
+                // TODO: Replace array length with CHANNELS_MAX once vala's bug #647788 is fixed
+                public Volume values[32];
 
                 [CCode (cname="PA_SW_CVOLUME_SNPRINT_DB_MAX")]
                 public static const size_t SW_SNPRINT_DB_MAX;
@@ -376,7 +377,8 @@ namespace PulseAudio {
         [CCode (cname="pa_channel_map")]
         public struct ChannelMap {
                 public uint8 channels;
-                public ChannelPosition map[];
+                // TODO: Replace array length with CHANNELS_MAX once vala's bug #647788 is fixed
+                public ChannelPosition map[32];
 
                 [CCode (cname="PA_CHANNEL_MAP_SNPRINT_MAX")]
                 public static const size_t SNPRINT_MAX;
@@ -854,7 +856,7 @@ namespace PulseAudio {
                 public int iterate(bool block = true, out int retval = null);
                 public int run(out int retval = null);
                 public unowned MainLoopApi get_api();
-                public void quit(int r);
+                public void quit(int retval);
                 public void wakeup();
                 public void set_poll_func(PollFunc poll_func);
         }
@@ -876,16 +878,6 @@ namespace PulseAudio {
                 public int get_retval();
                 public unowned MainLoopApi get_api();
                 public bool in_thread();
-        }
-
-        [Compact]
-        [CCode (cheader_filename="pulse/glib-mainloop.h", cname="pa_glib_mainloop", cprefix="pa_glib_mainloop_", free_function="pa_glib_mainloop_free")]
-        public class GLibMainLoop {
-
-                [CCode (cname="pa_glib_mainloop_new")]
-                public GLibMainLoop(MainContext? c = null);
-
-                public unowned MainLoopApi get_api();
         }
 
         [Compact]
@@ -1194,8 +1186,8 @@ namespace PulseAudio {
                 public int is_suspended();
                 public int is_corked();
 
-                public int connect_playback(string dev, BufferAttr? a = null, Flags flags = 0, CVolume? volume = null, Stream? sync_stream = null);
-                public int connect_record(string dev, BufferAttr? a = null, Flags flags = 0);
+                public int connect_playback(string? dev = null, BufferAttr? a = null, Flags flags = 0, CVolume? volume = null, Stream? sync_stream = null);
+                public int connect_record(string? dev = null, BufferAttr? a = null, Flags flags = 0);
                 public int connect_upload(size_t length);
                 public int disconnect();
                 public int finish_upload();
@@ -1360,7 +1352,7 @@ namespace PulseAudio {
                 public uint32 owner_module;
                 public string driver;
                 public uint32 n_profiles;
-                public CardProfileInfo profiles[];
+                public CardProfileInfo[] profiles;
                 public CardProfileInfo *active_profile;
                 public Proplist proplist;
         }

@@ -39,7 +39,7 @@ load-module module-card-restore
 load-module module-augment-properties
 
 ### Load audio drivers statically (it's probably better to not load
-### these drivers manually, but instead use module-hal-detect --
+### these drivers manually, but instead use module-udev-detect --
 ### see below -- for doing this automatically)
 #load-module module-alsa-sink
 #load-module module-alsa-source device=hw:1,0
@@ -108,7 +108,9 @@ load-module module-suspend-on-idle
 
 ### If autoexit on idle is enabled we want to make sure we only quit
 ### when no local session needs us anymore.
+.ifexists module-console-kit@PA_SOEXT@
 load-module module-console-kit
+.endif
 
 ### Enable positioned event sounds
 load-module module-position-event-sounds

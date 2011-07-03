@@ -638,7 +638,7 @@ static int set_scheduler(int rtprio) {
 #ifdef HAVE_DBUS
     /* Try to talk to RealtimeKit */
 
-    if (!(bus = dbus_bus_get(DBUS_BUS_SYSTEM, &error))) {
+    if (!(bus = dbus_bus_get_private(DBUS_BUS_SYSTEM, &error))) {
         pa_log("Failed to connect to system bus: %s\n", error.message);
         dbus_error_free(&error);
         errno = -EIO;
@@ -651,6 +651,7 @@ static int set_scheduler(int rtprio) {
     dbus_connection_set_exit_on_disconnect(bus, FALSE);
 
     r = rtkit_make_realtime(bus, 0, rtprio);
+    dbus_connection_close(bus);
     dbus_connection_unref(bus);
 
     if (r >= 0) {
@@ -680,7 +681,7 @@ int pa_make_realtime(int rtprio) {
     }
 
     for (p = rtprio-1; p >= 1; p--)
-        if (set_scheduler(p)) {
+        if (set_scheduler(p) >= 0) {
             pa_log_info("Successfully enabled SCHED_RR scheduling for thread, with priority %i, which is lower than the requested %i.", p, rtprio);
             return 0;
         }
@@ -750,7 +751,7 @@ int pa_raise_priority(int nice_level) {
     }
 
     for (n = nice_level+1; n < 0; n++)
-        if (set_nice(n) > 0) {
+        if (set_nice(n) >= 0) {
             pa_log_info("Successfully acquired nice level %i, which is lower than the requested %i.", n, nice_level);
             return 0;
         }
