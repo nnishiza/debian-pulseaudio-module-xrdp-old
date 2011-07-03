@@ -34,8 +34,9 @@ pulseaudio (0.9.23-1) UNRELEASED; urgency=low
     debian/libpulse0.shlibs
     debian/pulseaudio.shlibs
     debian/rules
+  * Happily builds with binutils-gold (Closes: #556124)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 11:44:43 -0700
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 12:51:28 -0700
 
 pulseaudio (0.9.22-1) experimental; urgency=low
 
