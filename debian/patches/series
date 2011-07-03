@@ -1,3 +1,2 @@
 0001-Work-around-some-platforms-not-having-O_CLOEXEC.patch
 0002-In-KDE-only-start-pulseaudio-from-the-KDE-specific-d.patch
-0004-Fix-FTBFS-with-xcb-util-0.3.8.patch
