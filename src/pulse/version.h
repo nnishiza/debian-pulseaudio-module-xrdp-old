@@ -35,7 +35,7 @@ PA_C_DECL_BEGIN
 /** Return the version of the header files. Keep in mind that this is
 a macro and not a function, so it is impossible to get the pointer of
 it. */
-#define pa_get_headers_version() ("0.9.22-66-g3bb6")
+#define pa_get_headers_version() ("0.9.23")
 
 /** Return the version of the library the current application is
  * linked to. */
@@ -58,7 +58,7 @@ const char* pa_get_library_version(void);
 #define PA_MINOR 9
 
 /** The micro version of PA. \since 0.9.15 */
-#define PA_MICRO 22
+#define PA_MICRO 23
 
 /** Evaluates to TRUE if the PulseAudio library version is equal or
  * newer than the specified. \since 0.9.16 */

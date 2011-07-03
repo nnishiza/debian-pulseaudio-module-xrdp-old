@@ -45,7 +45,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 16)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [12:3:12])
+AC_SUBST(LIBPULSE_VERSION_INFO, [12:4:12])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -547,7 +547,7 @@ AC_ARG_ENABLE([x11],
         [x11=auto])
 
 if test "x${x11}" != xno ; then
-    PKG_CHECK_MODULES(X11, [ x11-xcb ice sm xtst xcb-atom ],
+    PKG_CHECK_MODULES(X11, [ x11-xcb xcb >= 1.6 ice sm xtst ],
         HAVE_X11=1,
         [
             HAVE_X11=0
@@ -1448,6 +1448,7 @@ src/modules/alsa/mixer/Makefile
 src/modules/alsa/mixer/paths/Makefile
 src/modules/alsa/mixer/profile-sets/Makefile
 src/modules/bluetooth/Makefile
+src/modules/echo-cancel/Makefile
 src/modules/gconf/Makefile
 src/modules/jack/Makefile
 src/modules/oss/Makefile

@@ -261,6 +261,10 @@ static void process_render_null(struct userdata *u, pa_usec_t now) {
     size_t ate = 0;
     pa_assert(u);
 
+    /* If we are not running, we cannot produce any data */
+    if (!pa_atomic_load(&u->thread_info.running))
+        return;
+
     if (u->thread_info.in_null_mode)
         u->thread_info.timestamp = now;
 
@@ -732,15 +736,18 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
 
     switch (code) {
 
-        case PA_SINK_MESSAGE_SET_STATE:
-            pa_atomic_store(&u->thread_info.running, PA_PTR_TO_UINT(data) == PA_SINK_RUNNING);
+        case PA_SINK_MESSAGE_SET_STATE: {
+            pa_bool_t running = (PA_PTR_TO_UINT(data) == PA_SINK_RUNNING);
 
-            if (PA_PTR_TO_UINT(data) == PA_SINK_SUSPENDED)
-                pa_smoother_pause(u->thread_info.smoother, pa_rtclock_now());
-            else
+            pa_atomic_store(&u->thread_info.running, running);
+
+            if (running)
                 pa_smoother_resume(u->thread_info.smoother, pa_rtclock_now(), TRUE);
+            else
+                pa_smoother_pause(u->thread_info.smoother, pa_rtclock_now());
 
             break;
+        }
 
         case PA_SINK_MESSAGE_GET_LATENCY: {
             pa_usec_t x, y, c, *delay = data;
@@ -1159,8 +1166,8 @@ int pa__init(pa_module*m) {
             TRUE,
             TRUE,
             10,
-            0,
-            FALSE);
+            pa_rtclock_now(),
+            TRUE);
 
     adjust_time_sec = DEFAULT_ADJUST_TIME_USEC / PA_USEC_PER_SEC;
     if (pa_modargs_get_value_u32(ma, "adjust_time", &adjust_time_sec) < 0) {

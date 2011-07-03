@@ -63,9 +63,8 @@ DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/libpulse-browse.pc.in \
 	$(srcdir)/libpulse-mainloop-glib.pc.in \
 	$(srcdir)/libpulse-simple.pc.in $(srcdir)/libpulse.pc.in \
-	$(top_srcdir)/configure ABOUT-NLS ChangeLog compile \
-	config.guess config.rpath config.sub depcomp install-sh \
-	ltmain.sh missing
+	$(top_srcdir)/configure ABOUT-NLS compile config.guess \
+	config.rpath config.sub depcomp install-sh ltmain.sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/acx_lirc.m4 $(top_srcdir)/m4/acx_pthread.m4 \
