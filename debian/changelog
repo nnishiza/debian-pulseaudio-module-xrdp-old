@@ -26,8 +26,10 @@ pulseaudio (0.9.23-1) UNRELEASED; urgency=low
 
   [ Sjoerd Simons ]
   * New upstream release
+  * d/p/0003-Mention-speex-and-libsamplerate-in-pulse-daemon.conf.patch
+    + Removed, fixed upstream
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 11:18:29 -0700
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 11:27:16 -0700
 
 pulseaudio (0.9.22-1) experimental; urgency=low
 
