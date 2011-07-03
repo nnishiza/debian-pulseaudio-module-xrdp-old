@@ -30,8 +30,12 @@ pulseaudio (0.9.23-1) UNRELEASED; urgency=low
     + Removed, fixed upstream
   * d/p/0004-Fix-FTBFS-with-xcb-util-0.3.8.patch
     + Removed, fixed upstream
+  * Update to 0.9.23 versioning:
+    debian/libpulse0.shlibs
+    debian/pulseaudio.shlibs
+    debian/rules
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 11:32:19 -0700
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 11:44:43 -0700
 
 pulseaudio (0.9.22-1) experimental; urgency=low
 
