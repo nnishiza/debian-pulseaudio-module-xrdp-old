@@ -35,8 +35,9 @@ pulseaudio (0.9.23-1) UNRELEASED; urgency=low
     debian/pulseaudio.shlibs
     debian/rules
   * Switch to 3.0 (quilt) format
+  * debian/control: Use dh-autoreconf
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 18:36:15 -0700
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 19:08:33 -0700
 
 pulseaudio (0.9.22-1) experimental; urgency=low
 
