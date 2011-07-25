@@ -36,8 +36,10 @@ pulseaudio (0.9.23-1) UNRELEASED; urgency=low
     debian/rules
   * Switch to 3.0 (quilt) format
   * debian/control: Use dh-autoreconf
+  * debian/patches/+0003-Explicitely-link-pax11publish-to-libdbus.patch:
+    + Added. Fix build with binutils-gold (Closes: #556124)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 03 Jul 2011 19:08:33 -0700
+ -- Sjoerd Simons <sjoerd@debian.org>  Mon, 25 Jul 2011 22:42:35 +0100
 
 pulseaudio (0.9.22-1) experimental; urgency=low
 
