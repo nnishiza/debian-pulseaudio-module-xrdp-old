@@ -1,0 +1,25 @@
+From 6f491fdf6265d7fe0c1967c24229b07348787a2f Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@debian.org>
+Date: Mon, 25 Jul 2011 22:27:56 +0100
+Subject: [PATCH 3/3] Explicitely link pax11publish to libdbus
+
+prevents build failure with gold
+---
+ src/Makefile.am |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index cc38db2..a4a7d65 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -258,7 +258,9 @@ pacmd_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+ 
+ pax11publish_SOURCES = utils/pax11publish.c
+ pax11publish_CFLAGS = $(AM_CFLAGS) $(X11_CFLAGS)
+-pax11publish_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINORMICRO@.la $(X11_LIBS)
++pax11publish_LDADD = $(AM_LDADD) libpulse.la \
++  libpulsecommon-@PA_MAJORMINORMICRO@.la $(X11_LIBS) \
++  $(DBUS_LIBS)
+ pax11publish_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+ 
+ pabrowse_SOURCES = utils/pabrowse.c
