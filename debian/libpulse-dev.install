@@ -4,3 +4,4 @@ usr/lib/libpulse-browse.so
 usr/lib/libpulse-mainloop-glib.so
 usr/lib/pkgconfig/*
 usr/include/pulse/*
+usr/share/vala/vapi

@@ -121,6 +121,41 @@ License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2.1 can be found in
  /usr/share/common-licenses/LGPL-2.1.
 
+Files: src/modules/echo-cancel/adrian*.*
+Copyright:
+ Copyright (C) DFS Deutsche Flugsicherung (2004). All Rights Reserved.
+License:
+ You are allowed to use this source code in any open source or closed
+ source software you want. You are allowed to use the algorithms for a
+ hardware solution. You are allowed to modify the source code.
+ You are not allowed to remove the name of the author from this memo or
+ from the source code files. You are not allowed to monopolize the
+ source code or the algorithms behind the source code as your
+ intellectual property. This source code is free of royalty and comes
+ with no warranty.
+
+File: src/modules/echo-cancel/echo-cancel.h
+Copyright:
+ Copyright 2010 Arun Raghavan <arun.raghavan@collabora.co.uk>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+File: src/modules/echo-cancel/module-echo-cancel.c
+Copyright:
+ Copyright 2010 Wim Taymans <wim.taymans@gmail.com>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+File: src/modules/echo-cancel/speex.c
+Copyright:
+ Copyright 2010 Wim Taymans <wim.taymans@gmail.com>
+ Contributor: Arun Raghavan <arun.raghavan@collabora.co.uk>
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2.1 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
 Files: src/modules/module-device-manager.*
 Copyright:
  Copyright 2006-2008 Lennart Poettering
@@ -173,6 +208,14 @@ Files: src/modules/roap/base64.*
 Copyright:
  Copyright (C) 2008 Colin Guthrie
  Copyright (C) Kungliga Tekniska Hogskolan
+License: LGPL-2.1+
+ On Debian systems, the complete text of the LGPL-2 can be found in
+ /usr/share/common-licenses/LGPL-2.1.
+
+Files: src/modules/module-device-manager.c
+Copyright:
+ Copyright 2006-2008 Lennart Poettering
+ Copyright 2009 Colin Guthrie
 License: LGPL-2.1+
  On Debian systems, the complete text of the LGPL-2 can be found in
  /usr/share/common-licenses/LGPL-2.1.

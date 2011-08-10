@@ -17,6 +17,10 @@ common-install-arch::
 	find $(DEB_DESTDIR) -name "*.la" -delete
 	mkdir -p $(CURDIR)/debian/tmp/usr/share/lintian
 	cp -a $(CURDIR)/debian/overrides $(CURDIR)/debian/tmp/usr/share/lintian
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/alsa
+	cp -a $(CURDIR)/debian/pulse.conf $(CURDIR)/debian/tmp/usr/share/alsa
+	cp -a $(CURDIR)/debian/pulse-alsa.conf $(CURDIR)/debian/tmp/usr/share/alsa
+
 
 common-configure-arch::
 ifneq (,$(findstring $(DEB_HOST_ARCH), "arm armel"))
@@ -51,8 +55,9 @@ ifneq (,$(findstring $(DEB_HOST_ARCH_OS), "linux"))
   DEB_CONFIGURE_EXTRA_FLAGS += --enable-hal-compat --disable-hal
 endif
 
-DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.9.23/modules
-DEB_DH_SHLIBDEPS_ARGS_libpulse0 = -u -L/dev/null
-DEB_DH_SHLIBDEPS_ARGS_pulseaudio = -u -Ldebian/shlibs_pulseaudio.local
+DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.99/modules
+
+LDFLAGS += -Wl,--no-as-needed
+
 DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
 DEB_UPDATE_RCD_PARAMS = start 25 2 3 4 5 . stop 15 1 .
