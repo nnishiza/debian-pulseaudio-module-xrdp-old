@@ -1,8 +1,8 @@
-From d01653d5537330e1692cff64307eff33c3b6fa8d Mon Sep 17 00:00:00 2001
+From 24c072537547bed620a231c6222a83c39fd8b162 Mon Sep 17 00:00:00 2001
 From: Zsolt Rizsanyi <rizsanyi@users.sourceforge.net>
 Date: Sun, 27 Jun 2010 15:16:13 +0100
-Subject: [PATCH 2/3] In KDE only start pulseaudio from the KDE specific
- desktop file
+Subject: [PATCH] In KDE only start pulseaudio from the KDE specific desktop
+ file
 
 ---
  src/daemon/pulseaudio.desktop.in |    1 +
