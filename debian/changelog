@@ -7,8 +7,12 @@ pulseaudio (0.99.1-1) UNRELEASED; urgency=low
     + Removed, fixed upstream
   * renamed s/p/0002-In-KDE-only-start-pulseaudio-from-the-KDE-specific-d.patch
     to 0001-Work-around-some-platforms-not-having-O_CLOEXEC.patch
+  * Remove pabrowse packages
+  * d/p/0001-In-KDE-only-start-pulseaudio-from-the-KDE-specific-d.patch
+    + Dropped, shouldn't be needed, the start-pulseaudio-kde just needs to load
+      an extra module
 
- -- Sjoerd Simons <sjoerd@debian.org>  Wed, 10 Aug 2011 16:23:57 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Wed, 10 Aug 2011 17:06:55 +0200
 
 pulseaudio (0.9.23-1) unstable; urgency=low
 
