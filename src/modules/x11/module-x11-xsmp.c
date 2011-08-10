@@ -33,13 +33,8 @@
 #include <pulse/xmalloc.h>
 #include <pulse/util.h>
 
-#include <pulsecore/iochannel.h>
-#include <pulsecore/sink.h>
-#include <pulsecore/core-scache.h>
 #include <pulsecore/modargs.h>
-#include <pulsecore/namereg.h>
 #include <pulsecore/log.h>
-#include <pulsecore/core-util.h>
 #include <pulsecore/x11wrap.h>
 
 #include "module-x11-xsmp-symdef.h"
@@ -129,7 +124,7 @@ int pa__init(pa_module*m) {
     pa_assert(m);
 
     if (ice_in_use) {
-        pa_log("module-x11-xsmp may no be loaded twice.");
+        pa_log("module-x11-xsmp may not be loaded twice.");
         return -1;
     }
 

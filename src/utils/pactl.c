@@ -30,7 +30,6 @@
 #include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <limits.h>
 #include <getopt.h>
 #include <locale.h>
 
@@ -44,12 +43,11 @@
 #include <pulsecore/log.h>
 #include <pulsecore/sndfile-util.h>
 
-#define BUFSIZE (16*1024)
-
 static pa_context *context = NULL;
 static pa_mainloop_api *mainloop_api = NULL;
 
 static char
+    *list_type = NULL,
     *sample_name = NULL,
     *sink_name = NULL,
     *source_name = NULL,
@@ -63,10 +61,19 @@ static uint32_t
     sink_input_idx = PA_INVALID_INDEX,
     source_output_idx = PA_INVALID_INDEX;
 
+static pa_bool_t short_list_format = FALSE;
 static uint32_t module_index;
 static pa_bool_t suspend;
 static pa_bool_t mute;
 static pa_volume_t volume;
+static enum volume_flags {
+    VOL_UINT     = 0,
+    VOL_PERCENT  = 1,
+    VOL_LINEAR   = 2,
+    VOL_DECIBEL  = 3,
+    VOL_ABSOLUTE = 0 << 4,
+    VOL_RELATIVE = 1 << 4,
+} volume_flags;
 
 static pa_proplist *proplist = NULL;
 
@@ -83,6 +90,7 @@ static enum {
     NONE,
     EXIT,
     STAT,
+    INFO,
     UPLOAD_SAMPLE,
     PLAY_SAMPLE,
     REMOVE_SAMPLE,
@@ -99,9 +107,11 @@ static enum {
     SET_SINK_VOLUME,
     SET_SOURCE_VOLUME,
     SET_SINK_INPUT_VOLUME,
+    SET_SOURCE_OUTPUT_VOLUME,
     SET_SINK_MUTE,
     SET_SOURCE_MUTE,
-    SET_SINK_INPUT_MUTE
+    SET_SINK_INPUT_MUTE,
+    SUBSCRIBE
 } action = NONE;
 
 static void quit(int ret) {
@@ -158,10 +168,23 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
         return;
     }
 
+    printf(_("Server String: %s\n"
+             "Library Protocol Version: %u\n"
+             "Server Protocol Version: %u\n"
+             "Is Local: %s\n"
+             "Client Index: %u\n"
+             "Tile Size: %zu\n"),
+             pa_context_get_server(c),
+             pa_context_get_protocol_version(c),
+             pa_context_get_server_protocol_version(c),
+             pa_yes_no(pa_context_is_local(c)),
+             pa_context_get_index(c),
+             pa_context_get_tile_size(c, NULL));
+
     pa_sample_spec_snprint(ss, sizeof(ss), &i->sample_spec);
     pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map);
 
-    printf(_("User name: %s\n"
+    printf(_("User Name: %s\n"
              "Host Name: %s\n"
              "Server Name: %s\n"
              "Server Version: %s\n"
@@ -169,7 +192,7 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
              "Default Channel Map: %s\n"
              "Default Sink: %s\n"
              "Default Source: %s\n"
-             "Cookie: %08x\n"),
+             "Cookie: %04x:%04x\n"),
            i->user_name,
            i->host_name,
            i->server_name,
@@ -178,7 +201,8 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
            cm,
            i->default_sink_name,
            i->default_source_name,
-           i->cookie);
+           i->cookie >> 16,
+           i->cookie & 0xFFFFU);
 
     complete_action();
 }
@@ -198,7 +222,8 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
         cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX],
         v[PA_VOLUME_SNPRINT_MAX],
         vdb[PA_SW_VOLUME_SNPRINT_DB_MAX],
-        cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+        cm[PA_CHANNEL_MAP_SNPRINT_MAX],
+        f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
 
     if (is_last < 0) {
@@ -214,9 +239,19 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
+
+    if (short_list_format) {
+        printf("%u\t%s\t%s\t%s\t%s\n",
+               i->index,
+               i->name,
+               pa_strnull(i->driver),
+               pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
+               state_table[1+i->state]);
+        return;
+    }
 
     printf(_("Sink #%u\n"
              "\tState: %s\n"
@@ -273,6 +308,14 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
     if (i->active_port)
         printf(_("\tActive Port: %s\n"),
                i->active_port->name);
+
+    if (i->formats) {
+        uint8_t j;
+
+        printf(_("\tFormats:\n"));
+        for (j = 0; j < i->n_formats; j++)
+            printf("\t\t%s\n", pa_format_info_snprint(f, sizeof(f), i->formats[j]));
+    }
 }
 
 static void get_source_info_callback(pa_context *c, const pa_source_info *i, int is_last, void *userdata) {
@@ -290,7 +333,8 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
         cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX],
         v[PA_VOLUME_SNPRINT_MAX],
         vdb[PA_SW_VOLUME_SNPRINT_DB_MAX],
-        cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+        cm[PA_CHANNEL_MAP_SNPRINT_MAX],
+        f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
 
     if (is_last < 0) {
@@ -306,9 +350,19 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
+
+    if (short_list_format) {
+        printf("%u\t%s\t%s\t%s\t%s\n",
+               i->index,
+               i->name,
+               pa_strnull(i->driver),
+               pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
+               state_table[1+i->state]);
+        return;
+    }
 
     printf(_("Source #%u\n"
              "\tState: %s\n"
@@ -365,6 +419,14 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
     if (i->active_port)
         printf(_("\tActive Port: %s\n"),
                i->active_port->name);
+
+    if (i->formats) {
+        uint8_t j;
+
+        printf(_("\tFormats:\n"));
+        for (j = 0; j < i->n_formats; j++)
+            printf("\t\t%s\n", pa_format_info_snprint(f, sizeof(f), i->formats[j]));
+    }
 }
 
 static void get_module_info_callback(pa_context *c, const pa_module_info *i, int is_last, void *userdata) {
@@ -384,11 +446,16 @@ static void get_module_info_callback(pa_context *c, const pa_module_info *i, int
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
 
     pa_snprintf(t, sizeof(t), "%u", i->n_used);
+
+    if (short_list_format) {
+        printf("%u\t%s\t%s\t\n", i->index, i->name, i->argument ? i->argument : "");
+        return;
+    }
 
     printf(_("Module #%u\n"
              "\tName: %s\n"
@@ -421,11 +488,19 @@ static void get_client_info_callback(pa_context *c, const pa_client_info *i, int
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
+
+    if (short_list_format) {
+        printf("%u\t%s\t%s\n",
+               i->index,
+               pa_strnull(i->driver),
+               pa_strnull(pa_proplist_gets(i->proplist, PA_PROP_APPLICATION_PROCESS_BINARY)));
+        return;
+    }
 
     printf(_("Client #%u\n"
              "\tDriver: %s\n"
@@ -456,11 +531,16 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
+
+    if (short_list_format) {
+        printf("%u\t%s\t%s\n", i->index, i->name, pa_strnull(i->driver));
+        return;
+    }
 
     printf(_("Card #%u\n"
              "\tName: %s\n"
@@ -489,7 +569,7 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
 }
 
 static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info *i, int is_last, void *userdata) {
-    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX], f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
 
     if (is_last < 0) {
@@ -505,12 +585,22 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
     pa_snprintf(k, sizeof(k), "%u", i->client);
+
+    if (short_list_format) {
+        printf("%u\t%u\t%s\t%s\t%s\n",
+               i->index,
+               i->sink,
+               i->client != PA_INVALID_INDEX ? k : "-",
+               pa_strnull(i->driver),
+               pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec));
+        return;
+    }
 
     printf(_("Sink Input #%u\n"
              "\tDriver: %s\n"
@@ -519,6 +609,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
              "\tSink: %u\n"
              "\tSample Specification: %s\n"
              "\tChannel Map: %s\n"
+             "\tFormat: %s\n"
              "\tMute: %s\n"
              "\tVolume: %s\n"
              "\t        %s\n"
@@ -534,6 +625,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
            i->sink,
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
+           pa_format_info_snprint(f, sizeof(f), i->format),
            pa_yes_no(i->mute),
            pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
            pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume),
@@ -547,7 +639,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
 }
 
 static void get_source_output_info_callback(pa_context *c, const pa_source_output_info *i, int is_last, void *userdata) {
-    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX], f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
 
     if (is_last < 0) {
@@ -563,13 +655,23 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
 
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
     pa_snprintf(k, sizeof(k), "%u", i->client);
+
+    if (short_list_format) {
+        printf("%u\t%u\t%s\t%s\t%s\n",
+               i->index,
+               i->source,
+               i->client != PA_INVALID_INDEX ? k : "-",
+               pa_strnull(i->driver),
+               pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec));
+        return;
+    }
 
     printf(_("Source Output #%u\n"
              "\tDriver: %s\n"
@@ -578,6 +680,11 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
              "\tSource: %u\n"
              "\tSample Specification: %s\n"
              "\tChannel Map: %s\n"
+             "\tFormat: %s\n"
+             "\tMute: %s\n"
+             "\tVolume: %s\n"
+             "\t        %s\n"
+             "\t        balance %0.2f\n"
              "\tBuffer Latency: %0.0f usec\n"
              "\tSource Latency: %0.0f usec\n"
              "\tResample method: %s\n"
@@ -589,6 +696,11 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
            i->source,
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
+           pa_format_info_snprint(f, sizeof(f), i->format),
+           pa_yes_no(i->mute),
+           pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
+           pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume),
+           pa_cvolume_get_balance(&i->volume, &i->channel_map),
            (double) i->buffer_usec,
            (double) i->source_usec,
            i->resample_method ? i->resample_method : _("n/a"),
@@ -614,11 +726,20 @@ static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int
 
     pa_assert(i);
 
-    if (nl)
+    if (nl && !short_list_format)
         printf("\n");
     nl = TRUE;
 
     pa_bytes_snprint(t, sizeof(t), i->bytes);
+
+    if (short_list_format) {
+        printf("%u\t%s\t%s\t%0.3f\n",
+               i->index,
+               i->name,
+               pa_sample_spec_valid(&i->sample_spec) ? pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec) : "-",
+               (double) i->duration/1000000.0);
+        return;
+    }
 
     printf(_("Sample #%u\n"
              "\tName: %s\n"
@@ -670,6 +791,97 @@ static void index_callback(pa_context *c, uint32_t idx, void *userdata) {
     complete_action();
 }
 
+static void volume_relative_adjust(pa_cvolume *cv) {
+    pa_assert((volume_flags & VOL_RELATIVE) == VOL_RELATIVE);
+
+    /* Relative volume change is additive in case of UINT or PERCENT
+     * and multiplicative for LINEAR or DECIBEL */
+    if ((volume_flags & 0x0F) == VOL_UINT || (volume_flags & 0x0F) == VOL_PERCENT) {
+        pa_volume_t v = pa_cvolume_avg(cv);
+        v = v + volume < PA_VOLUME_NORM ? PA_VOLUME_MUTED : v + volume - PA_VOLUME_NORM;
+        pa_cvolume_set(cv, 1, v);
+    }
+    if ((volume_flags & 0x0F) == VOL_LINEAR || (volume_flags & 0x0F) == VOL_DECIBEL) {
+        pa_sw_cvolume_multiply_scalar(cv, cv, volume);
+    }
+}
+
+static void get_sink_volume_callback(pa_context *c, const pa_sink_info *i, int is_last, void *userdata) {
+    pa_cvolume cv;
+
+    if (is_last < 0) {
+        pa_log(_("Failed to get sink information: %s"), pa_strerror(pa_context_errno(c)));
+        quit(1);
+        return;
+    }
+
+    if (is_last)
+        return;
+
+    pa_assert(i);
+
+    cv = i->volume;
+    volume_relative_adjust(&cv);
+    pa_operation_unref(pa_context_set_sink_volume_by_name(c, sink_name, &cv, simple_callback, NULL));
+}
+
+static void get_source_volume_callback(pa_context *c, const pa_source_info *i, int is_last, void *userdata) {
+    pa_cvolume cv;
+
+    if (is_last < 0) {
+        pa_log(_("Failed to get source information: %s"), pa_strerror(pa_context_errno(c)));
+        quit(1);
+        return;
+    }
+
+    if (is_last)
+        return;
+
+    pa_assert(i);
+
+    cv = i->volume;
+    volume_relative_adjust(&cv);
+    pa_operation_unref(pa_context_set_source_volume_by_name(c, source_name, &cv, simple_callback, NULL));
+}
+
+static void get_sink_input_volume_callback(pa_context *c, const pa_sink_input_info *i, int is_last, void *userdata) {
+    pa_cvolume cv;
+
+    if (is_last < 0) {
+        pa_log(_("Failed to get sink input information: %s"), pa_strerror(pa_context_errno(c)));
+        quit(1);
+        return;
+    }
+
+    if (is_last)
+        return;
+
+    pa_assert(i);
+
+    cv = i->volume;
+    volume_relative_adjust(&cv);
+    pa_operation_unref(pa_context_set_sink_input_volume(c, sink_input_idx, &cv, simple_callback, NULL));
+}
+
+static void get_source_output_volume_callback(pa_context *c, const pa_source_output_info *o, int is_last, void *userdata) {
+    pa_cvolume cv;
+
+    if (is_last < 0) {
+        pa_log(_("Failed to get source output information: %s"), pa_strerror(pa_context_errno(c)));
+        quit(1);
+        return;
+    }
+
+    if (is_last)
+        return;
+
+    pa_assert(o);
+
+    cv = o->volume;
+    volume_relative_adjust(&cv);
+    pa_operation_unref(pa_context_set_source_output_volume(c, source_output_idx, &cv, simple_callback, NULL));
+}
+
 static void stream_state_callback(pa_stream *s, void *userdata) {
     pa_assert(s);
 
@@ -710,10 +922,71 @@ static void stream_write_callback(pa_stream *s, size_t length, void *userdata) {
 
     sample_length -= length;
 
-    if (sample_length  <= 0) {
+    if (sample_length <= 0) {
         pa_stream_set_write_callback(sample_stream, NULL, NULL);
         pa_stream_finish_upload(sample_stream);
     }
+}
+
+static const char *subscription_event_type_to_string(pa_subscription_event_type_t t) {
+
+    switch (t & PA_SUBSCRIPTION_EVENT_TYPE_MASK) {
+
+    case PA_SUBSCRIPTION_EVENT_NEW:
+        return _("new");
+
+    case PA_SUBSCRIPTION_EVENT_CHANGE:
+        return _("change");
+
+    case PA_SUBSCRIPTION_EVENT_REMOVE:
+        return _("remove");
+    }
+
+    return _("unknown");
+}
+
+static const char *subscription_event_facility_to_string(pa_subscription_event_type_t t) {
+
+    switch (t & PA_SUBSCRIPTION_EVENT_FACILITY_MASK) {
+
+    case PA_SUBSCRIPTION_EVENT_SINK:
+        return _("sink");
+
+    case PA_SUBSCRIPTION_EVENT_SOURCE:
+        return _("source");
+
+    case PA_SUBSCRIPTION_EVENT_SINK_INPUT:
+        return _("sink-input");
+
+    case PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT:
+        return _("source-output");
+
+    case PA_SUBSCRIPTION_EVENT_MODULE:
+        return _("module");
+
+    case PA_SUBSCRIPTION_EVENT_CLIENT:
+        return _("client");
+
+    case PA_SUBSCRIPTION_EVENT_SAMPLE_CACHE:
+        return _("sample-cache");
+
+    case PA_SUBSCRIPTION_EVENT_SERVER:
+        return _("server");
+
+    case PA_SUBSCRIPTION_EVENT_CARD:
+        return _("server");
+    }
+
+    return _("unknown");
+}
+
+static void context_subscribe_callback(pa_context *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
+    pa_assert(c);
+
+    printf(_("Event '%s' on %s #%u\n"),
+           subscription_event_type_to_string(t),
+           subscription_event_facility_to_string(t),
+           idx);
 }
 
 static void context_state_callback(pa_context *c, void *userdata) {
@@ -727,8 +1000,10 @@ static void context_state_callback(pa_context *c, void *userdata) {
         case PA_CONTEXT_READY:
             switch (action) {
                 case STAT:
-                    actions = 2;
                     pa_operation_unref(pa_context_stat(c, stat_callback, NULL));
+                    break;
+
+                case INFO:
                     pa_operation_unref(pa_context_get_server_info(c, get_server_info_callback, NULL));
                     break;
 
@@ -754,15 +1029,36 @@ static void context_state_callback(pa_context *c, void *userdata) {
                     break;
 
                 case LIST:
-                    actions = 8;
-                    pa_operation_unref(pa_context_get_module_info_list(c, get_module_info_callback, NULL));
-                    pa_operation_unref(pa_context_get_sink_info_list(c, get_sink_info_callback, NULL));
-                    pa_operation_unref(pa_context_get_source_info_list(c, get_source_info_callback, NULL));
-                    pa_operation_unref(pa_context_get_sink_input_info_list(c, get_sink_input_info_callback, NULL));
-                    pa_operation_unref(pa_context_get_source_output_info_list(c, get_source_output_info_callback, NULL));
-                    pa_operation_unref(pa_context_get_client_info_list(c, get_client_info_callback, NULL));
-                    pa_operation_unref(pa_context_get_sample_info_list(c, get_sample_info_callback, NULL));
-                    pa_operation_unref(pa_context_get_card_info_list(c, get_card_info_callback, NULL));
+                    if (list_type) {
+                        if (pa_streq(list_type, "modules"))
+                            pa_operation_unref(pa_context_get_module_info_list(c, get_module_info_callback, NULL));
+                        else if (pa_streq(list_type, "sinks"))
+                            pa_operation_unref(pa_context_get_sink_info_list(c, get_sink_info_callback, NULL));
+                        else if (pa_streq(list_type, "sources"))
+                            pa_operation_unref(pa_context_get_source_info_list(c, get_source_info_callback, NULL));
+                        else if (pa_streq(list_type, "sink-inputs"))
+                            pa_operation_unref(pa_context_get_sink_input_info_list(c, get_sink_input_info_callback, NULL));
+                        else if (pa_streq(list_type, "source-outputs"))
+                            pa_operation_unref(pa_context_get_source_output_info_list(c, get_source_output_info_callback, NULL));
+                        else if (pa_streq(list_type, "clients"))
+                            pa_operation_unref(pa_context_get_client_info_list(c, get_client_info_callback, NULL));
+                        else if (pa_streq(list_type, "samples"))
+                            pa_operation_unref(pa_context_get_sample_info_list(c, get_sample_info_callback, NULL));
+                        else if (pa_streq(list_type, "cards"))
+                            pa_operation_unref(pa_context_get_card_info_list(c, get_card_info_callback, NULL));
+                        else
+                            pa_assert_not_reached();
+                    } else {
+                        actions = 8;
+                        pa_operation_unref(pa_context_get_module_info_list(c, get_module_info_callback, NULL));
+                        pa_operation_unref(pa_context_get_sink_info_list(c, get_sink_info_callback, NULL));
+                        pa_operation_unref(pa_context_get_source_info_list(c, get_source_info_callback, NULL));
+                        pa_operation_unref(pa_context_get_sink_input_info_list(c, get_sink_input_info_callback, NULL));
+                        pa_operation_unref(pa_context_get_source_output_info_list(c, get_source_output_info_callback, NULL));
+                        pa_operation_unref(pa_context_get_client_info_list(c, get_client_info_callback, NULL));
+                        pa_operation_unref(pa_context_get_sample_info_list(c, get_sample_info_callback, NULL));
+                        pa_operation_unref(pa_context_get_card_info_list(c, get_card_info_callback, NULL));
+                    }
                     break;
 
                 case MOVE_SINK_INPUT:
@@ -819,29 +1115,63 @@ static void context_state_callback(pa_context *c, void *userdata) {
                     pa_operation_unref(pa_context_set_sink_input_mute(c, sink_input_idx, mute, simple_callback, NULL));
                     break;
 
-                case SET_SINK_VOLUME: {
-                    pa_cvolume v;
-
-                    pa_cvolume_set(&v, 1, volume);
-                    pa_operation_unref(pa_context_set_sink_volume_by_name(c, sink_name, &v, simple_callback, NULL));
+                case SET_SINK_VOLUME:
+                    if ((volume_flags & VOL_RELATIVE) == VOL_RELATIVE) {
+                        pa_operation_unref(pa_context_get_sink_info_by_name(c, sink_name, get_sink_volume_callback, NULL));
+                    } else {
+                        pa_cvolume v;
+                        pa_cvolume_set(&v, 1, volume);
+                        pa_operation_unref(pa_context_set_sink_volume_by_name(c, sink_name, &v, simple_callback, NULL));
+                    }
                     break;
-                }
 
-                case SET_SOURCE_VOLUME: {
-                    pa_cvolume v;
-
-                    pa_cvolume_set(&v, 1, volume);
-                    pa_operation_unref(pa_context_set_source_volume_by_name(c, source_name, &v, simple_callback, NULL));
+                case SET_SOURCE_VOLUME:
+                    if ((volume_flags & VOL_RELATIVE) == VOL_RELATIVE) {
+                        pa_operation_unref(pa_context_get_source_info_by_name(c, source_name, get_source_volume_callback, NULL));
+                    } else {
+                        pa_cvolume v;
+                        pa_cvolume_set(&v, 1, volume);
+                        pa_operation_unref(pa_context_set_source_volume_by_name(c, source_name, &v, simple_callback, NULL));
+                    }
                     break;
-                }
 
-                case SET_SINK_INPUT_VOLUME: {
-                    pa_cvolume v;
-
-                    pa_cvolume_set(&v, 1, volume);
-                    pa_operation_unref(pa_context_set_sink_input_volume(c, sink_input_idx, &v, simple_callback, NULL));
+                case SET_SINK_INPUT_VOLUME:
+                    if ((volume_flags & VOL_RELATIVE) == VOL_RELATIVE) {
+                        pa_operation_unref(pa_context_get_sink_input_info(c, sink_input_idx, get_sink_input_volume_callback, NULL));
+                    } else {
+                        pa_cvolume v;
+                        pa_cvolume_set(&v, 1, volume);
+                        pa_operation_unref(pa_context_set_sink_input_volume(c, sink_input_idx, &v, simple_callback, NULL));
+                    }
                     break;
-                }
+
+                case SET_SOURCE_OUTPUT_VOLUME:
+                    if ((volume_flags & VOL_RELATIVE) == VOL_RELATIVE) {
+                        pa_operation_unref(pa_context_get_source_output_info(c, source_output_idx, get_source_output_volume_callback, NULL));
+                    } else {
+                        pa_cvolume v;
+                        pa_cvolume_set(&v, 1, volume);
+                        pa_operation_unref(pa_context_set_source_output_volume(c, source_output_idx, &v, simple_callback, NULL));
+                    }
+                    break;
+
+                case SUBSCRIBE:
+                    pa_context_set_subscribe_callback(c, context_subscribe_callback, NULL);
+
+                    pa_operation_unref(pa_context_subscribe(
+                                              c,
+                                              PA_SUBSCRIPTION_MASK_SINK|
+                                              PA_SUBSCRIPTION_MASK_SOURCE|
+                                              PA_SUBSCRIPTION_MASK_SINK_INPUT|
+                                              PA_SUBSCRIPTION_MASK_SOURCE_OUTPUT|
+                                              PA_SUBSCRIPTION_MASK_MODULE|
+                                              PA_SUBSCRIPTION_MASK_CLIENT|
+                                              PA_SUBSCRIPTION_MASK_SAMPLE_CACHE|
+                                              PA_SUBSCRIPTION_MASK_SERVER|
+                                              PA_SUBSCRIPTION_MASK_CARD,
+                                              NULL,
+                                              NULL));
+                    break;
 
                 default:
                     pa_assert_not_reached();
@@ -864,10 +1194,66 @@ static void exit_signal_callback(pa_mainloop_api *m, pa_signal_event *e, int sig
     quit(0);
 }
 
+static int parse_volume(const char *vol_spec, pa_volume_t *vol, enum volume_flags *vol_flags) {
+    double v;
+    char *vs;
+
+    pa_assert(vol_spec);
+    pa_assert(vol);
+    pa_assert(vol_flags);
+
+    vs = pa_xstrdup(vol_spec);
+
+    *vol_flags = (pa_startswith(vs, "+") || pa_startswith(vs, "-")) ? VOL_RELATIVE : VOL_ABSOLUTE;
+    if (strchr(vs, '.'))
+        *vol_flags |= VOL_LINEAR;
+    if (pa_endswith(vs, "%")) {
+        *vol_flags |= VOL_PERCENT;
+        vs[strlen(vs)-1] = 0;
+    }
+    if (pa_endswith(vs, "db") || pa_endswith(vs, "dB")) {
+        *vol_flags |= VOL_DECIBEL;
+        vs[strlen(vs)-2] = 0;
+    }
+
+    if (pa_atod(vs, &v) < 0) {
+        pa_log(_("Invalid volume specification"));
+        pa_xfree(vs);
+        return -1;
+    }
+
+    pa_xfree(vs);
+
+    if ((*vol_flags & VOL_RELATIVE) == VOL_RELATIVE) {
+        if ((*vol_flags & 0x0F) == VOL_UINT)
+            v += (double) PA_VOLUME_NORM;
+        if ((*vol_flags & 0x0F) == VOL_PERCENT)
+            v += 100.0;
+        if ((*vol_flags & 0x0F) == VOL_LINEAR)
+            v += 1.0;
+    }
+    if ((*vol_flags & 0x0F) == VOL_PERCENT)
+        v = v * (double) PA_VOLUME_NORM / 100;
+    if ((*vol_flags & 0x0F) == VOL_LINEAR)
+        v = pa_sw_volume_from_linear(v);
+    if ((*vol_flags & 0x0F) == VOL_DECIBEL)
+        v = pa_sw_volume_from_dB(v);
+
+    if (!PA_VOLUME_IS_VALID((pa_volume_t) v)) {
+        pa_log(_("Volume outside permissible range.\n"));
+        return -1;
+    }
+
+    *vol = (pa_volume_t) v;
+
+    return 0;
+}
+
 static void help(const char *argv0) {
 
     printf(_("%s [options] stat\n"
-             "%s [options] list\n"
+             "%s [options] info\n"
+             "%s [options] list [short] [TYPE]\n"
              "%s [options] exit\n"
              "%s [options] upload-sample FILENAME [NAME]\n"
              "%s [options] play-sample NAME [SINK]\n"
@@ -884,9 +1270,11 @@ static void help(const char *argv0) {
              "%s [options] set-sink-volume SINK VOLUME\n"
              "%s [options] set-source-volume SOURCE VOLUME\n"
              "%s [options] set-sink-input-volume SINKINPUT VOLUME\n"
+             "%s [options] set-source-output-volume SOURCEOUTPUT VOLUME\n"
              "%s [options] set-sink-mute SINK 1|0\n"
              "%s [options] set-source-mute SOURCE 1|0\n"
-             "%s [options] set-sink-input-mute SINKINPUT 1|0\n\n"
+             "%s [options] set-sink-input-mute SINKINPUT 1|0\n"
+             "%s [options] subscribe\n\n"
              "  -h, --help                            Show this help\n"
              "      --version                         Show version\n\n"
              "  -s, --server=SERVER                   The name of the server to connect to\n"
@@ -895,7 +1283,7 @@ static void help(const char *argv0) {
            argv0, argv0, argv0, argv0, argv0,
            argv0, argv0, argv0, argv0, argv0,
            argv0, argv0, argv0, argv0, argv0,
-           argv0);
+           argv0, argv0, argv0, argv0);
 }
 
 enum {
@@ -903,7 +1291,7 @@ enum {
 };
 
 int main(int argc, char *argv[]) {
-    pa_mainloop* m = NULL;
+    pa_mainloop *m = NULL;
     int ret = 1, c;
     char *server = NULL, *bn;
 
@@ -967,11 +1355,31 @@ int main(int argc, char *argv[]) {
     if (optind < argc) {
         if (pa_streq(argv[optind], "stat"))
             action = STAT;
+
+        else if (pa_streq(argv[optind], "info"))
+            action = INFO;
+
         else if (pa_streq(argv[optind], "exit"))
             action = EXIT;
-        else if (pa_streq(argv[optind], "list"))
+
+        else if (pa_streq(argv[optind], "list")) {
             action = LIST;
-        else if (pa_streq(argv[optind], "upload-sample")) {
+
+            for (int i = optind+1; i < argc; i++){
+                if (pa_streq(argv[i], "modules") || pa_streq(argv[i], "clients") ||
+                    pa_streq(argv[i], "sinks")   || pa_streq(argv[i], "sink-inputs") ||
+                    pa_streq(argv[i], "sources") || pa_streq(argv[i], "source-outputs") ||
+                    pa_streq(argv[i], "samples") || pa_streq(argv[i], "cards")) {
+                    list_type = pa_xstrdup(argv[i]);
+                } else if (pa_streq(argv[i], "short")) {
+                    short_list_format = TRUE;
+                } else {
+                    pa_log(_("Specify nothing, or one of: %s"), "modules, sinks, sources, sink-inputs, source-outputs, clients, samples, cards");
+                    goto quit;
+                }
+            }
+
+        } else if (pa_streq(argv[optind], "upload-sample")) {
             struct SF_INFO sfi;
             action = UPLOAD_SAMPLE;
 
@@ -1001,7 +1409,7 @@ int main(int argc, char *argv[]) {
 
             if (pa_sndfile_read_channel_map(sndfile, &channel_map) < 0) {
                 if (sample_spec.channels > 2)
-                     pa_log(_("Warning: Failed to determine sample specification from file."));
+                    pa_log(_("Warning: Failed to determine sample specification from file."));
                 pa_channel_map_init_extend(&channel_map, sample_spec.channels, PA_CHANNEL_MAP_DEFAULT);
             }
 
@@ -1142,7 +1550,6 @@ int main(int argc, char *argv[]) {
             port_name = pa_xstrdup(argv[optind+2]);
 
         } else if (pa_streq(argv[optind], "set-sink-volume")) {
-            uint32_t v;
             action = SET_SINK_VOLUME;
 
             if (argc != optind+3) {
@@ -1150,16 +1557,12 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            if (pa_atou(argv[optind+2], &v) < 0) {
-                pa_log(_("Invalid volume specification"));
-                goto quit;
-            }
-
             sink_name = pa_xstrdup(argv[optind+1]);
-            volume = (pa_volume_t) v;
+
+            if (parse_volume(argv[optind+2], &volume, &volume_flags) < 0)
+                goto quit;
 
         } else if (pa_streq(argv[optind], "set-source-volume")) {
-            uint32_t v;
             action = SET_SOURCE_VOLUME;
 
             if (argc != optind+3) {
@@ -1167,16 +1570,12 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            if (pa_atou(argv[optind+2], &v) < 0) {
-                pa_log(_("Invalid volume specification"));
-                goto quit;
-            }
-
             source_name = pa_xstrdup(argv[optind+1]);
-            volume = (pa_volume_t) v;
+
+            if (parse_volume(argv[optind+2], &volume, &volume_flags) < 0)
+                goto quit;
 
         } else if (pa_streq(argv[optind], "set-sink-input-volume")) {
-            uint32_t v;
             action = SET_SINK_INPUT_VOLUME;
 
             if (argc != optind+3) {
@@ -1189,12 +1588,24 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            if (pa_atou(argv[optind+2], &v) < 0) {
-                pa_log(_("Invalid volume specification"));
+            if (parse_volume(argv[optind+2], &volume, &volume_flags) < 0)
+                goto quit;
+
+        } else if (pa_streq(argv[optind], "set-source-output-volume")) {
+            action = SET_SOURCE_OUTPUT_VOLUME;
+
+            if (argc != optind+3) {
+                pa_log(_("You have to specify a source output index and a volume"));
                 goto quit;
             }
 
-            volume = (pa_volume_t) v;
+            if (pa_atou(argv[optind+1], &source_output_idx) < 0) {
+                pa_log(_("Invalid source output index"));
+                goto quit;
+            }
+
+            if (parse_volume(argv[optind+2], &volume, &volume_flags) < 0)
+                goto quit;
 
         } else if (pa_streq(argv[optind], "set-sink-mute")) {
             int b;
@@ -1206,7 +1617,7 @@ int main(int argc, char *argv[]) {
             }
 
             if ((b = pa_parse_boolean(argv[optind+2])) < 0) {
-                pa_log(_("Invalid volume specification"));
+                pa_log(_("Invalid mute specification"));
                 goto quit;
             }
 
@@ -1223,7 +1634,7 @@ int main(int argc, char *argv[]) {
             }
 
             if ((b = pa_parse_boolean(argv[optind+2])) < 0) {
-                pa_log(_("Invalid volume specification"));
+                pa_log(_("Invalid mute specification"));
                 goto quit;
             }
 
@@ -1245,13 +1656,17 @@ int main(int argc, char *argv[]) {
             }
 
             if ((b = pa_parse_boolean(argv[optind+2])) < 0) {
-                pa_log(_("Invalid volume specification"));
+                pa_log(_("Invalid mute specification"));
                 goto quit;
             }
 
             mute = b;
 
-        } else if (pa_streq(argv[optind], "help")) {
+        } else if (pa_streq(argv[optind], "subscribe"))
+
+            action = SUBSCRIBE;
+
+        else if (pa_streq(argv[optind], "help")) {
             help(bn);
             ret = 0;
             goto quit;
@@ -1304,12 +1719,14 @@ quit:
     }
 
     pa_xfree(server);
+    pa_xfree(list_type);
     pa_xfree(sample_name);
     pa_xfree(sink_name);
     pa_xfree(source_name);
     pa_xfree(module_args);
     pa_xfree(card_name);
     pa_xfree(profile_name);
+    pa_xfree(port_name);
 
     if (sndfile)
         sf_close(sndfile);

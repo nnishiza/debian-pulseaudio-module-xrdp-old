@@ -40,10 +40,12 @@
 
 #include <pulsecore/core-util.h>
 #include <pulsecore/core-error.h>
+#include <pulsecore/pipe.h>
 
 #include "start-child.h"
 
 int pa_start_child_for_read(const char *name, const char *argv1, pid_t *pid) {
+#ifdef HAVE_FORK
     pid_t child;
     int pipe_fds[2] = { -1, -1 };
 
@@ -107,6 +109,7 @@ int pa_start_child_for_read(const char *name, const char *argv1, pid_t *pid) {
 
 fail:
     pa_close_pipe(pipe_fds);
+#endif /* HAVE_FORK */
 
     return -1;
 }

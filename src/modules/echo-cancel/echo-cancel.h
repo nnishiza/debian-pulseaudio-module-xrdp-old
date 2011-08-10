@@ -25,9 +25,11 @@
 
 #include <pulse/sample.h>
 #include <pulse/channelmap.h>
+#include <pulsecore/core.h>
 #include <pulsecore/macro.h>
 
 #include <speex/speex_echo.h>
+#include <speex/speex_preprocess.h>
 #include "adrian.h"
 
 /* Common data structures */
@@ -50,7 +52,8 @@ struct pa_echo_canceller_params {
 typedef struct pa_echo_canceller pa_echo_canceller;
 
 struct pa_echo_canceller {
-    pa_bool_t   (*init)                 (pa_echo_canceller *ec,
+    pa_bool_t   (*init)                 (pa_core *c,
+                                         pa_echo_canceller *ec,
                                          pa_sample_spec *source_ss,
                                          pa_channel_map *source_map,
                                          pa_sample_spec *sink_ss,
@@ -61,10 +64,17 @@ struct pa_echo_canceller {
     void        (*done)                 (pa_echo_canceller *ec);
 
     pa_echo_canceller_params params;
+
+    pa_bool_t agc;
+    pa_bool_t denoise;
+    pa_bool_t echo_suppress;
+    int32_t echo_suppress_attenuation;
+    int32_t echo_suppress_attenuation_active;
+    SpeexPreprocessState *pp_state;
 };
 
 /* Speex canceller functions */
-pa_bool_t pa_speex_ec_init(pa_echo_canceller *ec,
+pa_bool_t pa_speex_ec_init(pa_core *c, pa_echo_canceller *ec,
                            pa_sample_spec *source_ss, pa_channel_map *source_map,
                            pa_sample_spec *sink_ss, pa_channel_map *sink_map,
                            uint32_t *blocksize, const char *args);
@@ -72,7 +82,7 @@ void pa_speex_ec_run(pa_echo_canceller *ec, const uint8_t *rec, const uint8_t *p
 void pa_speex_ec_done(pa_echo_canceller *ec);
 
 /* Adrian Andre's echo canceller */
-pa_bool_t pa_adrian_ec_init(pa_echo_canceller *ec,
+pa_bool_t pa_adrian_ec_init(pa_core *c, pa_echo_canceller *ec,
                            pa_sample_spec *source_ss, pa_channel_map *source_map,
                            pa_sample_spec *sink_ss, pa_channel_map *sink_map,
                            uint32_t *blocksize, const char *args);

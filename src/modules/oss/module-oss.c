@@ -45,15 +45,10 @@
 #include <sys/soundcard.h>
 #include <sys/ioctl.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>
-#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <limits.h>
-#include <signal.h>
-#include <poll.h>
 
 #include <pulse/xmalloc.h>
 #include <pulse/util.h>
@@ -70,6 +65,7 @@
 #include <pulsecore/macro.h>
 #include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
+#include <pulsecore/poll.h>
 
 #if defined(__NetBSD__) && !defined(SNDCTL_DSP_GETODELAY)
 #include <sys/audioio.h>
@@ -169,7 +165,7 @@ static void trigger(struct userdata *u, pa_bool_t quick) {
     if (u->fd < 0)
         return;
 
-     pa_log_debug("trigger");
+    pa_log_debug("trigger");
 
     if (u->source && PA_SOURCE_IS_OPENED(u->source->thread_info.state))
         enable_bits |= PCM_ENABLE_INPUT;
@@ -848,11 +844,11 @@ static void source_get_volume(pa_source *s) {
     pa_assert(u->mixer_devmask & (SOUND_MASK_IGAIN|SOUND_MASK_RECLEV));
 
     if (u->mixer_devmask & SOUND_MASK_IGAIN)
-        if (pa_oss_get_volume(u->mixer_fd, SOUND_MIXER_READ_IGAIN, &s->sample_spec, &s->volume) >= 0)
+        if (pa_oss_get_volume(u->mixer_fd, SOUND_MIXER_READ_IGAIN, &s->sample_spec, &s->real_volume) >= 0)
             return;
 
     if (u->mixer_devmask & SOUND_MASK_RECLEV)
-        if (pa_oss_get_volume(u->mixer_fd, SOUND_MIXER_READ_RECLEV, &s->sample_spec, &s->volume) >= 0)
+        if (pa_oss_get_volume(u->mixer_fd, SOUND_MIXER_READ_RECLEV, &s->sample_spec, &s->real_volume) >= 0)
             return;
 
     pa_log_info("Device doesn't support reading mixer settings: %s", pa_cstrerror(errno));
@@ -866,11 +862,11 @@ static void source_set_volume(pa_source *s) {
     pa_assert(u->mixer_devmask & (SOUND_MASK_IGAIN|SOUND_MASK_RECLEV));
 
     if (u->mixer_devmask & SOUND_MASK_IGAIN)
-        if (pa_oss_set_volume(u->mixer_fd, SOUND_MIXER_WRITE_IGAIN, &s->sample_spec, &s->volume) >= 0)
+        if (pa_oss_set_volume(u->mixer_fd, SOUND_MIXER_WRITE_IGAIN, &s->sample_spec, &s->real_volume) >= 0)
             return;
 
     if (u->mixer_devmask & SOUND_MASK_RECLEV)
-        if (pa_oss_get_volume(u->mixer_fd, SOUND_MIXER_WRITE_RECLEV, &s->sample_spec, &s->volume) >= 0)
+        if (pa_oss_get_volume(u->mixer_fd, SOUND_MIXER_WRITE_RECLEV, &s->sample_spec, &s->real_volume) >= 0)
             return;
 
     pa_log_info("Device doesn't support writing mixer settings: %s", pa_cstrerror(errno));
@@ -1422,22 +1418,19 @@ int pa__init(pa_module*m) {
 
         if (ioctl(fd, SOUND_MIXER_READ_DEVMASK, &u->mixer_devmask) < 0)
             pa_log_warn("SOUND_MIXER_READ_DEVMASK failed: %s", pa_cstrerror(errno));
-
         else {
             if (u->sink && (u->mixer_devmask & (SOUND_MASK_VOLUME|SOUND_MASK_PCM))) {
                 pa_log_debug("Found hardware mixer track for playback.");
-                u->sink->flags |= PA_SINK_HW_VOLUME_CTRL;
-                u->sink->get_volume = sink_get_volume;
-                u->sink->set_volume = sink_set_volume;
+                pa_sink_set_get_volume_callback(u->sink, sink_get_volume);
+                pa_sink_set_set_volume_callback(u->sink, sink_set_volume);
                 u->sink->n_volume_steps = 101;
                 do_close = FALSE;
             }
 
             if (u->source && (u->mixer_devmask & (SOUND_MASK_RECLEV|SOUND_MASK_IGAIN))) {
                 pa_log_debug("Found hardware mixer track for recording.");
-                u->source->flags |= PA_SOURCE_HW_VOLUME_CTRL;
-                u->source->get_volume = source_get_volume;
-                u->source->set_volume = source_set_volume;
+                pa_source_set_get_volume_callback(u->source, source_get_volume);
+                pa_source_set_set_volume_callback(u->source, source_set_volume);
                 u->source->n_volume_steps = 101;
                 do_close = FALSE;
             }

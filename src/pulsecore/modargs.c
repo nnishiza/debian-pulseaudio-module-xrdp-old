@@ -31,10 +31,6 @@
 
 #include <pulsecore/hashmap.h>
 #include <pulsecore/idxset.h>
-#include <pulsecore/sample-util.h>
-#include <pulsecore/namereg.h>
-#include <pulsecore/sink.h>
-#include <pulsecore/source.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/macro.h>
 
@@ -124,7 +120,7 @@ pa_modargs *pa_modargs_new(const char *args, const char* const* valid_keys) {
                     key_len++;
                 break;
 
-            case  VALUE_START:
+            case VALUE_START:
                 if (*p == '\'') {
                     state = VALUE_TICKS;
                     value = p+1;
@@ -414,4 +410,14 @@ int pa_modargs_get_proplist(pa_modargs *ma, const char *name, pa_proplist *p, pa
     pa_proplist_free(n);
 
     return 0;
+}
+
+const char *pa_modargs_iterate(pa_modargs *ma, void **state) {
+    pa_hashmap *map = (pa_hashmap*) ma;
+    struct entry *e;
+
+    if (!(e = pa_hashmap_iterate(map, state, NULL)))
+        return NULL;
+
+    return e->key;
 }

@@ -23,11 +23,9 @@
 #include <config.h>
 #endif
 
-#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <netinet/in.h>
@@ -40,17 +38,11 @@
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/core-util.h>
-#include <pulsecore/socket-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/strbuf.h>
 #include <pulsecore/ioline.h>
-
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#else
-#include <pulsecore/poll.h>
-#endif
+#include <pulsecore/arpa-inet.h>
 
 #include "rtsp_client.h"
 
@@ -377,8 +369,7 @@ void pa_rtsp_set_url(pa_rtsp_client* c, const char* url) {
     c->url = pa_xstrdup(url);
 }
 
-void pa_rtsp_add_header(pa_rtsp_client *c, const char* key, const char* value)
-{
+void pa_rtsp_add_header(pa_rtsp_client *c, const char* key, const char* value) {
     pa_assert(c);
     pa_assert(key);
     pa_assert(value);
@@ -386,8 +377,7 @@ void pa_rtsp_add_header(pa_rtsp_client *c, const char* key, const char* value)
     pa_headerlist_puts(c->headers, key, value);
 }
 
-void pa_rtsp_remove_header(pa_rtsp_client *c, const char* key)
-{
+void pa_rtsp_remove_header(pa_rtsp_client *c, const char* key) {
     pa_assert(c);
     pa_assert(key);
 

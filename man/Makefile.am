@@ -15,9 +15,7 @@
 # Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
 # USA.
 
-pulseconfdir=$(sysconfdir)/pulse
-
-CLEANFILES = \
+DISTCLEANFILES = \
 	$(noinst_DATA)
 
 noinst_DATA = \
@@ -30,15 +28,11 @@ noinst_DATA = \
 	pactl.1.xml \
 	pasuspender.1.xml \
 	padsp.1.xml \
-	pabrowse.1.xml \
 	pulse-daemon.conf.5.xml \
 	pulse-client.conf.5.xml \
-	default.pa.5.xml
-
-%.xml: %.xml.in Makefile
-	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
+	default.pa.5.xml \
+	start-pulseaudio-kde.1.xml \
+	start-pulseaudio-x11.1.xml
 
 xmllint: $(noinst_DATA)
 	for f in $(noinst_DATA) ; do \
@@ -57,16 +51,17 @@ dist_man_MANS = \
 	pactl.1 \
 	pasuspender.1 \
 	padsp.1 \
-	pabrowse.1 \
 	pulse-daemon.conf.5 \
 	pulse-client.conf.5 \
-	default.pa.5
+	default.pa.5 \
+	start-pulseaudio-kde.1 \
+	start-pulseaudio-x11.1
 
-CLEANFILES += \
+CLEANFILES = \
 	$(dist_man_MANS)
 
 %: %.xml Makefile
-	perl $(srcdir)/xmltoman $< > $@ || rm -f $@
+	$(AM_V_GEN) perl $(srcdir)/xmltoman $< > $@ || rm -f $@
 
 endif
 
@@ -80,10 +75,11 @@ EXTRA_DIST = \
 	pactl.1.xml.in \
 	pasuspender.1.xml.in \
 	padsp.1.xml.in \
-	pabrowse.1.xml.in \
 	pulse-daemon.conf.5.xml.in \
 	pulse-client.conf.5.xml.in \
 	default.pa.5.xml.in \
+	start-pulseaudio-kde.1.xml.in \
+	start-pulseaudio-x11.1.xml.in \
 	xmltoman \
 	xmltoman.css \
 	xmltoman.xsl \

@@ -32,26 +32,10 @@
 #include <valgrind/memcheck.h>
 #endif
 
-#include <pulse/xmalloc.h>
-#include <pulse/util.h>
-#include <pulse/timeval.h>
-
-#include <pulsecore/core-error.h>
-#include <pulsecore/core-rtclock.h>
-#include <pulsecore/core.h>
 #include <pulsecore/module.h>
-#include <pulsecore/memchunk.h>
-#include <pulsecore/sink.h>
 #include <pulsecore/modargs.h>
-#include <pulsecore/core-util.h>
-#include <pulsecore/sample-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
-#include <pulsecore/thread.h>
-#include <pulsecore/core-error.h>
-#include <pulsecore/thread-mq.h>
-#include <pulsecore/rtpoll.h>
-#include <pulsecore/time-smoother.h>
 
 #include "alsa-util.h"
 #include "alsa-source.h"
@@ -65,6 +49,7 @@ PA_MODULE_USAGE(
         "name=<name for the source, to be prefixed> "
         "source_name=<name for the source> "
         "source_properties=<properties for the source> "
+        "namereg_fail=<pa_namereg_register() fail parameter value> "
         "device=<ALSA device> "
         "device_id=<ALSA card index> "
         "format=<sample format> "
@@ -78,12 +63,16 @@ PA_MODULE_USAGE(
         "tsched_buffer_size=<buffer size when using timer based scheduling> "
         "tsched_buffer_watermark=<upper fill watermark> "
         "ignore_dB=<ignore dB information from the device?> "
-        "control=<name of mixer control>");
+        "control=<name of mixer control>"
+        "sync_volume=<syncronize sw and hw voluchanges in IO-thread?> "
+        "sync_volume_safety_margin=<usec adjustment depending on volume direction> "
+        "sync_volume_extra_delay=<usec adjustment to HW volume changes>");
 
 static const char* const valid_modargs[] = {
     "name",
     "source_name",
     "source_properties",
+    "namereg_fail",
     "device",
     "device_id",
     "format",
@@ -98,6 +87,9 @@ static const char* const valid_modargs[] = {
     "tsched_buffer_watermark",
     "ignore_dB",
     "control",
+    "sync_volume",
+    "sync_volume_safety_margin",
+    "sync_volume_extra_delay",
     NULL
 };
 

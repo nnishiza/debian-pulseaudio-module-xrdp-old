@@ -26,18 +26,17 @@
 #include <config.h>
 #endif
 
+#include <math.h>
+
 #include <pulse/xmalloc.h>
 #include <pulse/i18n.h>
 
-#include <pulsecore/core-error.h>
 #include <pulsecore/namereg.h>
 #include <pulsecore/sink.h>
 #include <pulsecore/module.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/modargs.h>
 #include <pulsecore/log.h>
-#include <pulsecore/thread.h>
-#include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
 #include <pulsecore/sample-util.h>
 #include <pulsecore/ltdl-helper.h>
@@ -50,18 +49,23 @@ PA_MODULE_DESCRIPTION(_("Virtual LADSPA sink"));
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
-        _("sink_name=<name for the sink> "
-          "sink_properties=<properties for the sink> "
-          "master=<name of sink to filter> "
-          "format=<sample format> "
-          "rate=<sample rate> "
-          "channels=<number of channels> "
-          "channel_map=<channel map> "
-          "plugin=<ladspa plugin name> "
-          "label=<ladspa plugin label> "
-          "control=<comma seperated list of input control values>"));
+    _("sink_name=<name for the sink> "
+      "sink_properties=<properties for the sink> "
+      "master=<name of sink to filter> "
+      "format=<sample format> "
+      "rate=<sample rate> "
+      "channels=<number of channels> "
+      "channel_map=<input channel map> "
+      "plugin=<ladspa plugin name> "
+      "label=<ladspa plugin label> "
+      "control=<comma seperated list of input control values> "
+      "input_ladspaport_map=<comma separated list of input LADSPA port names> "
+      "output_ladspaport_map=<comma separated list of output LADSPA port names> "));
 
 #define MEMBLOCKQ_MAXLENGTH (16*1024*1024)
+
+/* PLEASE NOTICE: The PortAudio ports and the LADSPA ports are two different concepts.
+They are not related and where possible the names of the LADSPA port variables contains "ladspa" to avoid confusion */
 
 struct userdata {
     pa_module *module;
@@ -70,15 +74,14 @@ struct userdata {
     pa_sink_input *sink_input;
 
     const LADSPA_Descriptor *descriptor;
-    unsigned channels;
     LADSPA_Handle handle[PA_CHANNELS_MAX];
-    LADSPA_Data *input, *output;
+    unsigned long max_ladspaport_count, input_count, output_count, channels;
+    LADSPA_Data **input, **output;
     size_t block_size;
-    unsigned long input_port, output_port;
     LADSPA_Data *control;
 
     /* This is a dummy buffer. Every port must be connected, but we don't care
-       about control out ports. We connect them all to this single buffer. */
+    about control out ports. We connect them all to this single buffer. */
     LADSPA_Data control_out;
 
     pa_memblockq *memblockq;
@@ -97,6 +100,8 @@ static const char* const valid_modargs[] = {
     "plugin",
     "label",
     "control",
+    "input_ladspaport_map",
+    "output_ladspaport_map",
     NULL
 };
 
@@ -106,26 +111,26 @@ static int sink_process_msg_cb(pa_msgobject *o, int code, void *data, int64_t of
 
     switch (code) {
 
-        case PA_SINK_MESSAGE_GET_LATENCY:
+    case PA_SINK_MESSAGE_GET_LATENCY:
 
-            /* The sink is _put() before the sink input is, so let's
-             * make sure we don't access it in that time. Also, the
-             * sink input is first shut down, the sink second. */
-            if (!PA_SINK_IS_LINKED(u->sink->thread_info.state) ||
+        /* The sink is _put() before the sink input is, so let's
+         * make sure we don't access it in that time. Also, the
+         * sink input is first shut down, the sink second. */
+        if (!PA_SINK_IS_LINKED(u->sink->thread_info.state) ||
                 !PA_SINK_INPUT_IS_LINKED(u->sink_input->thread_info.state)) {
-                *((pa_usec_t*) data) = 0;
-                return 0;
-            }
-
-            *((pa_usec_t*) data) =
-
-                /* Get the latency of the master sink */
-                pa_sink_get_latency_within_thread(u->sink_input->sink) +
-
-                /* Add the latency internal to our sink input on top */
-                pa_bytes_to_usec(pa_memblockq_get_length(u->sink_input->thread_info.render_memblockq), &u->sink_input->sink->sample_spec);
-
+            *((pa_usec_t*) data) = 0;
             return 0;
+        }
+
+        *((pa_usec_t*) data) =
+
+            /* Get the latency of the master sink */
+            pa_sink_get_latency_within_thread(u->sink_input->sink) +
+
+            /* Add the latency internal to our sink input on top */
+            pa_bytes_to_usec(pa_memblockq_get_length(u->sink_input->thread_info.render_memblockq), &u->sink_input->sink->sample_spec);
+
+        return 0;
     }
 
     return pa_sink_process_msg(o, code, data, offset, chunk);
@@ -139,7 +144,7 @@ static int sink_set_state_cb(pa_sink *s, pa_sink_state_t state) {
     pa_assert_se(u = s->userdata);
 
     if (!PA_SINK_IS_LINKED(state) ||
-        !PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(u->sink_input)))
+            !PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(u->sink_input)))
         return 0;
 
     pa_sink_input_cork(u->sink_input, state == PA_SINK_SUSPENDED);
@@ -154,11 +159,13 @@ static void sink_request_rewind_cb(pa_sink *s) {
     pa_assert_se(u = s->userdata);
 
     if (!PA_SINK_IS_LINKED(u->sink->thread_info.state) ||
-        !PA_SINK_INPUT_IS_LINKED(u->sink_input->thread_info.state))
+            !PA_SINK_INPUT_IS_LINKED(u->sink_input->thread_info.state))
         return;
 
     /* Just hand this one over to the master sink */
-    pa_sink_input_request_rewind(u->sink_input, s->thread_info.rewind_nbytes + pa_memblockq_get_length(u->memblockq), TRUE, FALSE, FALSE);
+    pa_sink_input_request_rewind(u->sink_input,
+                                 s->thread_info.rewind_nbytes +
+                                 pa_memblockq_get_length(u->memblockq), TRUE, FALSE, FALSE);
 }
 
 /* Called from I/O thread context */
@@ -169,13 +176,13 @@ static void sink_update_requested_latency_cb(pa_sink *s) {
     pa_assert_se(u = s->userdata);
 
     if (!PA_SINK_IS_LINKED(u->sink->thread_info.state) ||
-        !PA_SINK_INPUT_IS_LINKED(u->sink_input->thread_info.state))
+            !PA_SINK_INPUT_IS_LINKED(u->sink_input->thread_info.state))
         return;
 
     /* Just hand this one over to the master sink */
     pa_sink_input_set_requested_latency_within_thread(
-            u->sink_input,
-            pa_sink_get_requested_latency_within_thread(s));
+        u->sink_input,
+        pa_sink_get_requested_latency_within_thread(s));
 }
 
 /* Called from main context */
@@ -186,7 +193,7 @@ static void sink_set_volume_cb(pa_sink *s) {
     pa_assert_se(u = s->userdata);
 
     if (!PA_SINK_IS_LINKED(pa_sink_get_state(s)) ||
-        !PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(u->sink_input)))
+            !PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(u->sink_input)))
         return;
 
     pa_sink_input_set_volume(u->sink_input, &s->real_volume, s->save_volume, TRUE);
@@ -200,7 +207,7 @@ static void sink_set_mute_cb(pa_sink *s) {
     pa_assert_se(u = s->userdata);
 
     if (!PA_SINK_IS_LINKED(pa_sink_get_state(s)) ||
-        !PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(u->sink_input)))
+            !PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(u->sink_input)))
         return;
 
     pa_sink_input_set_mute(u->sink_input, s->muted, s->save_muted);
@@ -211,7 +218,7 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
     struct userdata *u;
     float *src, *dst;
     size_t fs;
-    unsigned n, c;
+    unsigned n, h, c;
     pa_memchunk tchunk;
 
     pa_sink_input_assert_ref(i);
@@ -246,10 +253,12 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
     src = (float*) ((uint8_t*) pa_memblock_acquire(tchunk.memblock) + tchunk.index);
     dst = (float*) pa_memblock_acquire(chunk->memblock);
 
-    for (c = 0; c < u->channels; c++) {
-        pa_sample_clamp(PA_SAMPLE_FLOAT32NE, u->input, sizeof(float), src+c, u->channels*sizeof(float), n);
-        u->descriptor->run(u->handle[c], n);
-        pa_sample_clamp(PA_SAMPLE_FLOAT32NE, dst+c, u->channels*sizeof(float), u->output, sizeof(float), n);
+    for (h = 0; h < (u->channels / u->max_ladspaport_count); h++) {
+        for (c = 0; c < u->input_count; c++)
+            pa_sample_clamp(PA_SAMPLE_FLOAT32NE, u->input[c], sizeof(float), src+ h*u->max_ladspaport_count + c, u->channels*sizeof(float), n);
+        u->descriptor->run(u->handle[h], n);
+        for (c = 0; c < u->output_count; c++)
+            pa_sample_clamp(PA_SAMPLE_FLOAT32NE, dst + h*u->max_ladspaport_count + c, u->channels*sizeof(float), u->output[c], sizeof(float), n);
     }
 
     pa_memblock_release(tchunk.memblock);
@@ -284,10 +293,10 @@ static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes) {
 
             /* Reset the plugin */
             if (u->descriptor->deactivate)
-                for (c = 0; c < u->channels; c++)
+                for (c = 0; c < (u->channels / u->max_ladspaport_count); c++)
                     u->descriptor->deactivate(u->handle[c]);
             if (u->descriptor->activate)
-                for (c = 0; c < u->channels; c++)
+                for (c = 0; c < (u->channels / u->max_ladspaport_count); c++)
                     u->descriptor->activate(u->handle[c]);
         }
     }
@@ -397,7 +406,7 @@ static void sink_input_state_change_cb(pa_sink_input *i, pa_sink_input_state_t s
     /* If we are added for the first time, ask for a rewinding so that
      * we are heard right-away. */
     if (PA_SINK_INPUT_IS_LINKED(state) &&
-        i->thread_info.state == PA_SINK_INPUT_INIT) {
+            i->thread_info.state == PA_SINK_INPUT_INIT) {
         pa_log_debug("Requesting rewind due to state change.");
         pa_sink_input_request_rewind(i, 0, FALSE, TRUE, TRUE);
     }
@@ -469,14 +478,13 @@ int pa__init(pa_module*m) {
     pa_sink *master;
     pa_sink_input_new_data sink_input_data;
     pa_sink_new_data sink_data;
-    const char *plugin, *label;
+    const char *plugin, *label, *input_ladspaport_map, *output_ladspaport_map;
     LADSPA_Descriptor_Function descriptor_func;
+    unsigned long input_ladspaport[PA_CHANNELS_MAX], output_ladspaport[PA_CHANNELS_MAX];
     const char *e, *cdata;
     const LADSPA_Descriptor *d;
-    unsigned long input_port, output_port, p, j, n_control;
-    unsigned c;
+    unsigned long p, h, j, n_control, c;
     pa_bool_t *use_default = NULL;
-    pa_memchunk silence;
 
     pa_assert(m);
 
@@ -510,15 +518,22 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
+    if (!(input_ladspaport_map = pa_modargs_get_value(ma, "input_ladspaport_map", NULL)))
+        pa_log_debug("Using default input ladspa port mapping");
+
+    if (!(output_ladspaport_map = pa_modargs_get_value(ma, "output_ladspaport_map", NULL)))
+        pa_log_debug("Using default output ladspa port mapping");
+
     cdata = pa_modargs_get_value(ma, "control", NULL);
 
     u = pa_xnew0(struct userdata, 1);
     u->module = m;
     m->userdata = u;
-
-    pa_silence_memchunk_get(&m->core->silence_cache, m->core->mempool, &silence, &ss, 0);
-    u->memblockq = pa_memblockq_new(0, MEMBLOCKQ_MAXLENGTH, 0, pa_frame_size(&ss), 1, 1, 0, &silence);
-    pa_memblock_unref(silence.memblock);
+    u->memblockq = pa_memblockq_new(0, MEMBLOCKQ_MAXLENGTH, 0, pa_frame_size(&ss), 1, 1, 0, NULL);
+    u->max_ladspaport_count = 1; /*to avoid division by zero etc. in pa__done when failing before this value has been set*/
+    u->channels = 0;
+    u->input = NULL;
+    u->output = NULL;
 
     if (!(e = getenv("LADSPA_PATH")))
         e = LADSPA_PATH;
@@ -560,64 +575,127 @@ int pa__init(pa_module*m) {
     pa_log_debug("Maker: %s", d->Maker);
     pa_log_debug("Copyright: %s", d->Copyright);
 
-    input_port = output_port = (unsigned long) -1;
     n_control = 0;
+    u->channels = ss.channels;
 
+    /*
+    * Enumerate ladspa ports
+    * Default mapping is in order given by the plugin
+    */
     for (p = 0; p < d->PortCount; p++) {
-
-        if (LADSPA_IS_PORT_INPUT(d->PortDescriptors[p]) && LADSPA_IS_PORT_AUDIO(d->PortDescriptors[p])) {
-
-            if (strcmp(d->PortNames[p], "Input") == 0) {
-                pa_assert(input_port == (unsigned long) -1);
-                input_port = p;
-            } else {
-                pa_log("Found audio input port on plugin we cannot handle: %s", d->PortNames[p]);
-                goto fail;
+        if (LADSPA_IS_PORT_AUDIO(d->PortDescriptors[p])) {
+            if (LADSPA_IS_PORT_INPUT(d->PortDescriptors[p])) {
+                pa_log_debug("Port %lu is input: %s", p, d->PortNames[p]);
+                input_ladspaport[u->input_count] = p;
+                u->input_count++;
+            } else if (LADSPA_IS_PORT_OUTPUT(d->PortDescriptors[p])) {
+                pa_log_debug("Port %lu is output: %s", p, d->PortNames[p]);
+                output_ladspaport[u->output_count] = p;
+                u->output_count++;
             }
-
-        } else if (LADSPA_IS_PORT_OUTPUT(d->PortDescriptors[p]) && LADSPA_IS_PORT_AUDIO(d->PortDescriptors[p])) {
-
-            if (strcmp(d->PortNames[p], "Output") == 0) {
-                pa_assert(output_port == (unsigned long) -1);
-                output_port = p;
-            } else {
-                pa_log("Found audio output port on plugin we cannot handle: %s", d->PortNames[p]);
-                goto fail;
-            }
-
-        } else if (LADSPA_IS_PORT_INPUT(d->PortDescriptors[p]) && LADSPA_IS_PORT_CONTROL(d->PortDescriptors[p]))
+        } else if (LADSPA_IS_PORT_CONTROL(d->PortDescriptors[p]) && LADSPA_IS_PORT_INPUT(d->PortDescriptors[p])) {
+            pa_log_debug("Port %lu is control: %s", p, d->PortNames[p]);
             n_control++;
-        else {
-            pa_assert(LADSPA_IS_PORT_OUTPUT(d->PortDescriptors[p]) && LADSPA_IS_PORT_CONTROL(d->PortDescriptors[p]));
-            pa_log_debug("Ignored control output port \"%s\".", d->PortNames[p]);
-        }
+        } else
+            pa_log_debug("Ignored port %s", d->PortNames[p]);
+        /* XXX: Has anyone ever seen an in-place plugin with non-equal number of input and output ports? */
+        /* Could be if the plugin is for up-mixing stereo to 5.1 channels */
+        /* Or if the plugin is down-mixing 5.1 to two channel stereo or binaural encoded signal */
+        if (u->input_count > u->max_ladspaport_count)
+            u->max_ladspaport_count = u->input_count;
+        else
+            u->max_ladspaport_count = u->output_count;
     }
 
-    if ((input_port == (unsigned long) -1) || (output_port == (unsigned long) -1)) {
-        pa_log("Failed to identify input and output ports. "
-               "Right now this module can only deal with plugins which provide an 'Input' and an 'Output' audio port. "
-               "Patches welcome!");
+    if (u->channels % u->max_ladspaport_count) {
+        pa_log("Cannot handle non-integral number of plugins required for given number of channels");
         goto fail;
     }
 
+    pa_log_debug("Will run %lu plugin instances", u->channels / u->max_ladspaport_count);
+
+    /* Parse data for input ladspa port map */
+    if (input_ladspaport_map) {
+        const char *state = NULL;
+        char *pname;
+        c = 0;
+        while ((pname = pa_split(input_ladspaport_map, ",", &state))) {
+            if (c == u->input_count) {
+                pa_log("Too many ports in input ladspa port map");
+                goto fail;
+            }
+
+
+            for (p = 0; p < d->PortCount; p++) {
+                if (strcmp(d->PortNames[p], pname) == 0) {
+                    if (LADSPA_IS_PORT_AUDIO(d->PortDescriptors[p]) && LADSPA_IS_PORT_INPUT(d->PortDescriptors[p])) {
+                        input_ladspaport[c] = p;
+                    } else {
+                        pa_log("Port %s is not an audio input ladspa port", pname);
+                        pa_xfree(pname);
+                        goto fail;
+                    }
+                }
+            }
+            c++;
+            pa_xfree(pname);
+        }
+    }
+
+    /* Parse data for output port map */
+    if (output_ladspaport_map) {
+        const char *state = NULL;
+        char *pname;
+        c = 0;
+        while ((pname = pa_split(output_ladspaport_map, ",", &state))) {
+            if (c == u->output_count) {
+                pa_log("Too many ports in output ladspa port map");
+                goto fail;
+            }
+            for (p = 0; p < d->PortCount; p++) {
+                if (strcmp(d->PortNames[p], pname) == 0) {
+                    if (LADSPA_IS_PORT_AUDIO(d->PortDescriptors[p]) && LADSPA_IS_PORT_OUTPUT(d->PortDescriptors[p])) {
+                        output_ladspaport[c] = p;
+                    } else {
+                        pa_log("Port %s is not an output ladspa port", pname);
+                        pa_xfree(pname);
+                        goto fail;
+                    }
+                }
+            }
+            c++;
+            pa_xfree(pname);
+        }
+    }
+
+
     u->block_size = pa_frame_align(pa_mempool_block_size_max(m->core->mempool), &ss);
 
-    u->input = (LADSPA_Data*) pa_xnew(uint8_t, (unsigned) u->block_size);
-    if (LADSPA_IS_INPLACE_BROKEN(d->Properties))
-        u->output = (LADSPA_Data*) pa_xnew(uint8_t, (unsigned) u->block_size);
-    else
+    /* Create buffers */
+    if (LADSPA_IS_INPLACE_BROKEN(d->Properties)) {
+        u->input = (LADSPA_Data**) pa_xnew(LADSPA_Data*, (unsigned) u->input_count);
+        for (c = 0; c < u->input_count; c++)
+            u->input[c] = (LADSPA_Data*) pa_xnew(uint8_t, (unsigned) u->block_size);
+        u->output = (LADSPA_Data**) pa_xnew(LADSPA_Data*, (unsigned) u->output_count);
+        for (c = 0; c < u->output_count; c++)
+            u->output[c] = (LADSPA_Data*) pa_xnew(uint8_t, (unsigned) u->block_size);
+    } else {
+        u->input = (LADSPA_Data**) pa_xnew(LADSPA_Data*, (unsigned) u->max_ladspaport_count);
+        for (c = 0; c < u->max_ladspaport_count; c++)
+            u->input[c] = (LADSPA_Data*) pa_xnew(uint8_t, (unsigned) u->block_size);
         u->output = u->input;
-
-    u->channels = ss.channels;
-
-    for (c = 0; c < ss.channels; c++) {
-        if (!(u->handle[c] = d->instantiate(d, ss.rate))) {
-            pa_log("Failed to instantiate plugin %s with label %s for channel %i", plugin, d->Label, c);
+    }
+    /* Initialize plugin instances */
+    for (h = 0; h < (u->channels / u->max_ladspaport_count); h++) {
+        if (!(u->handle[h] = d->instantiate(d, ss.rate))) {
+            pa_log("Failed to instantiate plugin %s with label %s", plugin, d->Label);
             goto fail;
         }
 
-        d->connect_port(u->handle[c], input_port, u->input);
-        d->connect_port(u->handle[c], output_port, u->output);
+        for (c = 0; c < u->input_count; c++)
+            d->connect_port(u->handle[h], input_ladspaport[c], u->input[c]);
+        for (c = 0; c < u->output_count; c++)
+            d->connect_port(u->handle[h], output_ladspaport[c], u->output[c]);
     }
 
     if (!cdata && n_control > 0) {
@@ -628,7 +706,6 @@ int pa__init(pa_module*m) {
     if (n_control > 0) {
         const char *state = NULL;
         char *k;
-        unsigned long h;
 
         u->control = pa_xnew(LADSPA_Data, (unsigned) n_control);
         use_default = pa_xnew(pa_bool_t, (unsigned) n_control);
@@ -656,7 +733,7 @@ int pa__init(pa_module*m) {
         }
 
         /* The previous loop doesn't take the last control value into account
-           if it is left empty, so we do it here. */
+        if it is left empty, so we do it here. */
         if (*cdata == 0 || cdata[strlen(cdata) - 1] == ',') {
             if (p < n_control)
                 use_default[p] = TRUE;
@@ -682,7 +759,7 @@ int pa__init(pa_module*m) {
                 continue;
 
             if (LADSPA_IS_PORT_OUTPUT(d->PortDescriptors[p])) {
-                for (c = 0; c < ss.channels; c++)
+                for (c = 0; c < (u->channels / u->max_ladspaport_count); c++)
                     d->connect_port(u->handle[c], p, &u->control_out);
                 continue;
             }
@@ -707,53 +784,53 @@ int pa__init(pa_module*m) {
 
                 switch (hint & LADSPA_HINT_DEFAULT_MASK) {
 
-                    case LADSPA_HINT_DEFAULT_MINIMUM:
-                        u->control[h] = lower;
-                        break;
+                case LADSPA_HINT_DEFAULT_MINIMUM:
+                    u->control[h] = lower;
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_MAXIMUM:
-                        u->control[h] = upper;
-                        break;
+                case LADSPA_HINT_DEFAULT_MAXIMUM:
+                    u->control[h] = upper;
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_LOW:
-                        if (LADSPA_IS_HINT_LOGARITHMIC(hint))
-                            u->control[h] = (LADSPA_Data) exp(log(lower) * 0.75 + log(upper) * 0.25);
-                        else
-                            u->control[h] = (LADSPA_Data) (lower * 0.75 + upper * 0.25);
-                        break;
+                case LADSPA_HINT_DEFAULT_LOW:
+                    if (LADSPA_IS_HINT_LOGARITHMIC(hint))
+                        u->control[h] = (LADSPA_Data) exp(log(lower) * 0.75 + log(upper) * 0.25);
+                    else
+                        u->control[h] = (LADSPA_Data) (lower * 0.75 + upper * 0.25);
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_MIDDLE:
-                        if (LADSPA_IS_HINT_LOGARITHMIC(hint))
-                            u->control[h] = (LADSPA_Data) exp(log(lower) * 0.5 + log(upper) * 0.5);
-                        else
-                            u->control[h] = (LADSPA_Data) (lower * 0.5 + upper * 0.5);
-                        break;
+                case LADSPA_HINT_DEFAULT_MIDDLE:
+                    if (LADSPA_IS_HINT_LOGARITHMIC(hint))
+                        u->control[h] = (LADSPA_Data) exp(log(lower) * 0.5 + log(upper) * 0.5);
+                    else
+                        u->control[h] = (LADSPA_Data) (lower * 0.5 + upper * 0.5);
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_HIGH:
-                        if (LADSPA_IS_HINT_LOGARITHMIC(hint))
-                            u->control[h] = (LADSPA_Data) exp(log(lower) * 0.25 + log(upper) * 0.75);
-                        else
-                            u->control[h] = (LADSPA_Data) (lower * 0.25 + upper * 0.75);
-                        break;
+                case LADSPA_HINT_DEFAULT_HIGH:
+                    if (LADSPA_IS_HINT_LOGARITHMIC(hint))
+                        u->control[h] = (LADSPA_Data) exp(log(lower) * 0.25 + log(upper) * 0.75);
+                    else
+                        u->control[h] = (LADSPA_Data) (lower * 0.25 + upper * 0.75);
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_0:
-                        u->control[h] = 0;
-                        break;
+                case LADSPA_HINT_DEFAULT_0:
+                    u->control[h] = 0;
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_1:
-                        u->control[h] = 1;
-                        break;
+                case LADSPA_HINT_DEFAULT_1:
+                    u->control[h] = 1;
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_100:
-                        u->control[h] = 100;
-                        break;
+                case LADSPA_HINT_DEFAULT_100:
+                    u->control[h] = 100;
+                    break;
 
-                    case LADSPA_HINT_DEFAULT_440:
-                        u->control[h] = 440;
-                        break;
+                case LADSPA_HINT_DEFAULT_440:
+                    u->control[h] = 440;
+                    break;
 
-                    default:
-                        pa_assert_not_reached();
+                default:
+                    pa_assert_not_reached();
                 }
             }
 
@@ -762,7 +839,7 @@ int pa__init(pa_module*m) {
 
             pa_log_debug("Binding %f to port %s", u->control[h], d->PortNames[p]);
 
-            for (c = 0; c < ss.channels; c++)
+            for (c = 0; c < (u->channels / u->max_ladspaport_count); c++)
                 d->connect_port(u->handle[c], p, &u->control[h]);
 
             h++;
@@ -772,7 +849,7 @@ int pa__init(pa_module*m) {
     }
 
     if (d->activate)
-        for (c = 0; c < u->channels; c++)
+        for (c = 0; c < (u->channels / u->max_ladspaport_count); c++)
             d->activate(u->handle[c]);
 
     /* Create sink */
@@ -806,7 +883,6 @@ int pa__init(pa_module*m) {
     }
 
     u->sink = pa_sink_new(m->core, &sink_data,
-                          PA_SINK_HW_MUTE_CTRL|PA_SINK_HW_VOLUME_CTRL|PA_SINK_DECIBEL_VOLUME|
                           (master->flags & (PA_SINK_LATENCY|PA_SINK_DYNAMIC_LATENCY)));
     pa_sink_new_data_done(&sink_data);
 
@@ -819,8 +895,9 @@ int pa__init(pa_module*m) {
     u->sink->set_state = sink_set_state_cb;
     u->sink->update_requested_latency = sink_update_requested_latency_cb;
     u->sink->request_rewind = sink_request_rewind_cb;
-    u->sink->set_volume = sink_set_volume_cb;
-    u->sink->set_mute = sink_set_mute_cb;
+    pa_sink_enable_decibel_volume(u->sink, TRUE);
+    pa_sink_set_set_volume_callback(u->sink, sink_set_volume_cb);
+    pa_sink_set_set_mute_callback(u->sink, sink_set_mute_cb);
     u->sink->userdata = u;
 
     pa_sink_set_asyncmsgq(u->sink, master->asyncmsgq);
@@ -829,7 +906,8 @@ int pa__init(pa_module*m) {
     pa_sink_input_new_data_init(&sink_input_data);
     sink_input_data.driver = __FILE__;
     sink_input_data.module = m;
-    sink_input_data.sink = master;
+    pa_sink_input_new_data_set_sink(&sink_input_data, master, FALSE);
+    sink_input_data.origin_sink = u->sink;
     pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_NAME, "LADSPA Stream");
     pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_ROLE, "filter");
     pa_sink_input_new_data_set_sample_spec(&sink_input_data, &ss);
@@ -857,11 +935,12 @@ int pa__init(pa_module*m) {
     u->sink_input->mute_changed = sink_input_mute_changed_cb;
     u->sink_input->userdata = u;
 
+    u->sink->input_to_master = u->sink_input;
+
     pa_sink_put(u->sink);
     pa_sink_input_put(u->sink_input);
 
     pa_modargs_free(ma);
-
     pa_xfree(use_default);
 
     return 0;
@@ -896,7 +975,7 @@ void pa__done(pa_module*m) {
         return;
 
     /* See comments in sink_input_kill_cb() above regarding
-     * destruction order! */
+    * destruction order! */
 
     if (u->sink_input)
         pa_sink_input_unlink(u->sink_input);
@@ -910,22 +989,36 @@ void pa__done(pa_module*m) {
     if (u->sink)
         pa_sink_unref(u->sink);
 
-    for (c = 0; c < u->channels; c++)
+    for (c = 0; c < (u->channels / u->max_ladspaport_count); c++) {
         if (u->handle[c]) {
             if (u->descriptor->deactivate)
                 u->descriptor->deactivate(u->handle[c]);
             u->descriptor->cleanup(u->handle[c]);
         }
+    }
 
-    if (u->output != u->input)
-        pa_xfree(u->output);
+    if (u->output == u->input) {
+        if (u->input != NULL) {
+            for (c = 0; c < u->max_ladspaport_count; c++)
+                pa_xfree(u->input[c]);
+            pa_xfree(u->input);
+        }
+    } else {
+        if (u->input != NULL) {
+            for (c = 0; c < u->input_count; c++)
+                pa_xfree(u->input[c]);
+            pa_xfree(u->input);
+        }
+        if (u->output != NULL) {
+            for (c = 0; c < u->output_count; c++)
+                pa_xfree(u->output[c]);
+            pa_xfree(u->output);
+        }
+    }
 
     if (u->memblockq)
         pa_memblockq_free(u->memblockq);
 
-    pa_xfree(u->input);
-
     pa_xfree(u->control);
-
     pa_xfree(u);
 }

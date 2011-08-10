@@ -24,27 +24,19 @@
 #include <config.h>
 #endif
 
-#include <string.h>
 #include <errno.h>
 #include <stdio.h>
 #include <unistd.h>
-#include <limits.h>
 
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
-#endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
 #endif
 
 #include <pulse/xmalloc.h>
 
-#include <pulsecore/winsock.h>
 #include <pulsecore/core-error.h>
 #include <pulsecore/module.h>
+#include <pulsecore/socket.h>
 #include <pulsecore/socket-server.h>
 #include <pulsecore/socket-util.h>
 #include <pulsecore/core-util.h>
@@ -52,6 +44,7 @@
 #include <pulsecore/log.h>
 #include <pulsecore/native-common.h>
 #include <pulsecore/creds.h>
+#include <pulsecore/arpa-inet.h>
 
 #ifdef USE_TCP_SOCKETS
 #define SOCKET_DESCRIPTION "(TCP sockets)"
@@ -140,7 +133,7 @@
   PA_MODULE_DESCRIPTION("Native protocol "SOCKET_DESCRIPTION);
   PA_MODULE_USAGE("auth-anonymous=<don't check for cookies?> "
                   "auth-cookie=<path to cookie file> "
-                  "auth-cookie-enabled=<enable cookie authentification? "
+                  "auth-cookie-enabled=<enable cookie authentification?> "
                   AUTH_USAGE
                   SOCKET_USAGE);
 #elif defined(USE_PROTOCOL_ESOUND)
@@ -169,7 +162,7 @@
                   "source=<source to connect to> "
                   "auth-anonymous=<don't verify cookies?> "
                   "auth-cookie=<path to cookie file> "
-                  "auth-cookie-enabled=<enable cookie authentification? "
+                  "auth-cookie-enabled=<enable cookie authentification?> "
                   AUTH_USAGE
                   SOCKET_USAGE);
 #else
@@ -246,6 +239,7 @@ int pa__init(pa_module*m) {
 
 #if defined(USE_TCP_SOCKETS)
     uint32_t port = IPV4_PORT;
+    pa_bool_t port_fallback = TRUE;
     const char *listen_on;
 #else
     int r;
@@ -293,6 +287,10 @@ int pa__init(pa_module*m) {
 #endif
 
 #if defined(USE_TCP_SOCKETS)
+
+    if (pa_in_system_mode() || pa_modargs_get_value(ma, "port", NULL))
+        port_fallback = FALSE;
+
     if (pa_modargs_get_value_u32(ma, "port", &port) < 0 || port < 1 || port > 0xFFFF) {
         pa_log("port= expects a numerical argument between 1 and 65535.");
         goto fail;
@@ -302,14 +300,14 @@ int pa__init(pa_module*m) {
 
     if (listen_on) {
 #  ifdef HAVE_IPV6
-        u->socket_server_ipv6 = pa_socket_server_new_ipv6_string(m->core->mainloop, listen_on, (uint16_t) port, TCPWRAP_SERVICE);
+        u->socket_server_ipv6 = pa_socket_server_new_ipv6_string(m->core->mainloop, listen_on, (uint16_t) port, port_fallback, TCPWRAP_SERVICE);
 #  endif
-        u->socket_server_ipv4 = pa_socket_server_new_ipv4_string(m->core->mainloop, listen_on, (uint16_t) port, TCPWRAP_SERVICE);
+        u->socket_server_ipv4 = pa_socket_server_new_ipv4_string(m->core->mainloop, listen_on, (uint16_t) port, port_fallback, TCPWRAP_SERVICE);
     } else {
 #  ifdef HAVE_IPV6
-        u->socket_server_ipv6 = pa_socket_server_new_ipv6_any(m->core->mainloop, (uint16_t) port, TCPWRAP_SERVICE);
+        u->socket_server_ipv6 = pa_socket_server_new_ipv6_any(m->core->mainloop, (uint16_t) port, port_fallback, TCPWRAP_SERVICE);
 #  endif
-        u->socket_server_ipv4 = pa_socket_server_new_ipv4_any(m->core->mainloop, (uint16_t) port, TCPWRAP_SERVICE);
+        u->socket_server_ipv4 = pa_socket_server_new_ipv4_any(m->core->mainloop, (uint16_t) port, port_fallback, TCPWRAP_SERVICE);
     }
 
 #  ifdef HAVE_IPV6

@@ -26,6 +26,7 @@
 #include <sys/types.h>
 
 #include <pulse/sample.h>
+#include <pulse/format.h>
 #include <pulse/channelmap.h>
 #include <pulse/volume.h>
 #include <pulse/def.h>
@@ -266,7 +267,7 @@
  * pa_stream_get_time() and pa_stream_get_latency() will try to
  * interpolate the current playback time/latency by estimating the
  * number of samples that have been played back by the hardware since
- * the last regular timing update. It is espcially useful to combine
+ * the last regular timing update. It is especially useful to combine
  * this option with PA_STREAM_AUTO_TIMING_UPDATE, which will enable
  * you to monitor the current playback time/latency very precisely and
  * very frequently without requiring a network round trip every time.
@@ -289,7 +290,7 @@
  * issued on the others.
  *
  * To synchronize a stream to another, just pass the "master" stream
- * as last argument to pa_stream_connect_playack(). To make sure that
+ * as last argument to pa_stream_connect_playback(). To make sure that
  * the freshly created stream doesn't start playback right-away, make
  * sure to pass PA_STREAM_START_CORKED and - after all streams have
  * been created - uncork them all with a single call to
@@ -354,6 +355,17 @@ pa_stream* pa_stream_new_with_proplist(
         const char *name                  /**< A name for this stream */,
         const pa_sample_spec *ss          /**< The desired sample format */,
         const pa_channel_map *map         /**< The desired channel map, or NULL for default */,
+        pa_proplist *p                    /**< The initial property list */);
+
+/* Create a new, unconnected stream with the specified name, the set of formats
+ * this client can provide, and an initial list of properties. While
+ * connecting, the server will select the most appropriate format which the
+ * client must then provide. \since 1.0 */
+pa_stream *pa_stream_new_extended(
+        pa_context *c                     /**< The context to create this stream in */,
+        const char *name                  /**< A name for this stream */,
+        pa_format_info * const * formats  /**< The list of formats that can be provided */,
+        unsigned int n_formats            /**< The number of formats being passed in */,
         pa_proplist *p                    /**< The initial property list */);
 
 /** Decrease the reference counter by one */
@@ -558,6 +570,12 @@ void pa_stream_set_read_callback(pa_stream *p, pa_stream_request_cb_t cb, void *
 /** Set the callback function that is called when a buffer overflow happens. (Only for playback streams) */
 void pa_stream_set_overflow_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *userdata);
 
+/** Return at what position the latest underflow occurred, or -1 if this information is not
+ * known (e g if no underflow has occurred, or server is older than 1.0).
+ * Can be used inside the underflow callback to get information about the current underflow.
+ * (Only for playback streams) \since 1.0 */
+int64_t pa_stream_get_underflow_index(pa_stream *p);
+
 /** Set the callback function that is called when a buffer underflow happens. (Only for playback streams) */
 void pa_stream_set_underflow_callback(pa_stream *p, pa_stream_notify_cb_t cb, void *userdata);
 
@@ -698,6 +716,9 @@ const pa_sample_spec* pa_stream_get_sample_spec(pa_stream *s);
 /** Return a pointer to the stream's channel map. */
 const pa_channel_map* pa_stream_get_channel_map(pa_stream *s);
 
+/** Return a pointer to the stream's format \since 1.0 */
+const pa_format_info* pa_stream_get_format_info(pa_stream *s);
+
 /** Return the per-stream server-side buffer metrics of the
  * stream. Only valid after the stream has been connected successfuly
  * and if the server is at least PulseAudio 0.9. This will return the
@@ -720,7 +741,7 @@ pa_operation *pa_stream_set_buffer_attr(pa_stream *s, const pa_buffer_attr *attr
 
 /** Change the stream sampling rate during playback. You need to pass
  * PA_STREAM_VARIABLE_RATE in the flags parameter of
- * pa_stream_connect() if you plan to use this function. Only valid
+ * pa_stream_connect_...() if you plan to use this function. Only valid
  * after the stream has been connected successfully and if the server
  * is at least PulseAudio 0.9.8. \since 0.9.8 */
 pa_operation *pa_stream_update_sample_rate(pa_stream *s, uint32_t rate, pa_stream_success_cb_t cb, void *userdata);

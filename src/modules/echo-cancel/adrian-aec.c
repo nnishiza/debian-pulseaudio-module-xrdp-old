@@ -12,10 +12,19 @@
 
 #include <math.h>
 #include <string.h>
+#include <stdint.h>
 
 #include <pulse/xmalloc.h>
 
 #include "adrian-aec.h"
+
+#ifndef DISABLE_ORC
+#include "adrian-aec-orc-gen.h"
+#endif
+
+#ifdef __SSE__
+#include <xmmintrin.h>
+#endif
 
 /* Vector Dot Product */
 static REAL dotp(REAL a[], REAL b[])
@@ -31,14 +40,37 @@ static REAL dotp(REAL a[], REAL b[])
   return sum0 + sum1;
 }
 
+static REAL dotp_sse(REAL a[], REAL b[])
+{
+#ifdef __SSE__
+  /* This is taken from speex's inner product implementation */
+  int j;
+  REAL sum;
+  __m128 acc = _mm_setzero_ps();
 
-AEC* AEC_init(int RATE)
+  for (j=0;j<NLMS_LEN;j+=8)
+  {
+    acc = _mm_add_ps(acc, _mm_mul_ps(_mm_load_ps(a+j), _mm_loadu_ps(b+j)));
+    acc = _mm_add_ps(acc, _mm_mul_ps(_mm_load_ps(a+j+4), _mm_loadu_ps(b+j+4)));
+  }
+  acc = _mm_add_ps(acc, _mm_movehl_ps(acc, acc));
+  acc = _mm_add_ss(acc, _mm_shuffle_ps(acc, acc, 0x55));
+  _mm_store_ss(&sum, acc);
+
+  return sum;
+#else
+  return dotp(a, b);
+#endif
+}
+
+
+AEC* AEC_init(int RATE, int have_vector)
 {
   AEC *a = pa_xnew(AEC, 1);
   a->hangover = 0;
   memset(a->x, 0, sizeof(a->x));
   memset(a->xf, 0, sizeof(a->xf));
-  memset(a->w, 0, sizeof(a->w));
+  memset(a->w_arr, 0, sizeof(a->w_arr));
   a->j = NLMS_EXT;
   a->delta = 0.0f;
   AEC_setambient(a, NoiseFloor);
@@ -57,6 +89,16 @@ AEC* AEC_init(int RATE)
   a->dumpcnt = 0;
   memset(a->ws, 0, sizeof(a->ws));
 
+  if (have_vector) {
+      /* Get a 16-byte aligned location */
+      a->w = (REAL *) (((uintptr_t) a->w_arr) + (((uintptr_t) a->w_arr) % 16));
+      a->dotp = dotp_sse;
+  } else {
+      /* We don't care about alignment, just use the array as-is */
+      a->w = a->w_arr;
+      a->dotp = dotp;
+  }
+
   return a;
 }
 
@@ -70,8 +112,7 @@ AEC* AEC_init(int RATE)
 // mapped to 1.0 with a limited linear function.
 static float AEC_dtd(AEC *a, REAL d, REAL x)
 {
-  float stepsize;
-  float ratio, M;
+  float ratio, stepsize;
 
   // fast near-end and far-end average
   a->dfast += ALPHAFAST * (fabsf(d) - a->dfast);
@@ -92,16 +133,13 @@ static float AEC_dtd(AEC *a, REAL d, REAL x)
   // ratio of NFRs
   ratio = (a->dfast * a->xslow) / (a->dslow * a->xfast);
 
-  // begrenzte lineare Kennlinie
-  M = (STEPY2 - STEPY1) / (STEPX2 - STEPX1);
-  if (ratio < STEPX1) {
+  // Linear interpolation with clamping at the limits
+  if (ratio < STEPX1)
     stepsize = STEPY1;
-  } else if (ratio > STEPX2) {
+  else if (ratio > STEPX2)
     stepsize = STEPY2;
-  } else {
-    // Punktrichtungsform einer Geraden
-    stepsize = M * (ratio - STEPX1) + STEPY1;
-  }
+  else
+    stepsize = STEPY1 + (STEPY2 - STEPY1) * (ratio - STEPX1) / (STEPX2 - STEPX1);
 
   return stepsize;
 }
@@ -146,7 +184,7 @@ static REAL AEC_nlms_pw(AEC *a, REAL d, REAL x_, float stepsize)
   // (mic signal - estimated mic signal from spk signal)
   e = d;
   if (a->hangover > 0) {
-    e -= dotp(a->w, a->x + a->j);
+    e -= a->dotp(a->w, a->x + a->j);
   }
   ef = IIR1_highpass(a->Fe, e);     // pre-whitening of e
 
@@ -157,6 +195,7 @@ static REAL AEC_nlms_pw(AEC *a, REAL d, REAL x_, float stepsize)
     // calculate variable step size
     REAL mikro_ef = stepsize * ef / a->dotp_xf_xf;
 
+#ifdef DISABLE_ORC
     // update tap weights (filter learning)
     int i;
     for (i = 0; i < NLMS_LEN; i += 2) {
@@ -164,6 +203,9 @@ static REAL AEC_nlms_pw(AEC *a, REAL d, REAL x_, float stepsize)
       a->w[i] += mikro_ef * a->xf[i + a->j];
       a->w[i + 1] += mikro_ef * a->xf[i + a->j + 1];
     }
+#else
+    update_tap_weights(a->w, &a->xf[a->j], mikro_ef, NLMS_LEN);
+#endif
   }
 
   if (--(a->j) < 0) {

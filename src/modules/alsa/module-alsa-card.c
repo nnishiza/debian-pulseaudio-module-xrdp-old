@@ -53,6 +53,7 @@ PA_MODULE_USAGE(
         "sink_properties=<properties for the sink> "
         "source_name=<name for the source> "
         "source_properties=<properties for the source> "
+        "namereg_fail=<pa_namereg_register() fail parameter value> "
         "device_id=<ALSA card index> "
         "format=<sample format> "
         "rate=<sample rate> "
@@ -63,7 +64,9 @@ PA_MODULE_USAGE(
         "tsched_buffer_size=<buffer size when using timer based scheduling> "
         "tsched_buffer_watermark=<lower fill watermark> "
         "profile=<profile name> "
-        "ignore_dB=<ignore dB information from the device?>");
+        "ignore_dB=<ignore dB information from the device?> "
+        "sync_volume=<syncronize sw and hw voluchanges in IO-thread?> "
+        "profile_set=<profile set configuration file> ");
 
 static const char* const valid_modargs[] = {
     "name",
@@ -73,6 +76,7 @@ static const char* const valid_modargs[] = {
     "sink_properties",
     "source_name",
     "source_properties",
+    "namereg_fail",
     "device_id",
     "format",
     "rate",
@@ -84,6 +88,8 @@ static const char* const valid_modargs[] = {
     "tsched_buffer_watermark",
     "profile",
     "ignore_dB",
+    "sync_volume",
+    "profile_set",
     NULL
 };
 
@@ -286,6 +292,7 @@ int pa__init(pa_module *m) {
     pa_reserve_wrapper *reserve = NULL;
     const char *description;
     char *fn = NULL;
+    pa_bool_t namereg_fail = FALSE;
 
     pa_alsa_refcnt_inc();
 
@@ -323,6 +330,11 @@ int pa__init(pa_module *m) {
     fn = pa_udev_get_property(alsa_card_index, "PULSE_PROFILE_SET");
 #endif
 
+    if (pa_modargs_get_value(ma, "profile_set", NULL)) {
+        pa_xfree(fn);
+        fn = pa_xstrdup(pa_modargs_get_value(ma, "profile_set", NULL));
+    }
+
     u->profile_set = pa_alsa_profile_set_new(fn, &u->core->default_channel_map);
     pa_xfree(fn);
 
@@ -330,6 +342,7 @@ int pa__init(pa_module *m) {
         goto fail;
 
     pa_alsa_profile_set_probe(u->profile_set, u->device_id, &m->core->default_sample_spec, m->core->default_n_fragments, m->core->default_fragment_size_msec);
+    pa_alsa_profile_set_dump(u->profile_set);
 
     pa_card_new_data_init(&data);
     data.driver = __FILE__;
@@ -340,6 +353,18 @@ int pa__init(pa_module *m) {
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_id);
     pa_alsa_init_description(data.proplist);
     set_card_name(&data, ma, u->device_id);
+
+    /* We need to give pa_modargs_get_value_boolean() a pointer to a local
+     * variable instead of using &data.namereg_fail directly, because
+     * data.namereg_fail is a bitfield and taking the address of a bitfield
+     * variable is impossible. */
+    namereg_fail = data.namereg_fail;
+    if (pa_modargs_get_value_boolean(ma, "namereg_fail", &namereg_fail) < 0) {
+        pa_log("Failed to parse boolean argument namereg_fail.");
+        pa_card_new_data_done(&data);
+        goto fail;
+    }
+    data.namereg_fail = namereg_fail;
 
     if (reserve)
         if ((description = pa_proplist_gets(data.proplist, PA_PROP_DEVICE_DESCRIPTION)))
@@ -375,6 +400,14 @@ int pa__init(pa_module *m) {
 
     if (reserve)
         pa_reserve_wrapper_unref(reserve);
+
+    if (!pa_hashmap_isempty(u->profile_set->decibel_fixes))
+        pa_log_warn("Card %s uses decibel fixes (i.e. overrides the decibel information for some alsa volume elements). "
+                    "Please note that this feature is meant just as a help for figuring out the correct decibel values. "
+                    "Pulseaudio is not the correct place to maintain the decibel mappings! The fixed decibel values "
+                    "should be sent to ALSA developers so that they can fix the driver. If it turns out that this feature "
+                    "is abused (i.e. fixes are not pushed to ALSA), the decibel fix feature may be removed in some future "
+                    "Pulseaudio version.", u->card->name);
 
     return 0;
 

@@ -24,18 +24,15 @@
 #endif
 
 #include <unistd.h>
-#include <string.h>
 #include <errno.h>
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 #include <pulse/xmalloc.h>
 #include <pulse/volume.h>
 #include <pulse/channelmap.h>
 
-#include <pulsecore/core-error.h>
 #include <pulsecore/module.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/modargs.h>
@@ -164,7 +161,7 @@ fail:
     if (ma)
         pa_modargs_free(ma);
 
-    return  -1;
+    return -1;
 }
 
 void pa__done(pa_module*m) {

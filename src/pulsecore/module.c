@@ -24,14 +24,11 @@
 #include <config.h>
 #endif
 
-#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <ctype.h>
 
-#include <pulse/timeval.h>
 #include <pulse/xmalloc.h>
 #include <pulse/proplist.h>
 
@@ -110,7 +107,7 @@ pa_module* pa_module_load(pa_core *c, const char *name, const char *argument) {
     m->unload_requested = FALSE;
 
     if (m->init(m) < 0) {
-        pa_log_error("Failed to load  module \"%s\" (argument: \"%s\"): initialization failed.", name, argument ? argument : "");
+        pa_log_error("Failed to load module \"%s\" (argument: \"%s\"): initialization failed.", name, argument ? argument : "");
         goto fail;
     }
 
@@ -262,4 +259,13 @@ int pa_module_get_n_used(pa_module*m) {
         return -1;
 
     return m->get_n_used(m);
+}
+
+void pa_module_update_proplist(pa_module *m, pa_update_mode_t mode, pa_proplist *p) {
+    pa_assert(m);
+
+    if (p)
+        pa_proplist_update(m->proplist, mode, p);
+
+    pa_subscription_post(m->core, PA_SUBSCRIPTION_EVENT_MODULE|PA_SUBSCRIPTION_EVENT_CHANGE, m->index);
 }

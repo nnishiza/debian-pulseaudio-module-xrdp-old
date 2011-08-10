@@ -27,11 +27,10 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
-#include <poll.h>
+#include <math.h>
 
 #include <pulse/rtclock.h>
 #include <pulse/timeval.h>
@@ -50,10 +49,11 @@
 #include <pulsecore/namereg.h>
 #include <pulsecore/sample-util.h>
 #include <pulsecore/macro.h>
-#include <pulsecore/atomic.h>
-#include <pulsecore/atomic.h>
 #include <pulsecore/socket-util.h>
+#include <pulsecore/atomic.h>
 #include <pulsecore/once.h>
+#include <pulsecore/poll.h>
+#include <pulsecore/arpa-inet.h>
 
 #include "module-rtp-recv-symdef.h"
 
@@ -375,7 +375,9 @@ static int rtpoll_work_cb(pa_rtpoll_item *i) {
     if (pa_memblockq_is_readable(s->memblockq) &&
         s->sink_input->thread_info.underrun_for > 0) {
         pa_log_debug("Requesting rewind due to end of underrun");
-        pa_sink_input_request_rewind(s->sink_input, 0, FALSE, TRUE, FALSE);
+        pa_sink_input_request_rewind(s->sink_input,
+                                     (size_t) (s->sink_input->thread_info.underrun_for == (uint64_t) -1 ? 0 : s->sink_input->thread_info.underrun_for),
+                                     FALSE, TRUE, FALSE);
     }
 
     return 1;
@@ -419,7 +421,7 @@ static int mcast_socket(const struct sockaddr* sa, socklen_t salen) {
     pa_assert(salen > 0);
 
     af = sa->sa_family;
-    if ((fd = socket(af, SOCK_DGRAM, 0)) < 0) {
+    if ((fd = pa_socket_cloexec(af, SOCK_DGRAM, 0)) < 0) {
         pa_log("Failed to create socket: %s", pa_cstrerror(errno));
         goto fail;
     }
@@ -510,7 +512,7 @@ static struct session *session_new(struct userdata *u, const pa_sdp_info *sdp_in
         goto fail;
 
     pa_sink_input_new_data_init(&data);
-    data.sink = sink;
+    pa_sink_input_new_data_set_sink(&data, sink, FALSE);
     data.driver = __FILE__;
     pa_proplist_sets(data.proplist, PA_PROP_MEDIA_ROLE, "stream");
     pa_proplist_setf(data.proplist, PA_PROP_MEDIA_NAME,

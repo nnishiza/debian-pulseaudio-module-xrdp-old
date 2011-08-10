@@ -25,7 +25,6 @@
 
 #include <assert.h>
 #include <signal.h>
-#include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
 #include <errno.h>
@@ -33,19 +32,18 @@
 #include <sys/un.h>
 #include <locale.h>
 
-#include <pulse/error.h>
 #include <pulse/util.h>
 #include <pulse/xmalloc.h>
 #include <pulse/i18n.h>
 
+#include <pulsecore/poll.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/pid.h>
 
 int main(int argc, char*argv[]) {
-
-    pid_t pid ;
+    pid_t pid;
     int fd = -1;
     int ret = 1, i;
     struct sockaddr_un sa;
@@ -66,7 +64,7 @@ int main(int argc, char*argv[]) {
         goto fail;
     }
 
-    if ((fd = socket(PF_UNIX, SOCK_STREAM, 0)) < 0) {
+    if ((fd = pa_socket_cloexec(PF_UNIX, SOCK_STREAM, 0)) < 0) {
         pa_log(_("socket(PF_UNIX, SOCK_STREAM, 0): %s"), strerror(errno));
         goto fail;
     }
@@ -170,7 +168,7 @@ int main(int argc, char*argv[]) {
         } else
             watch_stdout = NULL;
 
-        if (poll(pollfd, p-pollfd, -1) < 0) {
+        if (pa_poll(pollfd, p-pollfd, -1) < 0) {
 
             if (errno == EINTR)
                 continue;

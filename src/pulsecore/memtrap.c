@@ -24,7 +24,10 @@
 #endif
 
 #include <signal.h>
+
+#ifdef HAVE_SYS_MMAN_H
 #include <sys/mman.h>
+#endif
 
 /* This is deprecated on glibc but is still used by FreeBSD */
 #if !defined(MAP_ANONYMOUS) && defined(MAP_ANON)
@@ -64,6 +67,7 @@ pa_bool_t pa_memtrap_is_good(pa_memtrap *m) {
     return !pa_atomic_load(&m->bad);
 }
 
+#ifdef HAVE_SIGACTION
 static void sigsafe_error(const char *s) {
     (void) write(STDERR_FILENO, s, strlen(s));
 }
@@ -102,6 +106,7 @@ fail:
     sigsafe_error("Failed to handle SIGBUS.\n");
     abort();
 }
+#endif
 
 static void memtrap_link(pa_memtrap *m, unsigned j) {
     pa_assert(m);
@@ -221,6 +226,7 @@ unlock:
 }
 
 void pa_memtrap_install(void) {
+#ifdef HAVE_SIGACTION
     struct sigaction sa;
 
     allocate_aupdate();
@@ -230,4 +236,5 @@ void pa_memtrap_install(void) {
     sa.sa_flags = SA_RESTART|SA_SIGINFO;
 
     pa_assert_se(sigaction(SIGBUS, &sa, NULL) == 0);
+#endif
 }

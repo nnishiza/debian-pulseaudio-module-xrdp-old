@@ -37,10 +37,6 @@
 #include <pwd.h>
 #endif
 
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
-
 #ifdef HAVE_NETDB_H
 #include <netdb.h>
 #endif
@@ -53,12 +49,15 @@
 #include <sys/prctl.h>
 #endif
 
+#ifdef OS_IS_DARWIN
+#include <libgen.h>
+#include <sys/sysctl.h>
+#endif
+
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
 
-#include <pulsecore/winsock.h>
-#include <pulsecore/core-error.h>
-#include <pulsecore/log.h>
+#include <pulsecore/socket.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/usergroup.h>
@@ -79,11 +78,15 @@ char *pa_get_user_name(char *s, size_t l) {
     pa_assert(s);
     pa_assert(l > 0);
 
-    if ((p = (getuid() == 0 ? "root" : NULL)) ||
-        (p = getenv("USER")) ||
-        (p = getenv("LOGNAME")) ||
-        (p = getenv("USERNAME")))
-    {
+    p = NULL;
+#ifdef HAVE_GETUID
+    p = getuid() == 0 ? "root" : NULL;
+#endif
+    if (!p) p = getenv("USER");
+    if (!p) p = getenv("LOGNAME");
+    if (!p) p = getenv("USERNAME");
+
+    if (p) {
         name = pa_strlcpy(s, p, l);
     } else {
 #ifdef HAVE_PWD_H
@@ -128,9 +131,9 @@ char *pa_get_host_name(char *s, size_t l) {
 }
 
 char *pa_get_home_dir(char *s, size_t l) {
-    char *e, *dir;
-
+    char *e;
 #ifdef HAVE_PWD_H
+    char *dir;
     struct passwd *r;
 #endif
 
@@ -189,7 +192,18 @@ char *pa_get_binary_name(char *s, size_t l) {
             return s;
         }
     }
+#endif
 
+#ifdef __FreeBSD__
+    {
+        char *rp;
+
+        if ((rp = pa_readlink("/proc/curproc/file"))) {
+            pa_strlcpy(s, pa_path_get_filename(rp), l);
+            pa_xfree(rp);
+            return s;
+        }
+    }
 #endif
 
 #if defined(HAVE_SYS_PRCTL_H) && defined(PR_GET_NAME)
@@ -209,6 +223,27 @@ char *pa_get_binary_name(char *s, size_t l) {
 
     }
 #endif
+
+#ifdef OS_IS_DARWIN
+    {
+        int mib[] = { CTL_KERN, KERN_PROCARGS, getpid(), 0 };
+        size_t len, nmib = (sizeof(mib) / sizeof(mib[0])) - 1;
+        char *buf;
+
+        sysctl(mib, nmib, NULL, &len, NULL, 0);
+        buf = (char *) pa_xmalloc(len);
+
+        if (sysctl(mib, nmib, buf, &len, NULL, 0) == 0) {
+            pa_strlcpy(s, basename(buf), l);
+            pa_xfree(buf);
+            return s;
+        }
+
+        pa_xfree(buf);
+
+        /* fall thru */
+    }
+#endif /* OS_IS_DARWIN */
 
     errno = ENOENT;
     return NULL;

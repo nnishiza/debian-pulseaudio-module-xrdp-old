@@ -26,18 +26,15 @@
 #include <asoundlib.h>
 
 #include <pulse/sample.h>
-#include <pulse/volume.h>
 #include <pulse/mainloop-api.h>
 #include <pulse/channelmap.h>
-#include <pulse/proplist.h>
 #include <pulse/volume.h>
 
 #include <pulsecore/llist.h>
 #include <pulsecore/rtpoll.h>
-#include <pulsecore/core.h>
-#include <pulsecore/log.h>
 
 typedef struct pa_alsa_fdlist pa_alsa_fdlist;
+typedef struct pa_alsa_mixer_pdata pa_alsa_mixer_pdata;
 typedef struct pa_alsa_setting pa_alsa_setting;
 typedef struct pa_alsa_option pa_alsa_option;
 typedef struct pa_alsa_element pa_alsa_element;
@@ -45,6 +42,7 @@ typedef struct pa_alsa_path pa_alsa_path;
 typedef struct pa_alsa_path_set pa_alsa_path_set;
 typedef struct pa_alsa_mapping pa_alsa_mapping;
 typedef struct pa_alsa_profile pa_alsa_profile;
+typedef struct pa_alsa_decibel_fix pa_alsa_decibel_fix;
 typedef struct pa_alsa_profile_set pa_alsa_profile_set;
 typedef struct pa_alsa_port_data pa_alsa_port_data;
 
@@ -60,9 +58,10 @@ typedef enum pa_alsa_switch_use {
 
 typedef enum pa_alsa_volume_use {
     PA_ALSA_VOLUME_IGNORE,
-    PA_ALSA_VOLUME_MERGE,  /* merge this volume slider into the global volume slider */
-    PA_ALSA_VOLUME_OFF,    /* set this volume to minimal unconditionally */
-    PA_ALSA_VOLUME_ZERO    /* set this volume to 0dB unconditionally */
+    PA_ALSA_VOLUME_MERGE,   /* merge this volume slider into the global volume slider */
+    PA_ALSA_VOLUME_OFF,     /* set this volume to minimal unconditionally */
+    PA_ALSA_VOLUME_ZERO,    /* set this volume to 0dB unconditionally */
+    PA_ALSA_VOLUME_CONSTANT /* set this volume to a constant value unconditionally */
 } pa_alsa_volume_use_t;
 
 typedef enum pa_alsa_enumeration_use {
@@ -111,11 +110,15 @@ struct pa_alsa_option {
     char *name;
     char *description;
     unsigned priority;
+
+    pa_alsa_required_t required;
+    pa_alsa_required_t required_any;
+    pa_alsa_required_t required_absent;
 };
 
-/* And element wraps one specific ALSA element. A series of elements *
-make up a path (see below). If the element is an enumeration or switch
-* element it may includes a list of options. */
+/* An element wraps one specific ALSA element. A series of elements
+ * make up a path (see below). If the element is an enumeration or switch
+ * element it may include a list of options. */
 struct pa_alsa_element {
     pa_alsa_path *path;
     PA_LLIST_FIELDS(pa_alsa_element);
@@ -128,13 +131,17 @@ struct pa_alsa_element {
     pa_alsa_enumeration_use_t enumeration_use;
 
     pa_alsa_required_t required;
+    pa_alsa_required_t required_any;
     pa_alsa_required_t required_absent;
+
+    long constant_volume;
 
     pa_bool_t override_map:1;
     pa_bool_t direction_try_other:1;
 
     pa_bool_t has_dB:1;
     long min_volume, max_volume;
+    long volume_limit; /* -1 for no configured limit */
     double min_dB, max_dB;
 
     pa_channel_position_mask_t masks[SND_MIXER_SCHN_LAST][2];
@@ -143,6 +150,8 @@ struct pa_alsa_element {
     pa_channel_position_mask_t merged_mask;
 
     PA_LLIST_HEAD(pa_alsa_option, options);
+
+    pa_alsa_decibel_fix *db_fix;
 };
 
 /* A path wraps a series of elements into a single entity which can be
@@ -163,6 +172,9 @@ struct pa_alsa_path {
     pa_bool_t has_mute:1;
     pa_bool_t has_volume:1;
     pa_bool_t has_dB:1;
+    /* These two are used during probing only */
+    pa_bool_t has_req_any:1;
+    pa_bool_t req_any_present:1;
 
     long min_volume, max_volume;
     double min_dB, max_dB;
@@ -202,7 +214,7 @@ int pa_alsa_path_probe(pa_alsa_path *p, snd_mixer_t *m, pa_bool_t ignore_dB);
 void pa_alsa_path_dump(pa_alsa_path *p);
 int pa_alsa_path_get_volume(pa_alsa_path *p, snd_mixer_t *m, const pa_channel_map *cm, pa_cvolume *v);
 int pa_alsa_path_get_mute(pa_alsa_path *path, snd_mixer_t *m, pa_bool_t *muted);
-int pa_alsa_path_set_volume(pa_alsa_path *path, snd_mixer_t *m, const pa_channel_map *cm, pa_cvolume *v);
+int pa_alsa_path_set_volume(pa_alsa_path *path, snd_mixer_t *m, const pa_channel_map *cm, pa_cvolume *v, pa_bool_t sync_volume, pa_bool_t write_to_hw);
 int pa_alsa_path_set_mute(pa_alsa_path *path, snd_mixer_t *m, pa_bool_t muted);
 int pa_alsa_path_select(pa_alsa_path *p, snd_mixer_t *m);
 void pa_alsa_path_set_callback(pa_alsa_path *p, snd_mixer_t *m, snd_mixer_elem_callback_t cb, void *userdata);
@@ -257,9 +269,26 @@ struct pa_alsa_profile {
     pa_idxset *output_mappings;
 };
 
+struct pa_alsa_decibel_fix {
+    pa_alsa_profile_set *profile_set;
+
+    char *name; /* Alsa volume element name. */
+    long min_step;
+    long max_step;
+
+    /* An array that maps alsa volume element steps to decibels. The steps can
+     * be used as indices to this array, after substracting min_step from the
+     * real value.
+     *
+     * The values are actually stored as integers representing millibels,
+     * because that's the format the alsa API uses. */
+    long *db_values;
+};
+
 struct pa_alsa_profile_set {
     pa_hashmap *mappings;
     pa_hashmap *profiles;
+    pa_hashmap *decibel_fixes;
 
     pa_bool_t auto_profiles;
     pa_bool_t probed:1;
@@ -267,6 +296,7 @@ struct pa_alsa_profile_set {
 
 void pa_alsa_mapping_dump(pa_alsa_mapping *m);
 void pa_alsa_profile_dump(pa_alsa_profile *p);
+void pa_alsa_decibel_fix_dump(pa_alsa_decibel_fix *db_fix);
 
 pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel_map *bonus);
 void pa_alsa_profile_set_probe(pa_alsa_profile_set *ps, const char *dev_id, const pa_sample_spec *ss, unsigned default_n_fragments, unsigned default_fragment_size_msec);
@@ -278,6 +308,12 @@ snd_mixer_t *pa_alsa_open_mixer_for_pcm(snd_pcm_t *pcm, char **ctl_device);
 pa_alsa_fdlist *pa_alsa_fdlist_new(void);
 void pa_alsa_fdlist_free(pa_alsa_fdlist *fdl);
 int pa_alsa_fdlist_set_mixer(pa_alsa_fdlist *fdl, snd_mixer_t *mixer_handle, pa_mainloop_api* m);
+
+/* Alternative for handling alsa mixer events in io-thread. */
+
+pa_alsa_mixer_pdata *pa_alsa_mixer_pdata_new(void);
+void pa_alsa_mixer_pdata_free(pa_alsa_mixer_pdata *pd);
+int pa_alsa_set_mixer_rtpoll(struct pa_alsa_mixer_pdata *pd, snd_mixer_t *mixer, pa_rtpoll *rtp);
 
 /* Data structure for inclusion in pa_device_port for alsa
  * sinks/sources. This contains nothing that needs to be freed

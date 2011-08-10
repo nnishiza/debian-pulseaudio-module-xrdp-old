@@ -27,12 +27,13 @@
 #include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>
-#include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
-#include <limits.h>
 #include <sys/ioctl.h>
-#include <sys/poll.h>
+
+#ifdef HAVE_SYS_FILIO_H
+#include <sys/filio.h>
+#endif
 
 #include <pulse/xmalloc.h>
 
@@ -45,6 +46,7 @@
 #include <pulsecore/thread.h>
 #include <pulsecore/thread-mq.h>
 #include <pulsecore/rtpoll.h>
+#include <pulsecore/poll.h>
 
 #include "module-pipe-source-symdef.h"
 
@@ -105,9 +107,10 @@ static int source_process_msg(
 
         case PA_SOURCE_MESSAGE_GET_LATENCY: {
             size_t n = 0;
-            int l;
 
 #ifdef FIONREAD
+            int l;
+
             if (ioctl(u->fd, FIONREAD, &l) >= 0 && l > 0)
                 n = (size_t) l;
 #endif
@@ -238,12 +241,11 @@ int pa__init(pa_module*m) {
     u->filename = pa_runtime_path(pa_modargs_get_value(ma, "file", DEFAULT_FILE_NAME));
 
     mkfifo(u->filename, 0666);
-    if ((u->fd = open(u->filename, O_RDWR|O_NOCTTY)) < 0) {
+    if ((u->fd = pa_open_cloexec(u->filename, O_RDWR, 0)) < 0) {
         pa_log("open('%s'): %s", u->filename, pa_cstrerror(errno));
         goto fail;
     }
 
-    pa_make_fd_cloexec(u->fd);
     pa_make_fd_nonblock(u->fd);
 
     if (fstat(u->fd, &st) < 0) {

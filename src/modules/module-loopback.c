@@ -25,7 +25,6 @@
 #endif
 
 #include <stdio.h>
-#include <math.h>
 
 #include <pulse/xmalloc.h>
 
@@ -53,7 +52,14 @@ PA_MODULE_USAGE(
         "format=<sample format> "
         "rate=<sample rate> "
         "channels=<number of channels> "
-        "channel_map=<channel map>");
+        "channel_map=<channel map> "
+        "sink_input_name=<custom name for the sink input> "
+        "source_output_name=<custom name for the source output> "
+        "sink_input_role=<media.role for the sink input> "
+        "source_output_role=<media.role for the source output> "
+        "source_dont_move=<boolean> "
+        "sink_dont_move=<boolean> "
+        "remix=<remix channels?> ");
 
 #define DEFAULT_LATENCY_MSEC 200
 
@@ -108,6 +114,13 @@ static const char* const valid_modargs[] = {
     "rate",
     "channels",
     "channel_map",
+    "sink_input_name",
+    "source_output_name",
+    "sink_input_role",
+    "source_output_role",
+    "source_dont_move",
+    "sink_dont_move",
+    "remix",
     NULL,
 };
 
@@ -395,7 +408,7 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
     u->in_pop = FALSE;
 
     if (pa_memblockq_peek(u->memblockq, chunk) < 0) {
-        pa_log_info("Coud not peek into queue");
+        pa_log_info("Could not peek into queue");
         return -1;
     }
 
@@ -425,9 +438,9 @@ static int sink_input_process_msg_cb(pa_msgobject *obj, int code, void *data, in
     switch (code) {
 
         case PA_SINK_INPUT_MESSAGE_GET_LATENCY: {
-             pa_usec_t *r = data;
+            pa_usec_t *r = data;
 
-             pa_sink_input_assert_io_context(u->sink_input);
+            pa_sink_input_assert_io_context(u->sink_input);
 
             *r = pa_bytes_to_usec(pa_memblockq_get_length(u->memblockq), &u->sink_input->sample_spec);
 
@@ -623,14 +636,17 @@ int pa__init(pa_module *m) {
     struct userdata *u;
     pa_sink *sink;
     pa_sink_input_new_data sink_input_data;
+    pa_bool_t sink_dont_move;
     pa_source *source;
     pa_source_output_new_data source_output_data;
+    pa_bool_t source_dont_move;
     uint32_t latency_msec;
     pa_sample_spec ss;
     pa_channel_map map;
     pa_memchunk silence;
     uint32_t adjust_time_sec;
     const char *n;
+    pa_bool_t remix = TRUE;
 
     pa_assert(m);
 
@@ -646,6 +662,11 @@ int pa__init(pa_module *m) {
 
     if (!(sink = pa_namereg_get(m->core, pa_modargs_get_value(ma, "sink", NULL), PA_NAMEREG_SINK))) {
         pa_log("No such sink.");
+        goto fail;
+    }
+
+    if (pa_modargs_get_value_boolean(ma, "remix", &remix) < 0) {
+        pa_log("Invalid boolean remix parameter");
         goto fail;
     }
 
@@ -681,16 +702,34 @@ int pa__init(pa_module *m) {
     pa_sink_input_new_data_init(&sink_input_data);
     sink_input_data.driver = __FILE__;
     sink_input_data.module = m;
-    sink_input_data.sink = sink;
+    pa_sink_input_new_data_set_sink(&sink_input_data, sink, FALSE);
 
-    pa_proplist_setf(sink_input_data.proplist, PA_PROP_MEDIA_NAME, "Loopback of %s",
-                     pa_strnull(pa_proplist_gets(source->proplist, PA_PROP_DEVICE_DESCRIPTION)));
+    if ((n = pa_modargs_get_value(ma, "sink_input_name", NULL)))
+        pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_NAME, n);
+    else
+        pa_proplist_setf(sink_input_data.proplist, PA_PROP_MEDIA_NAME, "Loopback from %s",
+                         pa_strnull(pa_proplist_gets(source->proplist, PA_PROP_DEVICE_DESCRIPTION)));
+
+    if ((n = pa_modargs_get_value(ma, "sink_input_role", NULL)))
+        pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_ROLE, n);
+    else
+        pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_ROLE, "abstract");
+
     if ((n = pa_proplist_gets(source->proplist, PA_PROP_DEVICE_ICON_NAME)))
         pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_ICON_NAME, n);
-    pa_proplist_sets(sink_input_data.proplist, PA_PROP_MEDIA_ROLE, "abstract");
+
     pa_sink_input_new_data_set_sample_spec(&sink_input_data, &ss);
     pa_sink_input_new_data_set_channel_map(&sink_input_data, &map);
-    sink_input_data.flags = PA_SINK_INPUT_VARIABLE_RATE;
+    sink_input_data.flags = PA_SINK_INPUT_VARIABLE_RATE | (remix ? 0 : PA_SINK_INPUT_NO_REMIX);
+
+    sink_dont_move = FALSE;
+    if (pa_modargs_get_value_boolean(ma, "sink_dont_move", &sink_dont_move) < 0) {
+        pa_log("sink_dont_move= expects a boolean argument.");
+        goto fail;
+    }
+
+    if (sink_dont_move)
+        sink_input_data.flags |= PA_SINK_INPUT_DONT_MOVE;
 
     pa_sink_input_new(&u->sink_input, m->core, &sink_input_data);
     pa_sink_input_new_data_done(&sink_input_data);
@@ -715,14 +754,34 @@ int pa__init(pa_module *m) {
     pa_source_output_new_data_init(&source_output_data);
     source_output_data.driver = __FILE__;
     source_output_data.module = m;
-    source_output_data.source = source;
-    pa_proplist_setf(source_output_data.proplist, PA_PROP_MEDIA_NAME, "Loopback to %s",
-                     pa_strnull(pa_proplist_gets(sink->proplist, PA_PROP_DEVICE_DESCRIPTION)));
+    pa_source_output_new_data_set_source(&source_output_data, source, FALSE);
+
+    if ((n = pa_modargs_get_value(ma, "source_output_name", NULL)))
+        pa_proplist_sets(source_output_data.proplist, PA_PROP_MEDIA_NAME, n);
+    else
+        pa_proplist_setf(source_output_data.proplist, PA_PROP_MEDIA_NAME, "Loopback to %s",
+                         pa_strnull(pa_proplist_gets(sink->proplist, PA_PROP_DEVICE_DESCRIPTION)));
+
+    if ((n = pa_modargs_get_value(ma, "source_output_role", NULL)))
+        pa_proplist_sets(source_output_data.proplist, PA_PROP_MEDIA_ROLE, n);
+    else
+        pa_proplist_sets(source_output_data.proplist, PA_PROP_MEDIA_ROLE, "abstract");
+
     if ((n = pa_proplist_gets(sink->proplist, PA_PROP_DEVICE_ICON_NAME)))
         pa_proplist_sets(source_output_data.proplist, PA_PROP_MEDIA_ICON_NAME, n);
-    pa_proplist_sets(source_output_data.proplist, PA_PROP_MEDIA_ROLE, "abstract");
+
     pa_source_output_new_data_set_sample_spec(&source_output_data, &ss);
-    pa_sink_input_new_data_set_channel_map(&sink_input_data, &map);
+    pa_source_output_new_data_set_channel_map(&source_output_data, &map);
+    source_output_data.flags = (remix ? 0 : PA_SOURCE_OUTPUT_NO_REMIX);
+
+    source_dont_move = FALSE;
+    if (pa_modargs_get_value_boolean(ma, "source_dont_move", &source_dont_move) < 0) {
+        pa_log("source_dont_move= expects a boolean argument.");
+        goto fail;
+    }
+
+    if (source_dont_move)
+        source_output_data.flags |= PA_SOURCE_OUTPUT_DONT_MOVE;
 
     pa_source_output_new(&u->source_output, m->core, &source_output_data);
     pa_source_output_new_data_done(&source_output_data);

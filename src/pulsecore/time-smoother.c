@@ -24,6 +24,7 @@
 #endif
 
 #include <stdio.h>
+#include <math.h>
 
 #include <pulse/sample.h>
 #include <pulse/xmalloc.h>
@@ -195,6 +196,13 @@ static double avg_gradient(pa_smoother *s, pa_usec_t x) {
     unsigned i, j, c = 0;
     int64_t ax = 0, ay = 0, k, t;
     double r;
+
+    /* FIXME: Optimization: Jason Newton suggested that instead of
+     * going through the history on each iteration we could calculated
+     * avg_gradient() as we go.
+     *
+     * Second idea: it might make sense to weight history entries:
+     * more recent entries should matter more than old ones. */
 
     /* Too few measurements, assume gradient of 1 */
     if (s->n_history < s->min_history)
@@ -378,7 +386,7 @@ void pa_smoother_put(pa_smoother *s, pa_usec_t x, pa_usec_t y) {
     s->abc_valid = FALSE;
 
 #ifdef DEBUG_DATA
-    pa_log_debug("%p, put(%llu | %llu) = %llu", s, (unsigned long long)  (x + s->time_offset), (unsigned long long) x, (unsigned long long) y);
+    pa_log_debug("%p, put(%llu | %llu) = %llu", s, (unsigned long long) (x + s->time_offset), (unsigned long long) x, (unsigned long long) y);
 #endif
 }
 
@@ -434,7 +442,7 @@ void pa_smoother_pause(pa_smoother *s, pa_usec_t x) {
         return;
 
 #ifdef DEBUG_DATA
-    pa_log_debug("pause(%llu)", (unsigned long long)  x);
+    pa_log_debug("pause(%llu)", (unsigned long long) x);
 #endif
 
     s->paused = TRUE;

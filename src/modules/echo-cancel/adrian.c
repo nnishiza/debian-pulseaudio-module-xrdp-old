@@ -29,8 +29,10 @@
 #include <config.h>
 #endif
 
+#include <pulse/xmalloc.h>
+
 #include <pulsecore/modargs.h>
-#include <pulsecore/endianmacros.h>
+
 #include "echo-cancel.h"
 
 /* should be between 10-20 ms */
@@ -42,7 +44,7 @@ static const char* const valid_modargs[] = {
 };
 
 static void pa_adrian_ec_fixate_spec(pa_sample_spec *source_ss, pa_channel_map *source_map,
-				    pa_sample_spec *sink_ss, pa_channel_map *sink_map)
+                                    pa_sample_spec *sink_ss, pa_channel_map *sink_map)
 {
     source_ss->format = PA_SAMPLE_S16NE;
     source_ss->channels = 1;
@@ -52,12 +54,12 @@ static void pa_adrian_ec_fixate_spec(pa_sample_spec *source_ss, pa_channel_map *
     *sink_map = *source_map;
 }
 
-pa_bool_t pa_adrian_ec_init(pa_echo_canceller *ec,
+pa_bool_t pa_adrian_ec_init(pa_core *c, pa_echo_canceller *ec,
                            pa_sample_spec *source_ss, pa_channel_map *source_map,
                            pa_sample_spec *sink_ss, pa_channel_map *sink_map,
                            uint32_t *blocksize, const char *args)
 {
-    int framelen, rate;
+    int framelen, rate, have_vector = 0;
     uint32_t frame_size_ms;
     pa_modargs *ma;
 
@@ -81,21 +83,24 @@ pa_bool_t pa_adrian_ec_init(pa_echo_canceller *ec,
 
     pa_log_debug ("Using framelen %d, blocksize %u, channels %d, rate %d", framelen, ec->params.priv.adrian.blocksize, source_ss->channels, source_ss->rate);
 
-    ec->params.priv.adrian.aec = AEC_init(rate);
+    /* For now we only support SSE */
+    if (c->cpu_info.cpu_type == PA_CPU_X86 && (c->cpu_info.flags.x86 & PA_CPU_X86_SSE))
+        have_vector = 1;
+
+    ec->params.priv.adrian.aec = AEC_init(rate, have_vector);
     if (!ec->params.priv.adrian.aec)
-	goto fail;
+        goto fail;
 
     pa_modargs_free(ma);
     return TRUE;
 
 fail:
     if (ma)
-	pa_modargs_free(ma);
+        pa_modargs_free(ma);
     return FALSE;
 }
 
-void pa_adrian_ec_run(pa_echo_canceller *ec, const uint8_t *rec, const uint8_t *play, uint8_t *out)
-{
+void pa_adrian_ec_run(pa_echo_canceller *ec, const uint8_t *rec, const uint8_t *play, uint8_t *out) {
     unsigned int i;
 
     for (i = 0; i < ec->params.priv.adrian.blocksize; i += 2) {
@@ -106,8 +111,7 @@ void pa_adrian_ec_run(pa_echo_canceller *ec, const uint8_t *rec, const uint8_t *
     }
 }
 
-void pa_adrian_ec_done(pa_echo_canceller *ec)
-{
+void pa_adrian_ec_done(pa_echo_canceller *ec) {
     pa_xfree(ec->params.priv.adrian.aec);
     ec->params.priv.adrian.aec = NULL;
 }

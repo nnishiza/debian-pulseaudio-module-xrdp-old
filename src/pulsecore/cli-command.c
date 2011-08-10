@@ -30,6 +30,9 @@
 #include <errno.h>
 #include <unistd.h>
 #include <ltdl.h>
+#include <sys/stat.h>
+#include <dirent.h>
+#include <time.h>
 
 #include <pulse/xmalloc.h>
 #include <pulse/error.h>
@@ -45,7 +48,6 @@
 #include <pulsecore/namereg.h>
 #include <pulsecore/cli-text.h>
 #include <pulsecore/core-scache.h>
-#include <pulsecore/sample-util.h>
 #include <pulsecore/sound-file.h>
 #include <pulsecore/play-memchunk.h>
 #include <pulsecore/sound-file-stream.h>
@@ -53,6 +55,7 @@
 #include <pulsecore/core-util.h>
 #include <pulsecore/core-error.h>
 #include <pulsecore/modinfo.h>
+#include <pulsecore/dynarray.h>
 
 #include "cli-command.h"
 
@@ -329,7 +332,7 @@ static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_b
     char ss[PA_SAMPLE_SPEC_SNPRINT_MAX];
     char cm[PA_CHANNEL_MAP_SNPRINT_MAX];
     char bytes[PA_BYTES_SNPRINT_MAX];
-    const pa_mempool_stat *stat;
+    const pa_mempool_stat *mstat;
     unsigned k;
     pa_sink *def_sink;
     pa_source *def_source;
@@ -348,23 +351,23 @@ static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_b
     pa_assert(buf);
     pa_assert(fail);
 
-    stat = pa_mempool_get_stat(c->mempool);
+    mstat = pa_mempool_get_stat(c->mempool);
 
     pa_strbuf_printf(buf, "Memory blocks currently allocated: %u, size: %s.\n",
-                     (unsigned) pa_atomic_load(&stat->n_allocated),
-                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&stat->allocated_size)));
+                     (unsigned) pa_atomic_load(&mstat->n_allocated),
+                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&mstat->allocated_size)));
 
     pa_strbuf_printf(buf, "Memory blocks allocated during the whole lifetime: %u, size: %s.\n",
-                     (unsigned) pa_atomic_load(&stat->n_accumulated),
-                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&stat->accumulated_size)));
+                     (unsigned) pa_atomic_load(&mstat->n_accumulated),
+                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&mstat->accumulated_size)));
 
     pa_strbuf_printf(buf, "Memory blocks imported from other processes: %u, size: %s.\n",
-                     (unsigned) pa_atomic_load(&stat->n_imported),
-                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&stat->imported_size)));
+                     (unsigned) pa_atomic_load(&mstat->n_imported),
+                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&mstat->imported_size)));
 
     pa_strbuf_printf(buf, "Memory blocks exported to other processes: %u, size: %s.\n",
-                     (unsigned) pa_atomic_load(&stat->n_exported),
-                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&stat->exported_size)));
+                     (unsigned) pa_atomic_load(&mstat->n_exported),
+                     pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_atomic_load(&mstat->exported_size)));
 
     pa_strbuf_printf(buf, "Total sample cache size: %s.\n",
                      pa_bytes_snprint(bytes, sizeof(bytes), (unsigned) pa_scache_total_size(c)));
@@ -386,8 +389,8 @@ static int pa_cli_command_stat(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_b
         pa_strbuf_printf(buf,
                          "Memory blocks of type %s: %u allocated/%u accumulated.\n",
                          type_table[k],
-                         (unsigned) pa_atomic_load(&stat->n_allocated_by_type[k]),
-                         (unsigned) pa_atomic_load(&stat->n_accumulated_by_type[k]));
+                         (unsigned) pa_atomic_load(&mstat->n_allocated_by_type[k]),
+                         (unsigned) pa_atomic_load(&mstat->n_accumulated_by_type[k]));
 
     return 0;
 }
@@ -524,6 +527,11 @@ static int pa_cli_command_sink_volume(pa_core *c, pa_tokenizer *t, pa_strbuf *bu
         return -1;
     }
 
+    if (!PA_VOLUME_IS_VALID(volume)) {
+        pa_strbuf_puts(buf, "Volume outside permissible range.\n");
+        return -1;
+    }
+
     if (!(sink = pa_namereg_get(c, n, PA_NAMEREG_SINK))) {
         pa_strbuf_puts(buf, "No sink found by this name or index.\n");
         return -1;
@@ -566,8 +574,18 @@ static int pa_cli_command_sink_input_volume(pa_core *c, pa_tokenizer *t, pa_strb
         return -1;
     }
 
-    if (!(si = pa_idxset_get_by_index(c->sink_inputs, (uint32_t) idx))) {
+    if (!PA_VOLUME_IS_VALID(volume)) {
+        pa_strbuf_puts(buf, "Volume outside permissible range.\n");
+        return -1;
+    }
+
+    if (!(si = pa_idxset_get_by_index(c->sink_inputs, idx))) {
         pa_strbuf_puts(buf, "No sink input found with this index.\n");
+        return -1;
+    }
+
+    if (!si->volume_writable) {
+        pa_strbuf_puts(buf, "This sink input's volume can't be changed.\n");
         return -1;
     }
 
@@ -602,13 +620,18 @@ static int pa_cli_command_source_volume(pa_core *c, pa_tokenizer *t, pa_strbuf *
         return -1;
     }
 
+    if (!PA_VOLUME_IS_VALID(volume)) {
+        pa_strbuf_puts(buf, "Volume outside permissible range.\n");
+        return -1;
+    }
+
     if (!(source = pa_namereg_get(c, n, PA_NAMEREG_SOURCE))) {
         pa_strbuf_puts(buf, "No source found by this name or index.\n");
         return -1;
     }
 
     pa_cvolume_set(&cvolume, 1, volume);
-    pa_source_set_volume(source, &cvolume, TRUE);
+    pa_source_set_volume(source, &cvolume, TRUE, TRUE);
     return 0;
 }
 
@@ -1551,8 +1574,10 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_b
     pa_card *card;
     pa_bool_t nl;
     uint32_t idx;
-    char txt[256];
     time_t now;
+#ifdef HAVE_CTIME_R
+    char txt[256];
+#endif
 
     pa_core_assert_ref(c);
     pa_assert(t);
@@ -1677,10 +1702,74 @@ int pa_cli_command_execute_line_stateful(pa_core *c, const char *s, pa_strbuf *b
             l = strcspn(cs, whitespace);
 
             if (l == sizeof(META_INCLUDE)-1 && !strncmp(cs, META_INCLUDE, l)) {
+                struct stat st;
                 const char *filename = cs+l+strspn(cs+l, whitespace);
-                if (pa_cli_command_execute_file(c, filename, buf, fail) < 0)
+
+                if (stat(filename, &st) < 0) {
+                    pa_log_warn("stat('%s'): %s", filename, pa_cstrerror(errno));
                     if (*fail)
                         return -1;
+                } else {
+                    if (S_ISDIR(st.st_mode)) {
+                        DIR *d;
+
+                        if (!(d = opendir(filename))) {
+                            pa_log_warn("Failed to read '%s': %s", filename, pa_cstrerror(errno));
+                            if (*fail)
+                                return -1;
+                        } else {
+                            unsigned i, count;
+                            char **sorted_files;
+                            struct dirent *de;
+                            pa_bool_t failed = FALSE;
+                            pa_dynarray *files = pa_dynarray_new();
+
+                            while ((de = readdir(d))) {
+                                char *extn;
+                                size_t flen = strlen(de->d_name);
+
+                                if (flen < 4)
+                                    continue;
+
+                                extn = &de->d_name[flen-3];
+                                if (strncmp(extn, ".pa", 3) == 0)
+                                    pa_dynarray_append(files, pa_sprintf_malloc("%s" PA_PATH_SEP "%s", filename, de->d_name));
+                            }
+
+                            closedir(d);
+
+                            count = pa_dynarray_size(files);
+                            sorted_files = pa_xnew(char*, count);
+                            for (i = 0; i < count; ++i)
+                                sorted_files[i] = pa_dynarray_get(files, i);
+                            pa_dynarray_free(files, NULL, NULL);
+
+                            for (i = 0; i < count; ++i) {
+                                for (unsigned j = 0; j < count; ++j) {
+                                    if (strcmp(sorted_files[i], sorted_files[j]) < 0) {
+                                        char *tmp = sorted_files[i];
+                                        sorted_files[i] = sorted_files[j];
+                                        sorted_files[j] = tmp;
+                                    }
+                                }
+                            }
+
+                            for (i = 0; i < count; ++i) {
+                                if (!failed) {
+                                    if (pa_cli_command_execute_file(c, sorted_files[i], buf, fail) < 0 && *fail)
+                                        failed = TRUE;
+                                }
+
+                                pa_xfree(sorted_files[i]);
+                            }
+                            pa_xfree(sorted_files);
+                            if (failed)
+                                return -1;
+                        }
+                    } else if (pa_cli_command_execute_file(c, filename, buf, fail) < 0 && *fail) {
+                        return -1;
+                    }
+                }
             } else if (l == sizeof(META_IFEXISTS)-1 && !strncmp(cs, META_IFEXISTS, l)) {
                 if (!ifstate) {
                     pa_strbuf_printf(buf, "Meta command %s is not valid in this context\n", cs);
@@ -1766,7 +1855,7 @@ int pa_cli_command_execute_line(pa_core *c, const char *s, pa_strbuf *buf, pa_bo
 }
 
 int pa_cli_command_execute_file_stream(pa_core *c, FILE *f, pa_strbuf *buf, pa_bool_t *fail) {
-    char line[1024];
+    char line[2048];
     int ifstate = IFSTATE_NONE;
     int ret = -1;
     pa_bool_t _fail = TRUE;
@@ -1804,13 +1893,14 @@ int pa_cli_command_execute_file(pa_core *c, const char *fn, pa_strbuf *buf, pa_b
     if (!fail)
         fail = &_fail;
 
-    if (!(f = fopen(fn, "r"))) {
+    if (!(f = pa_fopen_cloexec(fn, "r"))) {
         pa_strbuf_printf(buf, "open('%s') failed: %s\n", fn, pa_cstrerror(errno));
         if (!*fail)
             ret = 0;
         goto fail;
     }
 
+    pa_log_debug("Parsing script '%s'", fn);
     ret = pa_cli_command_execute_file_stream(c, f, buf, fail);
 
 fail:

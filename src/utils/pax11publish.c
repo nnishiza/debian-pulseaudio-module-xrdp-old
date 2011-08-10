@@ -25,7 +25,6 @@
 
 #include <stdio.h>
 #include <getopt.h>
-#include <string.h>
 #include <assert.h>
 #include <locale.h>
 
@@ -33,6 +32,7 @@
 
 #include <pulse/util.h>
 #include <pulse/i18n.h>
+#include <pulse/client-conf.h>
 
 #include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
@@ -40,7 +40,6 @@
 #include <pulsecore/native-common.h>
 #include <pulsecore/x11prop.h>
 
-#include "../pulse/client-conf.h"
 
 int main(int argc, char *argv[]) {
     const char *dname = NULL, *sink = NULL, *source = NULL, *server = NULL, *cookie_file = PA_NATIVE_COOKIE_FILE;
@@ -209,6 +208,7 @@ int main(int argc, char *argv[]) {
             pa_x11_del_prop(xcb, screen, "PULSE_SOURCE");
             pa_x11_del_prop(xcb, screen, "PULSE_ID");
             pa_x11_del_prop(xcb, screen, "PULSE_COOKIE");
+            pa_x11_del_prop(xcb, screen, "PULSE_SESSION_ID");
             break;
 
         default:

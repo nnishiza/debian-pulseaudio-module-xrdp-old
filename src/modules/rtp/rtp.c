@@ -23,11 +23,9 @@
 #include <config.h>
 #endif
 
-#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 
@@ -43,6 +41,7 @@
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/core-util.h>
+#include <pulsecore/arpa-inet.h>
 
 #include "rtp.h"
 

@@ -29,7 +29,6 @@
 #include <pulse/utf8.h>
 
 #include <pulsecore/macro.h>
-#include <pulsecore/core-util.h>
 
 #include "sndfile-util.h"
 
@@ -51,6 +50,9 @@ int pa_sndfile_read_sample_spec(SNDFILE *sf, pa_sample_spec *ss) {
             break;
 
         case SF_FORMAT_PCM_24:
+            ss->format = PA_SAMPLE_S24NE;
+            break;
+
         case SF_FORMAT_PCM_32:
             ss->format = PA_SAMPLE_S32NE;
             break;
@@ -106,10 +108,14 @@ int pa_sndfile_write_sample_spec(SF_INFO *sfi, pa_sample_spec *ss) {
 
         case PA_SAMPLE_S24LE:
         case PA_SAMPLE_S24BE:
+            ss->format = PA_SAMPLE_S24NE;
+            sfi->format |= SF_FORMAT_PCM_24;
+            break;
+
         case PA_SAMPLE_S24_32LE:
         case PA_SAMPLE_S24_32BE:
-            ss->format = PA_SAMPLE_S32NE;
-            sfi->format |= SF_FORMAT_PCM_24;
+            ss->format = PA_SAMPLE_S24_32NE;
+            sfi->format |= SF_FORMAT_PCM_32;
             break;
 
         case PA_SAMPLE_S32LE:
@@ -297,8 +303,7 @@ int pa_sndfile_write_channel_map(SNDFILE *sf, pa_channel_map *cm) {
         channels[c] = table[cm->map[c]];
     }
 
-    if (!sf_command(sf, SFC_SET_CHANNEL_MAP_INFO,
-                    channels, sizeof(channels[0]) * cm->channels)) {
+    if (!sf_command(sf, SFC_SET_CHANNEL_MAP_INFO, channels, sizeof(channels[0]) * cm->channels)) {
         pa_xfree(channels);
         return -1;
     }
@@ -362,6 +367,7 @@ pa_sndfile_readf_t pa_sndfile_readf_function(const pa_sample_spec *ss) {
             return (pa_sndfile_readf_t) sf_readf_short;
 
         case PA_SAMPLE_S32NE:
+        case PA_SAMPLE_S24_32NE:
             return (pa_sndfile_readf_t) sf_readf_int;
 
         case PA_SAMPLE_FLOAT32NE:
@@ -384,6 +390,7 @@ pa_sndfile_writef_t pa_sndfile_writef_function(const pa_sample_spec *ss) {
             return (pa_sndfile_writef_t) sf_writef_short;
 
         case PA_SAMPLE_S32NE:
+        case PA_SAMPLE_S24_32NE:
             return (pa_sndfile_writef_t) sf_writef_int;
 
         case PA_SAMPLE_FLOAT32NE:
@@ -439,7 +446,7 @@ int pa_sndfile_format_from_string(const char *name) {
 
         pa_assert_se(sf_command(NULL, SFC_GET_FORMAT_MAJOR, &fi, sizeof(fi)) == 0);
 
-        if (strncasecmp(name, fi.extension, strlen(name)) == 0)
+        if (strncasecmp(name, fi.name, strlen(name)) == 0)
             return fi.format;
     }
 

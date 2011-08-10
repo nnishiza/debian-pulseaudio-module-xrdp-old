@@ -27,9 +27,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <errno.h>
-#include <string.h>
 #include <stdlib.h>
 #include <time.h>
+
+#ifdef HAVE_WINDOWS_H
+#include <windows.h>
+#include <wincrypt.h>
+#endif
 
 #include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
@@ -43,10 +47,20 @@ static const char * const devices[] = { "/dev/urandom", "/dev/random", NULL };
 
 static int random_proper(void *ret_data, size_t length) {
 #ifdef OS_IS_WIN32
+    int ret = -1;
+
+    HCRYPTPROV hCryptProv = 0;
+
     pa_assert(ret_data);
     pa_assert(length > 0);
 
-    return -1;
+    if (CryptAcquireContext(&hCryptProv, NULL, NULL, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT | CRYPT_SILENT)) {
+        if(CryptGenRandom(hCryptProv, length, ret_data))
+            ret = 0;
+        CryptReleaseContext(hCryptProv, 0);
+    }
+
+    return ret;
 
 #else /* OS_IS_WIN32 */
 
@@ -62,11 +76,7 @@ static int random_proper(void *ret_data, size_t length) {
     while (*device) {
         ret = 0;
 
-        if ((fd = open(*device, O_RDONLY
-#ifdef O_NOCTTY
-                       | O_NOCTTY
-#endif
-             )) >= 0) {
+        if ((fd = pa_open_cloexec(*device, O_RDONLY, 0)) >= 0) {
 
             if ((r = pa_loop_read(fd, ret_data, length, NULL)) < 0 || (size_t) r != length)
                 ret = -1;

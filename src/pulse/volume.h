@@ -113,7 +113,7 @@ typedef uint32_t pa_volume_t;
 #define PA_VOLUME_MUTED ((pa_volume_t) 0U)
 
 /** Maximum valid volume we can store. \since 0.9.15 */
-#define PA_VOLUME_MAX ((pa_volume_t) UINT32_MAX-1)
+#define PA_VOLUME_MAX ((pa_volume_t) UINT32_MAX/2)
 
 /** Recommended maximum volume to show in user facing UIs.
  * Note: UIs should deal gracefully with volumes greater than this value
@@ -125,10 +125,16 @@ typedef uint32_t pa_volume_t;
 /** Special 'invalid' volume. \since 0.9.16 */
 #define PA_VOLUME_INVALID ((pa_volume_t) UINT32_MAX)
 
+/** Check if volume is valid. \since 1.0 */
+#define PA_VOLUME_IS_VALID(v) ((v) <= PA_VOLUME_MAX)
+
+/** Clamp volume to the permitted range. \since 1.0 */
+#define PA_CLAMP_VOLUME(v) (PA_CLAMP_UNLIKELY((v), PA_VOLUME_MUTED, PA_VOLUME_MAX))
+
 /** A structure encapsulating a per-channel volume */
 typedef struct pa_cvolume {
     uint8_t channels;                     /**< Number of channels */
-    pa_volume_t values[PA_CHANNELS_MAX];  /**< Per-channel volume  */
+    pa_volume_t values[PA_CHANNELS_MAX];  /**< Per-channel volume */
 } pa_cvolume;
 
 /** Return non-zero when *a == *b */
@@ -159,7 +165,7 @@ pa_cvolume* pa_cvolume_set(pa_cvolume *a, unsigned channels, pa_volume_t v);
 char *pa_cvolume_snprint(char *s, size_t l, const pa_cvolume *c);
 
 /** Maximum length of the strings returned by
- * pa_cvolume_snprint_dB(). Please note that this value can change with
+ * pa_sw_cvolume_snprint_dB(). Please note that this value can change with
  * any release without warning and without being considered API or ABI
  * breakage. You should not use this definition anywhere where it
  * might become part of an ABI. \since 0.9.13 */
@@ -179,7 +185,7 @@ char *pa_sw_cvolume_snprint_dB(char *s, size_t l, const pa_cvolume *c);
 char *pa_volume_snprint(char *s, size_t l, pa_volume_t v);
 
 /** Maximum length of the strings returned by
- * pa_volume_snprint_dB(). Please note that this value can change with
+ * pa_sw_volume_snprint_dB(). Please note that this value can change with
  * any release without warning and without being considered API or ABI
  * breakage. You should not use this definition anywhere where it
  * might become part of an ABI. \since 0.9.15 */
@@ -279,7 +285,7 @@ double pa_sw_volume_to_linear(pa_volume_t v) PA_GCC_CONST;
 #ifdef INFINITY
 #define PA_DECIBEL_MININFTY ((double) -INFINITY)
 #else
-/** This floor value is used as minus infinity when using pa_volume_{to,from}_dB(). */
+/** This floor value is used as minus infinity when using pa_sw_volume_to_dB() / pa_sw_volume_from_dB(). */
 #define PA_DECIBEL_MININFTY ((double) -200.0)
 #endif
 
@@ -358,6 +364,10 @@ pa_volume_t pa_cvolume_get_position(pa_cvolume *cv, const pa_channel_map *map, p
  * corresponding channel in dest to the greater volume of both. a, b
  * and dest may point to the same structure. \since 0.9.16 */
 pa_cvolume* pa_cvolume_merge(pa_cvolume *dest, const pa_cvolume *a, const pa_cvolume *b);
+
+/** Increase the volume passed in by 'inc', but not exceeding 'limit'.
+ * The proportions between the channels are kept. \since 0.9.19 */
+pa_cvolume* pa_cvolume_inc_clamp(pa_cvolume *v, pa_volume_t inc, pa_volume_t limit);
 
 /** Increase the volume passed in by 'inc'. The proportions between
  * the channels are kept. \since 0.9.16 */

@@ -25,12 +25,10 @@
 
 #include <sys/stat.h>
 #include <dirent.h>
+#include <time.h>
 
 #include <pulse/xmalloc.h>
-#include <pulse/volume.h>
-#include <pulse/channelmap.h>
 
-#include <pulsecore/core-error.h>
 #include <pulsecore/module.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/modargs.h>
@@ -177,6 +175,7 @@ static void update_rule(struct rule *r) {
     if (stat(fn, &st) == 0)
         found = TRUE;
     else {
+#ifdef DT_DIR
         DIR *desktopfiles_dir;
         struct dirent *dir;
 
@@ -189,9 +188,7 @@ static void update_rule(struct rule *r) {
                     continue;
 
                 pa_xfree(fn);
-                fn = pa_sprintf_malloc(DESKTOPFILEDIR
-                                       PA_PATH_SEP "%s" PA_PATH_SEP "%s.desktop",
-                                       dir->d_name, r->process_name);
+                fn = pa_sprintf_malloc(DESKTOPFILEDIR PA_PATH_SEP "%s" PA_PATH_SEP "%s.desktop", dir->d_name, r->process_name);
 
                 if (stat(fn, &st) == 0) {
                     found = TRUE;
@@ -200,6 +197,7 @@ static void update_rule(struct rule *r) {
             }
             closedir(desktopfiles_dir);
         }
+#endif
     }
     if (!found) {
         r->good = FALSE;
@@ -355,7 +353,7 @@ fail:
     if (ma)
         pa_modargs_free(ma);
 
-    return  -1;
+    return -1;
 }
 
 void pa__done(pa_module *m) {

@@ -14,9 +14,9 @@ The configuration file is a simple collection of variable declarations. If the c
 For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, \fBon\f1 and \fB1\f1 are equivalent, resp. \fBfalse\f1, \fBno\f1, \fBoff\f1, \fB0\f1.
 .SH GENERAL DIRECTIVES
 .TP
-\fBdaemonize= \f1 Daemonize after startup. Takes a boolean value, defaults to "no". The \fB--daemonize\f1 command line option takes precedence.
+\fBdaemonize= \f1 Daemonize after startup. Takes a boolean value, defaults to \fBno\f1. The \fB--daemonize\f1 command line option takes precedence.
 .TP
-\fBfail=\f1 Fail to start up if any of the directives in the configuration script \fIdefault.pa\f1 fail. Takes a boolean argument, defaults to "yes". The \fB--fail\f1 command line option takes precedence.
+\fBfail=\f1 Fail to start up if any of the directives in the configuration script \fIdefault.pa\f1 fail. Takes a boolean argument, defaults to \fByes\f1. The \fB--fail\f1 command line option takes precedence.
 .TP
 \fBallow-module-loading=\f1 Allow/disallow module loading after startup. This is a security feature that if dsabled makes sure that no further modules may be loaded into the PulseAudio server after startup completed. It is recommended to disable this when \fBsystem-instance\f1 is enabled. Please note that certain features like automatic hot-plug support will not work if this option is enabled. Takes a boolean argument, defaults to \fByes\f1. The \fB--disallow-module-loading\f1 command line option takes precedence.
 .TP
@@ -28,7 +28,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBenable-lfe-remixing=\f1 if disabeld when upmixing or downmixing ignore LFE channels. When this option is dsabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fBno\f1.
 .TP
-\fBuse-pid-file=\f1 Create a PID file in \fI/tmp/pulse-$USER/pid\f1. Of this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--no-cpu-limit\f1 command line option takes precedence.
+\fBuse-pid-file=\f1 Create a PID file in the runtime directory (\fI$HOME/.pulse/*-runtime/pid\f1). If this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--use-pid-file\f1 command line option takes precedence.
 .TP
 \fBcpu-limit=\f1 If disabled do not install the CPU load limiter, even on platforms where it is supported. This option is useful when debugging/profiling PulseAudio to disable disturbing SIGXCPU signals. Takes a boolean argument, defaults to \fBno\f1. The \fB--no-cpu-limit\f1 command line argument takes precedence.
 .TP
@@ -43,11 +43,11 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 \fBflat-volumes=\f1 Enable 'flat' volumes, i.e. where possible let the sink volume equal the maximum of the volumes of the inputs connected to it. Takes a boolean argument, defaults to \fByes\f1.
 .SH SCHEDULING
 .TP
-\fBhigh-priority=\f1 Renice the daemon after startup to become a high-priority process. This a good idea if you experience drop-outs during playback. However, this is a certain security issue, since it works when called SUID root only, or RLIMIT_NICE is used. root is dropped immediately after gaining the nice level on startup, thus it is presumably safe. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to "yes". The \fB--high-priority\f1 command line option takes precedence.
+\fBhigh-priority=\f1 Renice the daemon after startup to become a high-priority process. This a good idea if you experience drop-outs during playback. However, this is a certain security issue, since it works when called SUID root only, or RLIMIT_NICE is used. root is dropped immediately after gaining the nice level on startup, thus it is presumably safe. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to \fByes\f1. The \fB--high-priority\f1 command line option takes precedence.
 .TP
-\fBrealtime-scheduling=\f1 Try to acquire SCHED_FIFO scheduling for the IO threads. The same security concerns as mentioned above apply. However, if PA enters an endless loop, realtime scheduling causes a system lockup. Thus, realtime scheduling should only be enabled on trusted machines for now. Please not that only the IO threads of PulseAudio are made real-time. The controlling thread is left a normally scheduled thread. Thus enabling the high-priority option is orthogonal. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to "yes". The \fB--realtime\f1 command line option takes precedence.
+\fBrealtime-scheduling=\f1 Try to acquire SCHED_FIFO scheduling for the IO threads. The same security concerns as mentioned above apply. However, if PA enters an endless loop, realtime scheduling causes a system lockup. Thus, realtime scheduling should only be enabled on trusted machines for now. Please not that only the IO threads of PulseAudio are made real-time. The controlling thread is left a normally scheduled thread. Thus enabling the high-priority option is orthogonal. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to \fByes\f1. The \fB--realtime\f1 command line option takes precedence.
 .TP
-\fBrealtime-priority=\f1 The realtime priority to acquire, if \fBrealtime-scheduling\f1 is enabled. Note: JACK uses 10 by default, 9 for clients. Thus it is recommended to choose the PulseAudio real-time priorities lower. Some PulseAudio threads might choose a priority a little lower or higher than the specified value. Defaults to "5".
+\fBrealtime-priority=\f1 The realtime priority to acquire, if \fBrealtime-scheduling\f1 is enabled. Note: JACK uses 10 by default, 9 for clients. Thus it is recommended to choose the PulseAudio real-time priorities lower. Some PulseAudio threads might choose a priority a little lower or higher than the specified value. Defaults to \fB5\f1.
 .TP
 \fBnice-level=\f1 The nice level to acquire for the daemon, if \fBhigh-priority\f1 is enabled. Note: on some distributions X11 uses -10 by default. Defaults to -11.
 .SH IDLE TIMES
@@ -121,6 +121,14 @@ Some hardware drivers require the hardware playback buffer to be subdivided into
 \fBdefault-fragments=\f1 The default number of fragments. Defaults to 4.
 .TP
 \fBdefault-fragment-size-msec=\f1The duration of a single fragment. Defaults to 25ms (i.e. the total buffer is thus 100ms long).
+.SH DEFAULT SYNC VOLUME SETTINGS
+With the flat volume feature enabled, the sink HW volume is set to the same level as the highest volume input stream. Any other streams (with lower volumes) have the appropriate adjustment applied in SW to bring them to the correct overall level. Sadly hadware mixer changes cannot be timed accurately and thus this change of volumes can somtimes cause the resulting output sound to be momentarily too loud or too soft. So to ensure SW and HW volumes are applied concurrently without any glitches, their application needs to be synchronized. The sink implementation needs to support synchronized volumes. The following parameters can be used to refine the process.
+.TP
+\fBenable-sync-volume=\f1 Enable sync volume for the sinks that support it. This feature is enabled by default.
+.TP
+\fBsync-volume-safety-margin-usec=\f1 The amount of time (in usec) by which the HW volume increases are delayed and HW volume decreases are advanced. Defaults to 8000 usec.
+.TP
+\fBsync-volume-extra-delay-usec=\f1 The amount of time (in usec) by which HW volume changes are delayed. Negative values are also allowed. Defaults to 0.
 .SH AUTHORS
 The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO

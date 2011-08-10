@@ -25,13 +25,13 @@
 #endif
 
 #include <stdlib.h>
-#include <string.h>
 #include <stdio.h>
 #include <sys/types.h>
 #include <dirent.h>
 #include <sys/stat.h>
 #include <errno.h>
 #include <limits.h>
+#include <time.h>
 
 #ifdef HAVE_GLOB_H
 #include <glob.h>
@@ -50,7 +50,6 @@
 #include <pulse/rtclock.h>
 
 #include <pulsecore/sink-input.h>
-#include <pulsecore/sample-util.h>
 #include <pulsecore/play-memchunk.h>
 #include <pulsecore/core-subscribe.h>
 #include <pulsecore/namereg.h>
@@ -336,12 +335,12 @@ int pa_scache_play_item(pa_core *c, const char *name, pa_sink *sink, pa_volume_t
 
     pass_volume = TRUE;
 
-    if (e->volume_is_set && volume != PA_VOLUME_INVALID) {
+    if (e->volume_is_set && PA_VOLUME_IS_VALID(volume)) {
         pa_cvolume_set(&r, e->sample_spec.channels, volume);
         pa_sw_cvolume_multiply(&r, &r, &e->volume);
     } else if (e->volume_is_set)
         r = e->volume;
-    else if (volume != PA_VOLUME_INVALID)
+    else if (PA_VOLUME_IS_VALID(volume))
         pa_cvolume_set(&r, e->sample_spec.channels, volume);
     else
         pass_volume = FALSE;

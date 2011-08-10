@@ -26,31 +26,51 @@
 
 #include <pulsecore/llist.h>
 #include <pulsecore/macro.h>
-#include <pulsecore/core-util.h>
+
+#define PA_BLUETOOTH_ERROR_NOT_SUPPORTED "org.bluez.Error.NotSupported"
 
 /* UUID copied from bluez/audio/device.h */
-#define GENERIC_AUDIO_UUID      "00001203-0000-1000-8000-00805F9B34FB"
+#define GENERIC_AUDIO_UUID      "00001203-0000-1000-8000-00805f9b34fb"
 
-#define HSP_HS_UUID             "00001108-0000-1000-8000-00805F9B34FB"
-#define HSP_AG_UUID             "00001112-0000-1000-8000-00805F9B34FB"
+#define HSP_HS_UUID             "00001108-0000-1000-8000-00805f9b34fb"
+#define HSP_AG_UUID             "00001112-0000-1000-8000-00805f9b34fb"
 
-#define HFP_HS_UUID             "0000111E-0000-1000-8000-00805F9B34FB"
-#define HFP_AG_UUID             "0000111F-0000-1000-8000-00805F9B34FB"
+#define HFP_HS_UUID             "0000111e-0000-1000-8000-00805f9b34fb"
+#define HFP_AG_UUID             "0000111f-0000-1000-8000-00805f9b34fb"
 
-#define ADVANCED_AUDIO_UUID     "0000110D-0000-1000-8000-00805F9B34FB"
+#define ADVANCED_AUDIO_UUID     "0000110d-0000-1000-8000-00805f9b34fb"
 
-#define A2DP_SOURCE_UUID        "0000110A-0000-1000-8000-00805F9B34FB"
-#define A2DP_SINK_UUID          "0000110B-0000-1000-8000-00805F9B34FB"
+#define A2DP_SOURCE_UUID        "0000110a-0000-1000-8000-00805f9b34fb"
+#define A2DP_SINK_UUID          "0000110b-0000-1000-8000-00805f9b34fb"
 
 typedef struct pa_bluetooth_uuid pa_bluetooth_uuid;
 typedef struct pa_bluetooth_device pa_bluetooth_device;
 typedef struct pa_bluetooth_discovery pa_bluetooth_discovery;
+typedef struct pa_bluetooth_transport pa_bluetooth_transport;
 
 struct userdata;
 
 struct pa_bluetooth_uuid {
     char *uuid;
     PA_LLIST_FIELDS(pa_bluetooth_uuid);
+};
+
+enum profile {
+    PROFILE_A2DP,
+    PROFILE_A2DP_SOURCE,
+    PROFILE_HSP,
+    PROFILE_HFGW,
+    PROFILE_OFF
+};
+
+struct pa_bluetooth_transport {
+    pa_bluetooth_discovery *y;
+    char *path;
+    enum profile profile;
+    uint8_t codec;
+    uint8_t *config;
+    int config_size;
+    pa_bool_t nrec;
 };
 
 /* This enum is shared among Audio, Headset, AudioSink, and AudioSource, although not all values are acceptable in all profiles */
@@ -70,6 +90,7 @@ struct pa_bluetooth_device {
     /* Device information */
     char *name;
     char *path;
+    pa_hashmap *transports;
     int paired;
     char *alias;
     int device_connected;
@@ -89,6 +110,9 @@ struct pa_bluetooth_device {
 
     /* Headset state */
     pa_bt_audio_state_t headset_state;
+
+    /* HandsfreeGateway state */
+    pa_bt_audio_state_t hfgw_state;
 };
 
 pa_bluetooth_discovery* pa_bluetooth_discovery_get(pa_core *core);
@@ -99,6 +123,13 @@ void pa_bluetooth_discovery_sync(pa_bluetooth_discovery *d);
 
 const pa_bluetooth_device* pa_bluetooth_discovery_get_by_path(pa_bluetooth_discovery *d, const char* path);
 const pa_bluetooth_device* pa_bluetooth_discovery_get_by_address(pa_bluetooth_discovery *d, const char* address);
+
+const pa_bluetooth_transport* pa_bluetooth_discovery_get_transport(pa_bluetooth_discovery *y, const char *path);
+const pa_bluetooth_transport* pa_bluetooth_device_get_transport(const pa_bluetooth_device *d, enum profile profile);
+
+int pa_bluetooth_transport_acquire(const pa_bluetooth_transport *t, const char *accesstype, size_t *imtu, size_t *omtu);
+void pa_bluetooth_transport_release(const pa_bluetooth_transport *t, const char *accesstype);
+int pa_bluetooth_transport_parse_property(pa_bluetooth_transport *t, DBusMessageIter *i);
 
 pa_hook* pa_bluetooth_discovery_hook(pa_bluetooth_discovery *d);
 

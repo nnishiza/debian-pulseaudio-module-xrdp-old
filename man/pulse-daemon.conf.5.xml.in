@@ -26,14 +26,14 @@ USA.
   <synopsis>
     <p><file>~/.pulse/daemon.conf</file></p>
 
-    <p><file>@pulseconfdir@/daemon.conf</file></p>
+    <p><file>@PA_DEFAULT_CONFIG_DIR@/daemon.conf</file></p>
   </synopsis>
 
   <description>
     <p>The PulseAudio sound server reads configuration directives from
     a file <file>~/.pulse/daemon.conf</file> on startup and when that
     file doesn't exist from
-    <file>@pulseconfdir@/daemon.conf</file>. Please note that the
+    <file>@PA_DEFAULT_CONFIG_DIR@/daemon.conf</file>. Please note that the
     server also reads a configuration script on startup
     <file>default.pa</file> which also contains runtime configuration
     directives.</p>
@@ -53,14 +53,14 @@ USA.
 
     <option>
       <p><opt>daemonize= </opt> Daemonize after startup. Takes a
-      boolean value, defaults to "no". The <opt>--daemonize</opt>
+      boolean value, defaults to <opt>no</opt>. The <opt>--daemonize</opt>
       command line option takes precedence.</p>
     </option>
 
     <option>
       <p><opt>fail=</opt> Fail to start up if any of the directives
       in the configuration script <file>default.pa</file>
-      fail. Takes a boolean argument, defaults to "yes". The <opt>--fail</opt> command line
+      fail. Takes a boolean argument, defaults to <opt>yes</opt>. The <opt>--fail</opt> command line
       option takes precedence.</p>
     </option>
 
@@ -123,13 +123,13 @@ USA.
     </option>
 
     <option>
-      <p><opt>use-pid-file=</opt> Create a PID file in
-      <file>/tmp/pulse-$USER/pid</file>. Of this is enabled you may
+      <p><opt>use-pid-file=</opt> Create a PID file in the runtime directory
+      (<file>$HOME/.pulse/*-runtime/pid</file>). If this is enabled you may
       use commands like <opt>--kill</opt> or <opt>--check</opt>. If
       you are planning to start more than one PulseAudio process per
       user, you better disable this option since it effectively
       disables multiple instances. Takes a boolean argument, defaults
-      to <opt>yes</opt>. The <opt>--no-cpu-limit</opt> command line
+      to <opt>yes</opt>. The <opt>--use-pid-file</opt> command line
       option takes precedence.</p>
     </option>
 
@@ -192,7 +192,7 @@ USA.
       RLIMIT_NICE is used. root is dropped immediately after gaining
       the nice level on startup, thus it is presumably safe. See
       <manref section="1" name="pulseaudio"/> for more
-      information. Takes a boolean argument, defaults to "yes". The <opt>--high-priority</opt>
+      information. Takes a boolean argument, defaults to <opt>yes</opt>. The <opt>--high-priority</opt>
       command line option takes precedence.</p>
     </option>
 
@@ -206,7 +206,7 @@ USA.
       real-time. The controlling thread is left a normally scheduled
       thread. Thus enabling the high-priority option is orthogonal.
       See <manref section="1" name="pulseaudio"/> for more
-      information. Takes a boolean argument, defaults to "yes". The
+      information. Takes a boolean argument, defaults to <opt>yes</opt>. The
       <opt>--realtime</opt> command line option takes precedence.</p>
     </option>
 
@@ -216,7 +216,7 @@ USA.
       by default, 9 for clients. Thus it is recommended to choose the
       PulseAudio real-time priorities lower. Some PulseAudio threads
       might choose a priority a little lower or higher than the
-      specified value. Defaults to "5".</p>
+      specified value. Defaults to <opt>5</opt>.</p>
     </option>
 
     <option>
@@ -262,8 +262,8 @@ USA.
       default script file. The default behaviour is to load
       <file>~/.pulse/default.pa</file>, and if that file does not
       exist fall back to the system wide installed version
-      <file>@pulseconfdir@/default.pa</file>. If run in system-wide
-      mode the file <file>@pulseconfdir@/system.pa</file> is used
+      <file>@PA_DEFAULT_CONFIG_DIR@/default.pa</file>. If run in system-wide
+      mode the file <file>@PA_DEFAULT_CONFIG_DIR@/system.pa</file> is used
       instead. If <opt>-n</opt> is passed on the command line
       or <opt>default-script-file=</opt> is disabled the default
       configuration script is ignored.</p>
@@ -434,6 +434,36 @@ USA.
       <p><opt>default-fragment-size-msec=</opt>The duration of a
       single fragment. Defaults to 25ms (i.e. the total buffer is thus
       100ms long).</p>
+    </option>
+
+  </section>
+
+  <section name="Default Sync Volume Settings">
+
+    <p>With the flat volume feature enabled, the sink HW volume is set
+    to the same level as the highest volume input stream. Any other streams
+    (with lower volumes) have the appropriate adjustment applied in SW to
+    bring them to the correct overall level. Sadly hadware mixer changes
+    cannot be timed accurately and thus this change of volumes can somtimes
+    cause the resulting output sound to be momentarily too loud or too soft.
+    So to ensure SW and HW volumes are applied concurrently without any
+    glitches, their application needs to be synchronized. The sink
+    implementation needs to support synchronized volumes. The following
+    parameters can be used to refine the process.</p>
+
+    <option>
+      <p><opt>enable-sync-volume=</opt> Enable sync volume for the sinks that
+      support it. This feature is enabled by default.</p>
+    </option>
+    <option>
+      <p><opt>sync-volume-safety-margin-usec=</opt> The amount of time (in
+      usec) by which the HW volume increases are delayed and HW volume
+      decreases are advanced. Defaults to 8000 usec.</p>
+    </option>
+    <option>
+      <p><opt>sync-volume-extra-delay-usec=</opt> The amount of time (in usec)
+      by which HW volume changes are delayed. Negative values are also allowed.
+      Defaults to 0.</p>
     </option>
 
   </section>

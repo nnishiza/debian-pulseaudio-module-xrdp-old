@@ -25,7 +25,6 @@
 #endif
 
 #include <sys/types.h>
-#include <limits.h>
 #include <asoundlib.h>
 
 #include <pulse/sample.h>
@@ -40,7 +39,6 @@
 #include <pulsecore/core-util.h>
 #include <pulsecore/atomic.h>
 #include <pulsecore/core-error.h>
-#include <pulsecore/once.h>
 #include <pulsecore/thread.h>
 #include <pulsecore/conf-parser.h>
 #include <pulsecore/core-rtclock.h>
@@ -251,6 +249,22 @@ int pa_alsa_set_hw_params(
     if (!pa_alsa_pcm_is_hw(pcm_handle))
         _use_tsched = FALSE;
 
+#if (SND_LIB_VERSION >= ((1<<16)|(0<<8)|24)) /* API additions in 1.0.24 */
+    if (_use_tsched) {
+
+        /* try to disable period wakeups if hardware can do so */
+        if (snd_pcm_hw_params_can_disable_period_wakeup(hwparams)) {
+
+            if (snd_pcm_hw_params_set_period_wakeup(pcm_handle, hwparams, FALSE) < 0)
+                /* don't bail, keep going with default mode with period wakeups */
+                pa_log_debug("snd_pcm_hw_params_set_period_wakeup() failed: %s", pa_alsa_strerror(ret));
+            else
+                pa_log_info("Trying to disable ALSA period wakeups, using timers only");
+        } else
+            pa_log_info("cannot disable ALSA period wakeups");
+    }
+#endif
+
     if ((ret = set_format(pcm_handle, hwparams, &_ss.format)) < 0)
         goto finish;
 
@@ -346,7 +360,7 @@ int pa_alsa_set_hw_params(
     pa_log_debug("Set neither period nor buffer size.");
 
     /* Last chance, set nothing */
-    if  ((ret = snd_pcm_hw_params(pcm_handle, hwparams)) < 0) {
+    if ((ret = snd_pcm_hw_params(pcm_handle, hwparams)) < 0) {
         pa_log_info("snd_pcm_hw_params failed: %s", pa_alsa_strerror(ret));
         goto finish;
     }
@@ -377,6 +391,18 @@ success:
         pa_log_info("snd_pcm_hw_params_get_{period|buffer}_size() failed: %s", pa_alsa_strerror(ret));
         goto finish;
     }
+
+#if (SND_LIB_VERSION >= ((1<<16)|(0<<8)|24)) /* API additions in 1.0.24 */
+    if (_use_tsched) {
+        unsigned int no_wakeup;
+        /* see if period wakeups were disabled */
+        snd_pcm_hw_params_get_period_wakeup(pcm_handle, hwparams, &no_wakeup);
+        if (no_wakeup == 0)
+            pa_log_info("ALSA period wakeups disabled");
+        else
+            pa_log_info("ALSA period wakeups were not disabled");
+    }
+#endif
 
     ss->rate = _ss.rate;
     ss->channels = _ss.channels;
@@ -1102,8 +1128,8 @@ snd_pcm_sframes_t pa_alsa_safe_avail(snd_pcm_t *pcm, size_t hwbuf_size, const pa
 
     k = (size_t) n * pa_frame_size(ss);
 
-    if (k >= hwbuf_size * 5 ||
-        k >= pa_bytes_per_second(ss)*10) {
+    if (PA_UNLIKELY(k >= hwbuf_size * 5 ||
+                    k >= pa_bytes_per_second(ss)*10)) {
 
         PA_ONCE_BEGIN {
             char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
@@ -1145,8 +1171,8 @@ int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_si
 
     abs_k = k >= 0 ? (size_t) k : (size_t) -k;
 
-    if (abs_k >= hwbuf_size * 5 ||
-        abs_k >= pa_bytes_per_second(ss)*10) {
+    if (PA_UNLIKELY(abs_k >= hwbuf_size * 5 ||
+                    abs_k >= pa_bytes_per_second(ss)*10)) {
 
         PA_ONCE_BEGIN {
             char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
@@ -1170,8 +1196,8 @@ int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_si
     if (capture) {
         abs_k = (size_t) avail * pa_frame_size(ss);
 
-        if (abs_k >= hwbuf_size * 5 ||
-            abs_k >= pa_bytes_per_second(ss)*10) {
+        if (PA_UNLIKELY(abs_k >= hwbuf_size * 5 ||
+                        abs_k >= pa_bytes_per_second(ss)*10)) {
 
             PA_ONCE_BEGIN {
                 char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
@@ -1188,7 +1214,7 @@ int pa_alsa_safe_delay(snd_pcm_t *pcm, snd_pcm_sframes_t *delay, size_t hwbuf_si
             avail = (snd_pcm_sframes_t) (hwbuf_size / pa_frame_size(ss));
         }
 
-        if (*delay < avail) {
+        if (PA_UNLIKELY(*delay < avail)) {
             PA_ONCE_BEGIN {
                 char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
                 pa_log(_("snd_pcm_avail_delay() returned strange values: delay %lu is less than avail %lu.\n"
@@ -1229,10 +1255,9 @@ int pa_alsa_safe_mmap_begin(snd_pcm_t *pcm, const snd_pcm_channel_area_t **areas
 
     k = (size_t) *frames * pa_frame_size(ss);
 
-    if (*frames > before ||
-        k >= hwbuf_size * 3 ||
-        k >= pa_bytes_per_second(ss)*10)
-
+    if (PA_UNLIKELY(*frames > before ||
+                    k >= hwbuf_size * 3 ||
+                    k >= pa_bytes_per_second(ss)*10))
         PA_ONCE_BEGIN {
             char *dn = pa_alsa_get_driver_name_by_pcm(pcm);
             pa_log(_("snd_pcm_mmap_begin() returned a value that is exceptionally large: %lu bytes (%lu ms).\n"
