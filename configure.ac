@@ -22,8 +22,7 @@
 
 AC_PREREQ(2.63)
 
-AC_INIT([pulseaudio], m4_esyscmd([./git-version-gen .tarball-version]),
-	[mzchyfrnhqvb (at) 0pointer (dot) net])
+AC_INIT([pulseaudio],[m4_esyscmd(./git-version-gen .tarball-version)],[mzchyfrnhqvb (at) 0pointer (dot) net],[pulseaudio],[http://pulseaudio.org/])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
@@ -31,21 +30,17 @@ AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules tar-pax])
 
 m4_define(pa_major, `echo $VERSION | cut -d. -f1 | cut -d- -f1`)
 m4_define(pa_minor, `echo $VERSION | cut -d. -f2 | cut -d- -f1`)
-m4_define(pa_micro, `echo $VERSION | cut -d. -f3 | cut -d- -f1`)
 
 AC_SUBST(PA_MAJOR, pa_major)
 AC_SUBST(PA_MINOR, pa_minor)
-AC_SUBST(PA_MICRO, pa_micro)
 AC_SUBST(PA_MAJORMINOR, pa_major.pa_minor)
-AC_SUBST(PA_MAJORMINORMICRO, pa_major.pa_minor.pa_micro)
-AC_SUBST(PACKAGE_URL, [http://pulseaudio.org/])
 
 AC_SUBST(PA_API_VERSION, 12)
-AC_SUBST(PA_PROTOCOL_VERSION, 16)
+AC_SUBST(PA_PROTOCOL_VERSION, 23)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [12:4:12])
+AC_SUBST(LIBPULSE_VERSION_INFO, [13:0:13])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -62,25 +57,15 @@ AC_SUBST(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO, [0:4:0])
 AC_CANONICAL_HOST
 AC_DEFINE_UNQUOTED([CANONICAL_HOST], "$host", [Canonical host string.])
 
-if type -p stow > /dev/null && test -d /usr/local/stow ; then
-   AC_MSG_NOTICE([*** Found /usr/local/stow: default install prefix set to /usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION} ***])
-   ac_default_prefix="/usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION}"
-fi
+AC_CHECK_PROG([STOW], [stow], [yes], [no])
 
-#### Platform hacks ####
-
-case $host in
-   *-*-solaris* )
-      AC_DEFINE(_XOPEN_SOURCE,        600, Needed to get declarations for msg_control and msg_controllen on Solaris)
-      AC_DEFINE(__EXTENSIONS__,         1, Needed to get declarations for msg_control and msg_controllen on Solaris)
-      ;;
-   *-*-darwin* )
-      AC_DEFINE([_POSIX_C_SOURCE], [200112L], [Needed to get clock_gettime on Mac OS X])
-      AC_DEFINE([_DARWIN_C_SOURCE], [200112L], [Needed to get NSIG on Mac OS X])
-      ;;
-esac
+AS_IF([test "x$STOW" = "xyes" && test -d /usr/local/stow], [
+    AC_MSG_NOTICE([*** Found /usr/local/stow: default install prefix set to /usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION} ***])
+    ac_default_prefix="/usr/local/stow/${PACKAGE_NAME}-${PACKAGE_VERSION}"
+])
 
 AM_SILENT_RULES([yes])
+
 
 #### Checks for programs. ####
 
@@ -99,109 +84,134 @@ AC_USE_SYSTEM_EXTENSIONS
 # M4
 
 AC_CHECK_PROGS([M4], gm4 m4, no)
-if test "x$M4" = xno ; then
-   AC_MSG_ERROR([m4 missing])
-fi
+AS_IF([test "x$M4" = "xno"], AC_MSG_ERROR([m4 missing]))
 
-dnl Compiler flags
-CC_CHECK_CFLAGS_APPEND([-Wall -W -Wextra -pipe -Wno-long-long -Winline -Wvla -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing=2 -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option])
+# pkg-config
 
-dnl Linker flags.
-dnl Check whether the linker supports the -version-script option.
+PKG_PROG_PKG_CONFIG
 
-dnl This variable is used to make sure ${srcdir} is expanded and not
-dnl passed to the CC_CHECK_LDFLAGS macro as a name.
-tmp_ldflag="-Wl,-version-script=${srcdir}/src/map-file"
+# gettext
 
-CC_CHECK_LDFLAGS([${tmp_ldflag}],
+IT_PROG_INTLTOOL([0.35.0])
+GETTEXT_PACKAGE=pulseaudio
+AC_SUBST([GETTEXT_PACKAGE])
+AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE],["$GETTEXT_PACKAGE"],[Gettext package])
+AM_GLIB_GNU_GETTEXT
+
+pulselocaledir='${prefix}/${DATADIRNAME}/locale'
+AX_DEFINE_DIR(PULSE_LOCALEDIR, pulselocaledir, [Gettext locale dir])
+
+
+#### Determine host OS ####
+
+os_is_linux=0
+os_is_win32=0
+os_is_darwin=0
+
+AC_MSG_CHECKING([host operating system])
+case "$host_os" in
+    linux*)
+        AC_MSG_RESULT([linux])
+        os_is_linux=1
+    ;;
+    darwin*)
+        AC_MSG_RESULT([darwin])
+        os_is_darwin=1
+        AC_DEFINE([OS_IS_DARWIN], 1, [Build target is Darwin.])
+    ;;
+    mingw*)
+        AC_MSG_RESULT([win32])
+        os_is_win32=1
+        AC_DEFINE([OS_IS_WIN32], 1, [Build target is Windows.])
+    ;;
+    *)
+        AC_MSG_RESULT([unknown])
+    ;;
+esac
+
+AM_CONDITIONAL(OS_IS_DARWIN, test "x$os_is_darwin" = "x1")
+AM_CONDITIONAL(OS_IS_WIN32, test "x$os_is_win32" = "x1")
+AC_SUBST([OS_IS_WIN32], [$os_is_win32])
+
+# Platform specific hacks
+case "$host_os" in
+    darwin* )
+        AC_DEFINE([_DARWIN_C_SOURCE], [200112L], [Needed to get NSIG on Mac OS X])
+    ;;
+    mingw* )
+        AC_DEFINE([WIN32_LEAN_AND_MEAN], 1, [Needed to avoid including unnecessary headers on Windows])
+    ;;
+    solaris* )
+        AC_DEFINE(_XOPEN_SOURCE,       600, [Needed to get declarations for msg_control and msg_controllen on Solaris])
+        AC_DEFINE(__EXTENSIONS__,        1, [Needed to get declarations for msg_control and msg_controllen on Solaris])
+    ;;
+esac
+
+
+#### Compiler flags ####
+
+AX_APPEND_COMPILE_FLAGS(
+    [-Wall -W -Wextra -pipe -Wno-long-long -Wvla -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option],
+    [], [-pedantic -Werror])
+
+
+#### Linker flags ####
+
+# Check whether the linker supports the -version-script option.
+# The Make variable $(srcdir) needs to be in the LDFLAGS in that form,
+# so that it is expanded the right way in every subdir.
+AX_CHECK_LINK_FLAG(["-Wl,-version-script=${srcdir}/src/map-file"],
     [VERSIONING_LDFLAGS='-Wl,-version-script=$(srcdir)/map-file'])
 AC_SUBST([VERSIONING_LDFLAGS])
 
-dnl Use immediate (now) bindings; avoids the funky re-call in itself
-dnl  the -z now syntax is lifted from Sun's linker and works with GNU's too
-dnl  other linkes might be added later
-CC_CHECK_LDFLAGS([-Wl,-z,now], [IMMEDIATE_LDFLAGS="-Wl,-z,now"])
+# Use immediate (now) bindings; avoids the funky re-call in itself.
+# The -z now syntax is lifted from Sun's linker and works with GNU's too, other linkers might be added later.
+AX_APPEND_LINK_FLAGS([-Wl,-z,now], [IMMEDIATE_LDFLAGS])
 AC_SUBST([IMMEDIATE_LDFLAGS])
 
-dnl On ELF systems we don't want the libraries to be unloaded since we
-dnl don't clean them up properly, so we request the nodelete flag to be
-dnl enabled.
-dnl
-dnl On other systems, we don't really know how to do that, but it's
-dnl welcome if somebody can tell.
-CC_CHECK_LDFLAGS([-Wl,-z,nodelete], [NODELETE_LDFLAGS="-Wl,-z,nodelete"])
+# On ELF systems we don't want the libraries to be unloaded since we don't clean them up properly,
+# so we request the nodelete flag to be enabled.
+# On other systems, we don't really know how to do that, but it's welcome if somebody can tell.
+AX_APPEND_LINK_FLAGS([-Wl,-z,nodelete], [NODELETE_LDFLAGS])
 AC_SUBST([NODELETE_LDFLAGS])
 
-dnl Check for the proper way to build libraries that have no undefined
-dnl symbols; on some hosts this needs to be avoided but the macro
-dnl takes care of it.
-CC_NOUNDEFINED
+# Check for the proper way to build libraries that have no undefined symbols
+case $host in
+    # FreeBSD (et al.) does not complete linking for shared objects when pthreads
+    # are requested, as different implementations are present.
+    *-freebsd* | *-openbsd*) ;;
+    *)
+        for possible_flag in "-Wl,--no-undefined" "-Wl,-z,defs"; do
+            AX_CHECK_LINK_FLAG([$possible_flag], [NOUNDEFINED_LDFLAGS="$possible_flag"; break])
+        done
+    ;;
+esac
+AC_SUBST([NOUNDEFINED_LDFLAGS])
 
-dnl Check whether to build tests by default (as compile-test) or not
-AC_ARG_ENABLE([default-build-tests],
-    AS_HELP_STRING([--disable-default-build-tests], [Build test programs only during make check]))
 
-AM_CONDITIONAL([BUILD_TESTS_DEFAULT], [test "x$enable_default_build_tests" != "xno"])
+#### Atomic operations ####
 
 # Native atomic operation support
 AC_ARG_ENABLE([atomic-arm-linux-helpers],
-    AS_HELP_STRING([--disable-atomic-arm-linux-helpers],[use inline asm or libatomic_ops instead]),
-        [
-            case "${enableval}" in
-                yes) atomic_arm_linux_helpers=yes ;;
-                no) atomic_arm_linux_helpers=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-atomic-arm-linux-helpers) ;;
-            esac
-        ],
-        [atomic_arm_linux_helpers=auto])
+    AS_HELP_STRING([--disable-atomic-arm-linux-helpers],[use inline asm or libatomic_ops instead]))
 
 AC_ARG_ENABLE([atomic-arm-memory-barrier],
-    AS_HELP_STRING([--enable-atomic-arm-memory-barrier],[only really needed in SMP arm systems]),
-        [
-            case "${enableval}" in
-                yes) AC_DEFINE_UNQUOTED(ATOMIC_ARM_MEMORY_BARRIER_ENABLED, 1, [Enable memory barriers]) ;;
-                no) ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-atomic-arm-linux-helpers) ;;
-            esac
-        ],)
+    AS_HELP_STRING([--enable-atomic-arm-memory-barrier],[only really needed in SMP arm systems]))
 
-AC_ARG_ENABLE([netbsd-atomic-ops],
-    AS_HELP_STRING([--enable-netbsd-atomic-ops],[Use the native NetBSD atomic_ops implementation]),
-        [
-            case "${enableval}" in
-                yes) atomic_netbsd_helpers=yes ;;
-                no) atomic_netbsd_helpers=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --enable-netbsd-atomic-ops) ;;
-            esac
-        ],
-        [atomic_netbsd_helpers=auto])
-
-AC_MSG_CHECKING([target operating system])
-case $host in
-        *-*-linux*)
-            AC_MSG_RESULT([linux])
-            pulse_target_os=linux
-        ;;
-        *-*-netbsd*)
-            AC_MSG_RESULT([netbsd])
-            pulse_target_os=netbsd
-        ;;
-        *)
-            AC_MSG_RESULT([unknown])
-            pulse_target_os=unknown
-        ;;
-esac
+if test "x$enable_atomic_arm_memory_barrier" = "xyes"; then
+    AC_DEFINE_UNQUOTED(ATOMIC_ARM_MEMORY_BARRIER_ENABLED, 1, [Enable memory barriers])
+fi
 
 # If everything else fails use libatomic_ops
 need_libatomic_ops=yes
 
 AC_CACHE_CHECK([whether $CC knows __sync_bool_compare_and_swap()],
-  pulseaudio_cv_sync_bool_compare_and_swap,
-  [AC_LINK_IFELSE(
-     AC_LANG_PROGRAM([], [[int a = 4; __sync_bool_compare_and_swap(&a, 4, 5);]]),
-     [pulseaudio_cv_sync_bool_compare_and_swap=yes],
-     [pulseaudio_cv_sync_bool_compare_and_swap=no])
-  ])
+    pulseaudio_cv_sync_bool_compare_and_swap, [
+    AC_LINK_IFELSE(
+        AC_LANG_PROGRAM([], [[int a = 4; __sync_bool_compare_and_swap(&a, 4, 5);]]),
+        [pulseaudio_cv_sync_bool_compare_and_swap=yes],
+        [pulseaudio_cv_sync_bool_compare_and_swap=no])
+    ])
 
 if test "$pulseaudio_cv_sync_bool_compare_and_swap" = "yes" ; then
     AC_DEFINE([HAVE_ATOMIC_BUILTINS], 1, [Have __sync_bool_compare_and_swap() and friends.])
@@ -209,50 +219,52 @@ if test "$pulseaudio_cv_sync_bool_compare_and_swap" = "yes" ; then
 else
     # HW specific atomic ops stuff
     AC_MSG_CHECKING([architecture for native atomic operations])
-    case $host_cpu in
+    case $host in
         arm*)
             AC_MSG_RESULT([arm])
             AC_MSG_CHECKING([whether we can use Linux kernel helpers])
             # The Linux kernel helper functions have been there since 2.6.16. However
             # compile time checking for kernel version in cross compile environment
             # (which is usually the case for arm cpu) is tricky (or impossible).
-            if test "x$pulse_target_os" = "xlinux" && test "x$atomic_arm_linux_helpers" != "xno"; then
+            if test "x$os_is_linux" = "x1" && test "x$enable_atomic_arm_linux_helpers" != "xno"; then
                 AC_MSG_RESULT([yes])
                 AC_DEFINE_UNQUOTED(ATOMIC_ARM_LINUX_HELPERS, 1, [special arm linux implementation])
                 need_libatomic_ops=no
             else
-               AC_MSG_RESULT([no])
-               AC_CACHE_CHECK([compiler support for arm inline asm atomic operations],
-                 pulseaudio_cv_support_arm_atomic_ops,
-                 [AC_COMPILE_IFELSE(
-                    AC_LANG_PROGRAM([],
-                      [[volatile int a=0;
-                        int o=0, n=1, r;
-                        asm volatile ("ldrex    %0, [%1]\n"
-                                         "subs  %0, %0, %2\n"
-                                         "strexeq %0, %3, [%1]\n"
-                                         : "=&r" (r)
-                                         : "r" (&a), "Ir" (o), "r" (n)
-                                         : "cc");
-                        return (a==1 ? 0 : -1);
-                      ]]),
-                    [pulseaudio_cv_support_arm_atomic_ops=yes],
-                    [pulseaudio_cv_support_arm_atomic_ops=no])
-                 ])
-               AS_IF([test "$pulseaudio_cv_support_arm_atomic_ops" = "yes"], [
-                   AC_DEFINE([ATOMIC_ARM_INLINE_ASM], 1, [Have ARM atomic instructions.])
-                   need_libatomic_ops=no
-                 ])
-           fi
+                AC_MSG_RESULT([no])
+                AC_CACHE_CHECK([compiler support for arm inline asm atomic operations],
+                    pulseaudio_cv_support_arm_atomic_ops, [
+                    AC_COMPILE_IFELSE(
+                        AC_LANG_PROGRAM([], [[
+                            volatile int a=0;
+                            int o=0, n=1, r;
+                            asm volatile ("ldrex    %0, [%1]\n"
+                                          "subs  %0, %0, %2\n"
+                                          "strexeq %0, %3, [%1]\n"
+                                          : "=&r" (r)
+                                          : "r" (&a), "Ir" (o), "r" (n)
+                                          : "cc");
+                            return (a==1 ? 0 : -1);
+                        ]]),
+                        [pulseaudio_cv_support_arm_atomic_ops=yes],
+                        [pulseaudio_cv_support_arm_atomic_ops=no])
+                ])
+                AS_IF([test "$pulseaudio_cv_support_arm_atomic_ops" = "yes"], [
+                    AC_DEFINE([ATOMIC_ARM_INLINE_ASM], 1, [Have ARM atomic instructions.])
+                    need_libatomic_ops=no
+                ])
+            fi
+        ;;
+        *-netbsdelf5*)
+            AC_MSG_RESULT([yes])
+            need_libatomic_ops=no
+        ;;
+        *-freebsd*)
+            AC_MSG_RESULT([yes])
+            need_libatomic_ops=no
         ;;
         *)
-            if test "x$pulse_target_os" = "xnetbsd" && test "x$atomic_netbsd_helpers" = "xyes"; then
-                AC_MSG_RESULT([yes])
-                AC_DEFINE_UNQUOTED(NETBSD_ATOMIC_OPS, 1, [netbsd implementation])
-                need_libatomic_ops=no
-            else
-                AC_MSG_RESULT([unknown])
-            fi
+            AC_MSG_RESULT([unknown])
         ;;
     esac
 fi
@@ -288,21 +300,9 @@ case $host in
   ;;
 esac
 
-CC_CHECK_TLS
-
-AC_CACHE_CHECK([whether $CC knows _Bool],
-  pulseaudio_cv__Bool,
-  [AC_COMPILE_IFELSE(
-     AC_LANG_PROGRAM([], [[_Bool b;]]),
-     [pulseaudio_cv__Bool=yes],
-     [pulseaudio_cv__Bool=no])
-  ])
-
-AS_IF([test "$pulseaudio_cv__Bool" = "yes"], [
-    AC_DEFINE([HAVE_STD_BOOL], 1, [Have _Bool.])
-  ])
 
 #### libtool stuff ####
+
 LT_PREREQ(2.2)
 LT_INIT([dlopen win32-dll disable-static])
 
@@ -331,18 +331,6 @@ AS_IF([test "x$LIBLTDL" = "x"],
     [AC_MSG_ERROR([Unable to find libltdl version 2. Makes sure you have libtool 2.2 or later installed.])])
 AC_SUBST([LIBLTDL])
 
-#### Determine build environment ####
-
-os_is_win32=0
-
-case "$host_os" in
-        mingw*)
-        AC_DEFINE([OS_IS_WIN32], 1, [Build target is Windows.])
-        os_is_win32=1
-                ;;
-        esac
-
-AM_CONDITIONAL(OS_IS_WIN32, test "x$os_is_win32" = "x1")
 
 ###################################
 #   Basic environment checks      #
@@ -356,7 +344,7 @@ AC_HEADER_STDC
 # POSIX
 AC_CHECK_HEADERS_ONCE([arpa/inet.h glob.h grp.h netdb.h netinet/in.h \
     netinet/in_systm.h netinet/tcp.h poll.h pwd.h sched.h \
-    sys/mman.h sys/resource.h sys/select.h sys/socket.h sys/wait.h \
+    sys/mman.h sys/select.h sys/socket.h sys/wait.h \
     sys/uio.h syslog.h sys/dl.h dlfcn.h linux/sockios.h])
 AC_CHECK_HEADERS([netinet/ip.h], [], [],
                  [#include <sys/types.h>
@@ -367,15 +355,14 @@ AC_CHECK_HEADERS([netinet/ip.h], [], [],
                   # include <netinet/in_systm.h>
                   #endif
                  ])
-AC_CHECK_HEADERS([regex.h], [HAVE_REGEX=1], [HAVE_REGEX=0])
+AC_CHECK_HEADERS([sys/resource.h], [HAVE_SYS_RESOURCE_H=1], [HAVE_SYS_RESOURCE_H=0])
+AC_SUBST(HAVE_SYS_RESOURCE_H)
 AC_CHECK_HEADERS([sys/un.h], [HAVE_AF_UNIX=1], [HAVE_AF_UNIX=0])
-
-AM_CONDITIONAL(HAVE_REGEX, test "x$HAVE_REGEX" = "x1")
 AM_CONDITIONAL(HAVE_AF_UNIX, test "x$HAVE_AF_UNIX" = "x1")
+AC_SUBST(HAVE_AF_UNIX)
 
 # Linux
 AC_CHECK_HEADERS([linux/input.h], [HAVE_EVDEV=1], [HAVE_EVDEV=0])
-
 AM_CONDITIONAL([HAVE_EVDEV], [test "x$HAVE_EVDEV" = "x1"])
 
 AC_CHECK_HEADERS_ONCE([sys/prctl.h])
@@ -395,6 +382,9 @@ AC_CHECK_HEADERS_ONCE([byteswap.h])
 AC_CHECK_HEADERS_ONCE([sys/syscall.h])
 AC_CHECK_HEADERS_ONCE([sys/eventfd.h])
 AC_CHECK_HEADERS_ONCE([execinfo.h])
+AC_CHECK_HEADERS_ONCE([langinfo.h])
+AC_CHECK_HEADERS_ONCE([regex.h pcreposix.h])
+
 
 #### Typdefs, structures, etc. ####
 
@@ -402,27 +392,48 @@ AC_C_CONST
 AC_C_BIGENDIAN
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
-AC_CHECK_TYPES(ssize_t, , [AC_DEFINE([ssize_t], [signed long],
-    [Define ssize_t if it is not done by the standard libs.])])
+AC_CHECK_TYPES(ssize_t, , AC_DEFINE([ssize_t], [signed long], [Define ssize_t if it is not done by the standard libs.]))
 AC_TYPE_OFF_T
 
 AC_TYPE_UID_T
 AC_CHECK_DECLS(environ)
 
-AC_CHECK_DEFINE([SIGXCPU], [signal.h], [
-HAVE_SIGXCPU=1
-AC_DEFINE([HAVE_SIGXCPU], 1, [Have SIGXCPU?])
-], [HAVE_SIGXCPU=0])
+# SIGXCPU
+AX_CHECK_DEFINE([signal.h], [SIGXCPU], [HAVE_SIGXCPU=1], [HAVE_SIGXCPU=0])
+AS_IF([test "x$HAVE_SIGXCPU" = "x1"], AC_DEFINE([HAVE_SIGXCPU], 1, [Have SIGXCPU?]))
 AM_CONDITIONAL(HAVE_SIGXCPU, test "x$HAVE_SIGXCPU" = "x1")
 
-# Solaris lacks this
-AC_CHECK_DEFINE([INADDR_NONE], [netinet/in.h], [],
-    [AC_CHECK_DEFINE([INADDR_NONE], [winsock2.h], [],
+# INADDR_NONE, Solaris lacks this
+AX_CHECK_DEFINE([netinet/in.h], [INADDR_NONE], [],
+    [AX_CHECK_DEFINE([winsock2.h], [INADDR_NONE], [],
         [AC_DEFINE([INADDR_NONE],  [0xffffffff], [Define INADDR_NONE if not found in <netinet/in.h>])])])
 
-#### POSIX threads ####
 
-ACX_PTHREAD
+# _Bool
+AC_CACHE_CHECK([whether $CC knows _Bool],
+    pulseaudio_cv__Bool,
+    [AC_COMPILE_IFELSE(
+        AC_LANG_PROGRAM([], [[_Bool b;]]),
+        [pulseaudio_cv__Bool=yes],
+        [pulseaudio_cv__Bool=no])
+    ])
+
+AS_IF([test "$pulseaudio_cv__Bool" = "yes"], AC_DEFINE([HAVE_STD_BOOL], 1, [Have _Bool.]))
+
+
+#### Thread support ####
+
+AX_TLS
+AS_IF([test "$ac_cv_tls" == "__thread"],
+    AC_DEFINE([SUPPORT_TLS___THREAD], 1, [Define this if the compiler supports __thread for Thread-Local Storage]))
+
+# Win32 build breaks with win32 pthread installed
+AS_IF([test "x$os_is_win32" != "x1"],
+  [AX_PTHREAD])
+
+AS_IF([test "x$ax_pthread_ok" == "xyes"],
+    AC_DEFINE([_POSIX_PTHREAD_SEMANTICS], 1, [Needed on Solaris]))
+
 
 #### Check for libs ####
 
@@ -435,16 +446,35 @@ AC_SEARCH_LIBS([dlopen], [dl])
 AC_SEARCH_LIBS([shm_open], [rt])
 AC_SEARCH_LIBS([inet_ntop], [nsl])
 AC_SEARCH_LIBS([timer_create], [rt])
+AC_SEARCH_LIBS([pthread_setaffinity_np], [pthread])
+AC_SEARCH_LIBS([pthread_getname_np], [pthread])
+AC_SEARCH_LIBS([pthread_setname_np], [pthread])
 
 # BSD
 AC_SEARCH_LIBS([connect], [socket])
-AC_SEARCH_LIBS([backtrace], [execinfo])
+AC_SEARCH_LIBS([backtrace], [execinfo ubacktrace])
 
-# Non-standard
+# Darwin/OS X
+if test "x$os_is_darwin" = "x1" ; then
+    AC_MSG_CHECKING([looking for Apple CoreService Framework])
+    # How do I check a framework "library" - AC_CHECK_LIB prob. won't work??, just assign LIBS & hope
+    AC_CHECK_HEADER([/Developer/Headers/FlatCarbon/CoreServices.h],
+        [LIBS="$LIBS -framework CoreServices"],
+        [AC_MSG_ERROR([CoreServices.h header file not found])]
+    )
 
-# This magic is needed so we do not needlessly add static libs to the win32
-# build, disabling its ability to make dlls.
+    AC_MSG_RESULT([ok])
+    AC_DEFINE([HAVE_CLOCK_GETTIME], 1, [Using clock_gettime() replacement])
+    HAVE_BONJOUR=1
+fi
+
+AM_CONDITIONAL([HAVE_BONJOUR], [test "x$HAVE_BONJOUR" = x1])
+
+# Windows
+AC_SEARCH_LIBS([regexec], [pcreposix])
+# This magic is needed so we do not needlessly add static libs to the win32  build, disabling its ability to make dlls.
 AC_CHECK_FUNCS([getopt_long], [], [AC_CHECK_LIB([iberty], [getopt_long])])
+
 
 #### Check for functions ####
 
@@ -456,11 +486,11 @@ AC_FUNC_FORK
 AC_FUNC_GETGROUPS
 AC_FUNC_SELECT_ARGTYPES
 AC_CHECK_FUNCS_ONCE([chmod chown fstat fchown fchmod clock_gettime getaddrinfo getgrgid_r getgrnam_r \
-    getpwnam_r getpwuid_r gettimeofday getuid inet_ntop inet_pton mlock nanosleep \
+    getpwnam_r getpwuid_r gettimeofday getuid mlock nanosleep \
     pipe posix_fadvise posix_madvise posix_memalign setpgid setsid shm_open \
-    sigaction sleep sysconf pthread_setaffinity_np])
+    sigaction sleep symlink sysconf uname pthread_setaffinity_np pthread_getname_np pthread_setname_np])
 AC_CHECK_FUNCS([mkfifo], [HAVE_MKFIFO=1], [HAVE_MKFIFO=0])
-
+AC_SUBST(HAVE_MKFIFO)
 AM_CONDITIONAL(HAVE_MKFIFO, test "x$HAVE_MKFIFO" = "x1")
 
 # X/OPEN
@@ -476,105 +506,51 @@ AC_CHECK_FUNCS_ONCE([strerror_r])
 AC_CHECK_FUNCS_ONCE([lstat])
 
 # Non-standard
-
-AC_CHECK_FUNCS_ONCE([setresuid setresgid setreuid setregid seteuid setegid ppoll strsignal sig2str strtof_l])
+AC_CHECK_FUNCS_ONCE([setresuid setresgid setreuid setregid seteuid setegid ppoll strsignal sig2str strtof_l pipe2 accept4])
 
 AC_FUNC_ALLOCA
 
-AC_CACHE_CHECK([for PTHREAD_PRIO_INHERIT],
-  pulseaudio_cv_PTHREAD_PRIO_INHERIT,
-  [save_CC=$CC; CC=$PTHREAD_CC
-   save_CFLAGS=$CFLAGS; CFLAGS=$PTHREAD_CFLAGS
-   save_LIBS=$LIBS; LIBS=$PTHREAD_LIBS
-   AC_LINK_IFELSE(
-     AC_LANG_PROGRAM(
-       [[
-         #include <pthread.h>
-       ]],
-       [[int i = PTHREAD_PRIO_INHERIT;]]),
-     [pulseaudio_cv_PTHREAD_PRIO_INHERIT=yes],
-     [pulseaudio_cv_PTHREAD_PRIO_INHERIT=no])
-   CC=$save_CC
-   CFLAGS=$save_CFLAGS
-   LIBS=$save_LIBS
-  ])
+AC_CHECK_FUNCS([regexec], [HAVE_REGEX=1], [HAVE_REGEX=0])
+AM_CONDITIONAL(HAVE_REGEX, [test "x$HAVE_REGEX" = "x1"])
 
-AS_IF([test "$pulseaudio_cv_PTHREAD_PRIO_INHERIT" = "yes"], [
-    AC_DEFINE([HAVE_PTHREAD_PRIO_INHERIT], 1, [Have PTHREAD_PRIO_INHERIT.])
-  ])
-
-AC_DEFINE_UNQUOTED(PA_CFLAGS,"$CFLAGS", [The CFLAGS used during compilation])
-
-#### Large File-Support (LFS) ####
-
+# Large File-Support (LFS)
 AC_SYS_LARGEFILE
-
 # Check for open64 to know if the current system does have open64() and similar functions
 AC_CHECK_FUNCS_ONCE([open64])
 
-#### [lib]iconv ####
-
-AM_ICONV
-
-IT_PROG_INTLTOOL([0.35.0])
-GETTEXT_PACKAGE=pulseaudio
-AC_SUBST([GETTEXT_PACKAGE])
-AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE],["$GETTEXT_PACKAGE"],[Gettext package])
-AM_GLIB_GNU_GETTEXT
-
-pulselocaledir='${prefix}/${DATADIRNAME}/locale'
-AC_SUBST(pulselocaledir)
 
 ###################################
 #      External libraries         #
 ###################################
 
-#### pkg-config ####
+#### [lib]iconv ####
 
-PKG_PROG_PKG_CONFIG
+AM_ICONV
 
 #### X11 (optional) ####
 
 AC_ARG_ENABLE([x11],
-    AS_HELP_STRING([--disable-x11],[Disable optional X11 support]),
-        [
-            case "${enableval}" in
-                yes) x11=yes ;;
-                no) x11=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-x11) ;;
-            esac
-        ],
-        [x11=auto])
+    AS_HELP_STRING([--disable-x11],[Disable optional X11 support]))
 
-if test "x${x11}" != xno ; then
-    PKG_CHECK_MODULES(X11, [ x11-xcb xcb >= 1.6 ice sm xtst ],
-        HAVE_X11=1,
-        [
-            HAVE_X11=0
-            if test "x$x11" = xyes ; then
-                AC_MSG_ERROR([*** X11 not found])
-            fi
-        ])
-else
-    HAVE_X11=0
-fi
+AS_IF([test "x$enable_x11" != "xno"],
+    [PKG_CHECK_MODULES(X11, [ x11-xcb xcb >= 1.6 ice sm xtst ], HAVE_X11=1, HAVE_X11=0)],
+    HAVE_X11=0)
 
-if test "x${HAVE_X11}" = x1 ; then
-   AC_DEFINE([HAVE_X11], 1, [Have X11?])
-fi
+AS_IF([test "x$enable_x11" = "xyes" && test "x$HAVE_X11" = "x0"],
+    [AC_MSG_ERROR([*** X11 not found])])
 
 AC_SUBST(X11_CFLAGS)
 AC_SUBST(X11_LIBS)
 AC_SUBST(HAVE_X11)
 AM_CONDITIONAL([HAVE_X11], [test "x$HAVE_X11" = x1])
+AS_IF([test "x$HAVE_X11" = "x1"], AC_DEFINE([HAVE_X11], 1, [Have X11?]))
 
 #### Capabilities (optional) ####
 
 CAP_LIBS=''
 
-AC_ARG_WITH(
-        [caps],
-        AS_HELP_STRING([--without-caps],[Omit support for POSIX capabilities.]))
+AC_ARG_WITH([caps],
+    AS_HELP_STRING([--without-caps],[Omit support for POSIX capabilities.]))
 
 if test "x${with_caps}" != "xno"; then
     AC_SEARCH_LIBS([cap_init], [cap], [], [
@@ -591,6 +567,12 @@ fi
 
 AC_CHECK_HEADERS_ONCE([valgrind/memcheck.h])
 
+#### json parsing ####
+
+PKG_CHECK_MODULES(LIBJSON, [ json >= 0.9 ])
+AC_SUBST(LIBJSON_CFLAGS)
+AC_SUBST(LIBJSON_LIBS)
+
 #### Sound file ####
 
 PKG_CHECK_MODULES(LIBSNDFILE, [ sndfile >= 1.0.20 ])
@@ -601,730 +583,475 @@ PKG_CHECK_MODULES(LIBSPEEX, [ speexdsp >= 1.2 ])
 AC_SUBST(LIBSPEEX_CFLAGS)
 AC_SUBST(LIBSPEEX_LIBS)
 
-#### atomic-ops ###
+#### atomic-ops ####
 
 AC_MSG_CHECKING([whether we need libatomic_ops])
 if test "x$need_libatomic_ops" = "xyes"; then
-   AC_MSG_RESULT([yes])
-   AC_CHECK_HEADERS([atomic_ops.h], [], [
-   AC_MSG_ERROR([*** libatomic-ops headers not found])
-   ])
+    AC_MSG_RESULT([yes])
+    AC_CHECK_HEADERS([atomic_ops.h],
+        [CFLAGS="$CFLAGS -DAO_REQUIRE_CAS"],
+        [AC_MSG_ERROR([*** libatomic-ops headers not found])])
 
-   # Win32 does not need the lib and breaks horribly if we try to include it
-   if test "x$os_is_win32" != "x1" ; then
-       LIBS="$LIBS -latomic_ops"
-   fi
+    # Win32 does not need the lib and breaks horribly if we try to include it
+    AS_IF([test "x$os_is_win32" != "x1"], [LIBS="$LIBS -latomic_ops"])
 else
-   AC_MSG_RESULT([no])
+    AC_MSG_RESULT([no])
 fi
 
 #### Libsamplerate support (optional) ####
 
 AC_ARG_ENABLE([samplerate],
-    AS_HELP_STRING([--disable-samplerate],[Disable optional libsamplerate support]),
-        [
-            case "${enableval}" in
-                yes) samplerate=yes ;;
-                no) samplerate=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-samplerate) ;;
-            esac
-        ],
-        [samplerate=auto])
+    AS_HELP_STRING([--disable-samplerate],[Disable optional libsamplerate support]))
 
-if test "x${samplerate}" != xno ; then
-    PKG_CHECK_MODULES(LIBSAMPLERATE, [ samplerate >= 0.1.0 ],
-        HAVE_LIBSAMPLERATE=1,
-        [
-            HAVE_LIBSAMPLERATE=0
-            if test "x$samplerate" = xyes ; then
-                AC_MSG_ERROR([*** Libsamplerate not found])
-            fi
-        ])
-else
-    HAVE_LIBSAMPLERATE=0
-fi
+AS_IF([test "x$enable_samplerate" != "xno"],
+    [PKG_CHECK_MODULES(LIBSAMPLERATE, [ samplerate >= 0.1.0 ], HAVE_LIBSAMPLERATE=1, HAVE_LIBSAMPLERATE=0)],
+    HAVE_LIBSAMPLERATE=0)
 
-if test "x${HAVE_LIBSAMPLERATE}" = x1 ; then
-   AC_DEFINE([HAVE_LIBSAMPLERATE], 1, [Have libsamplerate?])
-fi
+AS_IF([test "x$enable_samplerate" = "xyes" && test "x$HAVE_LIBSAMPLERATE" = "x0"],
+    [AC_MSG_ERROR([*** Libsamplerate not found])])
 
 AC_SUBST(LIBSAMPLERATE_CFLAGS)
 AC_SUBST(LIBSAMPLERATE_LIBS)
-AC_SUBST(HAVE_LIBSAMPLERATE)
 AM_CONDITIONAL([HAVE_LIBSAMPLERATE], [test "x$HAVE_LIBSAMPLERATE" = x1])
+AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], AC_DEFINE([HAVE_LIBSAMPLERATE], 1, [Have libsamplerate?]))
 
 #### Database support ####
 
-HAVE_TDB=0
-HAVE_GDBM=0
-HAVE_SIMPLEDB=0
+AC_ARG_WITH([database],
+    AS_HELP_STRING([--with-database=auto|tdb|gdbm|simple],[Choose database backend.]),[],[with_database=auto])
 
-AC_ARG_WITH(
-        [database],
-        AS_HELP_STRING([--with-database=auto|tdb|gdbm|simple],[Choose database backend.]),[],[with_database=auto])
 
-if test "x${with_database}" = "xauto" -o "x${with_database}" = "xtdb" ; then
-    PKG_CHECK_MODULES(TDB, [ tdb ],
-        [
-            HAVE_TDB=1
-            with_database=tdb
-        ], [
-            if test "x${with_database}" = "xtdb" ; then
-                AC_MSG_ERROR([*** tdb not found])
-            fi
-        ])
-fi
+AS_IF([test "x$with_database" = "xauto" -o "x$with_database" = "xtdb"],
+    [PKG_CHECK_MODULES(TDB, [ tdb ], HAVE_TDB=1, HAVE_TDB=0)],
+    HAVE_TDB=0)
+AS_IF([test "x$HAVE_TDB" = "x1"], with_database=tdb)
 
-if test "x${with_database}" = "xauto" -o "x${with_database}" = "xgdbm" ; then
-   have_gdbm=yes
+AS_IF([test "x$with_database" = "xtdb" && test "x$HAVE_TDB" = "x0"],
+    [AC_MSG_ERROR([*** tdb not found])])
 
-   AC_CHECK_LIB(gdbm, gdbm_open, [], [have_gdbm=no])
-   AC_CHECK_HEADERS(gdbm.h, [], [have_gdbm=no])
 
-   if test "x${have_gdbm}" = "xyes" ; then
-       HAVE_GDBM=1
-       GDBM_CFLAGS=
-       GDBM_LIBS=-lgdbm
-       with_database=gdbm
-   elif test "x${with_database}" = "xgdbm"; then
-       AC_MSG_ERROR([*** gdbm not found])
-   fi
-fi
+AS_IF([test "x$with_database" = "xauto" -o "x$with_database" = "xgdbm"],
+    [
+        HAVE_GDBM=1
+        AC_CHECK_LIB(gdbm, gdbm_open, [], HAVE_GDBM=0)
+        AC_CHECK_HEADERS(gdbm.h, [], HAVE_GDBM=0)
+    ],
+    HAVE_GDBM=0)
+AS_IF([test "x$HAVE_GDBM" = "x1"],
+    [
+        with_database=gdbm
+        GDBM_CFLAGS=
+        GDBM_LIBS=-lgdbm
+    ])
 
-if test "x${with_database}" = "xauto" -o "x${with_database}" = "xsimple" ; then
-    HAVE_SIMPLEDB=1
-    with_database=simple
-fi
+AS_IF([test "x$with_database" = "xgdbm" && test "x$HAVE_GDBM" = "x0"],
+    [AC_MSG_ERROR([*** gdbm not found])])
 
-if test "x${HAVE_TDB}" != x1 -a "x${HAVE_GDBM}" != x1 -a "x${HAVE_SIMPLEDB}" != x1; then
-   AC_MSG_ERROR([*** missing database backend])
-fi
 
-if test "x${HAVE_TDB}" = x1 ; then
-   AC_DEFINE([HAVE_TDB], 1, [Have tdb?])
-fi
+AS_IF([test "x$with_database" = "xauto" -o "x$with_database" = "xsimple"],
+    HAVE_SIMPLEDB=1,
+    HAVE_SIMPLEDB=0)
+AS_IF([test "x$HAVE_SIMPLEDB" = "x1"], with_database=simple)
 
-if test "x${HAVE_GDBM}" = x1 ; then
-   AC_DEFINE([HAVE_GDBM], 1, [Have gdbm?])
-fi
+AS_IF([test "x$HAVE_TDB" != x1 -a "x$HAVE_GDBM" != x1 -a "x$HAVE_SIMPLEDB" != x1],
+    AC_MSG_ERROR([*** missing database backend]))
 
-if test "x${HAVE_SIMPLEDB}" = x1 ; then
-    AC_DEFINE([HAVE_SIMPLEDB], 1, [Have simple?])
-fi
 
 AC_SUBST(TDB_CFLAGS)
 AC_SUBST(TDB_LIBS)
-AC_SUBST(HAVE_TDB)
 AM_CONDITIONAL([HAVE_TDB], [test "x$HAVE_TDB" = x1])
+AS_IF([test "x$HAVE_TDB" = "x1"], AC_DEFINE([HAVE_TDB], 1, [Have tdb?]))
 
 AC_SUBST(GDBM_CFLAGS)
 AC_SUBST(GDBM_LIBS)
-AC_SUBST(HAVE_GDBM)
 AM_CONDITIONAL([HAVE_GDBM], [test "x$HAVE_GDBM" = x1])
+AS_IF([test "x$HAVE_GDBM" = "x1"], AC_DEFINE([HAVE_GDBM], 1, [Have gdbm?]))
 
-AC_SUBST(HAVE_SIMPLEDB)
 AM_CONDITIONAL([HAVE_SIMPLEDB], [test "x$HAVE_SIMPLEDB" = x1])
+AS_IF([test "x$HAVE_SIMPLEDB" = "x1"], AC_DEFINE([HAVE_SIMPLEDB], 1, [Have simple?]))
 
 #### OSS support (optional) ####
 
 AC_ARG_ENABLE([oss-output],
-    AS_HELP_STRING([--disable-oss-output],[Disable optional OSS output support]),
-        [
-            case "${enableval}" in
-                yes) oss_output=yes ;;
-                no) oss_output=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-oss-output) ;;
-            esac
-        ],
-        [oss_output=auto])
+    AS_HELP_STRING([--disable-oss-output],[Disable optional OSS output support]))
 
 AC_ARG_ENABLE([oss-wrapper],
-    AS_HELP_STRING([--disable-oss-wrapper],[Disable optional OSS wrapper support]),
-        [
-            case "${enableval}" in
-                yes) oss_wrapper=yes ;;
-                no) oss_wrapper=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-oss-wrapper) ;;
-            esac
-        ],
-        [oss_wrapper=auto])
+    AS_HELP_STRING([--disable-oss-wrapper],[Disable optional OSS wrapper support]))
 
-if test "x${oss_output}" != xno || test "x${oss_wrapper}" != "xno"; then
-    AC_CHECK_HEADERS([sys/soundcard.h],
-        [
-            if test "x${oss_output}" != "xno"; then
-                AC_DEFINE([HAVE_OSS_OUTPUT], 1, [Have OSS output?])
-            fi
-            if test "x${oss_wrapper}" != "xno"; then
-                AC_DEFINE([HAVE_OSS_WRAPPER], 1, [Have OSS wrapper (padsp)?])
-            fi
-            HAVE_OSS=1
-        ],
-        [
-            HAVE_OSS=0
-            if test "x$oss_output" = xyes || test "x$oss_wrapper" = "xyes"; then
-                AC_MSG_ERROR([*** OSS support not found])
-            fi
-        ])
-else
-    HAVE_OSS=0
-fi
+AS_IF([test "x$enable_oss_output" != "xno" -o "x$enable_oss_wrapper" != "xno"],
+    [AC_CHECK_HEADERS([sys/soundcard.h], HAVE_OSS=1, HAVE_OSS=0)],
+    HAVE_OSS=0)
 
-AC_SUBST(HAVE_OSS)
-AM_CONDITIONAL([HAVE_OSS_OUTPUT], [test "x$HAVE_OSS" = x1 && test "x${oss_output}" != "xno"])
-AM_CONDITIONAL([HAVE_OSS_WRAPPER], [test "x$HAVE_OSS" = x1 && test "x${oss_wrapper}" != "xno"])
+AS_IF([test "x$enable_oss_output" = "xyes" -o "x$enable_oss_wrapper" = "xyes" && test "x$HAVE_OSS" = "x0"],
+    [AC_MSG_ERROR([*** OSS support not found])])
+
+AS_IF([test "x$enable_oss_output" != "xno"],
+    [AS_IF([test "x$HAVE_OSS" = "x1"], HAVE_OSS_OUTPUT=1, HAVE_OSS_OUTPUT=0)],
+    HAVE_OSS_OUTPUT=0)
+
+AS_IF([test "x$enable_oss_wrapper" != "xno"],
+    [AS_IF([test "x$HAVE_OSS" = "x1"], HAVE_OSS_WRAPPER=1, HAVE_OSS_WRAPPER=0)],
+    HAVE_OSS_WRAPPER=0)
+
+AC_SUBST(HAVE_OSS_OUTPUT)
+AM_CONDITIONAL([HAVE_OSS_OUTPUT], [test "x$HAVE_OSS_OUTPUT" = "x1"])
+AM_CONDITIONAL([HAVE_OSS_WRAPPER], [test "x$HAVE_OSS_WRAPPER" = "x1"])
+AS_IF([test "x$HAVE_OSS_OUTPUT" = "x1"], AC_DEFINE([HAVE_OSS_OUTPUT], 1, [Have OSS output?]))
+AS_IF([test "x$HAVE_OSS_WRAPPER" = "x1"], AC_DEFINE([HAVE_OSS_WRAPPER], 1, [Have OSS wrapper (padsp)?]))
+
+#### CoreAudio support (optional) ####
+
+AC_ARG_ENABLE([coreaudio-output],
+    AS_HELP_STRING([--disable-coreaudio-output],[Disable optional CoreAudio output support]))
+
+AS_IF([test "x$enable_coreaudio_output" != "xno"],
+    [AC_CHECK_HEADERS([CoreAudio/CoreAudio.h], HAVE_COREAUDIO=1, HAVE_COREAUDIO=0)],
+    HAVE_COREAUDIO=0)
+
+AS_IF([test "x$enable_coreaudio_output" = "xyes" && test "x$HAVE_COREAUDIO" = "x0"],
+    [AC_MSG_ERROR([*** CoreAudio output support not found])])
+
+AM_CONDITIONAL([HAVE_COREAUDIO], [test "x$HAVE_COREAUDIO" = "x1" && test "x$enable_coreaudio_output" != "xno"])
 
 #### ALSA support (optional) ####
 
 AC_ARG_ENABLE([alsa],
-    AS_HELP_STRING([--disable-alsa],[Disable optional ALSA support]),
-        [
-            case "${enableval}" in
-                yes) alsa=yes ;;
-                no) alsa=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-alsa) ;;
-            esac
-        ],
-        [alsa=auto])
+    AS_HELP_STRING([--disable-alsa],[Disable optional ALSA support]))
 
-if test "x${alsa}" != xno ; then
-    PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.19 ],
-        [
-            HAVE_ALSA=1
-            AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?])
-        ],
-        [
-            HAVE_ALSA=0
-            if test "x$alsa" = xyes ; then
-                AC_MSG_ERROR([*** Needed alsa >= 1.0.19 support not found])
-            fi
-        ])
-else
-    HAVE_ALSA=0
-fi
+AS_IF([test "x$enable_alsa" != "xno"],
+    [PKG_CHECK_MODULES(ASOUNDLIB, [ alsa >= 1.0.19 ], HAVE_ALSA=1, HAVE_ALSA=0)],
+    HAVE_ALSA=0)
+
+AS_IF([test "x$enable_alsa" = "xyes" && test "x$HAVE_ALSA" = "x0"],
+    [AC_MSG_ERROR([*** Needed alsa >= 1.0.19 support not found])])
 
 AC_SUBST(ASOUNDLIB_CFLAGS)
 AC_SUBST(ASOUNDLIB_LIBS)
 AC_SUBST(HAVE_ALSA)
 AM_CONDITIONAL([HAVE_ALSA], [test "x$HAVE_ALSA" = x1])
+AS_IF([test "x$HAVE_ALSA" = "x1"], AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?]))
 
 #### Solaris audio support (optional) ####
 
 AC_ARG_ENABLE([solaris],
-    AS_HELP_STRING([--disable-solaris],[Disable optional Solaris audio support]),
-        [
-            case "${enableval}" in
-                yes) solaris=yes ;;
-                no) solaris=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-solaris) ;;
-            esac
-        ],
-        [solaris=auto])
+    AS_HELP_STRING([--disable-solaris],[Disable optional Solaris audio support]))
 
-if test "x${solaris}" != xno ; then
-    AC_CHECK_HEADERS([sys/audio.h],
-        [
-            HAVE_SOLARIS=1
-            AC_DEFINE([HAVE_SOLARIS], 1, [Have Solaris audio?])
-        ],
-        [
-            HAVE_SOLARIS=0
-            if test "x$solaris" = xyes ; then
-                AC_MSG_ERROR([*** Solaris audio support not found])
-            fi
-        ])
-else
-    HAVE_SOLARIS=0
-fi
+AS_IF([test "x$enable_solaris" != "xno"],
+    [AC_CHECK_HEADERS([sys/audio.h], HAVE_SOLARIS=1, HAVE_SOLARIS=0)],
+    HAVE_SOLARIS=0)
 
-AC_SUBST(HAVE_SOLARIS)
+AS_IF([test "x$enable_solaris" = "xyes" && test "x$HAVE_SOLARIS" = "x0"],
+    [AC_MSG_ERROR([*** Solaris audio support not found])])
+
 AM_CONDITIONAL([HAVE_SOLARIS], [test "x$HAVE_SOLARIS" = x1])
+AS_IF([test "x$HAVE_SOLARIS" = "x1"], AC_DEFINE([HAVE_SOLARIS], 1, [Have Solaris audio?]))
+
+#### WaveOut audio support (optional) ####
+
+AC_ARG_ENABLE([waveout],
+    AS_HELP_STRING([--disable-waveout],[Disable optional WaveOut audio support]))
+
+AS_IF([test "x$enable_waveout" != "xno"],
+    [AC_CHECK_HEADERS([mmsystem.h], HAVE_WAVEOUT=1, HAVE_WAVEOUT=0, [#include <windows.h>])],
+    HAVE_WAVEOUT=0)
+
+AS_IF([test "x$enable_waveout" = "xyes" && test "x$HAVE_WAVEOUT" = "x0"],
+    [AC_MSG_ERROR([*** WaveOut audio support not found])])
+
+AC_SUBST(HAVE_WAVEOUT)
+AM_CONDITIONAL([HAVE_WAVEOUT], [test "x$HAVE_WAVEOUT" = x1])
+AS_IF([test "x$HAVE_WAVEOUT" = "x1"], AC_DEFINE([HAVE_WAVEOUT], 1, [Have WaveOut audio?]))
 
 #### GLib 2 support (optional) ####
 
 AC_ARG_ENABLE([glib2],
-    AS_HELP_STRING([--disable-glib2],[Disable optional GLib 2 support]),
-        [
-            case "${enableval}" in
-                yes) glib2=yes ;;
-                no) glib2=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-glib2) ;;
-            esac
-        ],
-        [glib2=auto])
+    AS_HELP_STRING([--disable-glib2],[Disable optional GLib 2 support]))
 
-if test "x${glib2}" != xno ; then
-    PKG_CHECK_MODULES(GLIB20, [ glib-2.0 >= 2.4.0 ],
-        HAVE_GLIB20=1,
-        [
-            HAVE_GLIB20=0
-            if test "x$glib2" = xyes ; then
-                AC_MSG_ERROR([*** GLib 2 support not found])
-            fi
-        ])
-else
-    HAVE_GLIB20=0
-fi
+AS_IF([test "x$enable_glib2" != "xno"],
+    [PKG_CHECK_MODULES(GLIB20, [ glib-2.0 >= 2.4.0 ], HAVE_GLIB20=1, HAVE_GLIB20=0)],
+    HAVE_GLIB20=0)
+
+AS_IF([test "x$enable_glib2" = "xyes" && test "x$HAVE_GLIB20" = "x0"],
+    [AC_MSG_ERROR([*** GLib 2 support not found])])
 
 AC_SUBST(GLIB20_CFLAGS)
 AC_SUBST(GLIB20_LIBS)
-AC_SUBST(HAVE_GLIB20)
 AM_CONDITIONAL([HAVE_GLIB20], [test "x$HAVE_GLIB20" = x1])
-
-if test "x$HAVE_GLIB20" = x1 ; then
-   AC_DEFINE([HAVE_GLIB], 1, [Have GLIB?])
-fi
+AS_IF([test "x$HAVE_GLIB20" = "x1"], AC_DEFINE([HAVE_GLIB], 1, [Have GLIB?]))
 
 #### GTK2 support (optional) ####
 
 AC_ARG_ENABLE([gtk2],
-    AS_HELP_STRING([--disable-gtk2],[Disable optional Gtk+ 2 support]),
-        [
-            case "${enableval}" in
-                yes) gtk2=yes ;;
-                no) gtk2=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-gtk2) ;;
-            esac
-        ],
-        [gtk2=auto])
+    AS_HELP_STRING([--disable-gtk2],[Disable optional Gtk+ 2 support]))
 
-if test "x${gtk2}" != xno ; then
-    PKG_CHECK_MODULES(GTK20, [ gtk+-2.0 >= 2.4.0 ],
-        HAVE_GTK20=1,
-        [
-            HAVE_GTK20=0
-            if test "x$gtk2" = xyes ; then
-                AC_MSG_ERROR([*** Gtk+ 2 support not found])
-            fi
-        ])
-else
-    HAVE_GTK20=0
-fi
+AS_IF([test "x$enable_gtk2" != "xno"],
+    [PKG_CHECK_MODULES(GTK20, [ gtk+-2.0 >= 2.4.0 ], HAVE_GTK20=1, HAVE_GTK20=0)],
+    HAVE_GTK20=0)
+
+AS_IF([test "x$enable_gtk2" = "xyes" && test "x$HAVE_GTK20" = "x0"],
+    [AC_MSG_ERROR([*** Gtk+ 2 support not found])])
 
 AC_SUBST(GTK20_CFLAGS)
 AC_SUBST(GTK20_LIBS)
-AC_SUBST(HAVE_GTK20)
 AM_CONDITIONAL([HAVE_GTK20], [test "x$HAVE_GTK20" = x1])
-
-if test "x$HAVE_GTK20" = x1 ; then
-   AC_DEFINE([HAVE_GTK], 1, [Have GTK?])
-fi
+AS_IF([test "x$HAVE_GTK20" = "x1"], AC_DEFINE([HAVE_GTK], 1, [Have GTK?]))
 
 #### GConf support (optional) ####
 
 AC_ARG_ENABLE([gconf],
-    AS_HELP_STRING([--disable-gconf],[Disable optional GConf support]),
-        [
-            case "${enableval}" in
-                yes) gconf=yes ;;
-                no) gconf=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-gconf) ;;
-            esac
-        ],
-        [gconf=auto])
+    AS_HELP_STRING([--disable-gconf],[Disable optional GConf support]))
 
-if test "x${gconf}" != xno ; then
-    PKG_CHECK_MODULES(GCONF, [ gconf-2.0 >= 2.4.0 gobject-2.0 ],
-        HAVE_GCONF=1,
-        [
-            HAVE_GCONF=0
-            if test "x$gconf" = xyes ; then
-                AC_MSG_ERROR([*** GConf support not found])
-            fi
-        ])
-else
-    HAVE_GCONF=0
-fi
+AS_IF([test "x$enable_gconf" != "xno"],
+    [PKG_CHECK_MODULES(GCONF, [ gconf-2.0 >= 2.4.0 gobject-2.0 ], HAVE_GCONF=1, HAVE_GCONF=0)],
+    HAVE_GCONF=0)
+
+AS_IF([test "x$enable_gconf" = "xyes" && test "x$HAVE_GCONF" = "x0"],
+    [AC_MSG_ERROR([*** GConf support not found])])
 
 AC_SUBST(GCONF_CFLAGS)
 AC_SUBST(GCONF_LIBS)
-AC_SUBST(HAVE_GCONF)
 AM_CONDITIONAL([HAVE_GCONF], [test "x$HAVE_GCONF" = x1])
 
 #### Avahi support (optional) ####
 
 AC_ARG_ENABLE([avahi],
-    AS_HELP_STRING([--disable-avahi],[Disable optional Avahi support]),
-        [
-            case "${enableval}" in
-                yes) avahi=yes ;;
-                no) avahi=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-avahi) ;;
-            esac
-        ],
-        [avahi=auto])
+    AS_HELP_STRING([--disable-avahi],[Disable optional Avahi support]))
 
-if test "x${avahi}" != xno ; then
-    PKG_CHECK_MODULES(AVAHI, [ avahi-client >= 0.6.0 ],
-        HAVE_AVAHI=1,
-        [
-                HAVE_AVAHI=0
-                if test "x$avahi" = xyes ; then
-                        AC_MSG_ERROR([*** Avahi support not found])
-                fi
-        ])
-else
-    HAVE_AVAHI=0
-fi
+AS_IF([test "x$enable_avahi" != "xno"],
+    [PKG_CHECK_MODULES(AVAHI, [ avahi-client >= 0.6.0 ], HAVE_AVAHI=1, HAVE_AVAHI=0)],
+    HAVE_AVAHI=0)
+
+AS_IF([test "x$enable_avahi" = "xyes" && test "x$HAVE_AVAHI" = "x0"],
+    [AC_MSG_ERROR([*** Avahi support not found])])
 
 AC_SUBST(AVAHI_CFLAGS)
 AC_SUBST(AVAHI_LIBS)
 AC_SUBST(HAVE_AVAHI)
 AM_CONDITIONAL([HAVE_AVAHI], [test "x$HAVE_AVAHI" = x1])
 
-### JACK (optional) ####
+#### JACK (optional) ####
 
 AC_ARG_ENABLE([jack],
-    AS_HELP_STRING([--disable-jack],[Disable optional JACK support]),
-        [
-            case "${enableval}" in
-                yes) jack=yes ;;
-                no) jack=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-jack) ;;
-            esac
-        ],
-        [jack=auto])
+    AS_HELP_STRING([--disable-jack],[Disable optional JACK support]))
 
-if test "x${jack}" != xno ; then
-    PKG_CHECK_MODULES(JACK, [ jack >= 0.100 ],
-        HAVE_JACK=1,
-        [
-            HAVE_JACK=0
-            if test "x$jack" = xyes ; then
-                AC_MSG_ERROR([*** JACK support not found])
-            fi
-        ])
-else
-    HAVE_JACK=0
-fi
+AS_IF([test "x$enable_jack" != "xno"],
+    [PKG_CHECK_MODULES(JACK, [ jack >= 0.100 ], HAVE_JACK=1, HAVE_JACK=0)],
+    HAVE_JACK=0)
+
+AS_IF([test "x$enable_jack" = "xyes" && test "x$HAVE_JACK" = "x0"],
+    [AC_MSG_ERROR([*** JACK support not found])])
 
 AC_SUBST(JACK_CFLAGS)
 AC_SUBST(JACK_LIBS)
-AC_SUBST(HAVE_JACK)
 AM_CONDITIONAL([HAVE_JACK], [test "x$HAVE_JACK" = x1])
 
 #### Async DNS support (optional) ####
 
 AC_ARG_ENABLE([asyncns],
-    AS_HELP_STRING([--disable-asyncns],[Disable optional Async DNS support]),
-        [
-            case "${enableval}" in
-                yes) asyncns=yes ;;
-                no) asyncns=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-asyncns) ;;
-            esac
-        ],
-        [asyncns=auto])
+    AS_HELP_STRING([--disable-asyncns],[Disable optional Async DNS support]))
 
-if test "x${asyncns}" != xno ; then
-    PKG_CHECK_MODULES(LIBASYNCNS, [ libasyncns >= 0.1 ],
-        HAVE_LIBASYNCNS=1,
-        [
-            HAVE_LIBASYNCNS=0
-            if test "x$asyncns" = xyes ; then
-                AC_MSG_ERROR([*** Async DNS support not found])
-            fi
-        ])
-else
-    HAVE_LIBASYNCNS=0
-fi
+AS_IF([test "x$enable_asyncns" != "xno"],
+    [PKG_CHECK_MODULES(LIBASYNCNS, [ libasyncns >= 0.1 ], HAVE_LIBASYNCNS=1, HAVE_LIBASYNCNS=0)],
+    HAVE_LIBASYNCNS=0)
+
+AS_IF([test "x$enable_asyncns" = "xyes" && test "x$HAVE_LIBASYNCNS" = "x0"],
+    [AC_MSG_ERROR([*** Async DNS support not found])])
 
 AC_SUBST(LIBASYNCNS_CFLAGS)
 AC_SUBST(LIBASYNCNS_LIBS)
-AC_SUBST(HAVE_LIBASYNCNS)
 AM_CONDITIONAL([HAVE_LIBASYNCNS], [test "x$HAVE_LIBASYNCNS" = x1])
-
-if test "x$HAVE_LIBASYNCNS" != "x0" ; then
-   AC_DEFINE([HAVE_LIBASYNCNS], 1, [Have libasyncns?])
-fi
+AS_IF([test "x$HAVE_LIBASYNCNS" = "x1"], AC_DEFINE([HAVE_LIBASYNCNS], 1, [Have libasyncns?]))
 
 #### TCP wrappers (optional) ####
 
 AC_ARG_ENABLE([tcpwrap],
-    AS_HELP_STRING([--disable-tcpwrap],[Disable optional TCP wrappers support]),
-        [
-            case "${enableval}" in
-                yes) tcpwrap=yes ;;
-                no) tcpwrap=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-tcpwrap) ;;
-            esac
-        ],
-        [tcpwrap=auto])
+    AS_HELP_STRING([--disable-tcpwrap],[Disable optional TCP wrappers support]))
 
-if test "x${tcpwrap}" != xno ; then
-    ACX_LIBWRAP
-    if test "x${LIBWRAP_LIBS}" = x && test "x$tcpwrap" = xyes ; then
-        AC_MSG_ERROR([*** TCP wrappers support not found])
-    fi
-else
-    LIBWRAP_LIBS=
-fi
+AS_IF([test "x$enable_tcpwrap" != "xno"],
+    [
+        ACX_LIBWRAP
+        AS_IF([test "x$LIBWRAP_LIBS" != "x"], HAVE_TCPWRAP=1, HAVE_TCPWRAP=0)
+    ],
+    HAVE_TCPWRAP=0)
+
+AS_IF([test "x$enable_tcpwrap" = "xyes" && test "x$HAVE_TCPWRAP" = "x0"],
+    [AC_MSG_ERROR([*** TCP wrappers support not found])])
 
 AC_SUBST(LIBWRAP_LIBS)
 
 #### LIRC support (optional) ####
 
 AC_ARG_ENABLE([lirc],
-    AS_HELP_STRING([--disable-lirc],[Disable optional LIRC support]),
-        [
-            case "${enableval}" in
-                yes) lirc=yes ;;
-                no) lirc=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-lirc) ;;
-            esac
-        ],
-        [lirc=auto])
+    AS_HELP_STRING([--disable-lirc],[Disable optional LIRC support]))
 
-if test "x${lirc}" != xno ; then
-    ACX_LIRC
-    if test "x${HAVE_LIRC}" = x0 && test "x$lirc" = xyes ; then
-        AC_MSG_ERROR([*** LIRC support not found])
-    fi
-else
-    HAVE_LIRC=0
-fi
+LIRC_CFLAGS=
+LIRC_LIBS=
+
+AS_IF([test "x$enable_lirc" != "xno"],
+    [
+        HAVE_LIRC=1
+        AC_CHECK_HEADER(lirc/lirc_client.h, [], [HAVE_LIRC=0])
+        AC_CHECK_LIB(lirc_client, lirc_init, [LIRC_LIBS=-llirc_client], [HAVE_LIRC=0])
+    ],
+    HAVE_LIRC=0)
+
+AS_IF([test "x$enable_lirc" = "xyes" && test "x$HAVE_LIRC" = "x0"],
+    [AC_MSG_ERROR([*** LIRC support not found])])
 
 AC_SUBST(LIRC_CFLAGS)
 AC_SUBST(LIRC_LIBS)
 AM_CONDITIONAL([HAVE_LIRC], [test "x$HAVE_LIRC" = x1])
 
-#### HAL support (optional) ####
+#### D-Bus support (optional) ####
+
+AC_ARG_ENABLE([dbus],
+    AS_HELP_STRING([--disable-dbus],[Disable optional D-Bus support]))
+
+AS_IF([test "x$enable_dbus" != "xno"],
+    [PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.0.0 ], HAVE_DBUS=1, HAVE_DBUS=0)],
+    HAVE_DBUS=0)
+
+AS_IF([test "x$enable_dbus" = "xyes" && test "x$HAVE_DBUS" = "x0"],
+    [AC_MSG_ERROR([*** D-Bus support not found])])
+
+AS_IF([test "x$HAVE_DBUS" = "x1"],
+    [
+        save_CFLAGS="$CFLAGS"; CFLAGS="$CFLAGS $DBUS_CFLAGS"
+        save_LIBS="$LIBS"; LIBS="$LIBS $DBUS_LIBS"
+        AC_CHECK_FUNCS(dbus_watch_get_unix_fd)
+        CFLAGS="$save_CFLAGS"
+        LIBS="$save_LIBS"
+    ])
+
+AC_SUBST(DBUS_CFLAGS)
+AC_SUBST(DBUS_LIBS)
+AC_SUBST(HAVE_DBUS)
+AM_CONDITIONAL([HAVE_DBUS], [test "x$HAVE_DBUS" = x1])
+AS_IF([test "x$HAVE_DBUS" = "x1"], AC_DEFINE([HAVE_DBUS], 1, [Have D-Bus.]))
+
+PA_MACHINE_ID="${localstatedir}/lib/dbus/machine-id"
+AX_DEFINE_DIR(PA_MACHINE_ID, PA_MACHINE_ID, [D-Bus machine-id file])
+
+#### HAL support (optional), dependant on D-Bus ####
 
 AC_ARG_ENABLE([hal],
-    AS_HELP_STRING([--disable-hal],[Disable optional HAL support]),
-        [
-            case "${enableval}" in
-                yes) hal=yes ;;
-                no) hal=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-hal) ;;
-            esac
-        ],
-        [hal=auto])
-if test "x${hal}" != xno -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \) ; then
-    PKG_CHECK_MODULES(HAL, [ hal >= 0.5.11 ],
-        [
-            HAVE_HAL=1
-            AC_DEFINE([HAVE_HAL], 1, [Have HAL.])
-        ],
-        [
-            HAVE_HAL=0
-            if test "x$hal" = xyes ; then
-                AC_MSG_ERROR([*** HAL support not found])
-            fi
-        ])
-else
-    HAVE_HAL=0
-fi
+    AS_HELP_STRING([--disable-hal],[Disable optional HAL support]))
+
+AS_IF([test "x$enable_hal" != "xno" -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \)],
+    [PKG_CHECK_MODULES(HAL, [ hal >= 0.5.11 ], HAVE_HAL=1, HAVE_HAL=0)],
+    HAVE_HAL=0)
+AS_IF([test "x$HAVE_DBUS" != "x1"], HAVE_HAL=0)
+
+AS_IF([test "x$enable_hal" = "xyes" && test "x$HAVE_HAL" = "x0"],
+    [AC_MSG_ERROR([*** HAL support not found (requires D-Bus)])])
 
 AC_SUBST(HAL_CFLAGS)
 AC_SUBST(HAL_LIBS)
 AC_SUBST(HAVE_HAL)
 AM_CONDITIONAL([HAVE_HAL], [test "x$HAVE_HAL" = x1])
+AS_IF([test "x$HAVE_HAL" = "x1"], AC_DEFINE([HAVE_HAL], 1, [Have HAL.]))
 
-#### UDEV support (optional) ####
-
-AC_ARG_ENABLE([udev],
-    AS_HELP_STRING([--disable-udev],[Disable optional UDEV support]),
-        [
-            case "${enableval}" in
-                yes) udev=yes ;;
-                no) udev=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-udev) ;;
-            esac
-        ],
-        [udev=auto])
-if test "x${udev}" != xno -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \) ; then
-    PKG_CHECK_MODULES(UDEV, [ libudev >= 143 ],
-        [
-            HAVE_UDEV=1
-            AC_DEFINE([HAVE_UDEV], 1, [Have UDEV.])
-        ],
-        [
-            HAVE_UDEV=0
-            if test "x$udev" = xyes ; then
-                AC_MSG_ERROR([*** UDEV support not found])
-            fi
-        ])
-else
-    HAVE_UDEV=0
-fi
-
-AC_SUBST(UDEV_CFLAGS)
-AC_SUBST(UDEV_LIBS)
-AC_SUBST(HAVE_UDEV)
-AM_CONDITIONAL([HAVE_UDEV], [test "x$HAVE_UDEV" = x1])
-
-#### BlueZ support (optional) ####
+#### BlueZ support (optional, dependant on D-Bus) ####
 
 AC_ARG_ENABLE([bluez],
-    AS_HELP_STRING([--disable-bluez],[Disable optional BlueZ support]),
-        [
-            case "${enableval}" in
-                yes) bluez=yes ;;
-                no) bluez=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-bluez) ;;
-            esac
-        ],
-        [bluez=auto])
-if test "x${bluez}" != xno ; then
-    PKG_CHECK_MODULES(BLUEZ, [ bluez >= 3.0 ],
-        HAVE_BLUEZ=1,
-        [
-            HAVE_BLUEZ=0
-            if test "x$bluez" = xyes ; then
-                AC_MSG_ERROR([*** BLUEZ support not found])
-            fi
-        ])
-else
-    HAVE_BLUEZ=0
-fi
+    AS_HELP_STRING([--disable-bluez],[Disable optional BlueZ support]))
+
+AS_IF([test "x$enable_bluez" != "xno"],
+    [PKG_CHECK_MODULES(BLUEZ, [ bluez >= 3.0 ], HAVE_BLUEZ=1, HAVE_BLUEZ=0)],
+    HAVE_BLUEZ=0)
+AS_IF([test "x$HAVE_DBUS" != "x1"], HAVE_BLUEZ=0)
+
+AS_IF([test "x$enable_bluez" = "xyes" && test "x$HAVE_BLUEZ" = "x0"],
+    [AC_MSG_ERROR([*** BLUEZ support not found (requires D-Bus)])])
 
 AC_SUBST(BLUEZ_CFLAGS)
 AC_SUBST(BLUEZ_LIBS)
 AC_SUBST(HAVE_BLUEZ)
 AM_CONDITIONAL([HAVE_BLUEZ], [test "x$HAVE_BLUEZ" = x1])
 
-#### D-Bus support (optional) ####
+#### UDEV support (optional) ####
 
-AC_ARG_ENABLE([dbus],
-    AS_HELP_STRING([--disable-dbus],[Disable optional D-Bus support]),
-        [
-            case "${enableval}" in
-                yes) dbus=yes ;;
-                no) dbus=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-dbus) ;;
-            esac
-        ],
-        [dbus=auto])
+AC_ARG_ENABLE([udev],
+    AS_HELP_STRING([--disable-udev],[Disable optional UDEV support]))
 
-if test "x${dbus}" != xno ; then
+AS_IF([test "x$enable_udev" != "xno" -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \)],
+    [PKG_CHECK_MODULES(UDEV, [ libudev >= 143 ], HAVE_UDEV=1, HAVE_UDEV=0)],
+    HAVE_UDEV=0)
 
-    PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.0.0 ],
-        [
-            HAVE_DBUS=1
-            saved_LIBS="$LIBS"
-            LIBS="$LIBS $DBUS_LIBS"
-            AC_CHECK_FUNCS(dbus_watch_get_unix_fd)
-            LIBS="$saved_LIBS"
-            AC_DEFINE([HAVE_DBUS], 1, [Have D-Bus.])
-        ],
-        [
-            HAVE_DBUS=0
-            if test "x$dbus" = xyes ; then
-                AC_MSG_ERROR([*** D-Bus support not found])
-            fi
-        ])
-else
-    HAVE_DBUS=0
-fi
+AS_IF([test "x$enable_udev" = "xyes" && test "x$HAVE_UDEV" = "x0"],
+    [AC_MSG_ERROR([*** UDEV support not found])])
 
-AC_SUBST(DBUS_CFLAGS)
-AC_SUBST(DBUS_LIBS)
-AC_SUBST(HAVE_DBUS)
-AM_CONDITIONAL([HAVE_DBUS], [test "x$HAVE_DBUS" = x1])
+AC_SUBST(UDEV_CFLAGS)
+AC_SUBST(UDEV_LIBS)
+AC_SUBST(HAVE_UDEV)
+AM_CONDITIONAL([HAVE_UDEV], [test "x$HAVE_UDEV" = x1])
+AS_IF([test "x$HAVE_UDEV" = "x1"], AC_DEFINE([HAVE_UDEV], 1, [Have UDEV.]))
 
-
-# udev and HAL depend on DBUS: So double check if they were explicitly enabled.
-if test "x$HAVE_DBUS" != "x1" ; then
-    HAVE_HAL=0
-    if test "x${hal}" = xyes ; then
-        AC_MSG_ERROR([*** D-Bus support is required by HAL])
-    fi
-
-    HAVE_BLUEZ=0
-    if test "x${bluez}" = xyes ; then
-        AC_MSG_ERROR([*** D-Bus support is required by BLUEZ])
-    fi
-fi
-
-
-#### HAL compat support (optional) ####
+#### HAL compat support (optional, dependant on UDEV) ####
 
 AC_ARG_ENABLE([hal-compat],
-    AS_HELP_STRING([--disable-hal-compat],[Disable optional HAL->udev transition compatibility support]),
-        [
-            case "${enableval}" in
-                yes) halcompat=yes ;;
-                no) halcompat=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-hal-compat) ;;
-            esac
-        ],
-        [halcompat=auto])
-if test "x${halcompat}" != xno -a "x$HAVE_HAL" = "x0" -a "x$HAVE_UDEV" = "x1" ; then
-    HAVE_HAL_COMPAT=1
-    AC_DEFINE([HAVE_HAL_COMPAT], 1, [Have HAL compatibility.])
-else
-    HAVE_HAL_COMPAT=0
-fi
+    AS_HELP_STRING([--disable-hal-compat],[Disable optional HAL->udev transition compatibility support]))
 
-AC_SUBST(HAVE_HAL_COMPAT)
+AS_IF([test "x$enable_hal_compat" != "xno"],
+    [AS_IF([test "x$HAVE_HAL" = "x0" -a "x$HAVE_UDEV" = "x1"], HAVE_HAL_COMPAT=1, HAVE_HAL_COMPAT=0)],
+    HAVE_HAL_COMPAT=0)
+
+AS_IF([test "x$enable_hal_compat" = "xyes" && test "x$HAVE_HAL_COMPAT" = "x0"],
+    [AC_MSG_ERROR([*** HAL-compat support requires UDEV and no HAL])])
+
 AM_CONDITIONAL([HAVE_HAL_COMPAT], [test "x$HAVE_HAL_COMPAT" = x1])
+AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], AC_DEFINE([HAVE_HAL_COMPAT], 1, [Have HAL compatibility.]))
 
-### IPv6 connection support (optional) ###
+#### IPv6 connection support (optional) ####
 
 AC_ARG_ENABLE([ipv6],
-    AS_HELP_STRING([--disable-ipv6],[Disable optional IPv6 support]),
-        [
-            case "${enableval}" in
-                yes) ipv6=yes ;;
-                no) ipv6=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-ipv6) ;;
-            esac
-        ],
-        [ipv6=auto])
+    AS_HELP_STRING([--disable-ipv6],[Disable optional IPv6 support]))
 
-if test "x${ipv6}" != xno ; then
-    AC_DEFINE([HAVE_IPV6], [1], [Define this to enable IPv6 connection support])
-    HAVE_IPV6=1
-else
-    HAVE_IPV6=0
-fi
+AS_IF([test "x$enable_ipv6" != "xno"], [HAVE_IPV6=1], [HAVE_IPV6=0])
+
+AS_IF([test "x$HAVE_IPV6" = "x1"], AC_DEFINE([HAVE_IPV6], 1, [Define this to enable IPv6 connection support]))
 
 #### OpenSSL support (optional) ####
 
 AC_ARG_ENABLE([openssl],
-    AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (used for Airtunes/RAOP)]),
-        [
-            case "${enableval}" in
-                yes) openssl=yes ;;
-                no) openssl=no ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-openssl) ;;
-            esac
-        ],
-        [openssl=auto])
+    AS_HELP_STRING([--disable-openssl],[Disable OpenSSL support (used for Airtunes/RAOP)]))
 
-if test "x${openssl}" != xno ; then
+AS_IF([test "x$enable_openssl" != "xno"],
+    [PKG_CHECK_MODULES(OPENSSL, [ openssl > 0.9 ], HAVE_OPENSSL=1, HAVE_OPENSSL=0)],
+    HAVE_OPENSSL=0)
 
-    PKG_CHECK_MODULES(OPENSSL, [ openssl > 0.9 ],
-        [
-            HAVE_OPENSSL=1
-            AC_DEFINE([HAVE_OPENSSL], 1, [Have OpenSSL])
-        ],
-        [
-            HAVE_OPENSSL=0
-            if test "x$openssl" = xyes ; then
-                AC_MSG_ERROR([*** OpenSSL support not found])
-            fi
-        ])
-else
-    HAVE_OPENSSL=0
-fi
+AS_IF([test "x$enable_openssl" = "xyes" && test "x$HAVE_OPENSSL" = "x0"],
+    [AC_MSG_ERROR([*** OpenSSL support not found])])
 
 AC_SUBST(OPENSSL_CFLAGS)
 AC_SUBST(OPENSSL_LIBS)
-AC_SUBST(HAVE_OPENSSL)
 AM_CONDITIONAL([HAVE_OPENSSL], [test "x$HAVE_OPENSSL" = x1])
+AS_IF([test "x$HAVE_OPENSSL" = "x1"], AC_DEFINE([HAVE_OPENSSL], 1, [Have OpenSSL]))
 
-### Build and Install man pages ###
-AC_ARG_ENABLE(manpages,
-        AS_HELP_STRING([--disable-manpages],[Disable building and installation of man pages]),
-[case "${enableval}" in
-  yes) manpages=yes ;;
-  no)  manpages=no ;;
-  *) AC_MSG_ERROR([bad value ${enableval} for --disable-manpages]) ;;
-esac],[manpages=yes])
+#### FFTW (optional) ####
 
-AM_CONDITIONAL([BUILD_MANPAGES], [test "x$manpages" = xyes])
+AC_ARG_WITH([fftw],
+    AS_HELP_STRING([--without-fftw],[Omit FFTW-using modules (equalizer)]))
+
+AS_IF([test "x$with_fftw" != "xno"],
+    [PKG_CHECK_MODULES(FFTW, [ fftw3f ], HAVE_FFTW=1, HAVE_FFTW=0)],
+    HAVE_FFTW=0)
+
+AS_IF([test "x$with_fftw" = "xyes" && test "x$HAVE_FFTW" = "x0"],
+    [AC_MSG_ERROR([*** FFTW support not found])])
+
+AM_CONDITIONAL([HAVE_FFTW], [test "x$HAVE_FFTW" = "x1"])
+
+#### ORC (optional) ####
+
+ORC_CHECK([0.4.11])
+
+#### Build and Install man pages ####
+
+AC_ARG_ENABLE([manpages],
+    AS_HELP_STRING([--disable-manpages],[Disable building and installation of man pages]))
+
+AM_CONDITIONAL([BUILD_MANPAGES], [test "x$enable_manpages" != "xno"])
 
 #### PulseAudio system group & user  #####
 
@@ -1355,33 +1082,74 @@ fi
 AC_SUBST(PA_ACCESS_GROUP)
 AC_DEFINE_UNQUOTED(PA_ACCESS_GROUP,"$PA_ACCESS_GROUP", [Access group])
 
-AC_ARG_ENABLE(
-        per_user_esound_socket,
-        AS_HELP_STRING([--disable-per-user-esound-socket], [Use global esound socket directory /tmp/.esd/socket.]),
-        [
-            case "${enableval}" in
-                yes) per_user_esound_socket=1 ;;
-                no) per_user_esound_socket=0 ;;
-                *) AC_MSG_ERROR(bad value ${enableval} for --disable-per-user-esound-socket) ;;
-            esac
-        ],
-        [per_user_esound_socket=1])
+AC_ARG_ENABLE([per-user-esound-socket],
+    AS_HELP_STRING([--disable-per-user-esound-socket],[Use global esound socket directory /tmp/.esd/socket.]))
 
-if test "x$per_user_esound_socket" = "x1"; then
-   AC_DEFINE([USE_PER_USER_ESOUND_SOCKET], [1], [Define this if you want per-user esound socket directories])
+if test "x$enable_per_user_esound_socket" != "xno"; then
+    USE_PER_USER_ESOUND_SOCKET=1
+    AC_DEFINE([USE_PER_USER_ESOUND_SOCKET], [1], [Define this if you want per-user esound socket directories])
+else
+    USE_PER_USER_ESOUND_SOCKET=0
 fi
 
 #### PulseAudio system runtime dir ####
+
 PA_SYSTEM_RUNTIME_PATH="${localstatedir}/run/pulse"
-AC_SUBST(PA_SYSTEM_RUNTIME_PATH)
+AX_DEFINE_DIR(PA_SYSTEM_RUNTIME_PATH, PA_SYSTEM_RUNTIME_PATH, [System runtime dir])
 PA_SYSTEM_CONFIG_PATH="${localstatedir}/lib/pulse"
-AC_SUBST(PA_SYSTEM_CONFIG_PATH)
+AX_DEFINE_DIR(PA_SYSTEM_CONFIG_PATH, PA_SYSTEM_CONFIG_PATH, [System config dir])
 PA_SYSTEM_STATE_PATH="${localstatedir}/lib/pulse"
-AC_SUBST(PA_SYSTEM_STATE_PATH)
+AX_DEFINE_DIR(PA_SYSTEM_STATE_PATH, PA_SYSTEM_STATE_PATH, [System state dir])
+
+PA_BINARY=${bindir}/pulseaudio${EXEEXT}
+AX_DEFINE_DIR(PA_BINARY, PA_BINARY, [Location of pulseaudio binary])
+
+PACTL_BINARY=${bindir}/pactl${EXEEXT}
+AX_DEFINE_DIR(PACTL_BINARY, PACTL_BINARY, [Location of pactl binary])
+
+AC_SUBST(PA_SOEXT, [.so])
+
+AC_SUBST(pulseconfdir, ["${sysconfdir}/pulse"])
+AX_DEFINE_DIR(PA_DEFAULT_CONFIG_DIR, pulseconfdir, [Location of configuration files])
+
+AC_DEFINE_UNQUOTED(PA_BUILDDIR, "${ac_pwd}/src", [Location of uninstalled binaries])
+
+#### Mac OSX specific stuff #####
+
+AC_ARG_ENABLE(mac-universal,
+    AS_HELP_STRING([--enable-mac-universal], [Build Mac universal binaries]),
+    enable_mac_universal=$enableval, enable_mac_universal="no")
+
+AC_ARG_WITH(mac-version-min,
+    AS_HELP_STRING([--with-mac-version-min=<version>], [Defines the earliest version of MacOS X that the executables will run on.]),
+    mac_version_min=$withval, mac_version_min="10.5")
+
+AC_ARG_WITH(mac-sysroot,
+    AS_HELP_STRING([--with-mac-sysroot=<path>], [SDK basedir to use as the logical root directory for headers and libraries.]),
+    mac_sysroot=$withval, mac_sysroot="/Developer/SDKs/MacOSX10.5.sdk")
+
+if test "x$os_is_darwin" = "x1" ; then
+    LDFLAGS="$LDFLAGS -isysroot $mac_sysroot -mmacosx-version-min=$mac_version_min"
+    CFLAGS="$CFLAGS -isysroot $mac_sysroot -mmacosx-version-min=$mac_version_min"
+
+    if test "x$enable_mac_universal" = "xyes" ; then
+        mac_arches="-arch i386 -arch x86_64"
+        LDFLAGS="$LDFLAGS $mac_arches"
+        CFLAGS="$CFLAGS $mac_arches"
+    fi
+fi
+
 
 ###################################
 #            Output               #
 ###################################
+
+AC_DEFINE_UNQUOTED(PA_CFLAGS, "$CFLAGS", [The CFLAGS used during compilation])
+
+# Check whether to build tests by default (as compile-test) or not
+AC_ARG_ENABLE([default-build-tests],
+    AS_HELP_STRING([--disable-default-build-tests], [Build test programs only during make check]))
+AM_CONDITIONAL([BUILD_TESTS_DEFAULT], [test "x$enable_default_build_tests" != "xno"])
 
 AC_ARG_ENABLE([legacy-runtime-dir],
         AS_HELP_STRING([--disable-legacy-runtime-dir], [Try to connect on legacy (< 0.9.12) socket paths.]))
@@ -1389,11 +1157,16 @@ if test "x$enable_legacy_runtime_dir" != "xno" ; then
         AC_DEFINE(ENABLE_LEGACY_RUNTIME_DIR, [1], [Legacy runtime dir])
 fi
 
-AC_ARG_ENABLE(
-        [static-bins],
-        AS_HELP_STRING([--enable-static-bins],[Statically link executables.]),
-        [STATIC_BINS=1], [STATIC_BINS=0])
-AM_CONDITIONAL([STATIC_BINS], [test "x$STATIC_BINS" = "x1"])
+AC_ARG_ENABLE([legacy-database-entry-format],
+        AS_HELP_STRING([--disable-legacy-database-entry-format], [Try to load legacy (< 1.0) database files (card, device and volume restore).]))
+if test "x$enable_legacy_database_entry_format" != "xno" ; then
+        AC_DEFINE(ENABLE_LEGACY_DATABASE_ENTRY_FORMAT, [1], [Legacy database entry format])
+fi
+AC_DEFINE([WIBBLE], 1, [Just a test.])
+
+AC_ARG_ENABLE([static-bins],
+    AS_HELP_STRING([--enable-static-bins],[Statically link executables.]))
+AM_CONDITIONAL([STATIC_BINS], [test "x$enable_static_bins" = "xyes"])
 
 AC_ARG_WITH(
         [preopen-mods],
@@ -1411,10 +1184,11 @@ fi
 
 AC_ARG_WITH(
         [module-dir],
-        AS_HELP_STRING([--with-module-dir],[Directory where to install the modules to (defaults to ${libdir}/pulse-${PA_MAJORMINORMICRO}/modules]),
-        [modlibexecdir=$withval], [modlibexecdir="${libdir}/pulse-${PA_MAJORMINORMICRO}/modules"])
+        AS_HELP_STRING([--with-module-dir],[Directory where to install the modules to (defaults to ${libdir}/pulse-${PA_MAJORMINOR}/modules]),
+        [modlibexecdir=$withval], [modlibexecdir="${libdir}/pulse-${PA_MAJORMINOR}/modules"])
 
 AC_SUBST(modlibexecdir)
+AX_DEFINE_DIR(PA_DLSEARCHPATH, modlibexecdir, [Modules dir])
 
 AC_ARG_WITH(
         [udev-rules-dir],
@@ -1423,10 +1197,15 @@ AC_ARG_WITH(
 
 AC_SUBST(udevrulesdir)
 
-AC_ARG_ENABLE(
-        [force-preopen],
-        AS_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]),
-        [FORCE_PREOPEN=$enableval], [FORCE_PREOPEN=no])
+AC_ARG_ENABLE([force-preopen],
+    AS_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]))
+
+if test "x$enable_force_preopen" = "xyes"; then
+    FORCE_PREOPEN=yes
+else
+    FORCE_PREOPEN=no
+fi
+
 AM_CONDITIONAL([FORCE_PREOPEN], [test "x$FORCE_PREOPEN" = "xyes"])
 
 AC_CONFIG_FILES([
@@ -1435,161 +1214,73 @@ src/Makefile
 man/Makefile
 libpulse.pc
 libpulse-simple.pc
-libpulse-browse.pc
 libpulse-mainloop-glib.pc
 doxygen/Makefile
 doxygen/doxygen.conf
 src/pulse/version.h
 po/Makefile.in
-src/daemon/Makefile
-src/modules/Makefile
-src/modules/alsa/Makefile
-src/modules/alsa/mixer/Makefile
-src/modules/alsa/mixer/paths/Makefile
-src/modules/alsa/mixer/profile-sets/Makefile
-src/modules/bluetooth/Makefile
-src/modules/echo-cancel/Makefile
-src/modules/gconf/Makefile
-src/modules/jack/Makefile
-src/modules/oss/Makefile
-src/modules/raop/Makefile
-src/modules/rtp/Makefile
-src/modules/x11/Makefile
-src/pulse/Makefile
-src/pulsecore/Makefile
-src/pulsecore/ffmpeg/Makefile
-src/tests/Makefile
-src/utils/Makefile
+man/pulseaudio.1.xml
+man/esdcompat.1.xml
+man/pax11publish.1.xml
+man/paplay.1.xml
+man/pacat.1.xml
+man/pacmd.1.xml
+man/pactl.1.xml
+man/pasuspender.1.xml
+man/padsp.1.xml
+man/pulse-daemon.conf.5.xml
+man/pulse-client.conf.5.xml
+man/default.pa.5.xml
+man/start-pulseaudio-kde.1.xml
+man/start-pulseaudio-x11.1.xml
 ])
+
+AC_CONFIG_FILES([src/esdcompat:src/daemon/esdcompat.in], [chmod +x src/esdcompat])
+AC_CONFIG_FILES([src/start-pulseaudio-x11:src/daemon/start-pulseaudio-x11.in], [chmod +x src/start-pulseaudio-x11])
+AC_CONFIG_FILES([src/start-pulseaudio-kde:src/daemon/start-pulseaudio-kde.in], [chmod +x src/start-pulseaudio-kde])
+AC_CONFIG_FILES([src/client.conf:src/pulse/client.conf.in])
+AC_CONFIG_FILES([src/daemon.conf:src/daemon/daemon.conf.in],
+    [m4 src/daemon.conf > src/daemon.conf.gen && mv src/daemon.conf.gen src/daemon.conf])
+AC_CONFIG_FILES([src/default.pa:src/daemon/default.pa.in],
+    [m4 src/default.pa > src/default.pa.gen && mv src/default.pa.gen src/default.pa])
+AC_CONFIG_FILES([src/system.pa:src/daemon/system.pa.in],
+    [m4 src/system.pa > src/system.pa.gen && mv src/system.pa.gen src/system.pa])
 
 AC_OUTPUT
 
 # ==========================================================================
-ENABLE_X11=no
-if test "x$HAVE_X11" = "x1" ; then
-   ENABLE_X11=yes
-fi
 
-ENABLE_OSS_OUTPUT=no
-ENABLE_OSS_WRAPPER=no
-if test "x$HAVE_OSS" = "x1" ; then
-   if test "x$enable_oss_output" != "xno"; then
-      ENABLE_OSS_OUTPUT=yes
-   fi
-   if test "x$enable_oss_wrapper" != "xno"; then
-      ENABLE_OSS_WRAPPER=yes
-   fi
-fi
-
-ENABLE_ALSA=no
-if test "x$HAVE_ALSA" = "x1" ; then
-   ENABLE_ALSA=yes
-fi
-
-ENABLE_SOLARIS=no
-if test "x$HAVE_SOLARIS" = "x1" ; then
-   ENABLE_SOLARIS=yes
-fi
-
-ENABLE_GTK20=no
-if test "x$HAVE_GTK20" = "x1" ; then
-   ENABLE_GTK20=yes
-fi
-
-ENABLE_GLIB20=no
-if test "x$HAVE_GLIB20" = "x1" ; then
-   ENABLE_GLIB20=yes
-fi
-
-ENABLE_GCONF=no
-if test "x$HAVE_GCONF" = "x1" ; then
-   ENABLE_GCONF=yes
-fi
-
-ENABLE_AVAHI=no
-if test "x$HAVE_AVAHI" = "x1" ; then
-   ENABLE_AVAHI=yes
-fi
-
-ENABLE_JACK=no
-if test "x$HAVE_JACK" = "x1" ; then
-   ENABLE_JACK=yes
-fi
-
-ENABLE_LIBASYNCNS=no
-if test "x$HAVE_LIBASYNCNS" = "x1" ; then
-   ENABLE_LIBASYNCNS=yes
-fi
-
-ENABLE_LIRC=no
-if test "x$HAVE_LIRC" = "x1" ; then
-   ENABLE_LIRC=yes
-fi
-
-ENABLE_DBUS=no
-if test "x$HAVE_DBUS" = "x1" ; then
-   ENABLE_DBUS=yes
-fi
-
-ENABLE_HAL=no
-if test "x$HAVE_HAL" = "x1" ; then
-   ENABLE_HAL=yes
-fi
-
-ENABLE_UDEV=no
-if test "x$HAVE_UDEV" = "x1" ; then
-   ENABLE_UDEV=yes
-fi
-
-ENABLE_HAL_COMPAT=no
-if test "x$HAVE_HAL_COMPAT" = "x1" ; then
-   ENABLE_HAL_COMPAT=yes
-fi
-
-ENABLE_TCPWRAP=no
-if test "x${LIBWRAP_LIBS}" != x ; then
-   ENABLE_TCPWRAP=yes
-fi
-
-ENABLE_LIBSAMPLERATE=no
-if test "x${HAVE_LIBSAMPLERATE}" = "x1" ; then
-   ENABLE_LIBSAMPLERATE=yes
-fi
-
-ENABLE_BLUEZ=no
-if test "x${HAVE_BLUEZ}" = "x1" ; then
-   ENABLE_BLUEZ=yes
-fi
-
-ENABLE_GDBM=no
-if test "x${HAVE_GDBM}" = "x1" ; then
-   ENABLE_GDBM=yes
-fi
-
-ENABLE_TDB=no
-if test "x${HAVE_TDB}" = "x1" ; then
-   ENABLE_TDB=yes
-fi
-
-ENABLE_SIMPLEDB=no
-if test "x${HAVE_SIMPLEDB}" = "x1" ; then
-    ENABLE_SIMPLEDB=yes
-fi
-
-ENABLE_OPENSSL=no
-if test "x${HAVE_OPENSSL}" = "x1" ; then
-   ENABLE_OPENSSL=yes
-fi
-
-ENABLE_IPV6=no
-if test "x${HAVE_IPV6}" = "x1" ; then
-   ENABLE_IPV6=yes
-fi
-
-ENABLE_PER_USER_ESOUND_SOCKET=no
-if test "x$per_user_esound_socket" = "x1" ; then
-   ENABLE_PER_USER_ESOUND_SOCKET=yes
-fi
+AS_IF([test "x$HAVE_X11" = "x1"], ENABLE_X11=yes, ENABLE_X11=no)
+AS_IF([test "x$HAVE_OSS_OUTPUT" = "x1"], ENABLE_OSS_OUTPUT=yes, ENABLE_OSS_OUTPUT=no)
+AS_IF([test "x$HAVE_OSS_WRAPPER" = "x1"], ENABLE_OSS_WRAPPER=yes, ENABLE_OSS_WRAPPER=no)
+AS_IF([test "x$HAVE_ALSA" = "x1"], ENABLE_ALSA=yes, ENABLE_ALSA=no)
+AS_IF([test "x$HAVE_COREAUDIO" = "x1"], ENABLE_COREAUDIO=yes, ENABLE_COREAUDIO=no)
+AS_IF([test "x$HAVE_SOLARIS" = "x1"], ENABLE_SOLARIS=yes, ENABLE_SOLARIS=no)
+AS_IF([test "x$HAVE_WAVEOUT" = "x1"], ENABLE_WAVEOUT=yes, ENABLE_WAVEOUT=no)
+AS_IF([test "x$HAVE_GLIB20" = "x1"], ENABLE_GLIB20=yes, ENABLE_GLIB20=no)
+AS_IF([test "x$HAVE_GTK20" = "x1"], ENABLE_GTK20=yes, ENABLE_GTK20=no)
+AS_IF([test "x$HAVE_GCONF" = "x1"], ENABLE_GCONF=yes, ENABLE_GCONF=no)
+AS_IF([test "x$HAVE_AVAHI" = "x1"], ENABLE_AVAHI=yes, ENABLE_AVAHI=no)
+AS_IF([test "x$HAVE_JACK" = "x1"], ENABLE_JACK=yes, ENABLE_JACK=no)
+AS_IF([test "x$HAVE_LIBASYNCNS" = "x1"], ENABLE_LIBASYNCNS=yes, ENABLE_LIBASYNCNS=no)
+AS_IF([test "x$HAVE_LIRC" = "x1"], ENABLE_LIRC=yes, ENABLE_LIRC=no)
+AS_IF([test "x$HAVE_DBUS" = "x1"], ENABLE_DBUS=yes, ENABLE_DBUS=no)
+AS_IF([test "x$HAVE_HAL" = "x1"], ENABLE_HAL=yes, ENABLE_HAL=no)
+AS_IF([test "x$HAVE_UDEV" = "x1"], ENABLE_UDEV=yes, ENABLE_UDEV=no)
+AS_IF([test "x$HAVE_BLUEZ" = "x1"], ENABLE_BLUEZ=yes, ENABLE_BLUEZ=no)
+AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], ENABLE_HAL_COMPAT=yes, ENABLE_HAL_COMPAT=no)
+AS_IF([test "x$HAVE_TCPWRAP" = "x1"], ENABLE_TCPWRAP=yes, ENABLE_TCPWRAP=no)
+AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], ENABLE_LIBSAMPLERATE=yes, ENABLE_LIBSAMPLERATE=no)
+AS_IF([test "x$HAVE_IPV6" = "x1"], ENABLE_IPV6=yes, ENABLE_IPV6=no)
+AS_IF([test "x$HAVE_OPENSSL" = "x1"], ENABLE_OPENSSL=yes, ENABLE_OPENSSL=no)
+AS_IF([test "x$HAVE_FFTW" = "x1"], ENABLE_FFTW=yes, ENABLE_FFTW=no)
+AS_IF([test "x$HAVE_ORC" = "xyes"], ENABLE_ORC=yes, ENABLE_ORC=no)
+AS_IF([test "x$HAVE_TDB" = "x1"], ENABLE_TDB=yes, ENABLE_TDB=no)
+AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
+AS_IF([test "x$HAVE_SIMPLEDB" = "x1"], ENABLE_SIMPLEDB=yes, ENABLE_SIMPLEDB=no)
+AS_IF([test "x$USE_PER_USER_ESOUND_SOCKET" = "x1"], ENABLE_PER_USER_ESOUND_SOCKET=yes, ENABLE_PER_USER_ESOUND_SOCKET=no)
+AS_IF([test "x$enable_legacy_runtime_dir" != "xno"], ENABLE_LEGACY_RUNTIME_DIR=yes, ENABLE_LEGACY_RUNTIME_DIR=no)
+AS_IF([test "x$enable_legacy_database_entry_format" != "xno"], ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=yes, ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=no)
 
 echo "
  ---{ $PACKAGE_NAME $VERSION }---
@@ -1597,17 +1288,21 @@ echo "
     prefix:                        ${prefix}
     sysconfdir:                    ${sysconfdir}
     localstatedir:                 ${localstatedir}
+    modlibexecdir:                 ${modlibexecdir}
     System Runtime Path:           ${PA_SYSTEM_RUNTIME_PATH}
     System State Path:             ${PA_SYSTEM_STATE_PATH}
     System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
     Compiler:                      ${CC}
     CFLAGS:                        ${CFLAGS}
+    LIBS:                          ${LIBS}
 
-    Have X11:                      ${ENABLE_X11}
+    Enable X11:                    ${ENABLE_X11}
     Enable OSS Output:             ${ENABLE_OSS_OUTPUT}
     Enable OSS Wrapper:            ${ENABLE_OSS_WRAPPER}
     Enable Alsa:                   ${ENABLE_ALSA}
+    Enable CoreAudio:              ${ENABLE_COREAUDIO}
     Enable Solaris:                ${ENABLE_SOLARIS}
+    Enable WaveOut:                ${ENABLE_WAVEOUT}
     Enable GLib 2.0:               ${ENABLE_GLIB20}
     Enable Gtk+ 2.0:               ${ENABLE_GTK20}
     Enable GConf:                  ${ENABLE_GCONF}
@@ -1615,7 +1310,7 @@ echo "
     Enable Jack:                   ${ENABLE_JACK}
     Enable Async DNS:              ${ENABLE_LIBASYNCNS}
     Enable LIRC:                   ${ENABLE_LIRC}
-    Enable DBUS:                   ${ENABLE_DBUS}
+    Enable D-Bus:                  ${ENABLE_DBUS}
       Enable HAL:                  ${ENABLE_HAL}
       Enable BlueZ:                ${ENABLE_BLUEZ}
     Enable udev:                   ${ENABLE_UDEV}
@@ -1624,9 +1319,12 @@ echo "
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable IPv6:                   ${ENABLE_IPV6}
     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
-    Enable tdb:                    ${ENABLE_TDB}
-    Enable gdbm:                   ${ENABLE_GDBM}
-    Enable simple database:        ${ENABLE_SIMPLEDB}
+    Enable fftw:                   ${ENABLE_FFTW}
+    Enable orc:                    ${ENABLE_ORC}
+    Database
+      tdb:                         ${ENABLE_TDB}
+      gdbm:                        ${ENABLE_GDBM}
+      simple database:             ${ENABLE_SIMPLEDB}
 
     System User:                   ${PA_SYSTEM_USER}
     System Group:                  ${PA_SYSTEM_GROUP}
@@ -1634,14 +1332,17 @@ echo "
     Enable per-user EsounD socket: ${ENABLE_PER_USER_ESOUND_SOCKET}
     Force preopen:                 ${FORCE_PREOPEN}
     Preopened modules:             ${PREOPEN_MODS}
+
+    Legacy Runtime Dir Support:    ${ENABLE_LEGACY_RUNTIME_DIR}
+    Legacy Database Entry Support: ${ENABLE_LEGACY_DATABASE_ENTRY_FORMAT}
 "
 
-if test "${ENABLE_DBUS}" = "no" ; then
+if test "${ENABLE_DBUS}" = "no" && test "x$os_is_win32" != "x1" ; then
    echo "
 ===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
-You do not have DBUS support enabled. It is strongly recommended
-that you enable DBUS support if you platform supports it.
-Many parts of PulseAudio use udev, from Console Kit interaction
+You do not have D-Bus support enabled. It is strongly recommended
+that you enable D-Bus support if your platform supports it.
+Many parts of PulseAudio use D-Bus, from ConsoleKit interaction
 to the Device Reservation Protocol to speak to JACK, Bluetooth
 support and even a native control protocol for communicating and
 controling the PulseAudio daemon itself.
@@ -1649,11 +1350,11 @@ controling the PulseAudio daemon itself.
 "
 fi
 
-if test "${ENABLE_UDEV}" = "no" ; then
+if test "${ENABLE_UDEV}" = "no" && test "x$os_is_win32" != "x1" ; then
    echo "
 ===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
 You do not have udev support enabled. It is strongly recommended
-that you enable udev support if you platform supports it as it is
+that you enable udev support if your platform supports it as it is
 the primary method used to detect hardware audio devices (on Linux)
 and is thus a critical part of PulseAudio on that platform.
 ===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====

@@ -42,12 +42,10 @@
 #include <pulsecore/modargs.h>
 #include <pulsecore/log.h>
 #include <pulsecore/core-subscribe.h>
-#include <pulsecore/sink-input.h>
 #include <pulsecore/pdispatch.h>
 #include <pulsecore/pstream.h>
 #include <pulsecore/pstream-util.h>
 #include <pulsecore/socket-client.h>
-#include <pulsecore/socket-util.h>
 #include <pulsecore/time-smoother.h>
 #include <pulsecore/thread.h>
 #include <pulsecore/thread-mq.h>
@@ -379,7 +377,7 @@ static void command_stream_buffer_attr_changed(pa_pdispatch *pd, uint32_t comman
 
 /* Called from main context */
 static void command_started(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
-   struct userdata *u = userdata;
+    struct userdata *u = userdata;
 
     pa_assert(pd);
     pa_assert(t);
@@ -393,7 +391,7 @@ static void command_started(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa
 #endif
 
 /* Called from IO thread context */
-static void check_smoother_status(struct userdata *u, pa_bool_t past)  {
+static void check_smoother_status(struct userdata *u, pa_bool_t past) {
     pa_usec_t x;
 
     pa_assert(u);
@@ -973,8 +971,7 @@ static void server_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag, pa
         pa_tagstruct_gets(t, &default_sink_name) < 0 ||
         pa_tagstruct_gets(t, &default_source_name) < 0 ||
         pa_tagstruct_getu32(t, &cookie) < 0 ||
-        (u->version >= 15 &&
-         pa_tagstruct_get_channel_map(t, &cm) < 0)) {
+        (u->version >= 15 && pa_tagstruct_get_channel_map(t, &cm) < 0)) {
 
         pa_log("Parse failure");
         goto fail;
@@ -1096,6 +1093,23 @@ static void sink_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag, pa_t
         }
     }
 
+    if (u->version >= 21) {
+        uint8_t n_formats;
+        pa_format_info format;
+
+        if (pa_tagstruct_getu8(t, &n_formats) < 0) { /* no. of formats */
+            pa_log("Parse failure");
+            goto fail;
+        }
+
+        for (uint8_t j = 0; j < n_formats; j++) {
+            if (pa_tagstruct_get_format_info(t, &format)) { /* format info */
+                pa_log("Parse failure");
+                goto fail;
+            }
+        }
+    }
+
     if (!pa_tagstruct_eof(t)) {
         pa_log("Packet too long");
         goto fail;
@@ -1129,6 +1143,7 @@ static void sink_input_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag
     pa_channel_map channel_map;
     pa_cvolume volume;
     pa_proplist *pl;
+    pa_bool_t b;
 
     pa_assert(pd);
     pa_assert(u);
@@ -1170,6 +1185,33 @@ static void sink_input_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag
 
     if (u->version >= 13) {
         if (pa_tagstruct_get_proplist(t, pl) < 0) {
+
+            pa_log("Parse failure");
+            goto fail;
+        }
+    }
+
+    if (u->version >= 19) {
+        if (pa_tagstruct_get_boolean(t, &b) < 0) {
+
+            pa_log("Parse failure");
+            goto fail;
+        }
+    }
+
+    if (u->version >= 20) {
+        if (pa_tagstruct_get_boolean(t, &b) < 0 ||
+            pa_tagstruct_get_boolean(t, &b) < 0) {
+
+            pa_log("Parse failure");
+            goto fail;
+        }
+    }
+
+    if (u->version >= 21) {
+        pa_format_info format;
+
+        if (pa_tagstruct_get_format_info(t, &format) < 0) {
 
             pa_log("Parse failure");
             goto fail;
@@ -1492,6 +1534,13 @@ static void create_stream_callback(pa_pdispatch *pd, uint32_t command,  uint32_t
 /* #endif */
     }
 
+    if (u->version >= 21) {
+        pa_format_info format;
+
+        if (pa_tagstruct_get_format_info(t, &format) < 0)
+            goto parse_error;
+    }
+
     if (!pa_tagstruct_eof(t))
         goto parse_error;
 
@@ -1685,6 +1734,21 @@ static void setup_complete_callback(pa_pdispatch *pd, uint32_t command, uint32_t
         pa_tagstruct_put_boolean(reply, FALSE); /* don't inhibit auto suspend */
         pa_tagstruct_put_boolean(reply, FALSE); /* fail on suspend */
     }
+
+#ifdef TUNNEL_SINK
+    if (u->version >= 17)
+        pa_tagstruct_put_boolean(reply, FALSE); /* relative volume */
+
+    if (u->version >= 18)
+        pa_tagstruct_put_boolean(reply, FALSE); /* passthrough stream */
+#endif
+
+#ifdef TUNNEL_SINK
+    if (u->version >= 21) {
+        /* We're not using the extended API, so n_formats = 0 and that's that */
+        pa_tagstruct_putu8(t, 0);
+    }
+#endif
 
     pa_pstream_send_tagstruct(u->pstream, reply);
     pa_pdispatch_register_reply(u->pdispatch, tag, DEFAULT_TIMEOUT, create_stream_callback, u, NULL);
@@ -1939,7 +2003,7 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    u->sink = pa_sink_new(m->core, &data, PA_SINK_NETWORK|PA_SINK_LATENCY|PA_SINK_HW_VOLUME_CTRL|PA_SINK_HW_MUTE_CTRL);
+    u->sink = pa_sink_new(m->core, &data, PA_SINK_NETWORK|PA_SINK_LATENCY);
     pa_sink_new_data_done(&data);
 
     if (!u->sink) {
@@ -1950,8 +2014,8 @@ int pa__init(pa_module*m) {
     u->sink->parent.process_msg = sink_process_msg;
     u->sink->userdata = u;
     u->sink->set_state = sink_set_state;
-    u->sink->set_volume = sink_set_volume;
-    u->sink->set_mute = sink_set_mute;
+    pa_sink_set_set_volume_callback(u->sink, sink_set_volume);
+    pa_sink_set_set_mute_callback(u->sink, sink_set_mute);
 
     u->sink->refresh_volume = u->sink->refresh_muted = FALSE;
 
@@ -2037,7 +2101,7 @@ fail:
 
     pa_xfree(dn);
 
-    return  -1;
+    return -1;
 }
 
 void pa__done(pa_module*m) {

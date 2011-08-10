@@ -51,28 +51,41 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@BUILD_MANPAGES_TRUE@am__append_1 = \
-@BUILD_MANPAGES_TRUE@	$(dist_man_MANS)
-
 subdir = man
 DIST_COMMON = $(dist_man_MANS) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in
+	$(srcdir)/Makefile.in $(srcdir)/default.pa.5.xml.in \
+	$(srcdir)/esdcompat.1.xml.in $(srcdir)/pacat.1.xml.in \
+	$(srcdir)/pacmd.1.xml.in $(srcdir)/pactl.1.xml.in \
+	$(srcdir)/padsp.1.xml.in $(srcdir)/paplay.1.xml.in \
+	$(srcdir)/pasuspender.1.xml.in $(srcdir)/pax11publish.1.xml.in \
+	$(srcdir)/pulse-client.conf.5.xml.in \
+	$(srcdir)/pulse-daemon.conf.5.xml.in \
+	$(srcdir)/pulseaudio.1.xml.in \
+	$(srcdir)/start-pulseaudio-kde.1.xml.in \
+	$(srcdir)/start-pulseaudio-x11.1.xml.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
-	$(top_srcdir)/m4/acx_lirc.m4 $(top_srcdir)/m4/acx_pthread.m4 \
-	$(top_srcdir)/m4/attributes.m4 \
-	$(top_srcdir)/m4/check_define.m4 $(top_srcdir)/m4/iconv.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/lib-ld.m4 \
-	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/nls.m4 \
-	$(top_srcdir)/m4/tls.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/ax_check_define.m4 \
+	$(top_srcdir)/m4/ax_check_flag.m4 \
+	$(top_srcdir)/m4/ax_define_dir.m4 \
+	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/ax_tls.m4 \
+	$(top_srcdir)/m4/iconv.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/lib-ld.m4 $(top_srcdir)/m4/lib-link.m4 \
+	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/orc.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-mkinstalldirs = $(install_sh) -d
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = $(top_builddir)/config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = pulseaudio.1.xml esdcompat.1.xml \
+	pax11publish.1.xml paplay.1.xml pacat.1.xml pacmd.1.xml \
+	pactl.1.xml pasuspender.1.xml padsp.1.xml \
+	pulse-daemon.conf.5.xml pulse-client.conf.5.xml \
+	default.pa.5.xml start-pulseaudio-kde.1.xml \
+	start-pulseaudio-x11.1.xml
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
@@ -148,6 +161,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FFTW_CFLAGS = @FFTW_CFLAGS@
+FFTW_LIBS = @FFTW_LIBS@
 FGREP = @FGREP@
 GCONF_CFLAGS = @GCONF_CFLAGS@
 GCONF_LIBS = @GCONF_LIBS@
@@ -163,25 +178,17 @@ GTK20_CFLAGS = @GTK20_CFLAGS@
 GTK20_LIBS = @GTK20_LIBS@
 HAL_CFLAGS = @HAL_CFLAGS@
 HAL_LIBS = @HAL_LIBS@
+HAVE_AF_UNIX = @HAVE_AF_UNIX@
 HAVE_ALSA = @HAVE_ALSA@
 HAVE_AVAHI = @HAVE_AVAHI@
 HAVE_BLUEZ = @HAVE_BLUEZ@
 HAVE_DBUS = @HAVE_DBUS@
-HAVE_GCONF = @HAVE_GCONF@
-HAVE_GDBM = @HAVE_GDBM@
-HAVE_GLIB20 = @HAVE_GLIB20@
-HAVE_GTK20 = @HAVE_GTK20@
 HAVE_HAL = @HAVE_HAL@
-HAVE_HAL_COMPAT = @HAVE_HAL_COMPAT@
-HAVE_JACK = @HAVE_JACK@
-HAVE_LIBASYNCNS = @HAVE_LIBASYNCNS@
-HAVE_LIBSAMPLERATE = @HAVE_LIBSAMPLERATE@
-HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_OSS = @HAVE_OSS@
-HAVE_SIMPLEDB = @HAVE_SIMPLEDB@
-HAVE_SOLARIS = @HAVE_SOLARIS@
-HAVE_TDB = @HAVE_TDB@
+HAVE_MKFIFO = @HAVE_MKFIFO@
+HAVE_OSS_OUTPUT = @HAVE_OSS_OUTPUT@
+HAVE_SYS_RESOURCE_H = @HAVE_SYS_RESOURCE_H@
 HAVE_UDEV = @HAVE_UDEV@
+HAVE_WAVEOUT = @HAVE_WAVEOUT@
 HAVE_X11 = @HAVE_X11@
 IMMEDIATE_LDFLAGS = @IMMEDIATE_LDFLAGS@
 INSTALL = @INSTALL@
@@ -199,10 +206,11 @@ JACK_CFLAGS = @JACK_CFLAGS@
 JACK_LIBS = @JACK_LIBS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
-LDFLAGS_NOUNDEFINED = @LDFLAGS_NOUNDEFINED@
 LIBASYNCNS_CFLAGS = @LIBASYNCNS_CFLAGS@
 LIBASYNCNS_LIBS = @LIBASYNCNS_LIBS@
 LIBICONV = @LIBICONV@
+LIBJSON_CFLAGS = @LIBJSON_CFLAGS@
+LIBJSON_LIBS = @LIBJSON_LIBS@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
 LIBPULSE_BROWSE_VERSION_INFO = @LIBPULSE_BROWSE_VERSION_INFO@
@@ -235,10 +243,16 @@ MSGMERGE = @MSGMERGE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NODELETE_LDFLAGS = @NODELETE_LDFLAGS@
+NOUNDEFINED_LDFLAGS = @NOUNDEFINED_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENSSL_CFLAGS = @OPENSSL_CFLAGS@
 OPENSSL_LIBS = @OPENSSL_LIBS@
+ORCC = @ORCC@
+ORCC_FLAGS = @ORCC_FLAGS@
+ORC_CFLAGS = @ORC_CFLAGS@
+ORC_LIBS = @ORC_LIBS@
+OS_IS_WIN32 = @OS_IS_WIN32@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -248,15 +262,19 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PACTL_BINARY = @PACTL_BINARY@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PA_ACCESS_GROUP = @PA_ACCESS_GROUP@
 PA_API_VERSION = @PA_API_VERSION@
+PA_BINARY = @PA_BINARY@
+PA_DEFAULT_CONFIG_DIR = @PA_DEFAULT_CONFIG_DIR@
+PA_DLSEARCHPATH = @PA_DLSEARCHPATH@
+PA_MACHINE_ID = @PA_MACHINE_ID@
 PA_MAJOR = @PA_MAJOR@
 PA_MAJORMINOR = @PA_MAJORMINOR@
-PA_MAJORMINORMICRO = @PA_MAJORMINORMICRO@
-PA_MICRO = @PA_MICRO@
 PA_MINOR = @PA_MINOR@
 PA_PROTOCOL_VERSION = @PA_PROTOCOL_VERSION@
+PA_SOEXT = @PA_SOEXT@
 PA_SYSTEM_CONFIG_PATH = @PA_SYSTEM_CONFIG_PATH@
 PA_SYSTEM_GROUP = @PA_SYSTEM_GROUP@
 PA_SYSTEM_RUNTIME_PATH = @PA_SYSTEM_RUNTIME_PATH@
@@ -273,10 +291,12 @@ PREOPEN_MODS = @PREOPEN_MODS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
+PULSE_LOCALEDIR = @PULSE_LOCALEDIR@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+STOW = @STOW@
 STRIP = @STRIP@
 TDB_CFLAGS = @TDB_CFLAGS@
 TDB_LIBS = @TDB_LIBS@
@@ -295,12 +315,12 @@ abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
-acx_pthread_config = @acx_pthread_config@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
+ax_pthread_config = @ax_pthread_config@
 bindir = @bindir@
 build = @build@
 build_alias = @build_alias@
@@ -334,7 +354,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-pulselocaledir = @pulselocaledir@
+pulseconfdir = @pulseconfdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -344,8 +364,9 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 udevrulesdir = @udevrulesdir@
-pulseconfdir = $(sysconfdir)/pulse
-CLEANFILES = $(noinst_DATA) $(am__append_1)
+DISTCLEANFILES = \
+	$(noinst_DATA)
+
 noinst_DATA = \
 	pulseaudio.1.xml \
 	esdcompat.1.xml \
@@ -356,10 +377,11 @@ noinst_DATA = \
 	pactl.1.xml \
 	pasuspender.1.xml \
 	padsp.1.xml \
-	pabrowse.1.xml \
 	pulse-daemon.conf.5.xml \
 	pulse-client.conf.5.xml \
-	default.pa.5.xml
+	default.pa.5.xml \
+	start-pulseaudio-kde.1.xml \
+	start-pulseaudio-x11.1.xml
 
 @BUILD_MANPAGES_TRUE@dist_man_MANS = \
 @BUILD_MANPAGES_TRUE@	pulseaudio.1 \
@@ -371,10 +393,14 @@ noinst_DATA = \
 @BUILD_MANPAGES_TRUE@	pactl.1 \
 @BUILD_MANPAGES_TRUE@	pasuspender.1 \
 @BUILD_MANPAGES_TRUE@	padsp.1 \
-@BUILD_MANPAGES_TRUE@	pabrowse.1 \
 @BUILD_MANPAGES_TRUE@	pulse-daemon.conf.5 \
 @BUILD_MANPAGES_TRUE@	pulse-client.conf.5 \
-@BUILD_MANPAGES_TRUE@	default.pa.5
+@BUILD_MANPAGES_TRUE@	default.pa.5 \
+@BUILD_MANPAGES_TRUE@	start-pulseaudio-kde.1 \
+@BUILD_MANPAGES_TRUE@	start-pulseaudio-x11.1
+
+@BUILD_MANPAGES_TRUE@CLEANFILES = \
+@BUILD_MANPAGES_TRUE@	$(dist_man_MANS)
 
 EXTRA_DIST = \
 	pulseaudio.1.xml.in \
@@ -386,10 +412,11 @@ EXTRA_DIST = \
 	pactl.1.xml.in \
 	pasuspender.1.xml.in \
 	padsp.1.xml.in \
-	pabrowse.1.xml.in \
 	pulse-daemon.conf.5.xml.in \
 	pulse-client.conf.5.xml.in \
 	default.pa.5.xml.in \
+	start-pulseaudio-kde.1.xml.in \
+	start-pulseaudio-x11.1.xml.in \
 	xmltoman \
 	xmltoman.css \
 	xmltoman.xsl \
@@ -428,6 +455,34 @@ $(top_srcdir)/configure:  $(am__configure_deps)
 $(ACLOCAL_M4):  $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+pulseaudio.1.xml: $(top_builddir)/config.status $(srcdir)/pulseaudio.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+esdcompat.1.xml: $(top_builddir)/config.status $(srcdir)/esdcompat.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+pax11publish.1.xml: $(top_builddir)/config.status $(srcdir)/pax11publish.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+paplay.1.xml: $(top_builddir)/config.status $(srcdir)/paplay.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+pacat.1.xml: $(top_builddir)/config.status $(srcdir)/pacat.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+pacmd.1.xml: $(top_builddir)/config.status $(srcdir)/pacmd.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+pactl.1.xml: $(top_builddir)/config.status $(srcdir)/pactl.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+pasuspender.1.xml: $(top_builddir)/config.status $(srcdir)/pasuspender.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+padsp.1.xml: $(top_builddir)/config.status $(srcdir)/padsp.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+pulse-daemon.conf.5.xml: $(top_builddir)/config.status $(srcdir)/pulse-daemon.conf.5.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+pulse-client.conf.5.xml: $(top_builddir)/config.status $(srcdir)/pulse-client.conf.5.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+default.pa.5.xml: $(top_builddir)/config.status $(srcdir)/default.pa.5.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+start-pulseaudio-kde.1.xml: $(top_builddir)/config.status $(srcdir)/start-pulseaudio-kde.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+start-pulseaudio-x11.1.xml: $(top_builddir)/config.status $(srcdir)/start-pulseaudio-x11.1.xml.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -589,6 +644,7 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-test -z "$(DISTCLEANFILES)" || rm -f $(DISTCLEANFILES)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -677,18 +733,13 @@ uninstall-man: uninstall-man1 uninstall-man5
 	uninstall-man5
 
 
-%.xml: %.xml.in Makefile
-	sed -e 's,@pulseconfdir\@,$(pulseconfdir),g' \
-	    -e 's,@PACKAGE_BUGREPORT\@,$(PACKAGE_BUGREPORT),g' \
-            -e 's,@PACKAGE_URL\@,$(PACKAGE_URL),g' $< > $@
-
 xmllint: $(noinst_DATA)
 	for f in $(noinst_DATA) ; do \
 			xmllint --noout --valid "$$f" || exit 1 ; \
 	done
 
 @BUILD_MANPAGES_TRUE@%: %.xml Makefile
-@BUILD_MANPAGES_TRUE@	perl $(srcdir)/xmltoman $< > $@ || rm -f $@
+@BUILD_MANPAGES_TRUE@	$(AM_V_GEN) perl $(srcdir)/xmltoman $< > $@ || rm -f $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

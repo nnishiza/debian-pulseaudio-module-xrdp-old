@@ -24,13 +24,9 @@
 #endif
 
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>
-#include <string.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <limits.h>
 
 #include <pulse/rtclock.h>
 #include <pulse/timeval.h>
@@ -40,9 +36,7 @@
 #include <pulsecore/macro.h>
 #include <pulsecore/sink.h>
 #include <pulsecore/module.h>
-#include <pulsecore/core-rtclock.h>
 #include <pulsecore/core-util.h>
-#include <pulsecore/core-error.h>
 #include <pulsecore/modargs.h>
 #include <pulsecore/log.h>
 #include <pulsecore/thread.h>
@@ -86,7 +80,6 @@ static const char* const valid_modargs[] = {
     "rate",
     "channels",
     "channel_map",
-    "description", /* supported for compatibility reasons, made redundant by sink_properties= */
     NULL
 };
 
@@ -180,7 +173,7 @@ static void process_render(struct userdata *u, pa_usec_t now) {
 
     /* This is the configured latency. Sink inputs connected to us
     might not have a single frame more than the maxrequest value
-    queed. Hence: at maximum read this many bytes from the sink
+    queued. Hence: at maximum read this many bytes from the sink
     inputs. */
 
     /* Fill the buffer up the the latency size */
@@ -288,7 +281,7 @@ int pa__init(pa_module*m) {
     pa_sink_new_data_set_name(&data, pa_modargs_get_value(ma, "sink_name", DEFAULT_SINK_NAME));
     pa_sink_new_data_set_sample_spec(&data, &ss);
     pa_sink_new_data_set_channel_map(&data, &map);
-    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, pa_modargs_get_value(ma, "description", _("Null Output")));
+    pa_proplist_sets(data.proplist, PA_PROP_DEVICE_DESCRIPTION, _("Null Output"));
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_CLASS, "abstract");
 
     if (pa_modargs_get_proplist(ma, "sink_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {

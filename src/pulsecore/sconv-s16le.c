@@ -27,12 +27,11 @@
 
 #include <inttypes.h>
 #include <stdio.h>
+#include <math.h>
 
 #include <pulsecore/sconv.h>
 #include <pulsecore/macro.h>
-#include <pulsecore/log.h>
-
-#include "endianmacros.h"
+#include <pulsecore/endianmacros.h>
 
 #include "sconv-s16le.h"
 

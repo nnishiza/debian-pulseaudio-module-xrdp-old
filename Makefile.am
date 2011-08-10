@@ -46,11 +46,6 @@ vapi_DATA = \
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libpulse.pc libpulse-simple.pc
 
-if HAVE_AVAHI
-pkgconfig_DATA += \
-	 libpulse-browse.pc
-endif
-
 if HAVE_GLIB20
 pkgconfig_DATA += \
 	 libpulse-mainloop-glib.pc
@@ -77,8 +72,8 @@ fedora-snapshot: dist
 
 dist-hook:
 	if test -d .git ; then \
-		test -z $$SKIP_GIT && git pull ; \
-		chmod u+w ${distdir}/ChangeLog || true ; \
+		test -z $$USE_GIT || git pull ; \
+		test -f ${distdir}/ChangeLog && chmod u+w ${distdir}/ChangeLog ; \
 		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
 	fi
 	echo $(VERSION) > $(distdir)/.tarball-version

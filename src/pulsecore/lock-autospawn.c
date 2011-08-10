@@ -23,16 +23,19 @@
 #include <config.h>
 #endif
 
-#include <fcntl.h>
 #include <errno.h>
 #include <string.h>
-#include <sys/poll.h>
 #include <signal.h>
-#include <pthread.h>
 
+#ifdef HAVE_PTHREAD
+#include <pthread.h>
+#endif
+
+#include <pulse/gccmacro.h>
 #include <pulse/i18n.h>
 #include <pulse/xmalloc.h>
 
+#include <pulsecore/poll.h>
 #include <pulsecore/mutex.h>
 #include <pulsecore/thread.h>
 #include <pulsecore/core-util.h>
@@ -87,11 +90,8 @@ static int ref(void) {
     pa_assert(pipe_fd[0] < 0);
     pa_assert(pipe_fd[1] < 0);
 
-    if (pipe(pipe_fd) < 0)
+    if (pa_pipe_cloexec(pipe_fd) < 0)
         return -1;
-
-    pa_make_fd_cloexec(pipe_fd[0]);
-    pa_make_fd_cloexec(pipe_fd[1]);
 
     pa_make_fd_nonblock(pipe_fd[1]);
     pa_make_fd_nonblock(pipe_fd[0]);
@@ -161,7 +161,7 @@ static void ping(void) {
     for (;;) {
         char x = 'x';
 
-        if ((s = write(pipe_fd[1], &x, 1)) == 1)
+        if ((s = pa_write(pipe_fd[1], &x, 1, NULL)) == 1)
             break;
 
         pa_assert(s < 0);
@@ -185,10 +185,10 @@ static void wait_for_ping(void) {
     pfd.fd = pipe_fd[0];
     pfd.events = POLLIN;
 
-    if ((k = poll(&pfd, 1, -1)) != 1) {
+    if ((k = pa_poll(&pfd, 1, -1)) != 1) {
         pa_assert(k < 0);
         pa_assert(errno == EINTR);
-    } else if ((s = read(pipe_fd[0], &x, 1)) != 1) {
+    } else if ((s = pa_read(pipe_fd[0], &x, 1, NULL)) != 1) {
         pa_assert(s < 0);
         pa_assert(errno == EAGAIN);
     }
@@ -200,7 +200,7 @@ static void empty_pipe(void) {
 
     pa_assert(pipe_fd[0] >= 0);
 
-    if ((s = read(pipe_fd[0], &x, sizeof(x))) < 1) {
+    if ((s = pa_read(pipe_fd[0], &x, sizeof(x), NULL)) < 1) {
         pa_assert(s < 0);
         pa_assert(errno == EAGAIN);
     }
@@ -209,11 +209,14 @@ static void empty_pipe(void) {
 static void thread_func(void *u) {
     int fd;
     char *lf;
+
+#ifdef HAVE_PTHREAD
     sigset_t fullset;
 
     /* No signals in this thread please */
     sigfillset(&fullset);
     pthread_sigmask(SIG_BLOCK, &fullset, NULL);
+#endif
 
     if (!(lf = pa_runtime_path(AUTOSPAWN_LOCK))) {
         pa_log_warn(_("Cannot access autospawn lock."));

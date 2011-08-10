@@ -51,39 +51,38 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@HAVE_AVAHI_TRUE@am__append_1 = \
-@HAVE_AVAHI_TRUE@	 libpulse-browse.pc
-
-@HAVE_GLIB20_TRUE@am__append_2 = \
+@HAVE_GLIB20_TRUE@am__append_1 = \
 @HAVE_GLIB20_TRUE@	 libpulse-mainloop-glib.pc
 
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
 	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(srcdir)/libpulse-browse.pc.in \
 	$(srcdir)/libpulse-mainloop-glib.pc.in \
 	$(srcdir)/libpulse-simple.pc.in $(srcdir)/libpulse.pc.in \
-	$(top_srcdir)/configure ABOUT-NLS compile config.guess \
-	config.rpath config.sub depcomp install-sh ltmain.sh missing
+	$(top_srcdir)/configure $(top_srcdir)/src/pulse/version.h.in \
+	ABOUT-NLS compile config.guess config.rpath config.sub depcomp \
+	install-sh ltmain.sh missing mkinstalldirs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
-	$(top_srcdir)/m4/acx_lirc.m4 $(top_srcdir)/m4/acx_pthread.m4 \
-	$(top_srcdir)/m4/attributes.m4 \
-	$(top_srcdir)/m4/check_define.m4 $(top_srcdir)/m4/iconv.m4 \
-	$(top_srcdir)/m4/intltool.m4 $(top_srcdir)/m4/lib-ld.m4 \
-	$(top_srcdir)/m4/lib-link.m4 $(top_srcdir)/m4/lib-prefix.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/m4/nls.m4 \
-	$(top_srcdir)/m4/tls.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/ax_check_define.m4 \
+	$(top_srcdir)/m4/ax_check_flag.m4 \
+	$(top_srcdir)/m4/ax_define_dir.m4 \
+	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/ax_tls.m4 \
+	$(top_srcdir)/m4/iconv.m4 $(top_srcdir)/m4/intltool.m4 \
+	$(top_srcdir)/m4/lib-ld.m4 $(top_srcdir)/m4/lib-link.m4 \
+	$(top_srcdir)/m4/lib-prefix.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/m4/nls.m4 $(top_srcdir)/m4/orc.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
-mkinstalldirs = $(install_sh) -d
+mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
-CONFIG_CLEAN_FILES = libpulse.pc libpulse-simple.pc libpulse-browse.pc \
-	libpulse-mainloop-glib.pc
+CONFIG_CLEAN_FILES = libpulse.pc libpulse-simple.pc \
+	libpulse-mainloop-glib.pc src/pulse/version.h
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
@@ -205,6 +204,8 @@ ECHO_N = @ECHO_N@
 ECHO_T = @ECHO_T@
 EGREP = @EGREP@
 EXEEXT = @EXEEXT@
+FFTW_CFLAGS = @FFTW_CFLAGS@
+FFTW_LIBS = @FFTW_LIBS@
 FGREP = @FGREP@
 GCONF_CFLAGS = @GCONF_CFLAGS@
 GCONF_LIBS = @GCONF_LIBS@
@@ -220,25 +221,17 @@ GTK20_CFLAGS = @GTK20_CFLAGS@
 GTK20_LIBS = @GTK20_LIBS@
 HAL_CFLAGS = @HAL_CFLAGS@
 HAL_LIBS = @HAL_LIBS@
+HAVE_AF_UNIX = @HAVE_AF_UNIX@
 HAVE_ALSA = @HAVE_ALSA@
 HAVE_AVAHI = @HAVE_AVAHI@
 HAVE_BLUEZ = @HAVE_BLUEZ@
 HAVE_DBUS = @HAVE_DBUS@
-HAVE_GCONF = @HAVE_GCONF@
-HAVE_GDBM = @HAVE_GDBM@
-HAVE_GLIB20 = @HAVE_GLIB20@
-HAVE_GTK20 = @HAVE_GTK20@
 HAVE_HAL = @HAVE_HAL@
-HAVE_HAL_COMPAT = @HAVE_HAL_COMPAT@
-HAVE_JACK = @HAVE_JACK@
-HAVE_LIBASYNCNS = @HAVE_LIBASYNCNS@
-HAVE_LIBSAMPLERATE = @HAVE_LIBSAMPLERATE@
-HAVE_OPENSSL = @HAVE_OPENSSL@
-HAVE_OSS = @HAVE_OSS@
-HAVE_SIMPLEDB = @HAVE_SIMPLEDB@
-HAVE_SOLARIS = @HAVE_SOLARIS@
-HAVE_TDB = @HAVE_TDB@
+HAVE_MKFIFO = @HAVE_MKFIFO@
+HAVE_OSS_OUTPUT = @HAVE_OSS_OUTPUT@
+HAVE_SYS_RESOURCE_H = @HAVE_SYS_RESOURCE_H@
 HAVE_UDEV = @HAVE_UDEV@
+HAVE_WAVEOUT = @HAVE_WAVEOUT@
 HAVE_X11 = @HAVE_X11@
 IMMEDIATE_LDFLAGS = @IMMEDIATE_LDFLAGS@
 INSTALL = @INSTALL@
@@ -256,10 +249,11 @@ JACK_CFLAGS = @JACK_CFLAGS@
 JACK_LIBS = @JACK_LIBS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
-LDFLAGS_NOUNDEFINED = @LDFLAGS_NOUNDEFINED@
 LIBASYNCNS_CFLAGS = @LIBASYNCNS_CFLAGS@
 LIBASYNCNS_LIBS = @LIBASYNCNS_LIBS@
 LIBICONV = @LIBICONV@
+LIBJSON_CFLAGS = @LIBJSON_CFLAGS@
+LIBJSON_LIBS = @LIBJSON_LIBS@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
 LIBPULSE_BROWSE_VERSION_INFO = @LIBPULSE_BROWSE_VERSION_INFO@
@@ -292,10 +286,16 @@ MSGMERGE = @MSGMERGE@
 NM = @NM@
 NMEDIT = @NMEDIT@
 NODELETE_LDFLAGS = @NODELETE_LDFLAGS@
+NOUNDEFINED_LDFLAGS = @NOUNDEFINED_LDFLAGS@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
 OPENSSL_CFLAGS = @OPENSSL_CFLAGS@
 OPENSSL_LIBS = @OPENSSL_LIBS@
+ORCC = @ORCC@
+ORCC_FLAGS = @ORCC_FLAGS@
+ORC_CFLAGS = @ORC_CFLAGS@
+ORC_LIBS = @ORC_LIBS@
+OS_IS_WIN32 = @OS_IS_WIN32@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -305,15 +305,19 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
+PACTL_BINARY = @PACTL_BINARY@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PA_ACCESS_GROUP = @PA_ACCESS_GROUP@
 PA_API_VERSION = @PA_API_VERSION@
+PA_BINARY = @PA_BINARY@
+PA_DEFAULT_CONFIG_DIR = @PA_DEFAULT_CONFIG_DIR@
+PA_DLSEARCHPATH = @PA_DLSEARCHPATH@
+PA_MACHINE_ID = @PA_MACHINE_ID@
 PA_MAJOR = @PA_MAJOR@
 PA_MAJORMINOR = @PA_MAJORMINOR@
-PA_MAJORMINORMICRO = @PA_MAJORMINORMICRO@
-PA_MICRO = @PA_MICRO@
 PA_MINOR = @PA_MINOR@
 PA_PROTOCOL_VERSION = @PA_PROTOCOL_VERSION@
+PA_SOEXT = @PA_SOEXT@
 PA_SYSTEM_CONFIG_PATH = @PA_SYSTEM_CONFIG_PATH@
 PA_SYSTEM_GROUP = @PA_SYSTEM_GROUP@
 PA_SYSTEM_RUNTIME_PATH = @PA_SYSTEM_RUNTIME_PATH@
@@ -330,10 +334,12 @@ PREOPEN_MODS = @PREOPEN_MODS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
+PULSE_LOCALEDIR = @PULSE_LOCALEDIR@
 RANLIB = @RANLIB@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
+STOW = @STOW@
 STRIP = @STRIP@
 TDB_CFLAGS = @TDB_CFLAGS@
 TDB_LIBS = @TDB_LIBS@
@@ -352,12 +358,12 @@ abs_top_srcdir = @abs_top_srcdir@
 ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
-acx_pthread_config = @acx_pthread_config@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
 am__tar = @am__tar@
 am__untar = @am__untar@
+ax_pthread_config = @ax_pthread_config@
 bindir = @bindir@
 build = @build@
 build_alias = @build_alias@
@@ -391,7 +397,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-pulselocaledir = @pulselocaledir@
+pulseconfdir = @pulseconfdir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -427,8 +433,7 @@ vapi_DATA = \
 		vala/libpulse-mainloop-glib.deps vala/libpulse-mainloop-glib.vapi
 
 pkgconfigdir = $(libdir)/pkgconfig
-pkgconfig_DATA = libpulse.pc libpulse-simple.pc $(am__append_1) \
-	$(am__append_2)
+pkgconfig_DATA = libpulse.pc libpulse-simple.pc $(am__append_1)
 
 # see git-version-gen
 BUILT_SOURCES = $(top_srcdir)/.version
@@ -495,9 +500,9 @@ libpulse.pc: $(top_builddir)/config.status $(srcdir)/libpulse.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 libpulse-simple.pc: $(top_builddir)/config.status $(srcdir)/libpulse-simple.pc.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-libpulse-browse.pc: $(top_builddir)/config.status $(srcdir)/libpulse-browse.pc.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 libpulse-mainloop-glib.pc: $(top_builddir)/config.status $(srcdir)/libpulse-mainloop-glib.pc.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+src/pulse/version.h: $(top_builddir)/config.status $(top_srcdir)/src/pulse/version.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
@@ -1014,8 +1019,8 @@ fedora-snapshot: dist
 
 dist-hook:
 	if test -d .git ; then \
-		test -z $$SKIP_GIT && git pull ; \
-		chmod u+w ${distdir}/ChangeLog || true ; \
+		test -z $$USE_GIT || git pull ; \
+		test -f ${distdir}/ChangeLog && chmod u+w ${distdir}/ChangeLog ; \
 		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
 	fi
 	echo $(VERSION) > $(distdir)/.tarball-version

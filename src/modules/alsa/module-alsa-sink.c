@@ -24,7 +24,6 @@
 #include <config.h>
 #endif
 
-#include <pulsecore/core.h>
 #include <pulsecore/module.h>
 #include <pulsecore/sink.h>
 #include <pulsecore/modargs.h>
@@ -40,7 +39,8 @@ PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
         "name=<name of the sink, to be prefixed> "
         "sink_name=<name for the sink> "
-        "sink_properities=<properties for the sink> "
+        "sink_properties=<properties for the sink> "
+        "namereg_fail=<pa_namereg_register() fail parameter value> "
         "device=<ALSA device> "
         "device_id=<ALSA card index> "
         "format=<sample format> "
@@ -54,13 +54,17 @@ PA_MODULE_USAGE(
         "tsched_buffer_size=<buffer size when using timer based scheduling> "
         "tsched_buffer_watermark=<lower fill watermark> "
         "ignore_dB=<ignore dB information from the device?> "
-        "control=<name of mixer control>"
-        "rewind_safeguard=<number of bytes that cannot be rewound");
+        "control=<name of mixer control> "
+        "rewind_safeguard=<number of bytes that cannot be rewound> "
+        "sync_volume=<syncronize sw and hw voluchanges in IO-thread?> "
+        "sync_volume_safety_margin=<usec adjustment depending on volume direction> "
+        "sync_volume_extra_delay=<usec adjustment to HW volume changes>");
 
 static const char* const valid_modargs[] = {
     "name",
     "sink_name",
     "sink_properties",
+    "namereg_fail",
     "device",
     "device_id",
     "format",
@@ -76,6 +80,9 @@ static const char* const valid_modargs[] = {
     "ignore_dB",
     "control",
     "rewind_safeguard",
+    "sync_volume",
+    "sync_volume_safety_margin",
+    "sync_volume_extra_delay",
     NULL
 };
 

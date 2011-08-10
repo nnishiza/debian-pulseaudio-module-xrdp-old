@@ -26,9 +26,7 @@
 #include <stdio.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <errno.h>
-#include <string.h>
 #include <unistd.h>
 
 #include <pulse/rtclock.h>
@@ -38,7 +36,6 @@
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/module.h>
-#include <pulsecore/llist.h>
 #include <pulsecore/source.h>
 #include <pulsecore/source-output.h>
 #include <pulsecore/memblockq.h>
@@ -49,6 +46,7 @@
 #include <pulsecore/sample-util.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/socket-util.h>
+#include <pulsecore/arpa-inet.h>
 
 #include "module-rtp-send-symdef.h"
 
@@ -262,7 +260,7 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    if ((fd = socket(af, SOCK_DGRAM, 0)) < 0) {
+    if ((fd = pa_socket_cloexec(af, SOCK_DGRAM, 0)) < 0) {
         pa_log("socket() failed: %s", pa_cstrerror(errno));
         goto fail;
     }
@@ -277,7 +275,7 @@ int pa__init(pa_module*m) {
 #endif
     }
 
-    if ((sap_fd = socket(af, SOCK_DGRAM, 0)) < 0) {
+    if ((sap_fd = pa_socket_cloexec(af, SOCK_DGRAM, 0)) < 0) {
         pa_log("socket() failed: %s", pa_cstrerror(errno));
         goto fail;
     }
@@ -316,8 +314,6 @@ int pa__init(pa_module*m) {
     /* If the socket queue is full, let's drop packets */
     pa_make_fd_nonblock(fd);
     pa_make_udp_socket_low_delay(fd);
-    pa_make_fd_cloexec(fd);
-    pa_make_fd_cloexec(sap_fd);
 
     pa_source_output_new_data_init(&data);
     pa_proplist_sets(data.proplist, PA_PROP_MEDIA_NAME, "RTP Monitor Stream");
@@ -327,7 +323,7 @@ int pa__init(pa_module*m) {
     pa_proplist_setf(data.proplist, "rtp.ttl", "%lu", (unsigned long) ttl);
     data.driver = __FILE__;
     data.module = m;
-    data.source = s;
+    pa_source_output_new_data_set_source(&data, s, FALSE);
     pa_source_output_new_data_set_sample_spec(&data, &ss);
     pa_source_output_new_data_set_channel_map(&data, &cm);
     data.flags = PA_SOURCE_OUTPUT_DONT_INHIBIT_AUTO_SUSPEND;

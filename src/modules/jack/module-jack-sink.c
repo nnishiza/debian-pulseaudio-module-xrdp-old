@@ -24,19 +24,15 @@
 #endif
 
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <stdio.h>
 #include <errno.h>
 #include <string.h>
-#include <fcntl.h>
 #include <unistd.h>
-#include <limits.h>
 
 #include <jack/jack.h>
 
 #include <pulse/xmalloc.h>
 
-#include <pulsecore/core-error.h>
 #include <pulsecore/sink.h>
 #include <pulsecore/module.h>
 #include <pulsecore/core-util.h>
@@ -68,7 +64,7 @@ PA_MODULE_LOAD_ONCE(TRUE);
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_USAGE(
         "sink_name=<name for the sink> "
-        "sink_properties=<properties  for the card> "
+        "sink_properties=<properties for the card> "
         "server_name=<jack server name> "
         "client_name=<jack client name> "
         "channels=<number of channels> "

@@ -105,6 +105,7 @@ static void context_drain_complete(pa_context*c, void *userdata) {
 
 /* Stream draining complete */
 static void stream_drain_complete(pa_stream*s, int success, void *userdata) {
+    pa_operation *o = NULL;
 
     if (!success) {
         pa_log(_("Failed to drain stream: %s"), pa_strerror(pa_context_errno(context)));
@@ -118,9 +119,10 @@ static void stream_drain_complete(pa_stream*s, int success, void *userdata) {
     pa_stream_unref(stream);
     stream = NULL;
 
-    if (!pa_context_drain(context, context_drain_complete, NULL))
+    if (!(o = pa_context_drain(context, context_drain_complete, NULL)))
         pa_context_disconnect(context);
     else {
+        pa_operation_unref(o);
         if (verbose)
             pa_log(_("Draining connection to server."));
     }
@@ -604,6 +606,7 @@ static void stream_update_timing_callback(pa_stream *s, int success, void *userd
     fprintf(stderr, "        \r");
 }
 
+#ifdef SIGUSR1
 /* Someone requested that the latency is shown */
 static void sigusr1_signal_callback(pa_mainloop_api*m, pa_signal_event *e, int sig, void *userdata) {
 
@@ -612,6 +615,7 @@ static void sigusr1_signal_callback(pa_mainloop_api*m, pa_signal_event *e, int s
 
     pa_operation_unref(pa_stream_update_timing_info(stream, stream_update_timing_callback, NULL));
 }
+#endif
 
 static void time_event_callback(pa_mainloop_api *m, pa_time_event *e, const struct timeval *t, void *userdata) {
     if (stream && pa_stream_get_state(stream) == PA_STREAM_READY) {
@@ -659,6 +663,7 @@ static void help(const char *argv0) {
              "      --process-time-msec=MSEC          Request the specified process time per request in msec.\n"
              "      --property=PROPERTY=VALUE         Set the specified property to the specified value.\n"
              "      --raw                             Record/play raw PCM data.\n"
+             "      --passthrough                     passthrough data \n"
              "      --file-format[=FFORMAT]           Record/play formatted PCM data.\n"
              "      --list-file-formats               List available file formats.\n")
            , argv0);
@@ -680,6 +685,7 @@ enum {
     ARG_LATENCY,
     ARG_PROCESS_TIME,
     ARG_RAW,
+    ARG_PASSTHROUGH,
     ARG_PROPERTY,
     ARG_FILE_FORMAT,
     ARG_LIST_FILE_FORMATS,
@@ -718,6 +724,7 @@ int main(int argc, char *argv[]) {
         {"process-time", 1, NULL, ARG_PROCESS_TIME},
         {"property",     1, NULL, ARG_PROPERTY},
         {"raw",          0, NULL, ARG_RAW},
+        {"passthrough",  0, NULL, ARG_PASSTHROUGH},
         {"file-format",  2, NULL, ARG_FILE_FORMAT},
         {"list-file-formats", 0, NULL, ARG_LIST_FILE_FORMATS},
         {"latency-msec", 1, NULL, ARG_LATENCY_MSEC},
@@ -914,9 +921,11 @@ int main(int argc, char *argv[]) {
                 raw = TRUE;
                 break;
 
-            case ARG_FILE_FORMAT:
-                raw = FALSE;
+            case ARG_PASSTHROUGH:
+                flags |= PA_STREAM_PASSTHROUGH;
+                break;
 
+            case ARG_FILE_FORMAT:
                 if (optarg) {
                     if ((file_format = pa_sndfile_format_from_string(optarg)) < 0) {
                         pa_log(_("Unknown file format %s."), optarg);
@@ -947,7 +956,7 @@ int main(int argc, char *argv[]) {
 
         filename = argv[optind];
 
-        if ((fd = open(argv[optind], mode == PLAYBACK ? O_RDONLY : O_WRONLY|O_TRUNC|O_CREAT, 0666)) < 0) {
+        if ((fd = pa_open_cloexec(argv[optind], mode == PLAYBACK ? O_RDONLY : O_WRONLY|O_TRUNC|O_CREAT, 0666)) < 0) {
             pa_log(_("open(): %s"), strerror(errno));
             goto quit;
         }
@@ -975,13 +984,19 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            /* Transparently upgrade classic .wav to wavex for multichannel audio */
             if (file_format <= 0) {
-                if ((sample_spec.channels == 2 && (!channel_map_set || (channel_map.map[0] == PA_CHANNEL_POSITION_LEFT &&
-                                                                        channel_map.map[1] == PA_CHANNEL_POSITION_RIGHT))) ||
-                    (sample_spec.channels == 1 && (!channel_map_set || (channel_map.map[0] == PA_CHANNEL_POSITION_MONO))))
+                char *extension;
+                if (filename && (extension = strrchr(filename, '.')))
+                    file_format = pa_sndfile_format_from_string(extension+1);
+                if (file_format <= 0)
                     file_format = SF_FORMAT_WAV;
-                else
+                /* Transparently upgrade classic .wav to wavex for multichannel audio */
+                if (file_format == SF_FORMAT_WAV &&
+                    (sample_spec.channels > 2 ||
+                    (channel_map_set &&
+                    !(sample_spec.channels == 1 && channel_map.map[0] == PA_CHANNEL_POSITION_MONO) &&
+                    !(sample_spec.channels == 2 && channel_map.map[0] == PA_CHANNEL_POSITION_LEFT
+                                                && channel_map.map[1] == PA_CHANNEL_POSITION_RIGHT))))
                     file_format = SF_FORMAT_WAVEX;
             }
 

@@ -282,7 +282,7 @@ static void debug(int level, const char *format, ...) PA_GCC_PRINTF_ATTR(2,3);
 
 #define DEBUG_LEVEL_ALWAYS                0
 #define DEBUG_LEVEL_NORMAL                1
-#define DEBUG_LEVEL_VERBOSE                2
+#define DEBUG_LEVEL_VERBOSE               2
 
 static void debug(int level, const char *format, ...) {
     va_list ap;
@@ -1222,7 +1222,7 @@ fail:
 static void sink_info_cb(pa_context *context, const pa_sink_info *si, int eol, void *userdata) {
     fd_info *i = userdata;
 
-    if (!si || eol < 0) {
+    if (eol < 0) {
         i->operation_success = 0;
         pa_threaded_mainloop_signal(i->mainloop, 0);
         return;
@@ -1244,7 +1244,7 @@ static void sink_info_cb(pa_context *context, const pa_sink_info *si, int eol, v
 static void source_info_cb(pa_context *context, const pa_source_info *si, int eol, void *userdata) {
     fd_info *i = userdata;
 
-    if (!si || eol < 0) {
+    if (eol < 0) {
         i->operation_success = 0;
         pa_threaded_mainloop_signal(i->mainloop, 0);
         return;
@@ -1596,7 +1596,7 @@ static int mixer_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno
 
             *(int*) argp =
                 ((v->values[0]*100/PA_VOLUME_NORM)) |
-                ((v->values[v->channels > 1 ? 1 : 0]*100/PA_VOLUME_NORM)  << 8);
+                ((v->values[v->channels > 1 ? 1 : 0]*100/PA_VOLUME_NORM) << 8);
 
             pa_threaded_mainloop_unlock(i->mainloop);
 
@@ -2077,7 +2077,7 @@ static int dsp_ioctl(fd_info *i, unsigned long request, void*argp, int *_errno) 
         case SNDCTL_DSP_GETCAPS:
             debug(DEBUG_LEVEL_NORMAL, __FILE__": SNDCTL_DSP_CAPS\n");
 
-            *(int*)  argp = DSP_CAP_DUPLEX | DSP_CAP_TRIGGER
+            *(int*) argp = DSP_CAP_DUPLEX | DSP_CAP_TRIGGER
 #ifdef DSP_CAP_MULTI
               | DSP_CAP_MULTI
 #endif

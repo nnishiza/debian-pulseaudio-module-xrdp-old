@@ -32,14 +32,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-#ifdef HAVE_SYS_SOCKET_H
-#include <sys/socket.h>
-#endif
 #ifdef HAVE_SYS_UN_H
 #include <sys/un.h>
-#endif
-#ifdef HAVE_ARPA_INET_H
-#include <arpa/inet.h>
 #endif
 #ifdef HAVE_NETINET_IN_H
 #include <netinet/in.h>
@@ -56,9 +50,9 @@
 #include <pulse/timeval.h>
 #include <pulse/xmalloc.h>
 
-#include <pulsecore/winsock.h>
-#include <pulsecore/core-error.h>
+#include <pulsecore/socket.h>
 #include <pulsecore/socket-util.h>
+#include <pulsecore/core-error.h>
 #include <pulsecore/core-rtclock.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/socket-util.h>
@@ -66,6 +60,7 @@
 #include <pulsecore/parseaddr.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/refcnt.h>
+#include <pulsecore/arpa-inet.h>
 
 #include "socket-client.h"
 
@@ -257,12 +252,10 @@ static int sockaddr_prepare(pa_socket_client *c, const struct sockaddr *sa, size
 
     c->local = pa_socket_address_is_local(sa);
 
-    if ((c->fd = socket(sa->sa_family, SOCK_STREAM, 0)) < 0) {
+    if ((c->fd = pa_socket_cloexec(sa->sa_family, SOCK_STREAM, 0)) < 0) {
         pa_log("socket(): %s", pa_cstrerror(errno));
         return -1;
     }
-
-    pa_make_fd_cloexec(c->fd);
 
 #ifdef HAVE_IPV6
     if (sa->sa_family == AF_INET || sa->sa_family == AF_INET6)
@@ -527,7 +520,7 @@ pa_socket_client* pa_socket_client_new_string(pa_mainloop_api *m, pa_bool_t use_
                 if (!host)
                     goto finish;
 
-                pa_zero(sa);
+                pa_zero(s);
                 s.sin_family = AF_INET;
                 memcpy(&s.sin_addr, host->h_addr, sizeof(struct in_addr));
                 s.sin_port = htons(a.port);

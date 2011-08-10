@@ -84,7 +84,6 @@ src/pulsecore/socket-client.c
 src/pulsecore/idxset.c
 src/pulsecore/pipe.c
 src/pulsecore/asyncmsgq.c
-src/pulsecore/inet_pton.c
 src/pulsecore/socket-util.c
 src/pulsecore/object.c
 src/pulsecore/sioman.c
@@ -93,7 +92,6 @@ src/pulsecore/x11prop.c
 src/pulsecore/sconv-s16be.c
 src/pulsecore/thread-posix.c
 src/pulsecore/client.c
-src/pulsecore/inet_ntop.c
 src/pulsecore/strlist.c
 src/pulsecore/msgobject.c
 src/pulsecore/mutex-win32.c
@@ -109,7 +107,6 @@ src/pulsecore/core-error.c
 src/pulsecore/strbuf.c
 src/pulsecore/play-memblockq.c
 src/pulsecore/dllmain.c
-src/pulsecore/envelope.c
 src/pulsecore/pid.c
 src/pulsecore/thread-mq.c
 src/pulsecore/shm.c
@@ -167,7 +164,6 @@ src/pulse/mainloop-api.c
 src/pulse/sample.c
 src/pulse/client-conf-x11.c
 src/pulse/client-conf.c
-src/pulse/browser.c
 src/pulse/volume.c
 src/pulse/simple.c
 src/pulse/subscribe.c
@@ -180,9 +176,9 @@ src/pulse/thread-mainloop.c
 src/pulse/scache.c
 src/pulse/glib-mainloop.c
 src/pulse/timeval.c
+src/pulse/format.c
 src/utils/pacat.c
 src/utils/pasuspender.c
-src/utils/pabrowse.c
 src/utils/pactl.c
 src/utils/padsp.c
 src/utils/pax11publish.c
@@ -196,3 +192,6 @@ src/modules/reserve-wrap.c
 src/modules/module-rygel-media-server.c
 src/modules/alsa/alsa-mixer.c
 src/modules/echo-cancel/module-echo-cancel.c
+src/modules/module-equalizer-sink.c
+src/modules/module-filter-apply.c
+src/tests/resampler-test.c

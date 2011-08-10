@@ -28,8 +28,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <pulse/gccmacro.h>
 #include <pulse/xmalloc.h>
-#include <pulse/util.h>
 #include <pulse/i18n.h>
 #include <pulse/utf8.h>
 
@@ -39,7 +39,6 @@
 #include <pulsecore/log.h>
 #include <pulsecore/modargs.h>
 #include <pulsecore/dbus-shared.h>
-#include <pulsecore/endianmacros.h>
 #include <pulsecore/namereg.h>
 #include <pulsecore/mime-type.h>
 #include <pulsecore/strbuf.h>
@@ -134,6 +133,7 @@ PA_MODULE_USAGE("display_name=<UPnP Media Server name>");
     " <interface name=\"org.gnome.UPnP.MediaItem2\">"                   \
     "  <property name=\"URLs\" type=\"as\" access=\"read\"/>"           \
     "  <property name=\"MIMEType\" type=\"s\" access=\"read\"/>"        \
+    " </interface>"                                                     \
     " <interface name=\"org.gnome.UPnP.MediaObject2\">"                 \
     "  <property name=\"Parent\" type=\"s\" access=\"read\"/>"          \
     "  <property name=\"Type\" type=\"s\" access=\"read\"/>"            \
@@ -380,6 +380,7 @@ static void append_variant_item_display_name(DBusMessage *m, DBusMessageIter *it
     append_variant_string(m, iter, display_name);
 }
 
+PA_GCC_UNUSED
 static void append_property_dict_entry_object_array(DBusMessage *m, DBusMessageIter *iter, const char *name, const char *path[], unsigned n) {
     DBusMessageIter sub;
 
@@ -723,10 +724,7 @@ static DBusHandlerResult root_handler(DBusConnection *c, DBusMessage *m, void *u
         const char *xml = ROOT_INTROSPECT_XML;
 
         pa_assert_se(r = dbus_message_new_method_return(m));
-        pa_assert_se(dbus_message_append_args(
-                             r,
-                             DBUS_TYPE_STRING, &xml,
-                             DBUS_TYPE_INVALID));
+        pa_assert_se(dbus_message_append_args(r, DBUS_TYPE_STRING, &xml, DBUS_TYPE_INVALID));
 
     } else
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -912,6 +910,7 @@ static DBusHandlerResult sinks_and_sources_handler(DBusConnection *c, DBusMessag
             dbus_message_iter_init_append(r, &iter);
             pa_assert_se(dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &sub));
             append_sink_or_source_container_mediaobject2_properties(r, &sub, path);
+            pa_assert_se(dbus_message_iter_close_container(&iter, &sub));
 
         } else if (dbus_message_is_method_call(m, "org.freedesktop.DBus.Introspectable", "Introspect")) {
             pa_strbuf *sb;
@@ -938,10 +937,7 @@ static DBusHandlerResult sinks_and_sources_handler(DBusConnection *c, DBusMessag
             xml = pa_strbuf_tostring_free(sb);
 
             pa_assert_se(r = dbus_message_new_method_return(m));
-            pa_assert_se(dbus_message_append_args(
-                                 r,
-                                 DBUS_TYPE_STRING, &xml,
-                                 DBUS_TYPE_INVALID));
+            pa_assert_se(dbus_message_append_args(r, DBUS_TYPE_STRING, &xml, DBUS_TYPE_INVALID));
 
             pa_xfree(xml);
         } else
@@ -985,6 +981,7 @@ static DBusHandlerResult sinks_and_sources_handler(DBusConnection *c, DBusMessag
 
             pa_assert_se(dbus_message_iter_open_container(&iter, DBUS_TYPE_ARRAY, "{sv}", &sub));
             append_sink_or_source_item_mediaobject2_properties(r, &sub, path, sink, source);
+            pa_assert_se(dbus_message_iter_close_container(&iter, &sub));
 
         } else if (message_is_property_get(m, "org.gnome.UPnP.MediaItem2", "MIMEType")) {
             pa_assert_se(r = dbus_message_new_method_return(m));
@@ -1012,10 +1009,7 @@ static DBusHandlerResult sinks_and_sources_handler(DBusConnection *c, DBusMessag
                 ITEM_INTROSPECT_XML;
 
             pa_assert_se(r = dbus_message_new_method_return(m));
-            pa_assert_se(dbus_message_append_args(
-                                 r,
-                                 DBUS_TYPE_STRING, &xml,
-                                 DBUS_TYPE_INVALID));
+            pa_assert_se(dbus_message_append_args(r, DBUS_TYPE_STRING, &xml, DBUS_TYPE_INVALID));
 
         } else
             return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;

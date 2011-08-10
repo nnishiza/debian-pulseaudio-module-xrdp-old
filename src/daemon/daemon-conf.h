@@ -28,6 +28,7 @@
 
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
+#include <pulsecore/core.h>
 #include <pulsecore/core-util.h>
 
 #ifdef HAVE_SYS_RESOURCE_H
@@ -74,7 +75,9 @@ typedef struct pa_daemon_conf {
         log_meta,
         log_time,
         flat_volumes,
-        lock_memory;
+        lock_memory,
+        sync_volume;
+    pa_server_type_t local_server_type;
     int exit_idle_time,
         scache_idle_time,
         auto_log_target,
@@ -125,6 +128,8 @@ typedef struct pa_daemon_conf {
 #endif
 
     unsigned default_n_fragments, default_fragment_size_msec;
+    unsigned sync_volume_safety_margin_usec;
+    int sync_volume_extra_delay_usec;
     pa_sample_spec default_sample_spec;
     pa_channel_map default_channel_map;
     size_t shm_size;
@@ -152,6 +157,7 @@ int pa_daemon_conf_env(pa_daemon_conf *c);
 int pa_daemon_conf_set_log_target(pa_daemon_conf *c, const char *string);
 int pa_daemon_conf_set_log_level(pa_daemon_conf *c, const char *string);
 int pa_daemon_conf_set_resample_method(pa_daemon_conf *c, const char *string);
+int pa_daemon_conf_set_local_server_type(pa_daemon_conf *c, const char *string);
 
 const char *pa_daemon_conf_get_default_script_file(pa_daemon_conf *c);
 FILE *pa_daemon_conf_open_default_script_file(pa_daemon_conf *c);

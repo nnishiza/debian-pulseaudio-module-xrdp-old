@@ -23,12 +23,10 @@
 #include <config.h>
 #endif
 
-#include <time.h>
 #include <stdlib.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
-#include <arpa/inet.h>
 #include <errno.h>
 #include <string.h>
 #include <unistd.h>
@@ -48,6 +46,7 @@
 #include <pulsecore/core-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
+#include <pulsecore/arpa-inet.h>
 
 #include "sap.h"
 #include "sdp.h"

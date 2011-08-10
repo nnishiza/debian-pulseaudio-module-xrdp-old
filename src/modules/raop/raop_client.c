@@ -23,11 +23,9 @@
 #include <config.h>
 #endif
 
-#include <fcntl.h>
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <arpa/inet.h>
 #include <unistd.h>
 #include <sys/ioctl.h>
 
@@ -46,17 +44,12 @@
 
 #include <pulsecore/core-error.h>
 #include <pulsecore/core-util.h>
+#include <pulsecore/iochannel.h>
 #include <pulsecore/socket-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/macro.h>
-#include <pulsecore/strbuf.h>
+#include <pulsecore/memchunk.h>
 #include <pulsecore/random.h>
-
-#ifdef HAVE_POLL_H
-#include <poll.h>
-#else
-#include <pulsecore/poll.h>
-#endif
 
 #include "raop_client.h"
 #include "rtsp_client.h"
@@ -179,8 +172,7 @@ static int rsa_encrypt(uint8_t *text, int len, uint8_t *res) {
     return size;
 }
 
-static int aes_encrypt(pa_raop_client* c, uint8_t *data, int size)
-{
+static int aes_encrypt(pa_raop_client* c, uint8_t *data, int size) {
     uint8_t *buf;
     int i=0, j;
 
@@ -199,8 +191,7 @@ static int aes_encrypt(pa_raop_client* c, uint8_t *data, int size)
     return i;
 }
 
-static inline void rtrimchar(char *str, char rc)
-{
+static inline void rtrimchar(char *str, char rc) {
     char *sp = str + strlen(str) - 1;
     while (sp >= str && *sp == rc) {
         *sp = '\0';
@@ -228,7 +219,6 @@ static void on_connection(pa_socket_client *sc, pa_iochannel *io, void *userdata
     c->fd = pa_iochannel_get_send_fd(io);
 
     pa_iochannel_set_noclose(io, TRUE);
-    pa_iochannel_socket_set_sndbuf(io, 1024);
     pa_iochannel_free(io);
 
     pa_make_tcp_socket_low_delay(c->fd);
@@ -237,8 +227,7 @@ static void on_connection(pa_socket_client *sc, pa_iochannel *io, void *userdata
     c->callback(c->fd, c->userdata);
 }
 
-static void rtsp_cb(pa_rtsp_client *rtsp, pa_rtsp_state state, pa_headerlist* headers, void *userdata)
-{
+static void rtsp_cb(pa_rtsp_client *rtsp, pa_rtsp_state state, pa_headerlist* headers, void *userdata) {
     pa_raop_client* c = userdata;
     pa_assert(c);
     pa_assert(rtsp);
@@ -373,8 +362,7 @@ static void rtsp_cb(pa_rtsp_client *rtsp, pa_rtsp_state state, pa_headerlist* he
     }
 }
 
-pa_raop_client* pa_raop_client_new(pa_core *core, const char* host)
-{
+pa_raop_client* pa_raop_client_new(pa_core *core, const char* host) {
     pa_raop_client* c = pa_xnew0(pa_raop_client, 1);
 
     pa_assert(core);
@@ -392,8 +380,7 @@ pa_raop_client* pa_raop_client_new(pa_core *core, const char* host)
 }
 
 
-void pa_raop_client_free(pa_raop_client* c)
-{
+void pa_raop_client_free(pa_raop_client* c) {
     pa_assert(c);
 
     if (c->rtsp)
@@ -403,8 +390,7 @@ void pa_raop_client_free(pa_raop_client* c)
 }
 
 
-int pa_raop_connect(pa_raop_client* c)
-{
+int pa_raop_connect(pa_raop_client* c) {
     char *sci;
     struct {
         uint32_t a;
@@ -438,8 +424,7 @@ int pa_raop_connect(pa_raop_client* c)
 }
 
 
-int pa_raop_flush(pa_raop_client* c)
-{
+int pa_raop_flush(pa_raop_client* c) {
     pa_assert(c);
 
     pa_rtsp_flush(c->rtsp, c->seq, c->rtptime);
@@ -447,8 +432,7 @@ int pa_raop_flush(pa_raop_client* c)
 }
 
 
-int pa_raop_client_set_volume(pa_raop_client* c, pa_volume_t volume)
-{
+int pa_raop_client_set_volume(pa_raop_client* c, pa_volume_t volume) {
     int rv;
     double db;
     char *param;
@@ -470,8 +454,7 @@ int pa_raop_client_set_volume(pa_raop_client* c, pa_volume_t volume)
 }
 
 
-int pa_raop_client_encode_sample(pa_raop_client* c, pa_memchunk* raw, pa_memchunk* encoded)
-{
+int pa_raop_client_encode_sample(pa_raop_client* c, pa_memchunk* raw, pa_memchunk* encoded) {
     uint16_t len;
     size_t bufmax;
     uint8_t *bp, bpos;
@@ -553,16 +536,14 @@ int pa_raop_client_encode_sample(pa_raop_client* c, pa_memchunk* raw, pa_memchun
 }
 
 
-void pa_raop_client_set_callback(pa_raop_client* c, pa_raop_client_cb_t callback, void *userdata)
-{
+void pa_raop_client_set_callback(pa_raop_client* c, pa_raop_client_cb_t callback, void *userdata) {
     pa_assert(c);
 
     c->callback = callback;
     c->userdata = userdata;
 }
 
-void pa_raop_client_set_closed_callback(pa_raop_client* c, pa_raop_client_closed_cb_t callback, void *userdata)
-{
+void pa_raop_client_set_closed_callback(pa_raop_client* c, pa_raop_client_closed_cb_t callback, void *userdata) {
     pa_assert(c);
 
     c->closed_callback = callback;

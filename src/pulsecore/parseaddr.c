@@ -25,14 +25,12 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
 
 #include <pulse/xmalloc.h>
-#include <pulse/util.h>
 
 #include <pulsecore/core-util.h>
 #include <pulsecore/macro.h>
+#include <pulsecore/arpa-inet.h>
 
 #include "parseaddr.h"
 

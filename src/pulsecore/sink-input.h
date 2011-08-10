@@ -28,7 +28,7 @@
 typedef struct pa_sink_input pa_sink_input;
 
 #include <pulse/sample.h>
-#include <pulsecore/hook-list.h>
+#include <pulse/format.h>
 #include <pulsecore/memblockq.h>
 #include <pulsecore/resampler.h>
 #include <pulsecore/module.h>
@@ -60,7 +60,8 @@ typedef enum pa_sink_input_flags {
     PA_SINK_INPUT_FIX_CHANNELS = 128,
     PA_SINK_INPUT_DONT_INHIBIT_AUTO_SUSPEND = 256,
     PA_SINK_INPUT_NO_CREATE_ON_SUSPEND = 512,
-    PA_SINK_INPUT_KILL_ON_SUSPEND = 1024
+    PA_SINK_INPUT_KILL_ON_SUSPEND = 1024,
+    PA_SINK_INPUT_PASSTHROUGH = 2048
 } pa_sink_input_flags_t;
 
 struct pa_sink_input {
@@ -81,7 +82,8 @@ struct pa_sink_input {
     pa_module *module;                  /* may be NULL */
     pa_client *client;                  /* may be NULL */
 
-    pa_sink *sink; /* NULL while we are being moved */
+    pa_sink *sink;                      /* NULL while we are being moved */
+    pa_sink *origin_sink;               /* only set by filter sinks */
 
     /* A sink input may be connected to multiple source outputs
      * directly, so that they don't get mixed data of the entire
@@ -90,6 +92,7 @@ struct pa_sink_input {
 
     pa_sample_spec sample_spec;
     pa_channel_map channel_map;
+    pa_format_info *format;
 
     pa_sink_input *sync_prev, *sync_next;
 
@@ -102,9 +105,11 @@ struct pa_sink_input {
 
     pa_cvolume volume_factor_sink; /* A second volume factor in format of the sink this stream is connected to */
 
+    pa_bool_t volume_writable:1;
+
     pa_bool_t muted:1;
 
-    /* if TRUE then the source we are connected to and/or the volume
+    /* if TRUE then the sink we are connected to and/or the volume
      * set is worth remembering, i.e. was explicitly chosen by the
      * user and not automatically. module-stream-restore looks for
      * this.*/
@@ -267,6 +272,7 @@ typedef struct pa_sink_input_new_data {
     pa_client *client;
 
     pa_sink *sink;
+    pa_sink *origin_sink;
 
     pa_resample_method_t resample_method;
 
@@ -274,6 +280,9 @@ typedef struct pa_sink_input_new_data {
 
     pa_sample_spec sample_spec;
     pa_channel_map channel_map;
+    pa_format_info *format;
+    pa_idxset *req_formats;
+    pa_idxset *nego_formats;
 
     pa_cvolume volume, volume_factor, volume_factor_sink;
     pa_bool_t muted:1;
@@ -286,16 +295,21 @@ typedef struct pa_sink_input_new_data {
 
     pa_bool_t volume_is_absolute:1;
 
+    pa_bool_t volume_writable:1;
+
     pa_bool_t save_sink:1, save_volume:1, save_muted:1;
 } pa_sink_input_new_data;
 
 pa_sink_input_new_data* pa_sink_input_new_data_init(pa_sink_input_new_data *data);
 void pa_sink_input_new_data_set_sample_spec(pa_sink_input_new_data *data, const pa_sample_spec *spec);
 void pa_sink_input_new_data_set_channel_map(pa_sink_input_new_data *data, const pa_channel_map *map);
+pa_bool_t pa_sink_input_new_data_is_passthrough(pa_sink_input_new_data *data);
 void pa_sink_input_new_data_set_volume(pa_sink_input_new_data *data, const pa_cvolume *volume);
 void pa_sink_input_new_data_apply_volume_factor(pa_sink_input_new_data *data, const pa_cvolume *volume_factor);
 void pa_sink_input_new_data_apply_volume_factor_sink(pa_sink_input_new_data *data, const pa_cvolume *volume_factor);
 void pa_sink_input_new_data_set_muted(pa_sink_input_new_data *data, pa_bool_t mute);
+pa_bool_t pa_sink_input_new_data_set_sink(pa_sink_input_new_data *data, pa_sink *s, pa_bool_t save);
+pa_bool_t pa_sink_input_new_data_set_formats(pa_sink_input_new_data *data, pa_idxset *formats);
 void pa_sink_input_new_data_done(pa_sink_input_new_data *data);
 
 /* To be called by the implementing module only */
@@ -336,6 +350,8 @@ void pa_sink_input_kill(pa_sink_input*i);
 
 pa_usec_t pa_sink_input_get_latency(pa_sink_input *i, pa_usec_t *sink_latency);
 
+pa_bool_t pa_sink_input_is_passthrough(pa_sink_input *i);
+pa_bool_t pa_sink_input_is_volume_readable(pa_sink_input *i);
 void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume, pa_bool_t save, pa_bool_t absolute);
 pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i, pa_cvolume *volume, pa_bool_t absolute);
 

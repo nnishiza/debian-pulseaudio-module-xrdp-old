@@ -62,6 +62,15 @@ PA_C_DECL_BEGIN
 /** For streams: logic role of this media. One of the strings "video", "music", "game", "event", "phone", "animation", "production", "a11y", "test" */
 #define PA_PROP_MEDIA_ROLE                     "media.role"
 
+/** For streams: the name of a filter that is desired, e.g. "echo-cancel" or "equalizer-sink". PulseAudio may choose to not apply the filter if it does not make sense (for example, applying echo-cancellation on a Bluetooth headset probably does not make sense. \since 1.0 */
+#define PA_PROP_FILTER_WANT "filter.want"
+
+/** For streams: the name of a filter that is desired, e.g. "echo-cancel" or "equalizer-sink". Differs from PA_PROP_FILTER_WANT in that it forces PulseAudio to apply the filter, regardless of whether PulseAudio thinks it makes sense to do so or not. If this is set, PA_PROP_FILTER_WANT is ignored. In other words, you almost certainly do not want to use this. \since 1.0 */
+#define PA_PROP_FILTER_APPLY "filter.apply"
+
+/** For streams: the name of a filter that should specifically suppressed (i.e. overrides PA_PROP_FILTER_WANT). Useful for the times that PA_PROP_FILTER_WANT is automatically added (e.g. echo-cancellation for phone streams when $VOIP_APP does it's own, internal AEC) \since 1.0 */
+#define PA_PROP_FILTER_SUPPRESS "filter.suppress"
+
 /** For event sound streams: XDG event sound name. e.g. "message-new-email" (Event sound streams are those with media.role set to "event") */
 #define PA_PROP_EVENT_ID                       "event.id"
 
@@ -245,6 +254,18 @@ PA_C_DECL_BEGIN
 /** For modules: a version string for the module. e.g. "0.9.15" */
 #define PA_PROP_MODULE_VERSION                 "module.version"
 
+/** For PCM formats: the sample format used as returned by pa_sample_format_to_string() \since 1.0 */
+#define PA_PROP_FORMAT_SAMPLE_FORMAT           "format.sample_format"
+
+/** For all formats: the sample rate (unsigned integer) \since 1.0 */
+#define PA_PROP_FORMAT_RATE                    "format.rate"
+
+/** For all formats: the number of channels (unsigned integer) \since 1.0 */
+#define PA_PROP_FORMAT_CHANNELS                "format.channels"
+
+/** For PCM formats: the channel map of the stream as returned by pa_channel_map_snprint() \since 1.0 */
+#define PA_PROP_FORMAT_CHANNEL_MAP             "format.channel_map"
+
 /** A property list object. Basically a dictionary with ASCII strings
  * as keys and arbitrary data as values. \since 0.9.11 */
 typedef struct pa_proplist pa_proplist;
@@ -325,7 +346,7 @@ void pa_proplist_update(pa_proplist *p, pa_update_mode_t mode, pa_proplist *othe
  * specified key name. \since 0.9.11 */
 int pa_proplist_unset(pa_proplist *p, const char *key);
 
-/** Similar to pa_proplist_remove() but takes an array of keys to
+/** Similar to pa_proplist_unset() but takes an array of keys to
  * remove. The array should be terminated by a NULL pointer. Return -1
  * on failure, otherwise the number of entries actually removed (which
  * might even be 0, if there where no matching entries to
@@ -358,7 +379,7 @@ char *pa_proplist_to_string_sep(pa_proplist *p, const char *sep);
  * readable string. \since 0.9.15 */
 pa_proplist *pa_proplist_from_string(const char *str);
 
-  /** Returns 1 if an entry for the specified key is existant in the
+/** Returns 1 if an entry for the specified key is existant in the
  * property list. \since 0.9.11 */
 int pa_proplist_contains(pa_proplist *p, const char *key);
 
@@ -374,6 +395,10 @@ unsigned pa_proplist_size(pa_proplist *t);
 
 /** Returns 0 when the proplist is empty, positive otherwise \since 0.9.15 */
 int pa_proplist_isempty(pa_proplist *t);
+
+/** Return non-zero when a and b have the same keys and values.
+ * \since 0.9.16 */
+int pa_proplist_equal(pa_proplist *a, pa_proplist *b);
 
 PA_C_DECL_END
 

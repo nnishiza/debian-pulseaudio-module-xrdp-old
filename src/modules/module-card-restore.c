@@ -29,12 +29,10 @@
 #include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <ctype.h>
 
+#include <pulse/gccmacro.h>
 #include <pulse/xmalloc.h>
-#include <pulse/volume.h>
 #include <pulse/timeval.h>
-#include <pulse/util.h>
 #include <pulse/rtclock.h>
 
 #include <pulsecore/core-error.h>
@@ -46,6 +44,7 @@
 #include <pulsecore/card.h>
 #include <pulsecore/namereg.h>
 #include <pulsecore/database.h>
+#include <pulsecore/tagstruct.h>
 
 #include "module-card-restore-symdef.h"
 
@@ -73,8 +72,8 @@ struct userdata {
 
 struct entry {
     uint8_t version;
-    char profile[PA_NAME_MAX];
-} PA_GCC_PACKED ;
+    char *profile;
+};
 
 static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *t, void *userdata) {
     struct userdata *u = userdata;
@@ -91,9 +90,93 @@ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct
     pa_log_info("Synced.");
 }
 
-static struct entry* read_entry(struct userdata *u, const char *name) {
+static void trigger_save(struct userdata *u) {
+    if (u->save_time_event)
+        return;
+
+    u->save_time_event = pa_core_rttime_new(u->core, pa_rtclock_now() + SAVE_INTERVAL, save_time_callback, u);
+}
+
+static struct entry* entry_new(void) {
+    struct entry *r = pa_xnew0(struct entry, 1);
+    r->version = ENTRY_VERSION;
+    return r;
+}
+
+static void entry_free(struct entry* e) {
+    pa_assert(e);
+
+    pa_xfree(e->profile);
+    pa_xfree(e);
+}
+
+static pa_bool_t entry_write(struct userdata *u, const char *name, const struct entry *e) {
+    pa_tagstruct *t;
     pa_datum key, data;
+    pa_bool_t r;
+
+    pa_assert(u);
+    pa_assert(name);
+    pa_assert(e);
+
+    t = pa_tagstruct_new(NULL, 0);
+    pa_tagstruct_putu8(t, e->version);
+    pa_tagstruct_puts(t, e->profile);
+
+    key.data = (char *) name;
+    key.size = strlen(name);
+
+    data.data = (void*)pa_tagstruct_data(t, &data.size);
+
+    r = (pa_database_set(u->database, &key, &data, TRUE) == 0);
+
+    pa_tagstruct_free(t);
+
+    return r;
+}
+
+#ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
+
+#define LEGACY_ENTRY_VERSION 1
+static struct entry* legacy_entry_read(struct userdata *u, pa_datum *data) {
+    struct legacy_entry {
+        uint8_t version;
+        char profile[PA_NAME_MAX];
+    } PA_GCC_PACKED ;
+    struct legacy_entry *le;
     struct entry *e;
+
+    pa_assert(u);
+    pa_assert(data);
+
+    if (data->size != sizeof(struct legacy_entry)) {
+        pa_log_debug("Size does not match.");
+        return NULL;
+    }
+
+    le = (struct legacy_entry*)data->data;
+
+    if (le->version != LEGACY_ENTRY_VERSION) {
+        pa_log_debug("Version mismatch.");
+        return NULL;
+    }
+
+    if (!memchr(le->profile, 0, sizeof(le->profile))) {
+        pa_log_warn("Profile has missing NUL byte.");
+        return NULL;
+    }
+
+    e = entry_new();
+    e->profile = pa_xstrdup(le->profile);
+    return e;
+}
+#endif
+
+static struct entry* entry_read(struct userdata *u, const char *name) {
+    pa_datum key, data;
+    struct entry *e = NULL;
+    pa_tagstruct *t = NULL;
+    const char* profile;
 
     pa_assert(u);
     pa_assert(name);
@@ -106,42 +189,54 @@ static struct entry* read_entry(struct userdata *u, const char *name) {
     if (!pa_database_get(u->database, &key, &data))
         goto fail;
 
-    if (data.size != sizeof(struct entry)) {
-        pa_log_debug("Database contains entry for card %s of wrong size %lu != %lu. Probably due to upgrade, ignoring.", name, (unsigned long) data.size, (unsigned long) sizeof(struct entry));
+    t = pa_tagstruct_new(data.data, data.size);
+    e = entry_new();
+
+    if (pa_tagstruct_getu8(t, &e->version) < 0 ||
+        e->version > ENTRY_VERSION ||
+        pa_tagstruct_gets(t, &profile) < 0) {
+
         goto fail;
     }
 
-    e = (struct entry*) data.data;
+    e->profile = pa_xstrdup(profile);
 
-    if (e->version != ENTRY_VERSION) {
-        pa_log_debug("Version of database entry for card %s doesn't match our version. Probably due to upgrade, ignoring.", name);
+    if (!pa_tagstruct_eof(t))
         goto fail;
-    }
 
-    if (!memchr(e->profile, 0, sizeof(e->profile))) {
-        pa_log_warn("Database contains entry for card %s with missing NUL byte in profile name", name);
-        goto fail;
-    }
+    pa_tagstruct_free(t);
+    pa_datum_free(&data);
 
     return e;
 
 fail:
 
+    pa_log_debug("Database contains invalid data for key: %s (probably pre-v1.0 data)", name);
+
+    if (e)
+        entry_free(e);
+    if (t)
+        pa_tagstruct_free(t);
+
+#ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
+    pa_log_debug("Attempting to load legacy (pre-v1.0) data for key: %s", name);
+    if ((e = legacy_entry_read(u, &data))) {
+        pa_log_debug("Success. Saving new format for key: %s", name);
+        if (entry_write(u, name, e))
+            trigger_save(u);
+        pa_datum_free(&data);
+        return e;
+    } else
+        pa_log_debug("Unable to load legacy (pre-v1.0) data for key: %s. Ignoring.", name);
+#endif
+
     pa_datum_free(&data);
     return NULL;
 }
 
-static void trigger_save(struct userdata *u) {
-    if (u->save_time_event)
-        return;
-
-    u->save_time_event = pa_core_rttime_new(u->core, pa_rtclock_now() + SAVE_INTERVAL, save_time_callback, u);
-}
-
 static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint32_t idx, void *userdata) {
     struct userdata *u = userdata;
-    struct entry entry, *old;
-    pa_datum key, data;
+    struct entry *entry, *old;
     pa_card *card;
 
     pa_assert(c);
@@ -151,8 +246,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         t != (PA_SUBSCRIPTION_EVENT_CARD|PA_SUBSCRIPTION_EVENT_CHANGE))
         return;
 
-    pa_zero(entry);
-    entry.version = ENTRY_VERSION;
+    entry = entry_new();
 
     if (!(card = pa_idxset_get_by_index(c->cards, idx)))
         return;
@@ -160,29 +254,25 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
     if (!card->save_profile)
         return;
 
-    pa_strlcpy(entry.profile, card->active_profile ? card->active_profile->name : "", sizeof(entry.profile));
+    entry->profile = pa_xstrdup(card->active_profile ? card->active_profile->name : "");
 
-    if ((old = read_entry(u, card->name))) {
+    if ((old = entry_read(u, card->name))) {
 
-        if (strncmp(old->profile, entry.profile, sizeof(entry.profile)) == 0) {
-            pa_xfree(old);
+        if (pa_streq(old->profile, entry->profile)) {
+            entry_free(old);
+            entry_free(entry);
             return;
         }
 
-        pa_xfree(old);
+        entry_free(old);
     }
-
-    key.data = card->name;
-    key.size = strlen(card->name);
-
-    data.data = &entry;
-    data.size = sizeof(entry);
 
     pa_log_info("Storing profile for card %s.", card->name);
 
-    pa_database_set(u->database, &key, &data, TRUE);
+    if (entry_write(u, card->name, entry))
+        trigger_save(u);
 
-    trigger_save(u);
+    entry_free(entry);
 }
 
 static pa_hook_result_t card_new_hook_callback(pa_core *c, pa_card_new_data *new_data, struct userdata *u) {
@@ -190,7 +280,7 @@ static pa_hook_result_t card_new_hook_callback(pa_core *c, pa_card_new_data *new
 
     pa_assert(new_data);
 
-    if ((e = read_entry(u, new_data->name)) && e->profile[0]) {
+    if ((e = entry_read(u, new_data->name)) && e->profile[0]) {
 
         if (!new_data->active_profile) {
             pa_log_info("Restoring profile for card %s.", new_data->name);
@@ -199,7 +289,7 @@ static pa_hook_result_t card_new_hook_callback(pa_core *c, pa_card_new_data *new
         } else
             pa_log_debug("Not restoring profile for card %s, because already set.", new_data->name);
 
-        pa_xfree(e);
+        entry_free(e);
     }
 
     return PA_HOOK_OK;
@@ -251,7 +341,7 @@ fail:
     if (ma)
         pa_modargs_free(ma);
 
-    return  -1;
+    return -1;
 }
 
 void pa__done(pa_module*m) {

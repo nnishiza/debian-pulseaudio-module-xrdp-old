@@ -36,14 +36,10 @@ static void dump_chunk(const pa_memchunk *chunk) {
 
     pa_assert(chunk);
 
-    printf("[");
-
     q = pa_memblock_acquire(chunk->memblock);
     for (e = (char*) q + chunk->index, n = 0; n < chunk->length; n++, e++)
         printf("%c", *e);
     pa_memblock_release(chunk->memblock);
-
-    printf("]");
 }
 
 static void dump(pa_memblockq *bq) {
@@ -85,7 +81,7 @@ int main(int argc, char *argv[]) {
 
     p = pa_mempool_new(FALSE, 0);
 
-    silence.memblock = pa_memblock_new_fixed(p, (char*)  "__", 2, 1);
+    silence.memblock = pa_memblock_new_fixed(p, (char*) "__", 2, 1);
     assert(silence.memblock);
     silence.index = 0;
     silence.length = pa_memblock_get_length(silence.memblock);

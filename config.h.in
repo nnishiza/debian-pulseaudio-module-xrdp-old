@@ -23,6 +23,12 @@
 /* Define to 1 if using `alloca.c'. */
 #undef C_ALLOCA
 
+/* Disable Orc */
+#undef DISABLE_ORC
+
+/* Legacy database entry format */
+#undef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
+
 /* Legacy runtime dir */
 #undef ENABLE_LEGACY_RUNTIME_DIR
 
@@ -35,6 +41,9 @@
 
 /* Gettext package */
 #undef GETTEXT_PACKAGE
+
+/* Define to 1 if you have the `accept4' function. */
+#undef HAVE_ACCEPT4
 
 /* Define to 1 if you have `alloca', as a function or macro. */
 #undef HAVE_ALLOCA
@@ -72,6 +81,9 @@
 
 /* Define to 1 if you have the `clock_gettime' function. */
 #undef HAVE_CLOCK_GETTIME
+
+/* Define to 1 if you have the <CoreAudio/CoreAudio.h> header file. */
+#undef HAVE_COREAUDIO_COREAUDIO_H
 
 /* Define to 1 if you have the `ctime_r' function. */
 #undef HAVE_CTIME_R
@@ -164,17 +176,14 @@
 /* Define if you have the iconv() function and it works. */
 #undef HAVE_ICONV
 
-/* Define to 1 if you have the `inet_ntop' function. */
-#undef HAVE_INET_NTOP
-
-/* Define to 1 if you have the `inet_pton' function. */
-#undef HAVE_INET_PTON
-
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
 /* Define this to enable IPv6 connection support */
 #undef HAVE_IPV6
+
+/* Define to 1 if you have the <langinfo.h> header file. */
+#undef HAVE_LANGINFO_H
 
 /* Define if your <locale.h> file defines LC_MESSAGES. */
 #undef HAVE_LC_MESSAGES
@@ -218,6 +227,9 @@
 /* Define to 1 if you have the `mlock' function. */
 #undef HAVE_MLOCK
 
+/* Define to 1 if you have the <mmsystem.h> header file. */
+#undef HAVE_MMSYSTEM_H
+
 /* Define to 1 if you have the `nanosleep' function. */
 #undef HAVE_NANOSLEEP
 
@@ -242,14 +254,23 @@
 /* Have OpenSSL */
 #undef HAVE_OPENSSL
 
+/* Use Orc */
+#undef HAVE_ORC
+
 /* Have OSS output? */
 #undef HAVE_OSS_OUTPUT
 
 /* Have OSS wrapper (padsp)? */
 #undef HAVE_OSS_WRAPPER
 
+/* Define to 1 if you have the <pcreposix.h> header file. */
+#undef HAVE_PCREPOSIX_H
+
 /* Define to 1 if you have the `pipe' function. */
 #undef HAVE_PIPE
+
+/* Define to 1 if you have the `pipe2' function. */
+#undef HAVE_PIPE2
 
 /* Define to 1 if you have the <poll.h> header file. */
 #undef HAVE_POLL_H
@@ -269,17 +290,26 @@
 /* Define if you have POSIX threads libraries and header files. */
 #undef HAVE_PTHREAD
 
+/* Define to 1 if you have the `pthread_getname_np' function. */
+#undef HAVE_PTHREAD_GETNAME_NP
+
 /* Have PTHREAD_PRIO_INHERIT. */
 #undef HAVE_PTHREAD_PRIO_INHERIT
 
 /* Define to 1 if you have the `pthread_setaffinity_np' function. */
 #undef HAVE_PTHREAD_SETAFFINITY_NP
 
+/* Define to 1 if you have the `pthread_setname_np' function. */
+#undef HAVE_PTHREAD_SETNAME_NP
+
 /* Define to 1 if you have the <pwd.h> header file. */
 #undef HAVE_PWD_H
 
 /* Define to 1 if you have the `readlink' function. */
 #undef HAVE_READLINK
+
+/* Define to 1 if you have the `regexec' function. */
+#undef HAVE_REGEXEC
 
 /* Define to 1 if you have the <regex.h> header file. */
 #undef HAVE_REGEX_H
@@ -362,6 +392,9 @@
 /* Define to 1 if you have the `strtof_l' function. */
 #undef HAVE_STRTOF_L
 
+/* Define to 1 if you have the `symlink' function. */
+#undef HAVE_SYMLINK
+
 /* Define to 1 if you have the `sysconf' function. */
 #undef HAVE_SYSCONF
 
@@ -431,6 +464,9 @@
 /* Have UDEV. */
 #undef HAVE_UDEV
 
+/* Define to 1 if you have the `uname' function. */
+#undef HAVE_UNAME
+
 /* Define to 1 if you have the <unistd.h> header file. */
 #undef HAVE_UNISTD_H
 
@@ -445,6 +481,9 @@
 
 /* Define to 1 if you have the <vfork.h> header file. */
 #undef HAVE_VFORK_H
+
+/* Have WaveOut audio? */
+#undef HAVE_WAVEOUT
 
 /* Define to 1 if you have the <windows.h> header file. */
 #undef HAVE_WINDOWS_H
@@ -474,11 +513,11 @@
    */
 #undef LT_OBJDIR
 
-/* netbsd implementation */
-#undef NETBSD_ATOMIC_OPS
-
 /* Define to 1 if your C compiler doesn't accept -c and -o together. */
 #undef NO_MINUS_C_MINUS_O
+
+/* Build target is Darwin. */
+#undef OS_IS_DARWIN
 
 /* Build target is Windows. */
 #undef OS_IS_WIN32
@@ -504,14 +543,41 @@
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
+/* Location of pactl binary */
+#undef PACTL_BINARY
+
 /* Access group */
 #undef PA_ACCESS_GROUP
+
+/* Location of pulseaudio binary */
+#undef PA_BINARY
+
+/* Location of uninstalled binaries */
+#undef PA_BUILDDIR
 
 /* The CFLAGS used during compilation */
 #undef PA_CFLAGS
 
+/* Location of configuration files */
+#undef PA_DEFAULT_CONFIG_DIR
+
+/* Modules dir */
+#undef PA_DLSEARCHPATH
+
+/* D-Bus machine-id file */
+#undef PA_MACHINE_ID
+
+/* System config dir */
+#undef PA_SYSTEM_CONFIG_PATH
+
 /* Group for the PulseAudio system daemon */
 #undef PA_SYSTEM_GROUP
+
+/* System runtime dir */
+#undef PA_SYSTEM_RUNTIME_PATH
+
+/* System state dir */
+#undef PA_SYSTEM_STATE_PATH
 
 /* User for running the PulseAudio system daemon */
 #undef PA_SYSTEM_USER
@@ -519,6 +585,9 @@
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
+
+/* Gettext locale dir */
+#undef PULSE_LOCALEDIR
 
 /* Define to the type of arg 1 for `select'. */
 #undef SELECT_TYPE_ARG1
@@ -542,6 +611,9 @@
 
 /* Define this if the compiler supports __thread for Thread-Local Storage */
 #undef SUPPORT_TLS___THREAD
+
+/* If the compiler supports a TLS storage class define it to that here */
+#undef TLS
 
 /* Define this if you want per-user esound socket directories */
 #undef USE_PER_USER_ESOUND_SOCKET
@@ -571,6 +643,12 @@
 /* Version number of package */
 #undef VERSION
 
+/* Just a test. */
+#undef WIBBLE
+
+/* Needed to avoid including unnecessary headers on Windows */
+#undef WIN32_LEAN_AND_MEAN
+
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
 #if defined AC_APPLE_UNIVERSAL_BUILD
@@ -599,8 +677,8 @@
    this defined. */
 #undef _POSIX_1_SOURCE
 
-/* Needed to get clock_gettime on Mac OS X */
-#undef _POSIX_C_SOURCE
+/* Needed on Solaris */
+#undef _POSIX_PTHREAD_SEMANTICS
 
 /* Define to 1 if you need to in order for `stat' and other things to work. */
 #undef _POSIX_SOURCE

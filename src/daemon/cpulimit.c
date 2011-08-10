@@ -23,11 +23,9 @@
 #include <config.h>
 #endif
 
-#include <pulse/error.h>
 #include <pulse/rtclock.h>
 #include <pulse/timeval.h>
 
-#include <pulsecore/core-rtclock.h>
 #include <pulsecore/core-util.h>
 #include <pulsecore/core-error.h>
 #include <pulsecore/log.h>
@@ -40,7 +38,6 @@
 #include <errno.h>
 #include <stdio.h>
 #include <string.h>
-#include <sys/time.h>
 #include <unistd.h>
 #include <signal.h>
 
@@ -86,7 +83,7 @@ static struct sigaction sigaction_prev;
 static pa_bool_t installed = FALSE;
 
 /* The current state of operation */
-static enum  {
+static enum {
     PHASE_IDLE,   /* Normal state */
     PHASE_SOFT    /* After CPU overload has been detected */
 } phase = PHASE_IDLE;
@@ -140,7 +137,7 @@ static void signal_handler(int sig) {
             write_err("Soft CPU time limit exhausted, terminating.\n");
 
             /* Try a soft cleanup */
-            (void) write(the_pipe[1], &c, sizeof(c));
+            (void) pa_write(the_pipe[1], &c, sizeof(c), NULL);
             phase = PHASE_SOFT;
             reset_cpu_time(CPUTIME_INTERVAL_HARD);
 
@@ -188,15 +185,13 @@ int pa_cpu_limit_init(pa_mainloop_api *m) {
     last_time = pa_rtclock_now();
 
     /* Prepare the main loop pipe */
-    if (pipe(the_pipe) < 0) {
+    if (pa_pipe_cloexec(the_pipe) < 0) {
         pa_log("pipe() failed: %s", pa_cstrerror(errno));
         return -1;
     }
 
     pa_make_fd_nonblock(the_pipe[0]);
     pa_make_fd_nonblock(the_pipe[1]);
-    pa_make_fd_cloexec(the_pipe[0]);
-    pa_make_fd_cloexec(the_pipe[1]);
 
     api = m;
     io_event = api->io_new(m, the_pipe[0], PA_IO_EVENT_INPUT, callback, NULL);

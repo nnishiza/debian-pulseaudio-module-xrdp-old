@@ -22,19 +22,18 @@
 #endif
 
 #include <assert.h>
-#include <sys/time.h>
+#include <time.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <signal.h>
 
 #include <pulse/mainloop.h>
-#include <pulse/gccmacro.h>
 
 #ifdef TEST2
 #include <pulse/mainloop-signal.h>
 #endif
 
-#include "../daemon/cpulimit.h"
+#include <daemon/cpulimit.h>
 
 /* A simple example for testing the cpulimit subsystem */
 

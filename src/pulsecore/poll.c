@@ -35,27 +35,38 @@
 #include <config.h>
 #endif
 
+#ifdef HAVE_SYS_IOCTL_H
+#include <sys/ioctl.h>
+#endif
+
 #include <errno.h>
+#include <fcntl.h>
 
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
 
-#include "winsock.h"
-
-#ifndef HAVE_POLL_H
-
+#include <pulsecore/socket.h>
 #include <pulsecore/core-util.h>
+#include <pulse/util.h>
 
 #include "poll.h"
 
-int poll (struct pollfd *fds, unsigned long int nfds, int timeout) {
+/* Mac OSX fails to implement poll() in a working way since 10.4. IOW, for
+ * several years. We need to enable a dirty workaround and emulate that call
+ * with select(), just like for Windows. sic! */
+
+#if !defined(HAVE_POLL_H) || defined(OS_IS_DARWIN)
+
+int pa_poll (struct pollfd *fds, unsigned long int nfds, int timeout) {
     struct timeval tv;
     fd_set rset, wset, xset;
     struct pollfd *f;
     int ready;
     int maxfd = 0;
+#ifdef OS_IS_WIN32
     char data[64];
+#endif
 
     FD_ZERO (&rset);
     FD_ZERO (&wset);
@@ -95,17 +106,23 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout) {
     tv.tv_sec = timeout / 1000;
     tv.tv_usec = (timeout % 1000) * 1000;
 
-    ready = select ((SELECT_TYPE_ARG1) maxfd + 1, SELECT_TYPE_ARG234 &rset,
+    ready = select((SELECT_TYPE_ARG1) maxfd + 1, SELECT_TYPE_ARG234 &rset,
                     SELECT_TYPE_ARG234 &wset, SELECT_TYPE_ARG234 &xset,
                     SELECT_TYPE_ARG5 (timeout == -1 ? NULL : &tv));
+
     if ((ready == -1) && (errno == EBADF)) {
         ready = 0;
+        maxfd = -1;
+
+#ifdef OS_IS_WIN32
+        /*
+         * Windows has no fcntl(), so we have to trick around with more
+         * select() calls to find out what went wrong
+         */
 
         FD_ZERO (&rset);
         FD_ZERO (&wset);
         FD_ZERO (&xset);
-
-        maxfd = -1;
 
         for (f = fds; f < &fds[nfds]; ++f) {
             if (f->fd != -1) {
@@ -145,11 +162,30 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout) {
             }
         }
 
+#else /* !OS_IS_WIN32 */
+
+        for (f = fds; f < &fds[nfds]; f++)
+            if (f->fd != -1) {
+                /* use fcntl() to find out whether the descriptor is valid */
+                if (fcntl(f->fd, F_GETFL) != -1) {
+                    if (f->fd > maxfd && (f->events & (POLLIN|POLLOUT|POLLPRI))) {
+                        maxfd = f->fd;
+                        ready++;
+                    }
+                } else {
+                    FD_CLR(f->fd, &rset);
+                    FD_CLR(f->fd, &wset);
+                    FD_CLR(f->fd, &xset);
+                }
+            }
+
+#endif
+
         if (ready) {
         /* Linux alters the tv struct... but it shouldn't matter here ...
          * as we're going to be a little bit out anyway as we've just eaten
          * more than a couple of cpu cycles above */
-            ready = select ((SELECT_TYPE_ARG1) maxfd + 1, SELECT_TYPE_ARG234 &rset,
+            ready = select((SELECT_TYPE_ARG1) maxfd + 1, SELECT_TYPE_ARG234 &rset,
                             SELECT_TYPE_ARG234 &wset, SELECT_TYPE_ARG234 &xset,
                             SELECT_TYPE_ARG5 (timeout == -1 ? NULL : &tv));
         }
@@ -160,6 +196,8 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout) {
 #endif
 
     if (ready > 0) {
+        int r;
+
         ready = 0;
         for (f = fds; f < &fds[nfds]; ++f) {
             f->revents = 0;
@@ -167,6 +205,18 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout) {
                 if (FD_ISSET (f->fd, &rset)) {
                     /* support for POLLHUP.  An hung up descriptor does not
                        increase the return value! */
+#ifdef OS_IS_DARWIN
+                    /* There is a bug in Mac OS X that causes it to ignore MSG_PEEK
+                     * for some kinds of descriptors.  Detect if this descriptor is a
+                     * connected socket, a server socket, or something else using a
+                     * 0-byte recv, and use ioctl(2) to detect POLLHUP.  */
+                    r = recv(f->fd, NULL, 0, MSG_PEEK);
+                    if (r == 0 || (r < 0 && errno == ENOTSOCK))
+                        ioctl(f->fd, FIONREAD, &r);
+
+                    if (r == 0)
+                        f->revents |= POLLHUP;
+#else /* !OS_IS_DARWIN */
                     if (recv (f->fd, data, 64, MSG_PEEK) == -1) {
                         if (errno == ESHUTDOWN || errno == ECONNRESET ||
                             errno == ECONNABORTED || errno == ENETRESET) {
@@ -174,6 +224,7 @@ int poll (struct pollfd *fds, unsigned long int nfds, int timeout) {
                             f->revents |= POLLHUP;
                         }
                     }
+#endif
 
                     if (f->revents == 0)
                         f->revents |= POLLIN;
