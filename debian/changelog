@@ -30,8 +30,9 @@ pulseaudio (0.99.1-1) UNRELEASED; urgency=low
   * debian/control: switch to tdb as the backend database
   * debian/control: Enable orc support
   * debian/control: Add libfftw3-dev to b-d for the equalizer module
+  * debian/pulseaudio.install: Install module-equalizer-sink
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 12 Aug 2011 15:47:05 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 12 Aug 2011 16:03:07 +0200
 
 pulseaudio (0.9.23-1) unstable; urgency=low
 
