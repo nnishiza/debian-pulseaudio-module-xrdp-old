@@ -28,8 +28,9 @@ pulseaudio (0.99.1-1) UNRELEASED; urgency=low
     + Tweak dependencies a bit
   * debian/README.Debian, remove redudant comments
   * debian/control: switch to tdb as the backend database
+  * debian/control: Enable orc support
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 12 Aug 2011 15:39:10 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 12 Aug 2011 15:44:06 +0200
 
 pulseaudio (0.9.23-1) unstable; urgency=low
 
