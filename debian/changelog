@@ -25,8 +25,9 @@ pulseaudio (0.99.1-1) UNRELEASED; urgency=low
     + Update pulseaudio.default documentation.
     + Small tweaks to the init script
     + Automatically enable the pulse alsa modules if pulse is running
+  * rules/README.Debian, remove redudant comments
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 12 Aug 2011 14:57:14 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 12 Aug 2011 15:00:00 +0200
 
 pulseaudio (0.9.23-1) unstable; urgency=low
 
