@@ -11,7 +11,6 @@ Build-Depends: debhelper (>= 5), cdbs, quilt, m4, dh-autoreconf,
     libavahi-client-dev, libjack-dev, libwrap0-dev,
     liblircclient-dev, libgconf2-dev,
     libudev-dev (>= 143) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
-    libhal-dev [kfreebsd-i386 kfreebsd-amd64 hurd-i386],
     libasyncns-dev,
     libatomic-ops-dev, libspeexdsp-dev (>= 1.2~rc1),
     libbluetooth-dev (>= 4.40) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
@@ -159,32 +158,6 @@ Description: Zeroconf module for PulseAudio sound server debugging symbols
  much better latency, mixing/re-sampling quality and overall architecture.
  .
  This package contains detached debugging symbols for the zeroconf module.
-
-Package: pulseaudio-module-hal
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, hal
-Description: HAL to udev transitioning module for PulseAudio sound server
- PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
- WIN32 systems. It is a drop in replacement for the ESD sound server with
- much better latency, mixing/re-sampling quality and overall architecture.
- .
- This module is purely for transiting purposes from device detection using hal
- to device detection using udev.
- .
- The module is called module-hal-detect.
-
-Package: pulseaudio-module-hal-dbg
-Architecture: any
-Priority: extra
-Section: debug
-Depends: ${misc:Depends}, pulseaudio-module-hal (= ${binary:Version})
-Description: HAL module for PulseAudio sound server debugging symbols
- PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
- WIN32 systems. It is a drop in replacement for the ESD sound server with
- much better latency, mixing/re-sampling quality and overall architecture.
- .
- This package contains debugging symbols for the HAL compat module for
- PulseAudio.
 
 Package: pulseaudio-module-jack
 Architecture: any

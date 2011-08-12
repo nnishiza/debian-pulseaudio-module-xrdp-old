@@ -49,12 +49,7 @@ update-patch-series:
 		mv $${patch}.chomped $$patch ; \
 	done
 
-DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11
-
-ifneq (,$(findstring $(DEB_HOST_ARCH_OS), "linux"))
-  DEB_CONFIGURE_EXTRA_FLAGS += --enable-hal-compat --disable-hal
-endif
-
+DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal
 DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.99/modules
 
 LDFLAGS += -Wl,--no-as-needed
