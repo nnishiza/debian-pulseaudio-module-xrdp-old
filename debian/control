@@ -15,7 +15,7 @@ Build-Depends: debhelper (>= 5), cdbs, quilt, m4, dh-autoreconf,
     libasyncns-dev,
     libatomic-ops-dev, libspeexdsp-dev (>= 1.2~rc1),
     libbluetooth-dev (>= 4.40) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
-    libgdbm-dev, intltool, libgtk2.0-dev, libxtst-dev,
+    libtdb-dev, intltool, libgtk2.0-dev, libxtst-dev,
     libssl-dev,
     libx11-xcb-dev, libice-dev, libxcb1-dev (>= 1.6),
     libjson0-dev
