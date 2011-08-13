@@ -26,6 +26,7 @@ pulseaudio (0.99.1-1) UNRELEASED; urgency=low
     + Small tweaks to the init script
     + Automatically enable the pulse alsa modules if pulse is running
     + Tweak dependencies a bit
+    + build for multi-arch
   * debian/README.Debian, remove redudant comments
   * debian/control: switch to tdb as the backend database
   * debian/control: Enable orc support

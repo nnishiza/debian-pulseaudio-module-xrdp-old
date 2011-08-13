@@ -49,7 +49,12 @@ update-patch-series:
 		mv $${patch}.chomped $$patch ; \
 	done
 
-DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal
+# Libs should be in the multi-arch path, but the modules should be in the
+# normal directory as pulseaudio is foreign
+DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal \
+  --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
+  --with-module-dir=\$${prefix}/lib/pulse-0.99/modules
+
 DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-0.99/modules
 
 LDFLAGS += -Wl,--no-as-needed

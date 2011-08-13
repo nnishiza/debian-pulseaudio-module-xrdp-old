@@ -8,5 +8,5 @@ usr/bin/parecord
 usr/bin/padsp
 usr/bin/pax11publish
 usr/bin/pasuspender
-usr/lib/libpulsedsp.so
+usr/lib/*/libpulsedsp.so usr/lib
 usr/share/lintian/overrides/pulseaudio-utils
