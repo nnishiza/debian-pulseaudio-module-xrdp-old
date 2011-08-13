@@ -1,6 +1,6 @@
-pulseaudio (0.99.1-1) UNRELEASED; urgency=low
+pulseaudio (0.99.1-1) experimental; urgency=low
 
-  * New upstream release
+  * New upstream test release
   * d/p/0001-Work-around-some-platforms-not-having-O_CLOEXEC.patch:
     + Removed, fixed upstream
   * d/p/0003-Explicitely-link-pax11publish-to-libdbus.patch
@@ -34,7 +34,7 @@ pulseaudio (0.99.1-1) UNRELEASED; urgency=low
   * debian/pulseaudio.install: Install module-equalizer-sink
   * debian/{control,rules}: No longer build pulseaudio-module-hal
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 12 Aug 2011 22:38:26 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 13 Aug 2011 14:21:02 +0200
 
 pulseaudio (0.9.23-1) unstable; urgency=low
 
