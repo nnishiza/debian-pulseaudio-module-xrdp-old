@@ -601,49 +601,50 @@ libpulsecommon_@PA_MAJORMINOR@_la_DEPENDENCIES =  \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_7) \
 	$(am__DEPENDENCIES_6)
 am__libpulsecommon_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
-	pulse/client-conf.c pulse/client-conf.h pulse/i18n.c \
-	pulse/i18n.h pulse/fork-detect.c pulse/fork-detect.h \
-	pulse/xmalloc.c pulse/xmalloc.h pulse/proplist.c \
-	pulse/proplist.h pulse/utf8.c pulse/utf8.h pulse/channelmap.c \
-	pulse/channelmap.h pulse/sample.c pulse/sample.h pulse/util.c \
-	pulse/util.h pulse/timeval.c pulse/timeval.h pulse/rtclock.c \
-	pulse/rtclock.h pulse/format.c pulse/format.h \
-	pulsecore/atomic.h pulsecore/authkey.c pulsecore/authkey.h \
-	pulsecore/conf-parser.c pulsecore/conf-parser.h \
-	pulsecore/core-error.c pulsecore/core-error.h \
-	pulsecore/core-rtclock.c pulsecore/core-rtclock.h \
-	pulsecore/core-util.c pulsecore/core-util.h pulsecore/creds.h \
-	pulsecore/dynarray.c pulsecore/dynarray.h \
-	pulsecore/endianmacros.h pulsecore/flist.c pulsecore/flist.h \
-	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/idxset.c \
-	pulsecore/idxset.h pulsecore/arpa-inet.c pulsecore/arpa-inet.h \
-	pulsecore/iochannel.c pulsecore/iochannel.h pulsecore/ioline.c \
-	pulsecore/ioline.h pulsecore/ipacl.h pulsecore/ipacl.c \
-	pulsecore/llist.h pulsecore/lock-autospawn.c \
-	pulsecore/lock-autospawn.h pulsecore/log.c pulsecore/log.h \
-	pulsecore/ratelimit.c pulsecore/ratelimit.h pulsecore/macro.h \
-	pulsecore/vector.h pulsecore/mcalign.c pulsecore/mcalign.h \
-	pulsecore/memblock.c pulsecore/memblock.h \
-	pulsecore/memblockq.c pulsecore/memblockq.h \
-	pulsecore/memchunk.c pulsecore/memchunk.h \
-	pulsecore/native-common.h pulsecore/once.c pulsecore/once.h \
-	pulsecore/packet.c pulsecore/packet.h pulsecore/parseaddr.c \
-	pulsecore/parseaddr.h pulsecore/pdispatch.c \
-	pulsecore/pdispatch.h pulsecore/pid.c pulsecore/pid.h \
-	pulsecore/pipe.c pulsecore/pipe.h pulsecore/poll.c \
-	pulsecore/poll.h pulsecore/prioq.c pulsecore/prioq.h \
-	pulsecore/memtrap.c pulsecore/memtrap.h pulsecore/aupdate.c \
-	pulsecore/aupdate.h pulsecore/proplist-util.c \
-	pulsecore/proplist-util.h pulsecore/pstream-util.c \
-	pulsecore/pstream-util.h pulsecore/pstream.c \
-	pulsecore/pstream.h pulsecore/queue.c pulsecore/queue.h \
-	pulsecore/random.c pulsecore/random.h pulsecore/refcnt.h \
-	pulsecore/shm.c pulsecore/shm.h pulsecore/bitset.c \
-	pulsecore/bitset.h pulsecore/socket-client.c \
-	pulsecore/socket-client.h pulsecore/socket-server.c \
-	pulsecore/socket-server.h pulsecore/socket-util.c \
-	pulsecore/socket-util.h pulsecore/strbuf.c pulsecore/strbuf.h \
-	pulsecore/strlist.c pulsecore/strlist.h pulsecore/tagstruct.c \
+	pulse/client-conf.c pulse/client-conf.h pulse/fork-detect.c \
+	pulse/fork-detect.h pulse/xmalloc.c pulse/xmalloc.h \
+	pulse/proplist.c pulse/proplist.h pulse/utf8.c pulse/utf8.h \
+	pulse/channelmap.c pulse/channelmap.h pulse/sample.c \
+	pulse/sample.h pulse/util.c pulse/util.h pulse/timeval.c \
+	pulse/timeval.h pulse/rtclock.c pulse/rtclock.h pulse/format.c \
+	pulse/format.h pulsecore/atomic.h pulsecore/authkey.c \
+	pulsecore/authkey.h pulsecore/conf-parser.c \
+	pulsecore/conf-parser.h pulsecore/core-error.c \
+	pulsecore/core-error.h pulsecore/core-rtclock.c \
+	pulsecore/core-rtclock.h pulsecore/core-util.c \
+	pulsecore/core-util.h pulsecore/creds.h pulsecore/dynarray.c \
+	pulsecore/dynarray.h pulsecore/endianmacros.h \
+	pulsecore/flist.c pulsecore/flist.h pulsecore/hashmap.c \
+	pulsecore/hashmap.h pulsecore/i18n.c pulsecore/i18n.h \
+	pulsecore/idxset.c pulsecore/idxset.h pulsecore/arpa-inet.c \
+	pulsecore/arpa-inet.h pulsecore/iochannel.c \
+	pulsecore/iochannel.h pulsecore/ioline.c pulsecore/ioline.h \
+	pulsecore/ipacl.c pulsecore/ipacl.h pulsecore/llist.h \
+	pulsecore/lock-autospawn.c pulsecore/lock-autospawn.h \
+	pulsecore/log.c pulsecore/log.h pulsecore/ratelimit.c \
+	pulsecore/ratelimit.h pulsecore/macro.h pulsecore/vector.h \
+	pulsecore/mcalign.c pulsecore/mcalign.h pulsecore/memblock.c \
+	pulsecore/memblock.h pulsecore/memblockq.c \
+	pulsecore/memblockq.h pulsecore/memchunk.c \
+	pulsecore/memchunk.h pulsecore/native-common.h \
+	pulsecore/once.c pulsecore/once.h pulsecore/packet.c \
+	pulsecore/packet.h pulsecore/parseaddr.c pulsecore/parseaddr.h \
+	pulsecore/pdispatch.c pulsecore/pdispatch.h pulsecore/pid.c \
+	pulsecore/pid.h pulsecore/pipe.c pulsecore/pipe.h \
+	pulsecore/poll.c pulsecore/poll.h pulsecore/prioq.c \
+	pulsecore/prioq.h pulsecore/memtrap.c pulsecore/memtrap.h \
+	pulsecore/aupdate.c pulsecore/aupdate.h \
+	pulsecore/proplist-util.c pulsecore/proplist-util.h \
+	pulsecore/pstream-util.c pulsecore/pstream-util.h \
+	pulsecore/pstream.c pulsecore/pstream.h pulsecore/queue.c \
+	pulsecore/queue.h pulsecore/random.c pulsecore/random.h \
+	pulsecore/refcnt.h pulsecore/shm.c pulsecore/shm.h \
+	pulsecore/bitset.c pulsecore/bitset.h \
+	pulsecore/socket-client.c pulsecore/socket-client.h \
+	pulsecore/socket-server.c pulsecore/socket-server.h \
+	pulsecore/socket-util.c pulsecore/socket-util.h \
+	pulsecore/strbuf.c pulsecore/strbuf.h pulsecore/strlist.c \
+	pulsecore/strlist.h pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/tokenizer.c \
 	pulsecore/tokenizer.h pulsecore/usergroup.c \
@@ -674,7 +675,6 @@ am__libpulsecommon_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
 @HAVE_DBUS_TRUE@	libpulsecommon_@PA_MAJORMINOR@_la-rtkit.lo
 am_libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS =  \
 	libpulsecommon_@PA_MAJORMINOR@_la-client-conf.lo \
-	libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-xmalloc.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-proplist.lo \
@@ -693,6 +693,7 @@ am_libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS =  \
 	libpulsecommon_@PA_MAJORMINOR@_la-dynarray.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-flist.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-hashmap.lo \
+	libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-idxset.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-arpa-inet.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-iochannel.lo \
@@ -3047,12 +3048,11 @@ lib_LTLIBRARIES = libpulsecommon-@PA_MAJORMINOR@.la libpulse.la \
 	libpulse-simple.la $(am__append_29) $(am__append_32) \
 	libpulsecore-@PA_MAJORMINOR@.la
 libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = pulse/client-conf.c \
-	pulse/client-conf.h pulse/i18n.c pulse/i18n.h \
-	pulse/fork-detect.c pulse/fork-detect.h pulse/xmalloc.c \
-	pulse/xmalloc.h pulse/proplist.c pulse/proplist.h pulse/utf8.c \
-	pulse/utf8.h pulse/channelmap.c pulse/channelmap.h \
-	pulse/sample.c pulse/sample.h pulse/util.c pulse/util.h \
-	pulse/timeval.c pulse/timeval.h pulse/rtclock.c \
+	pulse/client-conf.h pulse/fork-detect.c pulse/fork-detect.h \
+	pulse/xmalloc.c pulse/xmalloc.h pulse/proplist.c \
+	pulse/proplist.h pulse/utf8.c pulse/utf8.h pulse/channelmap.c \
+	pulse/channelmap.h pulse/sample.c pulse/sample.h pulse/util.c \
+	pulse/util.h pulse/timeval.c pulse/timeval.h pulse/rtclock.c \
 	pulse/rtclock.h pulse/format.c pulse/format.h \
 	pulsecore/atomic.h pulsecore/authkey.c pulsecore/authkey.h \
 	pulsecore/conf-parser.c pulsecore/conf-parser.h \
@@ -3061,10 +3061,11 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = pulse/client-conf.c \
 	pulsecore/core-util.c pulsecore/core-util.h pulsecore/creds.h \
 	pulsecore/dynarray.c pulsecore/dynarray.h \
 	pulsecore/endianmacros.h pulsecore/flist.c pulsecore/flist.h \
-	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/idxset.c \
-	pulsecore/idxset.h pulsecore/arpa-inet.c pulsecore/arpa-inet.h \
+	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/i18n.c \
+	pulsecore/i18n.h pulsecore/idxset.c pulsecore/idxset.h \
+	pulsecore/arpa-inet.c pulsecore/arpa-inet.h \
 	pulsecore/iochannel.c pulsecore/iochannel.h pulsecore/ioline.c \
-	pulsecore/ioline.h pulsecore/ipacl.h pulsecore/ipacl.c \
+	pulsecore/ioline.h pulsecore/ipacl.c pulsecore/ipacl.h \
 	pulsecore/llist.h pulsecore/lock-autospawn.c \
 	pulsecore/lock-autospawn.h pulsecore/log.c pulsecore/log.h \
 	pulsecore/ratelimit.c pulsecore/ratelimit.h pulsecore/macro.h \
@@ -5345,14 +5346,6 @@ libpulsecommon_@PA_MAJORMINOR@_la-client-conf.lo: pulse/client-conf.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINOR@_la-client-conf.lo `test -f 'pulse/client-conf.c' || echo '$(srcdir)/'`pulse/client-conf.c
 
-libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo: pulse/i18n.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-i18n.Tpo -c -o libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo `test -f 'pulse/i18n.c' || echo '$(srcdir)/'`pulse/i18n.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-i18n.Tpo $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-i18n.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/i18n.c' object='libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo `test -f 'pulse/i18n.c' || echo '$(srcdir)/'`pulse/i18n.c
-
 libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.lo: pulse/fork-detect.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.Tpo -c -o libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.lo `test -f 'pulse/fork-detect.c' || echo '$(srcdir)/'`pulse/fork-detect.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.Tpo $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.Plo
@@ -5496,6 +5489,14 @@ libpulsecommon_@PA_MAJORMINOR@_la-hashmap.lo: pulsecore/hashmap.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/hashmap.c' object='libpulsecommon_@PA_MAJORMINOR@_la-hashmap.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINOR@_la-hashmap.lo `test -f 'pulsecore/hashmap.c' || echo '$(srcdir)/'`pulsecore/hashmap.c
+
+libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo: pulsecore/i18n.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-i18n.Tpo -c -o libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo `test -f 'pulsecore/i18n.c' || echo '$(srcdir)/'`pulsecore/i18n.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-i18n.Tpo $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-i18n.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulsecore/i18n.c' object='libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINOR@_la-i18n.lo `test -f 'pulsecore/i18n.c' || echo '$(srcdir)/'`pulsecore/i18n.c
 
 libpulsecommon_@PA_MAJORMINOR@_la-idxset.lo: pulsecore/idxset.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINOR@_la-idxset.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-idxset.Tpo -c -o libpulsecommon_@PA_MAJORMINOR@_la-idxset.lo `test -f 'pulsecore/idxset.c' || echo '$(srcdir)/'`pulsecore/idxset.c

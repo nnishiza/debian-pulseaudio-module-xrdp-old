@@ -28,13 +28,13 @@
 
 #include <asoundlib.h>
 
-#include <pulse/i18n.h>
 #include <pulse/rtclock.h>
 #include <pulse/timeval.h>
 #include <pulse/volume.h>
 #include <pulse/xmalloc.h>
 
 #include <pulsecore/core.h>
+#include <pulsecore/i18n.h>
 #include <pulsecore/module.h>
 #include <pulsecore/memchunk.h>
 #include <pulsecore/sink.h>
@@ -608,6 +608,7 @@ static int mmap_read(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled
 
     if (u->use_tsched) {
         *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
+        process_usec = pa_bytes_to_usec(u->tsched_watermark, &u->source->sample_spec);
 
         if (*sleep_usec > process_usec)
             *sleep_usec -= process_usec;
@@ -737,6 +738,7 @@ static int unix_read(struct userdata *u, pa_usec_t *sleep_usec, pa_bool_t polled
 
     if (u->use_tsched) {
         *sleep_usec = pa_bytes_to_usec(left_to_record, &u->source->sample_spec);
+        process_usec = pa_bytes_to_usec(u->tsched_watermark, &u->source->sample_spec);
 
         if (*sleep_usec > process_usec)
             *sleep_usec -= process_usec;
@@ -1443,6 +1445,7 @@ static void thread_func(void *userdata) {
                     goto fail;
 
                 u->first = TRUE;
+                revents = 0;
             } else if (revents && u->use_tsched && pa_log_ratelimit(PA_LOG_DEBUG))
                 pa_log_debug("Wakeup from ALSA!");
 
@@ -1934,6 +1937,9 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
         if (u->source->get_mute)
             u->source->get_mute(u->source);
     }
+
+    if ((data.volume_is_set || data.muted_is_set) && u->source->write_volume)
+        u->source->write_volume(u->source);
 
     pa_source_put(u->source);
 

@@ -40,7 +40,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 23)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [13:0:13])
+AC_SUBST(LIBPULSE_VERSION_INFO, [13:1:13])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -835,7 +835,7 @@ AC_ARG_ENABLE([jack],
     AS_HELP_STRING([--disable-jack],[Disable optional JACK support]))
 
 AS_IF([test "x$enable_jack" != "xno"],
-    [PKG_CHECK_MODULES(JACK, [ jack >= 0.100 ], HAVE_JACK=1, HAVE_JACK=0)],
+    [PKG_CHECK_MODULES(JACK, [ jack >= 0.117.0 ], HAVE_JACK=1, HAVE_JACK=0)],
     HAVE_JACK=0)
 
 AS_IF([test "x$enable_jack" = "xyes" && test "x$HAVE_JACK" = "x0"],

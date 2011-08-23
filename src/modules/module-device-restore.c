@@ -63,7 +63,8 @@ PA_MODULE_LOAD_ONCE(TRUE);
 PA_MODULE_USAGE(
         "restore_port=<Save/restore port?> "
         "restore_volume=<Save/restore volumes?> "
-        "restore_muted=<Save/restore muted states?>");
+        "restore_muted=<Save/restore muted states?> "
+        "restore_formats=<Save/restore saved formats?>");
 
 #define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
 
@@ -71,6 +72,7 @@ static const char* const valid_modargs[] = {
     "restore_volume",
     "restore_muted",
     "restore_port",
+    "restore_formats",
     NULL
 };
 
@@ -81,6 +83,7 @@ struct userdata {
     pa_hook_slot
         *sink_new_hook_slot,
         *sink_fixate_hook_slot,
+        *sink_put_hook_slot,
         *source_new_hook_slot,
         *source_fixate_hook_slot,
         *connection_unlink_hook_slot;
@@ -90,9 +93,10 @@ struct userdata {
     pa_native_protocol *protocol;
     pa_idxset *subscribed;
 
-    pa_bool_t restore_volume:1;
-    pa_bool_t restore_muted:1;
-    pa_bool_t restore_port:1;
+    pa_bool_t restore_volume;
+    pa_bool_t restore_muted;
+    pa_bool_t restore_port;
+    pa_bool_t restore_formats;
 };
 
 /* Protocol extention commands */
@@ -133,7 +137,26 @@ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct
     pa_log_info("Synced.");
 }
 
-static void trigger_save(struct userdata *u) {
+static void trigger_save(struct userdata *u, uint32_t sink_idx) {
+    pa_native_connection *c;
+    uint32_t idx;
+
+    if (sink_idx != PA_INVALID_INDEX) {
+        for (c = pa_idxset_first(u->subscribed, &idx); c; c = pa_idxset_next(u->subscribed, &idx)) {
+            pa_tagstruct *t;
+
+            t = pa_tagstruct_new(NULL, 0);
+            pa_tagstruct_putu32(t, PA_COMMAND_EXTENSION);
+            pa_tagstruct_putu32(t, 0);
+            pa_tagstruct_putu32(t, u->module->index);
+            pa_tagstruct_puts(t, u->module->name);
+            pa_tagstruct_putu32(t, SUBCOMMAND_EVENT);
+            pa_tagstruct_putu32(t, sink_idx);
+
+            pa_pstream_send_tagstruct(pa_native_connection_get_pstream(c), t);
+        }
+    }
+
     if (u->save_time_event)
         return;
 
@@ -337,7 +360,7 @@ fail:
     if ((e = legacy_entry_read(u, &data))) {
         pa_log_debug("Success. Saving new format for key: %s", name);
         if (entry_write(u, name, e))
-            trigger_save(u);
+            trigger_save(u, PA_INVALID_INDEX);
         pa_datum_free(&data);
         return e;
     } else
@@ -488,7 +511,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
     pa_log_info("Storing volume/mute/port for device %s.", name);
 
     if (entry_write(u, name, entry))
-        trigger_save(u);
+        trigger_save(u, idx);
 
     entry_free(entry);
     pa_xfree(name);
@@ -562,6 +585,30 @@ static pa_hook_result_t sink_fixate_hook_callback(pa_core *c, pa_sink_new_data *
             } else
                 pa_log_debug("Not restoring mute state for sink %s, because already set.", new_data->name);
         }
+
+        entry_free(e);
+    }
+
+    pa_xfree(name);
+
+    return PA_HOOK_OK;
+}
+
+static pa_hook_result_t sink_put_hook_callback(pa_core *c, pa_sink *sink, struct userdata *u) {
+    char *name;
+    struct entry *e;
+
+    pa_assert(c);
+    pa_assert(sink);
+    pa_assert(u);
+    pa_assert(u->restore_formats);
+
+    name = pa_sprintf_malloc("sink:%s", sink->name);
+
+    if ((e = entry_read(u, name))) {
+
+        if (!pa_sink_set_formats(sink, e->formats))
+            pa_log_debug("Could not set format on sink %s", sink->name);
 
         entry_free(e);
     }
@@ -779,13 +826,20 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
             }
 
             /* Now find our sink */
-            if (!(sink = pa_idxset_get_by_index(u->core->sinks, sink_index)))
+            if (!(sink = pa_idxset_get_by_index(u->core->sinks, sink_index))) {
+                pa_log("Could not find sink #%d", sink_index);
                 goto fail;
+            }
 
             /* Read or create an entry */
             name = pa_sprintf_malloc("sink:%s", sink->name);
             if (!(e = entry_read(u, name)))
                 e = entry_new(FALSE);
+            else {
+                /* Clean out any saved formats */
+                pa_idxset_free(e->formats, (pa_free2_cb_t) pa_format_info_free2, NULL);
+                e->formats = pa_idxset_new(NULL, NULL);
+            }
 
             /* Read all the formats from our tagstruct */
             for (i = 0; i < n_formats; ++i) {
@@ -804,8 +858,8 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
                 goto fail;
             }
 
-            if (entry_write(u, name, e))
-                trigger_save(u);
+            if (pa_sink_set_formats(sink, e->formats) && entry_write(u, name, e))
+                trigger_save(u, sink_index);
             else
                 pa_log_warn("Could not save format info for sink %s", sink->name);
 
@@ -846,7 +900,7 @@ int pa__init(pa_module*m) {
     pa_sink *sink;
     pa_source *source;
     uint32_t idx;
-    pa_bool_t restore_volume = TRUE, restore_muted = TRUE, restore_port = TRUE;
+    pa_bool_t restore_volume = TRUE, restore_muted = TRUE, restore_port = TRUE, restore_formats = TRUE;
 
     pa_assert(m);
 
@@ -857,12 +911,13 @@ int pa__init(pa_module*m) {
 
     if (pa_modargs_get_value_boolean(ma, "restore_volume", &restore_volume) < 0 ||
         pa_modargs_get_value_boolean(ma, "restore_muted", &restore_muted) < 0 ||
-        pa_modargs_get_value_boolean(ma, "restore_port", &restore_port) < 0) {
-        pa_log("restore_port=, restore_volume= and restore_muted= expect boolean arguments");
+        pa_modargs_get_value_boolean(ma, "restore_port", &restore_port) < 0 ||
+        pa_modargs_get_value_boolean(ma, "restore_formats", &restore_formats) < 0) {
+        pa_log("restore_port, restore_volume, restore_muted and restore_formats expect boolean arguments");
         goto fail;
     }
 
-    if (!restore_muted && !restore_volume && !restore_port)
+    if (!restore_muted && !restore_volume && !restore_port && !restore_formats)
         pa_log_warn("Neither restoring volume, nor restoring muted, nor restoring port enabled!");
 
     m->userdata = u = pa_xnew0(struct userdata, 1);
@@ -871,6 +926,7 @@ int pa__init(pa_module*m) {
     u->restore_volume = restore_volume;
     u->restore_muted = restore_muted;
     u->restore_port = restore_port;
+    u->restore_formats = restore_formats;
 
     u->subscribed = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
 
@@ -890,6 +946,9 @@ int pa__init(pa_module*m) {
         u->sink_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_fixate_hook_callback, u);
         u->source_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) source_fixate_hook_callback, u);
     }
+
+    if (restore_formats)
+        u->sink_put_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PUT], PA_HOOK_EARLY, (pa_hook_cb_t) sink_put_hook_callback, u);
 
     if (!(fname = pa_state_path("device-volumes", TRUE)))
         goto fail;
@@ -940,6 +999,8 @@ void pa__done(pa_module*m) {
         pa_hook_slot_free(u->sink_new_hook_slot);
     if (u->source_new_hook_slot)
         pa_hook_slot_free(u->source_new_hook_slot);
+    if (u->sink_put_hook_slot)
+        pa_hook_slot_free(u->sink_put_hook_slot);
 
     if (u->connection_unlink_hook_slot)
         pa_hook_slot_free(u->connection_unlink_hook_slot);

@@ -64,18 +64,18 @@ ifelse(@HAVE_MKFIFO@, 1, [dnl
 ])dnl
 
 ### Automatically load driver modules depending on the hardware available
-ifelse(1, @HAVE_UDEV@, [dnl
+ifelse(@HAVE_UDEV@, 1, [dnl
 .ifexists module-udev-detect@PA_SOEXT@
 load-module module-udev-detect
 .else
-], @HAVE_HAL@, [dnl
+], @HAVE_HAL@, 1, [dnl
 .ifexists module-hal-detect@PA_SOEXT@
 load-module module-hal-detect
 .else
 ], [dnl
 .ifexists module-detect@PA_SOEXT@
 ])dnl
-### Use the static hardware detection module (for systems that lack udev support)
+### Use the static hardware detection module (for systems that lack udev/hal support)
 load-module module-detect
 .endif
 
@@ -112,7 +112,7 @@ ifelse(@OS_IS_WIN32@, 0, [dnl
 #load-module module-rtp-recv
 
 ### Load the RTP sender module (also configured via paprefs, see above)
-#load-module module-null-sink sink_name=rtp format=s16be channels=2 rate=44100 description="RTP Multicast Sink"
+#load-module module-null-sink sink_name=rtp format=s16be channels=2 rate=44100 sink_properties="device.description='RTP Multicast Sink'"
 #load-module module-rtp-send source=rtp.monitor
 
 ### Load additional modules from GConf settings. This can be configured with the paprefs tool.
@@ -151,6 +151,13 @@ load-module module-position-event-sounds
 
 ### Cork music streams when a phone stream is active
 load-module module-cork-music-on-phone
+
+### Modules to allow autoloading of filters (such as echo cancellation)
+### on demand. module-filter-heuristics tries to determine what filters
+### make sense, and module-filter-apply does the heavy-lifting of
+### loading modules and rerouting streams.
+load-module module-filter-heuristics
+load-module module-filter-apply
 ])dnl
 
 ifelse(@HAVE_X11@, 1, [dnl
