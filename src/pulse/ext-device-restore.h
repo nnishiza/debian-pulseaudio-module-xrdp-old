@@ -24,6 +24,7 @@
 ***/
 
 #include <pulse/context.h>
+#include <pulse/format.h>
 #include <pulse/version.h>
 
 /** \file
@@ -63,6 +64,7 @@ pa_operation *pa_ext_device_restore_subscribe(
 /** Callback prototype for pa_ext_device_restore_set_subscribe_cb(). \since 1.0 */
 typedef void (*pa_ext_device_restore_subscribe_cb_t)(
         pa_context *c,
+        uint32_t idx,
         void *userdata);
 
 /** Set the subscription callback that is called when

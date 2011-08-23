@@ -769,10 +769,6 @@ void pa_sink_input_peek(pa_sink_input *i, size_t slength /* in sink frames */, p
 
 /*     pa_log_debug("peek"); */
 
-    pa_assert(i->thread_info.state == PA_SINK_INPUT_RUNNING ||
-              i->thread_info.state == PA_SINK_INPUT_CORKED ||
-              i->thread_info.state == PA_SINK_INPUT_DRAINED);
-
     block_size_max_sink_input = i->thread_info.resampler ?
         pa_resampler_max_block_size(i->thread_info.resampler) :
         pa_frame_align(pa_mempool_block_size_max(i->core->mempool), &i->sample_spec);
@@ -1756,8 +1752,6 @@ void pa_sink_input_set_state_within_thread(pa_sink_input *i, pa_sink_input_state
     if (i->state_change)
         i->state_change(i, state);
 
-    i->thread_info.state = state;
-
     if (corking) {
 
         pa_log_debug("Requesting rewind due to corking");
@@ -1766,17 +1760,25 @@ void pa_sink_input_set_state_within_thread(pa_sink_input *i, pa_sink_input_state
          * so that the unplayed already mixed data is not lost */
         pa_sink_input_request_rewind(i, 0, TRUE, TRUE, FALSE);
 
+        /* Set the corked state *after* requesting rewind */
+        i->thread_info.state = state;
+
     } else if (uncorking) {
+
+        pa_log_debug("Requesting rewind due to uncorking");
 
         i->thread_info.underrun_for = (uint64_t) -1;
         i->thread_info.playing_for = 0;
 
-        pa_log_debug("Requesting rewind due to uncorking");
+        /* Set the uncorked state *before* requesting rewind */
+        i->thread_info.state = state;
 
         /* OK, we're being uncorked. Make sure we're not rewound when
          * the hw buffer is remixed and request a remix. */
         pa_sink_input_request_rewind(i, 0, FALSE, TRUE, TRUE);
-    }
+    } else
+        /* We may not be corking or uncorking, but we still need to set the state. */
+        i->thread_info.state = state;
 }
 
 /* Called from thread context, except when it is not. */

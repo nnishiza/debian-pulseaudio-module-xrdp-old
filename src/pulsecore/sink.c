@@ -29,14 +29,15 @@
 #include <string.h>
 
 #include <pulse/introspect.h>
+#include <pulse/format.h>
 #include <pulse/utf8.h>
 #include <pulse/xmalloc.h>
 #include <pulse/timeval.h>
 #include <pulse/util.h>
-#include <pulse/i18n.h>
 #include <pulse/rtclock.h>
 #include <pulse/internal.h>
 
+#include <pulsecore/i18n.h>
 #include <pulsecore/sink-input.h>
 #include <pulsecore/namereg.h>
 #include <pulsecore/core-util.h>
@@ -173,12 +174,14 @@ static void reset_callbacks(pa_sink *s) {
     s->set_state = NULL;
     s->get_volume = NULL;
     s->set_volume = NULL;
+    s->write_volume = NULL;
     s->get_mute = NULL;
     s->set_mute = NULL;
     s->request_rewind = NULL;
     s->update_requested_latency = NULL;
     s->set_port = NULL;
     s->get_formats = NULL;
+    s->set_formats = NULL;
 }
 
 /* Called from main context */
@@ -3348,6 +3351,13 @@ pa_bool_t pa_sink_volume_change_apply(pa_sink *s, pa_usec_t *usec_to_next) {
     pa_bool_t ret = FALSE;
 
     pa_assert(s);
+
+    if (!PA_SINK_IS_LINKED(s->state)) {
+        if (usec_to_next)
+            *usec_to_next = 0;
+        return ret;
+    }
+
     pa_assert(s->write_volume);
 
     while (s->thread_info.volume_changes && now >= s->thread_info.volume_changes->at) {
@@ -3425,6 +3435,21 @@ pa_idxset* pa_sink_get_formats(pa_sink *s) {
     }
 
     return ret;
+}
+
+/* Called from the main thread */
+/* Allows an external source to set what formats a sink supports if the sink
+ * permits this. The function makes a copy of the formats on success. */
+pa_bool_t pa_sink_set_formats(pa_sink *s, pa_idxset *formats) {
+    pa_assert(s);
+    pa_assert(formats);
+
+    if (s->set_formats)
+        /* Sink supports setting formats -- let's give it a shot */
+        return s->set_formats(s, formats);
+    else
+        /* Sink doesn't support setting this -- bail out */
+        return FALSE;
 }
 
 /* Called from the main thread */
