@@ -162,6 +162,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_ext_device_restore_read_sink_formats@PULSE_0 0.99.1
  pa_ext_device_restore_read_sink_formats_all@PULSE_0 0.99.1
  pa_ext_device_restore_save_sink_formats@PULSE_0 0.99.1
+ pa_ext_device_restore_set_subscribe_cb@PULSE_0 0.99.2
  pa_ext_device_restore_subscribe@PULSE_0 0.99.1
  pa_ext_device_restore_test@PULSE_0 0.99.1
  pa_ext_stream_restore_delete@PULSE_0 0.99.1
@@ -440,6 +441,7 @@ libpulsecommon-0.99.so libpulse0 #MINVER#
  pa_dynarray_new@Base 0.99.1
  pa_dynarray_put@Base 0.99.1
  pa_dynarray_size@Base 0.99.1
+ pa_encoding_from_string@Base 0.99.2
  pa_encoding_to_string@Base 0.99.1
  pa_endswith@Base 0.99.1
  pa_escape@Base 0.99.1
@@ -454,6 +456,7 @@ libpulsecommon-0.99.so libpulse0 #MINVER#
  pa_format_info_free2@Base 0.99.1
  pa_format_info_free@Base 0.99.1
  pa_format_info_from_sample_spec@Base 0.99.1
+ pa_format_info_from_string@Base 0.99.2
  pa_format_info_get_prop_int@Base 0.99.1
  pa_format_info_get_prop_string@Base 0.99.1
  pa_format_info_is_compatible@Base 0.99.1
