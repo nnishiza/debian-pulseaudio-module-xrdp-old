@@ -1,4 +1,4 @@
-pulseaudio (0.99.2-2) UNRELEASED; urgency=low
+pulseaudio (0.99.2-2) experimental; urgency=low
 
   * Fix build on kfreebsd architectures (Closes: 637785)
     - Don't install /usr/share/pulseaudio
@@ -7,7 +7,7 @@ pulseaudio (0.99.2-2) UNRELEASED; urgency=low
     on arm{el,}
   * debian/control: Remove CJ from Uploaders (Closes: 636428)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 28 Aug 2011 16:29:51 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 28 Aug 2011 18:25:10 +0100
 
 pulseaudio (0.99.2-1) experimental; urgency=low
 
