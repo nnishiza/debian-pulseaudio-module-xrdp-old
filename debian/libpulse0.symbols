@@ -535,8 +535,8 @@ libpulsecommon-0.99.so libpulse0 #MINVER#
  pa_in_system_mode@Base 0.99.1
  pa_init_i18n@Base 0.99.1
  pa_init_proplist@Base 0.99.1
- pa_iochannel_creds_enable@Base 0.99.1
- pa_iochannel_creds_supported@Base 0.99.1
+ (arch=!kfreebsd-amd64 !kfreebsd-i386)pa_iochannel_creds_enable@Base 0.99.1
+ (arch=!kfreebsd-amd64 !kfreebsd-i386)pa_iochannel_creds_supported@Base 0.99.1
  pa_iochannel_free@Base 0.99.1
  pa_iochannel_get_mainloop_api@Base 0.99.1
  pa_iochannel_get_recv_fd@Base 0.99.1
@@ -546,7 +546,7 @@ libpulsecommon-0.99.so libpulse0 #MINVER#
  pa_iochannel_is_writable@Base 0.99.1
  pa_iochannel_new@Base 0.99.1
  pa_iochannel_read@Base 0.99.1
- pa_iochannel_read_with_creds@Base 0.99.1
+ (arch=!kfreebsd-amd64 !kfreebsd-i386)pa_iochannel_read_with_creds@Base 0.99.1
  pa_iochannel_set_callback@Base 0.99.1
  pa_iochannel_set_noclose@Base 0.99.1
  pa_iochannel_socket_is_local@Base 0.99.1
@@ -554,7 +554,7 @@ libpulsecommon-0.99.so libpulse0 #MINVER#
  pa_iochannel_socket_set_rcvbuf@Base 0.99.1
  pa_iochannel_socket_set_sndbuf@Base 0.99.1
  pa_iochannel_write@Base 0.99.1
- pa_iochannel_write_with_creds@Base 0.99.1
+ (arch=!kfreebsd-amd64 !kfreebsd-i386)pa_iochannel_write_with_creds@Base 0.99.1
  pa_ioline_close@Base 0.99.1
  pa_ioline_defer_close@Base 0.99.1
  pa_ioline_detach_iochannel@Base 0.99.1
