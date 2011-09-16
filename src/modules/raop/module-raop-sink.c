@@ -235,10 +235,12 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
         }
 
         case SINK_MESSAGE_RIP_SOCKET: {
-            pa_assert(u->fd >= 0);
-
-            pa_close(u->fd);
-            u->fd = -1;
+            if (u->fd >= 0) {
+                pa_close(u->fd);
+                u->fd = -1;
+            } else
+                /* FIXME */
+                pa_log("We should not get to this state. Cannot rip socket if not connected.");
 
             if (u->sink->thread_info.state == PA_SINK_SUSPENDED) {
 
@@ -248,7 +250,7 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
                     pa_rtpoll_item_free(u->rtpoll_item);
                 u->rtpoll_item = NULL;
             } else {
-                /* Quesiton: is this valid here: or should we do some sort of:
+                /* Question: is this valid here: or should we do some sort of:
                    return pa_sink_process_msg(PA_MSGOBJECT(u->core), PA_CORE_MESSAGE_UNLOAD_MODULE, u->module, 0, NULL);
                    ?? */
                 pa_module_unload_request(u->module, TRUE);
@@ -287,7 +289,7 @@ static void sink_set_volume_cb(pa_sink *s) {
     pa_log_debug("Got hardware volume: %s", pa_cvolume_snprint(t, sizeof(t), &hw));
     pa_log_debug("Calculated software volume: %s", pa_cvolume_snprint(t, sizeof(t), &s->soft_volume));
 
-    /* Any necessary software volume manipulateion is done so set
+    /* Any necessary software volume manipulation is done so set
        our hw volume (or v as a single value) on the device */
     pa_raop_client_set_volume(u->raop, v);
 }

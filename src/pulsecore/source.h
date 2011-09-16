@@ -98,6 +98,10 @@ struct pa_source {
     pa_bool_t save_volume:1;
     pa_bool_t save_muted:1;
 
+    /* Saved volume state while we're in passthrough mode */
+    pa_cvolume saved_volume;
+    pa_bool_t saved_save_volume:1;
+
     pa_asyncmsgq *asyncmsgq;
 
     pa_memchunk silence;
@@ -112,7 +116,7 @@ struct pa_source {
      * inhibited */
     int (*set_state)(pa_source*source, pa_source_state_t state); /* may be NULL */
 
-    /* Callled when the volume is queried. Called from main loop
+    /* Called when the volume is queried. Called from main loop
      * context. If this is NULL a PA_SOURCE_MESSAGE_GET_VOLUME message
      * will be sent to the IO thread instead. If refresh_volume is
      * FALSE neither this function is called nor a message is sent.
@@ -129,9 +133,9 @@ struct pa_source {
      * set this callback. */
     pa_source_cb_t set_volume; /* may be NULL */
 
-    /* Source drivers that set PA_SOURCE_SYNC_VOLUME must provide this
+    /* Source drivers that set PA_SOURCE_DEFERRED_VOLUME must provide this
      * callback. This callback is not used with source that do not set
-     * PA_SOURCE_SYNC_VOLUME. This is called from the IO thread when a
+     * PA_SOURCE_DEFERRED_VOLUME. This is called from the IO thread when a
      * pending hardware volume change has to be written to the
      * hardware. The requested volume is passed to the callback
      * implementation in s->thread_info.current_hw_volume.
@@ -203,7 +207,7 @@ struct pa_source {
         PA_LLIST_HEAD(pa_source_volume_change, volume_changes);
         pa_source_volume_change *volume_changes_tail;
         /* This value is updated in pa_source_volume_change_apply() and
-         * used only by sources with PA_SOURCE_SYNC_VOLUME. */
+         * used only by sources with PA_SOURCE_DEFERRED_VOLUME. */
         pa_cvolume current_hw_volume;
 
         /* The amount of usec volume up events are delayed and volume
@@ -338,6 +342,9 @@ pa_bool_t pa_source_flat_volume_enabled(pa_source *s);
 /* Is the source in passthrough mode? (that is, is this a monitor source for a sink
  * that has a passthrough sink input connected to it. */
 pa_bool_t pa_source_is_passthrough(pa_source *s);
+/* These should be called when a source enters/leaves passthrough mode */
+void pa_source_enter_passthrough(pa_source *s);
+void pa_source_leave_passthrough(pa_source *s);
 
 void pa_source_set_volume(pa_source *source, const pa_cvolume *volume, pa_bool_t sendmsg, pa_bool_t save);
 const pa_cvolume *pa_source_get_volume(pa_source *source, pa_bool_t force_refresh);

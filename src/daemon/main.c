@@ -72,6 +72,7 @@
 #include <pulsecore/socket.h>
 #include <pulsecore/core-error.h>
 #include <pulsecore/core-rtclock.h>
+#include <pulsecore/core-scache.h>
 #include <pulsecore/core.h>
 #include <pulsecore/module.h>
 #include <pulsecore/cli-command.h>
@@ -377,7 +378,7 @@ static pa_dbus_connection *register_dbus_name(pa_core *c, DBusBusType bus, const
     if (dbus_error_is_set(&error))
         pa_log_error("Failed to acquire %s: %s: %s", name, error.name, error.message);
     else
-        pa_log_error("D-Bus name %s already taken. Weird shit!", name);
+        pa_log_error("D-Bus name %s already taken.", name);
 
     /* PA cannot be started twice by the same user and hence we can
      * ignore mostly the case that a name is already taken. */
@@ -1015,8 +1016,8 @@ int main(int argc, char *argv[]) {
     c->default_channel_map = conf->default_channel_map;
     c->default_n_fragments = conf->default_n_fragments;
     c->default_fragment_size_msec = conf->default_fragment_size_msec;
-    c->sync_volume_safety_margin_usec = conf->sync_volume_safety_margin_usec;
-    c->sync_volume_extra_delay_usec = conf->sync_volume_extra_delay_usec;
+    c->deferred_volume_safety_margin_usec = conf->deferred_volume_safety_margin_usec;
+    c->deferred_volume_extra_delay_usec = conf->deferred_volume_extra_delay_usec;
     c->exit_idle_time = conf->exit_idle_time;
     c->scache_idle_time = conf->scache_idle_time;
     c->resample_method = conf->resample_method;
@@ -1024,7 +1025,7 @@ int main(int argc, char *argv[]) {
     c->realtime_scheduling = !!conf->realtime_scheduling;
     c->disable_remixing = !!conf->disable_remixing;
     c->disable_lfe_remixing = !!conf->disable_lfe_remixing;
-    c->sync_volume = !!conf->sync_volume;
+    c->deferred_volume = !!conf->deferred_volume;
     c->running_as_daemon = !!conf->daemonize;
     c->disallow_exit = conf->disallow_exit;
     c->flat_volumes = conf->flat_volumes;

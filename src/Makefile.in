@@ -574,21 +574,21 @@ libpulse_simple_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(libpulse_simple_la_CFLAGS) $(CFLAGS) \
 	$(libpulse_simple_la_LDFLAGS) $(LDFLAGS) -o $@
 libpulse_la_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) libpulsecommon-@PA_MAJORMINOR@.la \
-	$(am__DEPENDENCIES_6)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	libpulsecommon-@PA_MAJORMINOR@.la $(am__DEPENDENCIES_6)
 am_libpulse_la_OBJECTS = libpulse_la-channelmap.lo \
 	libpulse_la-context.lo libpulse_la-error.lo \
 	libpulse_la-ext-device-manager.lo \
 	libpulse_la-ext-device-restore.lo \
-	libpulse_la-ext-stream-restore.lo libpulse_la-introspect.lo \
-	libpulse_la-mainloop-api.lo libpulse_la-mainloop-signal.lo \
-	libpulse_la-mainloop.lo libpulse_la-operation.lo \
-	libpulse_la-proplist.lo libpulse_la-rtclock.lo \
-	libpulse_la-sample.lo libpulse_la-scache.lo \
-	libpulse_la-stream.lo libpulse_la-subscribe.lo \
-	libpulse_la-thread-mainloop.lo libpulse_la-timeval.lo \
-	libpulse_la-utf8.lo libpulse_la-util.lo libpulse_la-volume.lo \
-	libpulse_la-xmalloc.lo
+	libpulse_la-ext-stream-restore.lo libpulse_la-format.lo \
+	libpulse_la-introspect.lo libpulse_la-mainloop-api.lo \
+	libpulse_la-mainloop-signal.lo libpulse_la-mainloop.lo \
+	libpulse_la-operation.lo libpulse_la-proplist.lo \
+	libpulse_la-rtclock.lo libpulse_la-sample.lo \
+	libpulse_la-scache.lo libpulse_la-stream.lo \
+	libpulse_la-subscribe.lo libpulse_la-thread-mainloop.lo \
+	libpulse_la-timeval.lo libpulse_la-utf8.lo libpulse_la-util.lo \
+	libpulse_la-volume.lo libpulse_la-xmalloc.lo
 libpulse_la_OBJECTS = $(am_libpulse_la_OBJECTS)
 libpulse_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libpulse_la_CFLAGS) \
@@ -598,53 +598,51 @@ libpulsecommon_@PA_MAJORMINOR@_la_DEPENDENCIES =  \
 	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_7) \
-	$(am__DEPENDENCIES_6)
+	$(am__DEPENDENCIES_7) $(am__DEPENDENCIES_6)
 am__libpulsecommon_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
 	pulse/client-conf.c pulse/client-conf.h pulse/fork-detect.c \
 	pulse/fork-detect.h pulse/xmalloc.c pulse/xmalloc.h \
 	pulse/proplist.c pulse/proplist.h pulse/utf8.c pulse/utf8.h \
 	pulse/channelmap.c pulse/channelmap.h pulse/sample.c \
 	pulse/sample.h pulse/util.c pulse/util.h pulse/timeval.c \
-	pulse/timeval.h pulse/rtclock.c pulse/rtclock.h pulse/format.c \
-	pulse/format.h pulsecore/atomic.h pulsecore/authkey.c \
-	pulsecore/authkey.h pulsecore/conf-parser.c \
-	pulsecore/conf-parser.h pulsecore/core-error.c \
-	pulsecore/core-error.h pulsecore/core-rtclock.c \
-	pulsecore/core-rtclock.h pulsecore/core-util.c \
-	pulsecore/core-util.h pulsecore/creds.h pulsecore/dynarray.c \
-	pulsecore/dynarray.h pulsecore/endianmacros.h \
-	pulsecore/flist.c pulsecore/flist.h pulsecore/hashmap.c \
-	pulsecore/hashmap.h pulsecore/i18n.c pulsecore/i18n.h \
-	pulsecore/idxset.c pulsecore/idxset.h pulsecore/arpa-inet.c \
-	pulsecore/arpa-inet.h pulsecore/iochannel.c \
-	pulsecore/iochannel.h pulsecore/ioline.c pulsecore/ioline.h \
-	pulsecore/ipacl.c pulsecore/ipacl.h pulsecore/llist.h \
-	pulsecore/lock-autospawn.c pulsecore/lock-autospawn.h \
-	pulsecore/log.c pulsecore/log.h pulsecore/ratelimit.c \
-	pulsecore/ratelimit.h pulsecore/macro.h pulsecore/vector.h \
-	pulsecore/mcalign.c pulsecore/mcalign.h pulsecore/memblock.c \
-	pulsecore/memblock.h pulsecore/memblockq.c \
-	pulsecore/memblockq.h pulsecore/memchunk.c \
-	pulsecore/memchunk.h pulsecore/native-common.h \
-	pulsecore/once.c pulsecore/once.h pulsecore/packet.c \
-	pulsecore/packet.h pulsecore/parseaddr.c pulsecore/parseaddr.h \
-	pulsecore/pdispatch.c pulsecore/pdispatch.h pulsecore/pid.c \
-	pulsecore/pid.h pulsecore/pipe.c pulsecore/pipe.h \
-	pulsecore/poll.c pulsecore/poll.h pulsecore/prioq.c \
-	pulsecore/prioq.h pulsecore/memtrap.c pulsecore/memtrap.h \
-	pulsecore/aupdate.c pulsecore/aupdate.h \
-	pulsecore/proplist-util.c pulsecore/proplist-util.h \
-	pulsecore/pstream-util.c pulsecore/pstream-util.h \
-	pulsecore/pstream.c pulsecore/pstream.h pulsecore/queue.c \
-	pulsecore/queue.h pulsecore/random.c pulsecore/random.h \
-	pulsecore/refcnt.h pulsecore/shm.c pulsecore/shm.h \
-	pulsecore/bitset.c pulsecore/bitset.h \
-	pulsecore/socket-client.c pulsecore/socket-client.h \
-	pulsecore/socket-server.c pulsecore/socket-server.h \
-	pulsecore/socket-util.c pulsecore/socket-util.h \
-	pulsecore/strbuf.c pulsecore/strbuf.h pulsecore/strlist.c \
-	pulsecore/strlist.h pulsecore/tagstruct.c \
+	pulse/timeval.h pulse/rtclock.c pulse/rtclock.h \
+	pulsecore/atomic.h pulsecore/authkey.c pulsecore/authkey.h \
+	pulsecore/conf-parser.c pulsecore/conf-parser.h \
+	pulsecore/core-error.c pulsecore/core-error.h \
+	pulsecore/core-rtclock.c pulsecore/core-rtclock.h \
+	pulsecore/core-util.c pulsecore/core-util.h pulsecore/creds.h \
+	pulsecore/dynarray.c pulsecore/dynarray.h \
+	pulsecore/endianmacros.h pulsecore/flist.c pulsecore/flist.h \
+	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/i18n.c \
+	pulsecore/i18n.h pulsecore/idxset.c pulsecore/idxset.h \
+	pulsecore/arpa-inet.c pulsecore/arpa-inet.h \
+	pulsecore/iochannel.c pulsecore/iochannel.h pulsecore/ioline.c \
+	pulsecore/ioline.h pulsecore/ipacl.c pulsecore/ipacl.h \
+	pulsecore/llist.h pulsecore/lock-autospawn.c \
+	pulsecore/lock-autospawn.h pulsecore/log.c pulsecore/log.h \
+	pulsecore/ratelimit.c pulsecore/ratelimit.h pulsecore/macro.h \
+	pulsecore/vector.h pulsecore/mcalign.c pulsecore/mcalign.h \
+	pulsecore/memblock.c pulsecore/memblock.h \
+	pulsecore/memblockq.c pulsecore/memblockq.h \
+	pulsecore/memchunk.c pulsecore/memchunk.h \
+	pulsecore/native-common.h pulsecore/once.c pulsecore/once.h \
+	pulsecore/packet.c pulsecore/packet.h pulsecore/parseaddr.c \
+	pulsecore/parseaddr.h pulsecore/pdispatch.c \
+	pulsecore/pdispatch.h pulsecore/pid.c pulsecore/pid.h \
+	pulsecore/pipe.c pulsecore/pipe.h pulsecore/poll.c \
+	pulsecore/poll.h pulsecore/prioq.c pulsecore/prioq.h \
+	pulsecore/memtrap.c pulsecore/memtrap.h pulsecore/aupdate.c \
+	pulsecore/aupdate.h pulsecore/proplist-util.c \
+	pulsecore/proplist-util.h pulsecore/pstream-util.c \
+	pulsecore/pstream-util.h pulsecore/pstream.c \
+	pulsecore/pstream.h pulsecore/queue.c pulsecore/queue.h \
+	pulsecore/random.c pulsecore/random.h pulsecore/refcnt.h \
+	pulsecore/shm.c pulsecore/shm.h pulsecore/bitset.c \
+	pulsecore/bitset.h pulsecore/socket-client.c \
+	pulsecore/socket-client.h pulsecore/socket-server.c \
+	pulsecore/socket-server.h pulsecore/socket-util.c \
+	pulsecore/socket-util.h pulsecore/strbuf.c pulsecore/strbuf.h \
+	pulsecore/strlist.c pulsecore/strlist.h pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/tokenizer.c \
 	pulsecore/tokenizer.h pulsecore/usergroup.c \
@@ -684,7 +682,6 @@ am_libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS =  \
 	libpulsecommon_@PA_MAJORMINOR@_la-util.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-timeval.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-rtclock.lo \
-	libpulsecommon_@PA_MAJORMINOR@_la-format.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-authkey.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-conf-parser.lo \
 	libpulsecommon_@PA_MAJORMINOR@_la-core-error.lo \
@@ -1620,20 +1617,22 @@ module_udev_detect_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_UDEV_TRUE@am_module_udev_detect_la_rpath = -rpath \
 @HAVE_UDEV_TRUE@	$(modlibexecdir)
 module_virtual_sink_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
-am_module_virtual_sink_la_OBJECTS = module-virtual-sink.lo
+am_module_virtual_sink_la_OBJECTS =  \
+	module_virtual_sink_la-module-virtual-sink.lo
 module_virtual_sink_la_OBJECTS = $(am_module_virtual_sink_la_OBJECTS)
 module_virtual_sink_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(module_virtual_sink_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+	$(module_virtual_sink_la_CFLAGS) $(CFLAGS) \
+	$(module_virtual_sink_la_LDFLAGS) $(LDFLAGS) -o $@
 module_virtual_source_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
-am_module_virtual_source_la_OBJECTS = module-virtual-source.lo
+am_module_virtual_source_la_OBJECTS =  \
+	module_virtual_source_la-module-virtual-source.lo
 module_virtual_source_la_OBJECTS =  \
 	$(am_module_virtual_source_la_OBJECTS)
 module_virtual_source_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(module_virtual_source_la_LDFLAGS) \
-	$(LDFLAGS) -o $@
+	$(module_virtual_source_la_CFLAGS) $(CFLAGS) \
+	$(module_virtual_source_la_LDFLAGS) $(LDFLAGS) -o $@
 module_volume_restore_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
 am_module_volume_restore_la_OBJECTS =  \
 	module_volume_restore_la-module-volume-restore.lo
@@ -1752,7 +1751,8 @@ am__EXEEXT_10 = mcalign-test$(EXEEXT) once-test$(EXEEXT) \
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS) $(pulselibexec_PROGRAMS)
 am_alsa_time_test_OBJECTS = alsa_time_test-alsa-time-test.$(OBJEXT)
 alsa_time_test_OBJECTS = $(am_alsa_time_test_OBJECTS)
-alsa_time_test_DEPENDENCIES = $(am__DEPENDENCIES_2)
+alsa_time_test_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1)
 alsa_time_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(alsa_time_test_CFLAGS) $(CFLAGS) $(alsa_time_test_LDFLAGS) \
@@ -1861,8 +1861,8 @@ get_binary_name_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(get_binary_name_test_LDFLAGS) $(LDFLAGS) -o $@
 am_gtk_test_OBJECTS = gtk_test-gtk-test.$(OBJEXT)
 gtk_test_OBJECTS = $(am_gtk_test_OBJECTS)
-gtk_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
-	libpulse-mainloop-glib.la libpulse.la \
+gtk_test_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	libpulse.la libpulse-mainloop-glib.la libpulse.la \
 	libpulsecommon-@PA_MAJORMINOR@.la
 gtk_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(gtk_test_CFLAGS) \
@@ -2472,7 +2472,8 @@ am__dist_alsaprofilesets_DATA_DIST =  \
 	modules/alsa/mixer/profile-sets/native-instruments-traktor-audio6.conf \
 	modules/alsa/mixer/profile-sets/native-instruments-traktor-audio10.conf \
 	modules/alsa/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf \
-	modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf
+	modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf \
+	modules/alsa/mixer/profile-sets/kinect-audio.conf
 am__dist_udevrules_DATA_DIST =  \
 	modules/alsa/mixer/profile-sets/90-pulseaudio.rules
 DATA = $(dbuspolicy_DATA) $(dist_alsapaths_DATA) \
@@ -2755,6 +2756,7 @@ AM_CFLAGS = \
 	-DPA_ALSA_PATHS_DIR=\"$(alsapathsdir)\" \
 	-DPA_ALSA_PROFILE_SETS_DIR=\"$(alsaprofilesetsdir)\"
 
+SERVER_CFLAGS = -D__INCLUDED_FROM_PULSE_AUDIO
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDFLAGS = $(NODELETE_LDFLAGS) $(am__append_1) $(am__append_2)
@@ -3021,13 +3023,13 @@ sigbus_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libp
 sigbus_test_CFLAGS = $(AM_CFLAGS)
 sigbus_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 gtk_test_SOURCES = tests/gtk-test.c
-gtk_test_LDADD = $(AM_LDADD) libpulse.la libpulse-mainloop-glib.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+gtk_test_LDADD = $(AM_LDADD) $(GTK20_LIBS) libpulse.la libpulse-mainloop-glib.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 gtk_test_CFLAGS = $(AM_CFLAGS) $(GTK20_CFLAGS)
-gtk_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(GTK20_LIBS)
+gtk_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 alsa_time_test_SOURCES = tests/alsa-time-test.c
-alsa_time_test_LDADD = $(AM_LDADD)
+alsa_time_test_LDADD = $(AM_LDADD) $(ASOUNDLIB_LIBS)
 alsa_time_test_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
-alsa_time_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(ASOUNDLIB_LIBS)
+alsa_time_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 usergroup_test_SOURCES = tests/usergroup-test.c
 usergroup_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 usergroup_test_CFLAGS = $(AM_CFLAGS)
@@ -3053,44 +3055,44 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = pulse/client-conf.c \
 	pulse/proplist.h pulse/utf8.c pulse/utf8.h pulse/channelmap.c \
 	pulse/channelmap.h pulse/sample.c pulse/sample.h pulse/util.c \
 	pulse/util.h pulse/timeval.c pulse/timeval.h pulse/rtclock.c \
-	pulse/rtclock.h pulse/format.c pulse/format.h \
-	pulsecore/atomic.h pulsecore/authkey.c pulsecore/authkey.h \
-	pulsecore/conf-parser.c pulsecore/conf-parser.h \
-	pulsecore/core-error.c pulsecore/core-error.h \
-	pulsecore/core-rtclock.c pulsecore/core-rtclock.h \
-	pulsecore/core-util.c pulsecore/core-util.h pulsecore/creds.h \
-	pulsecore/dynarray.c pulsecore/dynarray.h \
-	pulsecore/endianmacros.h pulsecore/flist.c pulsecore/flist.h \
-	pulsecore/hashmap.c pulsecore/hashmap.h pulsecore/i18n.c \
-	pulsecore/i18n.h pulsecore/idxset.c pulsecore/idxset.h \
-	pulsecore/arpa-inet.c pulsecore/arpa-inet.h \
-	pulsecore/iochannel.c pulsecore/iochannel.h pulsecore/ioline.c \
-	pulsecore/ioline.h pulsecore/ipacl.c pulsecore/ipacl.h \
-	pulsecore/llist.h pulsecore/lock-autospawn.c \
-	pulsecore/lock-autospawn.h pulsecore/log.c pulsecore/log.h \
-	pulsecore/ratelimit.c pulsecore/ratelimit.h pulsecore/macro.h \
-	pulsecore/vector.h pulsecore/mcalign.c pulsecore/mcalign.h \
-	pulsecore/memblock.c pulsecore/memblock.h \
-	pulsecore/memblockq.c pulsecore/memblockq.h \
-	pulsecore/memchunk.c pulsecore/memchunk.h \
-	pulsecore/native-common.h pulsecore/once.c pulsecore/once.h \
-	pulsecore/packet.c pulsecore/packet.h pulsecore/parseaddr.c \
-	pulsecore/parseaddr.h pulsecore/pdispatch.c \
-	pulsecore/pdispatch.h pulsecore/pid.c pulsecore/pid.h \
-	pulsecore/pipe.c pulsecore/pipe.h pulsecore/poll.c \
-	pulsecore/poll.h pulsecore/prioq.c pulsecore/prioq.h \
-	pulsecore/memtrap.c pulsecore/memtrap.h pulsecore/aupdate.c \
-	pulsecore/aupdate.h pulsecore/proplist-util.c \
-	pulsecore/proplist-util.h pulsecore/pstream-util.c \
-	pulsecore/pstream-util.h pulsecore/pstream.c \
-	pulsecore/pstream.h pulsecore/queue.c pulsecore/queue.h \
-	pulsecore/random.c pulsecore/random.h pulsecore/refcnt.h \
-	pulsecore/shm.c pulsecore/shm.h pulsecore/bitset.c \
-	pulsecore/bitset.h pulsecore/socket-client.c \
-	pulsecore/socket-client.h pulsecore/socket-server.c \
-	pulsecore/socket-server.h pulsecore/socket-util.c \
-	pulsecore/socket-util.h pulsecore/strbuf.c pulsecore/strbuf.h \
-	pulsecore/strlist.c pulsecore/strlist.h pulsecore/tagstruct.c \
+	pulse/rtclock.h pulsecore/atomic.h pulsecore/authkey.c \
+	pulsecore/authkey.h pulsecore/conf-parser.c \
+	pulsecore/conf-parser.h pulsecore/core-error.c \
+	pulsecore/core-error.h pulsecore/core-rtclock.c \
+	pulsecore/core-rtclock.h pulsecore/core-util.c \
+	pulsecore/core-util.h pulsecore/creds.h pulsecore/dynarray.c \
+	pulsecore/dynarray.h pulsecore/endianmacros.h \
+	pulsecore/flist.c pulsecore/flist.h pulsecore/hashmap.c \
+	pulsecore/hashmap.h pulsecore/i18n.c pulsecore/i18n.h \
+	pulsecore/idxset.c pulsecore/idxset.h pulsecore/arpa-inet.c \
+	pulsecore/arpa-inet.h pulsecore/iochannel.c \
+	pulsecore/iochannel.h pulsecore/ioline.c pulsecore/ioline.h \
+	pulsecore/ipacl.c pulsecore/ipacl.h pulsecore/llist.h \
+	pulsecore/lock-autospawn.c pulsecore/lock-autospawn.h \
+	pulsecore/log.c pulsecore/log.h pulsecore/ratelimit.c \
+	pulsecore/ratelimit.h pulsecore/macro.h pulsecore/vector.h \
+	pulsecore/mcalign.c pulsecore/mcalign.h pulsecore/memblock.c \
+	pulsecore/memblock.h pulsecore/memblockq.c \
+	pulsecore/memblockq.h pulsecore/memchunk.c \
+	pulsecore/memchunk.h pulsecore/native-common.h \
+	pulsecore/once.c pulsecore/once.h pulsecore/packet.c \
+	pulsecore/packet.h pulsecore/parseaddr.c pulsecore/parseaddr.h \
+	pulsecore/pdispatch.c pulsecore/pdispatch.h pulsecore/pid.c \
+	pulsecore/pid.h pulsecore/pipe.c pulsecore/pipe.h \
+	pulsecore/poll.c pulsecore/poll.h pulsecore/prioq.c \
+	pulsecore/prioq.h pulsecore/memtrap.c pulsecore/memtrap.h \
+	pulsecore/aupdate.c pulsecore/aupdate.h \
+	pulsecore/proplist-util.c pulsecore/proplist-util.h \
+	pulsecore/pstream-util.c pulsecore/pstream-util.h \
+	pulsecore/pstream.c pulsecore/pstream.h pulsecore/queue.c \
+	pulsecore/queue.h pulsecore/random.c pulsecore/random.h \
+	pulsecore/refcnt.h pulsecore/shm.c pulsecore/shm.h \
+	pulsecore/bitset.c pulsecore/bitset.h \
+	pulsecore/socket-client.c pulsecore/socket-client.h \
+	pulsecore/socket-server.c pulsecore/socket-server.h \
+	pulsecore/socket-util.c pulsecore/socket-util.h \
+	pulsecore/strbuf.c pulsecore/strbuf.h pulsecore/strlist.c \
+	pulsecore/strlist.h pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
 	pulsecore/time-smoother.h pulsecore/tokenizer.c \
 	pulsecore/tokenizer.h pulsecore/usergroup.c \
@@ -3101,15 +3103,15 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = pulse/client-conf.c \
 
 # proplist-util.h uses these header files, but not the library itself!
 libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) \
-	$(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(LIBJSON_CFLAGS) \
-	$(am__append_16) $(GLIB20_CFLAGS) $(GTK20_CFLAGS) \
-	$(am__append_20) $(am__append_22) $(am__append_26)
+	$(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(am__append_16) \
+	$(GLIB20_CFLAGS) $(GTK20_CFLAGS) $(am__append_20) \
+	$(am__append_22) $(am__append_26)
 libpulsecommon_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) \
 	-avoid-version $(am__append_17)
 libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) \
 	$(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) \
-	$(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBJSON_LIBS) \
-	$(am__append_23) $(am__append_27)
+	$(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(am__append_23) \
+	$(am__append_27)
 
 ###################################
 #         Client library          #
@@ -3136,6 +3138,7 @@ libpulse_la_SOURCES = \
 		pulse/ext-device-manager.c pulse/ext-device-manager.h \
 		pulse/ext-device-restore.c pulse/ext-device-restore.h \
 		pulse/ext-stream-restore.c pulse/ext-stream-restore.h \
+		pulse/format.c pulse/format.h \
 		pulse/gccmacro.h \
 		pulse/internal.h \
 		pulse/introspect.c pulse/introspect.h \
@@ -3157,9 +3160,10 @@ libpulse_la_SOURCES = \
 		pulse/volume.c pulse/volume.h \
 		pulse/xmalloc.c pulse/xmalloc.h
 
-libpulse_la_CFLAGS = $(AM_CFLAGS) $(am__append_30)
+libpulse_la_CFLAGS = $(AM_CFLAGS) $(LIBJSON_CFLAGS) $(am__append_30)
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) \
-	libpulsecommon-@PA_MAJORMINOR@.la $(am__append_31)
+	$(LIBJSON_LIBS) libpulsecommon-@PA_MAJORMINOR@.la \
+	$(am__append_31)
 libpulse_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_VERSION_INFO)
 libpulse_simple_la_SOURCES = pulse/simple.c pulse/simple.h
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
@@ -3217,7 +3221,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES = pulsecore/asyncmsgq.c \
 	pulsecore/time-smoother.h pulsecore/database.h \
 	$(am__append_35) $(am__append_38) $(am__append_41) \
 	$(am__append_44) $(am__append_47) $(am__append_50)
-libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) \
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
 	$(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) \
 	$(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS) $(am__append_36) \
 	$(am__append_39) $(am__append_42) $(am__append_45) \
@@ -3291,7 +3295,8 @@ libprotocol_http_la_SOURCES = pulsecore/protocol-http.c pulsecore/protocol-http.
 libprotocol_http_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
 libprotocol_http_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 libprotocol_native_la_SOURCES = pulsecore/protocol-native.c pulsecore/protocol-native.h pulsecore/native-common.h
-libprotocol_native_la_CFLAGS = $(AM_CFLAGS) $(am__append_53)
+libprotocol_native_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
+	$(am__append_53)
 libprotocol_native_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
 libprotocol_native_la_LIBADD = $(AM_LIBADD) \
 	libpulsecore-@PA_MAJORMINOR@.la \
@@ -3329,7 +3334,8 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMIN
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-traktor-audio6.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-traktor-audio10.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf \
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/kinect-audio.conf
 
 @HAVE_ALSA_TRUE@@HAVE_UDEV_TRUE@dist_udevrules_DATA = \
 @HAVE_ALSA_TRUE@@HAVE_UDEV_TRUE@		modules/alsa/mixer/profile-sets/90-pulseaudio.rules
@@ -3577,7 +3583,7 @@ module_ladspa_sink_la_CFLAGS = -DLADSPA_PATH=\"$(libdir)/ladspa:/usr/local/lib/l
 module_ladspa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_ladspa_sink_la_LIBADD = $(MODULE_LIBADD) $(LIBLTDL)
 module_equalizer_sink_la_SOURCES = modules/module-equalizer-sink.c
-module_equalizer_sink_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) $(FFTW_CFLAGS)
+module_equalizer_sink_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(DBUS_CFLAGS) $(FFTW_CFLAGS)
 module_equalizer_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_equalizer_sink_la_LIBADD = $(MODULE_LIBADD) $(DBUS_LIBS) $(FFTW_LIBS)
 module_match_la_SOURCES = modules/module-match.c
@@ -3594,9 +3600,11 @@ module_loopback_la_SOURCES = modules/module-loopback.c
 module_loopback_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_loopback_la_LIBADD = $(MODULE_LIBADD)
 module_virtual_sink_la_SOURCES = modules/module-virtual-sink.c
+module_virtual_sink_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
 module_virtual_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_virtual_sink_la_LIBADD = $(MODULE_LIBADD)
 module_virtual_source_la_SOURCES = modules/module-virtual-source.c
+module_virtual_source_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
 module_virtual_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_virtual_source_la_LIBADD = $(MODULE_LIBADD)
 
@@ -3651,8 +3659,9 @@ libalsa_util_la_SOURCES = modules/alsa/alsa-util.c \
 libalsa_util_la_LDFLAGS = -avoid-version
 libalsa_util_la_LIBADD = $(MODULE_LIBADD) $(ASOUNDLIB_LIBS) \
 	$(am__append_86) $(am__append_89) $(am__append_92)
-libalsa_util_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS) \
-	$(am__append_87) $(am__append_90) $(am__append_93)
+libalsa_util_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
+	$(ASOUNDLIB_CFLAGS) $(am__append_87) $(am__append_90) \
+	$(am__append_93)
 module_alsa_sink_la_SOURCES = modules/alsa/module-alsa-sink.c
 module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_alsa_sink_la_LIBADD = $(MODULE_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la
@@ -3803,8 +3812,8 @@ module_echo_cancel_la_SOURCES = \
 module_echo_cancel_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_echo_cancel_la_LIBADD = $(MODULE_LIBADD) $(LIBSPEEX_LIBS) \
 	$(am__append_98)
-module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(LIBSPEEX_CFLAGS) \
-	$(am__append_99)
+module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
+	$(LIBSPEEX_CFLAGS) $(am__append_99)
 @HAVE_ORC_TRUE@nodist_module_echo_cancel_la_SOURCES = \
 @HAVE_ORC_TRUE@		modules/echo-cancel/adrian-aec-orc-gen.c \
 @HAVE_ORC_TRUE@		modules/echo-cancel/adrian-aec-orc-gen.h
@@ -4601,6 +4610,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-ext-device-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-ext-device-restore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-ext-stream-restore.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-format.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-introspect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-mainloop-api.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulse_la-mainloop-signal.Plo@am__quote@
@@ -4636,7 +4646,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-dynarray.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-flist.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-fork-detect.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-format.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-hashmap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-i18n.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-idxset.Plo@am__quote@
@@ -4786,8 +4795,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-solaris.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-switch-on-connect.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-tunnel.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-virtual-sink.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module-virtual-source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_card_la-module-alsa-card.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_sink_la-module-alsa-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_alsa_source_la-module-alsa-source.Plo@am__quote@
@@ -4852,6 +4859,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_suspend_on_idle_la-module-suspend-on-idle.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_tunnel_sink_la-module-tunnel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_udev_detect_la-module-udev-detect.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_virtual_sink_la-module-virtual-sink.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_virtual_source_la-module-virtual-source.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_volume_restore_la-module-volume-restore.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_waveout_la-module-waveout.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_x11_bell_la-module-x11-bell.Plo@am__quote@
@@ -5202,6 +5211,14 @@ libpulse_la-ext-stream-restore.lo: pulse/ext-stream-restore.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -c -o libpulse_la-ext-stream-restore.lo `test -f 'pulse/ext-stream-restore.c' || echo '$(srcdir)/'`pulse/ext-stream-restore.c
 
+libpulse_la-format.lo: pulse/format.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -MT libpulse_la-format.lo -MD -MP -MF $(DEPDIR)/libpulse_la-format.Tpo -c -o libpulse_la-format.lo `test -f 'pulse/format.c' || echo '$(srcdir)/'`pulse/format.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulse_la-format.Tpo $(DEPDIR)/libpulse_la-format.Plo
+@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/format.c' object='libpulse_la-format.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -c -o libpulse_la-format.lo `test -f 'pulse/format.c' || echo '$(srcdir)/'`pulse/format.c
+
 libpulse_la-introspect.lo: pulse/introspect.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulse_la_CFLAGS) $(CFLAGS) -MT libpulse_la-introspect.lo -MD -MP -MF $(DEPDIR)/libpulse_la-introspect.Tpo -c -o libpulse_la-introspect.lo `test -f 'pulse/introspect.c' || echo '$(srcdir)/'`pulse/introspect.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulse_la-introspect.Tpo $(DEPDIR)/libpulse_la-introspect.Plo
@@ -5417,14 +5434,6 @@ libpulsecommon_@PA_MAJORMINOR@_la-rtclock.lo: pulse/rtclock.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/rtclock.c' object='libpulsecommon_@PA_MAJORMINOR@_la-rtclock.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINOR@_la-rtclock.lo `test -f 'pulse/rtclock.c' || echo '$(srcdir)/'`pulse/rtclock.c
-
-libpulsecommon_@PA_MAJORMINOR@_la-format.lo: pulse/format.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINOR@_la-format.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-format.Tpo -c -o libpulsecommon_@PA_MAJORMINOR@_la-format.lo `test -f 'pulse/format.c' || echo '$(srcdir)/'`pulse/format.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-format.Tpo $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-format.Plo
-@am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='pulse/format.c' object='libpulsecommon_@PA_MAJORMINOR@_la-format.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o libpulsecommon_@PA_MAJORMINOR@_la-format.lo `test -f 'pulse/format.c' || echo '$(srcdir)/'`pulse/format.c
 
 libpulsecommon_@PA_MAJORMINOR@_la-authkey.lo: pulsecore/authkey.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT libpulsecommon_@PA_MAJORMINOR@_la-authkey.lo -MD -MP -MF $(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-authkey.Tpo -c -o libpulsecommon_@PA_MAJORMINOR@_la-authkey.lo `test -f 'pulsecore/authkey.c' || echo '$(srcdir)/'`pulsecore/authkey.c
@@ -7154,21 +7163,21 @@ module_udev_detect_la-module-udev-detect.lo: modules/module-udev-detect.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_udev_detect_la_CFLAGS) $(CFLAGS) -c -o module_udev_detect_la-module-udev-detect.lo `test -f 'modules/module-udev-detect.c' || echo '$(srcdir)/'`modules/module-udev-detect.c
 
-module-virtual-sink.lo: modules/module-virtual-sink.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-virtual-sink.lo -MD -MP -MF $(DEPDIR)/module-virtual-sink.Tpo -c -o module-virtual-sink.lo `test -f 'modules/module-virtual-sink.c' || echo '$(srcdir)/'`modules/module-virtual-sink.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/module-virtual-sink.Tpo $(DEPDIR)/module-virtual-sink.Plo
+module_virtual_sink_la-module-virtual-sink.lo: modules/module-virtual-sink.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_virtual_sink_la_CFLAGS) $(CFLAGS) -MT module_virtual_sink_la-module-virtual-sink.lo -MD -MP -MF $(DEPDIR)/module_virtual_sink_la-module-virtual-sink.Tpo -c -o module_virtual_sink_la-module-virtual-sink.lo `test -f 'modules/module-virtual-sink.c' || echo '$(srcdir)/'`modules/module-virtual-sink.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/module_virtual_sink_la-module-virtual-sink.Tpo $(DEPDIR)/module_virtual_sink_la-module-virtual-sink.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-virtual-sink.c' object='module-virtual-sink.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-virtual-sink.c' object='module_virtual_sink_la-module-virtual-sink.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-virtual-sink.lo `test -f 'modules/module-virtual-sink.c' || echo '$(srcdir)/'`modules/module-virtual-sink.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_virtual_sink_la_CFLAGS) $(CFLAGS) -c -o module_virtual_sink_la-module-virtual-sink.lo `test -f 'modules/module-virtual-sink.c' || echo '$(srcdir)/'`modules/module-virtual-sink.c
 
-module-virtual-source.lo: modules/module-virtual-source.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT module-virtual-source.lo -MD -MP -MF $(DEPDIR)/module-virtual-source.Tpo -c -o module-virtual-source.lo `test -f 'modules/module-virtual-source.c' || echo '$(srcdir)/'`modules/module-virtual-source.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/module-virtual-source.Tpo $(DEPDIR)/module-virtual-source.Plo
+module_virtual_source_la-module-virtual-source.lo: modules/module-virtual-source.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_virtual_source_la_CFLAGS) $(CFLAGS) -MT module_virtual_source_la-module-virtual-source.lo -MD -MP -MF $(DEPDIR)/module_virtual_source_la-module-virtual-source.Tpo -c -o module_virtual_source_la-module-virtual-source.lo `test -f 'modules/module-virtual-source.c' || echo '$(srcdir)/'`modules/module-virtual-source.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/module_virtual_source_la-module-virtual-source.Tpo $(DEPDIR)/module_virtual_source_la-module-virtual-source.Plo
 @am__fastdepCC_FALSE@	$(AM_V_CC) @AM_BACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-virtual-source.c' object='module-virtual-source.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='modules/module-virtual-source.c' object='module_virtual_source_la-module-virtual-source.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o module-virtual-source.lo `test -f 'modules/module-virtual-source.c' || echo '$(srcdir)/'`modules/module-virtual-source.c
+@am__fastdepCC_FALSE@	$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_virtual_source_la_CFLAGS) $(CFLAGS) -c -o module_virtual_source_la-module-virtual-source.lo `test -f 'modules/module-virtual-source.c' || echo '$(srcdir)/'`modules/module-virtual-source.c
 
 module_volume_restore_la-module-volume-restore.lo: modules/module-volume-restore.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_volume_restore_la_CFLAGS) $(CFLAGS) -MT module_volume_restore_la-module-volume-restore.lo -MD -MP -MF $(DEPDIR)/module_volume_restore_la-module-volume-restore.Tpo -c -o module_volume_restore_la-module-volume-restore.lo `test -f 'modules/module-volume-restore.c' || echo '$(srcdir)/'`modules/module-volume-restore.c

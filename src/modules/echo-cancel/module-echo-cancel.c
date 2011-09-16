@@ -55,7 +55,7 @@
 #include "module-echo-cancel-symdef.h"
 
 PA_MODULE_AUTHOR("Wim Taymans");
-PA_MODULE_DESCRIPTION("Echo Cancelation");
+PA_MODULE_DESCRIPTION("Echo Cancellation");
 PA_MODULE_VERSION(PACKAGE_VERSION);
 PA_MODULE_LOAD_ONCE(FALSE);
 PA_MODULE_USAGE(
@@ -72,13 +72,9 @@ PA_MODULE_USAGE(
           "channel_map=<channel map> "
           "aec_method=<implementation to use> "
           "aec_args=<parameters for the AEC engine> "
-          "agc=<perform automagic gain control?> "
-          "denoise=<apply denoising?> "
-          "echo_suppress=<perform residual echo suppression? (only with the speex canceller)> "
-          "echo_suppress_attenuation=<dB value of residual echo attenuation> "
-          "echo_suppress_attenuation_active=<dB value of residual echo attenuation when near end is active> "
           "save_aec=<save AEC data in /tmp> "
           "autoloaded=<set if this module is being loaded automatically> "
+          "use_volume_sharing=<yes or no> "
         ));
 
 /* NOTE: Make sure the enum and ec_table are maintained in the correct order */
@@ -108,11 +104,7 @@ static const pa_echo_canceller ec_table[] = {
 #define DEFAULT_RATE 32000
 #define DEFAULT_CHANNELS 1
 #define DEFAULT_ADJUST_TIME_USEC (1*PA_USEC_PER_SEC)
-#define DEFAULT_AGC_ENABLED TRUE
-#define DEFAULT_DENOISE_ENABLED TRUE
-#define DEFAULT_ECHO_SUPPRESS_ENABLED TRUE
-#define DEFAULT_ECHO_SUPPRESS_ATTENUATION 0
-#define DEFAULT_SAVE_AEC 0
+#define DEFAULT_SAVE_AEC FALSE
 #define DEFAULT_AUTOLOADED FALSE
 
 #define MEMBLOCKQ_MAXLENGTH (16*1024*1024)
@@ -132,10 +124,10 @@ static const pa_echo_canceller ec_table[] = {
  *
  * Alignment is performed in two steps:
  *
- * 1) when something happens that requires quick adjustement of the alignment of
+ * 1) when something happens that requires quick adjustment of the alignment of
  *    capture and playback samples, we perform a resync. This adjusts the
  *    position in the playback memblock to the requested sample. Quick
- *    adjustements include moving the playback samples before the capture
+ *    adjustments include moving the playback samples before the capture
  *    samples (because else the echo canceler does not work) or when the
  *    playback pointer drifts too far away.
  *
@@ -165,7 +157,8 @@ struct userdata {
     pa_module *module;
 
     pa_bool_t autoloaded;
-    uint32_t save_aec;
+    pa_bool_t dead;
+    pa_bool_t save_aec;
 
     pa_echo_canceller *ec;
     uint32_t blocksize;
@@ -218,13 +211,9 @@ static const char* const valid_modargs[] = {
     "channel_map",
     "aec_method",
     "aec_args",
-    "agc",
-    "denoise",
-    "echo_suppress",
-    "echo_suppress_attenuation",
-    "echo_suppress_attenuation_active",
     "save_aec",
     "autoloaded",
+    "use_volume_sharing",
     NULL
 };
 
@@ -250,7 +239,7 @@ static int64_t calc_diff(struct userdata *u, struct snapshot *snapshot) {
 
     buffer += snapshot->source_delay + snapshot->sink_delay;
 
-    /* add the amount of samples not yet transfered to the source context */
+    /* add the amount of samples not yet transferred to the source context */
     if (snapshot->recv_counter <= snapshot->send_counter)
         buffer += (int64_t) (snapshot->send_counter - snapshot->recv_counter);
     else
@@ -322,7 +311,7 @@ static void time_callback(pa_mainloop_api *a, pa_time_event *e, const struct tim
         new_rate = base_rate;
     }
 
-    /* make sure we don't make too big adjustements because that sounds horrible */
+    /* make sure we don't make too big adjustments because that sounds horrible */
     if (new_rate > base_rate * 1.1 || new_rate < base_rate * 0.9)
         new_rate = base_rate;
 
@@ -688,6 +677,7 @@ static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk)
         if (plen > u->blocksize && u->source_skip == 0) {
             uint8_t *rdata, *pdata, *cdata;
             pa_memchunk cchunk;
+            int unused;
 
             if (u->sink_skip) {
                 size_t to_skip;
@@ -719,21 +709,17 @@ static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk)
 
                 if (u->save_aec) {
                     if (u->captured_file)
-                        fwrite(rdata, 1, u->blocksize, u->captured_file);
+                        unused = fwrite(rdata, 1, u->blocksize, u->captured_file);
                     if (u->played_file)
-                        fwrite(pdata, 1, u->blocksize, u->played_file);
+                        unused = fwrite(pdata, 1, u->blocksize, u->played_file);
                 }
 
-                /* perform echo cancelation */
+                /* perform echo cancellation */
                 u->ec->run(u->ec, rdata, pdata, cdata);
-
-                /* preprecessor is run after AEC. This is not a mistake! */
-                if (u->ec->pp_state)
-                    speex_preprocess_run(u->ec->pp_state, (spx_int16_t *) cdata);
 
                 if (u->save_aec) {
                     if (u->canceled_file)
-                        fwrite(cdata, 1, u->blocksize, u->canceled_file);
+                        unused = fwrite(cdata, 1, u->blocksize, u->canceled_file);
                 }
 
                 pa_memblock_release(cchunk.memblock);
@@ -1064,7 +1050,7 @@ static void source_output_attach_cb(pa_source_output *o) {
     pa_source_set_fixed_latency_within_thread(u->source, o->source->thread_info.fixed_latency);
     pa_source_set_max_rewind_within_thread(u->source, pa_source_output_get_max_rewind(o));
 
-    pa_log_debug("Source output %p attach", o);
+    pa_log_debug("Source output %d attach", o->index);
 
     pa_source_attach_within_thread(u->source);
 
@@ -1094,7 +1080,7 @@ static void sink_input_attach_cb(pa_sink_input *i) {
     pa_sink_set_max_request_within_thread(u->sink, pa_sink_input_get_max_request(i));
     pa_sink_set_max_rewind_within_thread(u->sink, pa_sink_input_get_max_rewind(i));
 
-    pa_log_debug("Sink input %p attach", i);
+    pa_log_debug("Sink input %d attach", i->index);
 
     u->rtpoll_item_write = pa_rtpoll_item_new_asyncmsgq_write(
             i->sink->thread_info.rtpoll,
@@ -1116,7 +1102,7 @@ static void source_output_detach_cb(pa_source_output *o) {
     pa_source_detach_within_thread(u->source);
     pa_source_set_rtpoll(u->source, NULL);
 
-    pa_log_debug("Source output %p detach", o);
+    pa_log_debug("Source output %d detach", o->index);
 
     if (u->rtpoll_item_read) {
         pa_rtpoll_item_free(u->rtpoll_item_read);
@@ -1135,7 +1121,7 @@ static void sink_input_detach_cb(pa_sink_input *i) {
 
     pa_sink_set_rtpoll(u->sink, NULL);
 
-    pa_log_debug("Sink input %p detach", i);
+    pa_log_debug("Sink input %d detach", i->index);
 
     if (u->rtpoll_item_write) {
         pa_rtpoll_item_free(u->rtpoll_item_write);
@@ -1151,7 +1137,7 @@ static void source_output_state_change_cb(pa_source_output *o, pa_source_output_
     pa_source_output_assert_io_context(o);
     pa_assert_se(u = o->userdata);
 
-    pa_log_debug("Source output %p state %d", o, state);
+    pa_log_debug("Source output %d state %d", o->index, state);
 }
 
 /* Called from IO thread context */
@@ -1161,7 +1147,7 @@ static void sink_input_state_change_cb(pa_sink_input *i, pa_sink_input_state_t s
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
-    pa_log_debug("Sink input %p state %d", i, state);
+    pa_log_debug("Sink input %d state %d", i->index, state);
 
     /* If we are added for the first time, ask for a rewinding so that
      * we are heard right-away. */
@@ -1180,6 +1166,8 @@ static void source_output_kill_cb(pa_source_output *o) {
     pa_assert_ctl_context();
     pa_assert_se(u = o->userdata);
 
+    u->dead = TRUE;
+
     /* The order here matters! We first kill the source output, followed
      * by the source. That means the source callbacks must be protected
      * against an unconnected source output! */
@@ -1192,7 +1180,7 @@ static void source_output_kill_cb(pa_source_output *o) {
     pa_source_unref(u->source);
     u->source = NULL;
 
-    pa_log_debug("Source output kill %p", o);
+    pa_log_debug("Source output kill %d", o->index);
 
     pa_module_unload_request(u->module, TRUE);
 }
@@ -1203,6 +1191,8 @@ static void sink_input_kill_cb(pa_sink_input *i) {
 
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
+
+    u->dead = TRUE;
 
     /* The order here matters! We first kill the sink input, followed
      * by the sink. That means the sink callbacks must be protected
@@ -1216,7 +1206,7 @@ static void sink_input_kill_cb(pa_sink_input *i) {
     pa_sink_unref(u->sink);
     u->sink = NULL;
 
-    pa_log_debug("Sink input kill %p", i);
+    pa_log_debug("Sink input kill %d", i->index);
 
     pa_module_unload_request(u->module, TRUE);
 }
@@ -1229,6 +1219,9 @@ static pa_bool_t source_output_may_move_to_cb(pa_source_output *o, pa_source *de
     pa_assert_ctl_context();
     pa_assert_se(u = o->userdata);
 
+    if (u->dead)
+        return FALSE;
+
     return (u->source != dest) && (u->sink != dest->monitor_of);
 }
 
@@ -1238,6 +1231,9 @@ static pa_bool_t sink_input_may_move_to_cb(pa_sink_input *i, pa_sink *dest) {
 
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
+
+    if (u->dead)
+        return FALSE;
 
     return u->sink != dest;
 }
@@ -1318,9 +1314,9 @@ static void sink_input_mute_changed_cb(pa_sink_input *i) {
 }
 
 static pa_echo_canceller_method_t get_ec_method_from_string(const char *method) {
-    if (strcmp(method, "speex") == 0)
+    if (pa_streq(method, "speex"))
         return PA_ECHO_CANCELLER_SPEEX;
-    else if (strcmp(method, "adrian") == 0)
+    else if (pa_streq(method, "adrian"))
         return PA_ECHO_CANCELLER_ADRIAN;
     else
         return PA_ECHO_CANCELLER_INVALID;
@@ -1340,6 +1336,7 @@ int pa__init(pa_module*m) {
     pa_memchunk silence;
     pa_echo_canceller_method_t ec_method;
     uint32_t adjust_time_sec;
+    pa_bool_t use_volume_sharing = TRUE;
 
     pa_assert(m);
 
@@ -1372,6 +1369,11 @@ int pa__init(pa_module*m) {
     sink_ss = sink_master->sample_spec;
     sink_map = sink_master->channel_map;
 
+    if (pa_modargs_get_value_boolean(ma, "use_volume_sharing", &use_volume_sharing) < 0) {
+        pa_log("use_volume_sharing= expects a boolean argument");
+        goto fail;
+    }
+
     u = pa_xnew0(struct userdata, 1);
     if (!u) {
         pa_log("Failed to alloc userdata");
@@ -1380,6 +1382,7 @@ int pa__init(pa_module*m) {
     u->core = m->core;
     u->module = m;
     m->userdata = u;
+    u->dead = FALSE;
 
     u->ec = pa_xnew0(pa_echo_canceller, 1);
     if (!u->ec) {
@@ -1407,50 +1410,8 @@ int pa__init(pa_module*m) {
     else
         u->adjust_time = DEFAULT_ADJUST_TIME_USEC;
 
-    u->ec->agc = DEFAULT_AGC_ENABLED;
-    if (pa_modargs_get_value_boolean(ma, "agc", &u->ec->agc) < 0) {
-        pa_log("Failed to parse agc value");
-        goto fail;
-    }
-
-    u->ec->denoise = DEFAULT_DENOISE_ENABLED;
-    if (pa_modargs_get_value_boolean(ma, "denoise", &u->ec->denoise) < 0) {
-        pa_log("Failed to parse denoise value");
-        goto fail;
-    }
-
-    u->ec->echo_suppress = DEFAULT_ECHO_SUPPRESS_ENABLED;
-    if (pa_modargs_get_value_boolean(ma, "echo_suppress", &u->ec->echo_suppress) < 0) {
-        pa_log("Failed to parse echo_suppress value");
-        goto fail;
-    }
-    if (u->ec->echo_suppress && ec_method != PA_ECHO_CANCELLER_SPEEX) {
-        pa_log("Echo suppression is only useful with the speex canceller");
-        goto fail;
-    }
-
-    u->ec->echo_suppress_attenuation = DEFAULT_ECHO_SUPPRESS_ATTENUATION;
-    if (pa_modargs_get_value_s32(ma, "echo_suppress_attenuation", &u->ec->echo_suppress_attenuation) < 0) {
-        pa_log("Failed to parse echo_suppress_attenuation value");
-        goto fail;
-    }
-    if (u->ec->echo_suppress_attenuation > 0) {
-        pa_log("echo_suppress_attenuation should be a negative dB value");
-        goto fail;
-    }
-
-    u->ec->echo_suppress_attenuation_active = DEFAULT_ECHO_SUPPRESS_ATTENUATION;
-    if (pa_modargs_get_value_s32(ma, "echo_suppress_attenuation_active", &u->ec->echo_suppress_attenuation_active) < 0) {
-        pa_log("Failed to parse echo_supress_attenuation_active value");
-        goto fail;
-    }
-    if (u->ec->echo_suppress_attenuation_active > 0) {
-        pa_log("echo_suppress_attenuation_active should be a negative dB value");
-        goto fail;
-    }
-
     u->save_aec = DEFAULT_SAVE_AEC;
-    if (pa_modargs_get_value_u32(ma, "save_aec", &u->save_aec) < 0) {
+    if (pa_modargs_get_value_boolean(ma, "save_aec", &u->save_aec) < 0) {
         pa_log("Failed to parse save_aec value");
         goto fail;
     }
@@ -1467,31 +1428,6 @@ int pa__init(pa_module*m) {
         if (!u->ec->init(u->core, u->ec, &source_ss, &source_map, &sink_ss, &sink_map, &u->blocksize, pa_modargs_get_value(ma, "aec_args", NULL))) {
             pa_log("Failed to init AEC engine");
             goto fail;
-        }
-    }
-
-    if (u->ec->agc || u->ec->denoise || u->ec->echo_suppress) {
-        spx_int32_t tmp;
-
-        if (source_ss.channels != 1) {
-            pa_log("AGC, denoising and echo suppression only work with channels=1");
-            goto fail;
-        }
-
-        u->ec->pp_state = speex_preprocess_state_init(u->blocksize / pa_frame_size(&source_ss), source_ss.rate);
-
-        tmp = u->ec->agc;
-        speex_preprocess_ctl(u->ec->pp_state, SPEEX_PREPROCESS_SET_AGC, &tmp);
-        tmp = u->ec->denoise;
-        speex_preprocess_ctl(u->ec->pp_state, SPEEX_PREPROCESS_SET_DENOISE, &tmp);
-        if (u->ec->echo_suppress) {
-            if (u->ec->echo_suppress_attenuation)
-                speex_preprocess_ctl(u->ec->pp_state, SPEEX_PREPROCESS_SET_ECHO_SUPPRESS, &u->ec->echo_suppress_attenuation);
-            if (u->ec->echo_suppress_attenuation_active) {
-                speex_preprocess_ctl(u->ec->pp_state, SPEEX_PREPROCESS_SET_ECHO_SUPPRESS_ACTIVE,
-                                     &u->ec->echo_suppress_attenuation_active);
-            }
-            speex_preprocess_ctl(u->ec->pp_state, SPEEX_PREPROCESS_SET_ECHO_STATE, u->ec->params.priv.speex.state);
         }
     }
 
@@ -1522,8 +1458,8 @@ int pa__init(pa_module*m) {
         pa_proplist_setf(source_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Echo-Cancel Source %s on %s", source_data.name, z ? z : source_master->name);
     }
 
-    u->source = pa_source_new(m->core, &source_data,
-                          (source_master->flags & (PA_SOURCE_LATENCY|PA_SOURCE_DYNAMIC_LATENCY)));
+    u->source = pa_source_new(m->core, &source_data, (source_master->flags & (PA_SOURCE_LATENCY | PA_SOURCE_DYNAMIC_LATENCY))
+                                                     | (use_volume_sharing ? PA_SOURCE_SHARE_VOLUME_WITH_MASTER : 0));
     pa_source_new_data_done(&source_data);
 
     if (!u->source) {
@@ -1534,11 +1470,13 @@ int pa__init(pa_module*m) {
     u->source->parent.process_msg = source_process_msg_cb;
     u->source->set_state = source_set_state_cb;
     u->source->update_requested_latency = source_update_requested_latency_cb;
-    pa_source_enable_decibel_volume(u->source, TRUE);
-    pa_source_set_get_volume_callback(u->source, source_get_volume_cb);
-    pa_source_set_set_volume_callback(u->source, source_set_volume_cb);
     pa_source_set_get_mute_callback(u->source, source_get_mute_cb);
     pa_source_set_set_mute_callback(u->source, source_set_mute_cb);
+    if (!use_volume_sharing) {
+        pa_source_set_get_volume_callback(u->source, source_get_volume_cb);
+        pa_source_set_set_volume_callback(u->source, source_set_volume_cb);
+        pa_source_enable_decibel_volume(u->source, TRUE);
+    }
     u->source->userdata = u;
 
     pa_source_set_asyncmsgq(u->source, source_master->asyncmsgq);
@@ -1570,8 +1508,8 @@ int pa__init(pa_module*m) {
         pa_proplist_setf(sink_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Echo-Cancel Sink %s on %s", sink_data.name, z ? z : sink_master->name);
     }
 
-    u->sink = pa_sink_new(m->core, &sink_data,
-                          (sink_master->flags & (PA_SINK_LATENCY|PA_SINK_DYNAMIC_LATENCY)));
+    u->sink = pa_sink_new(m->core, &sink_data, (sink_master->flags & (PA_SINK_LATENCY | PA_SINK_DYNAMIC_LATENCY))
+                                               | (use_volume_sharing ? PA_SINK_SHARE_VOLUME_WITH_MASTER : 0));
     pa_sink_new_data_done(&sink_data);
 
     if (!u->sink) {
@@ -1583,9 +1521,11 @@ int pa__init(pa_module*m) {
     u->sink->set_state = sink_set_state_cb;
     u->sink->update_requested_latency = sink_update_requested_latency_cb;
     u->sink->request_rewind = sink_request_rewind_cb;
-    pa_sink_enable_decibel_volume(u->sink, TRUE);
-    pa_sink_set_set_volume_callback(u->sink, sink_set_volume_cb);
     pa_sink_set_set_mute_callback(u->sink, sink_set_mute_cb);
+    if (!use_volume_sharing) {
+        pa_sink_set_set_volume_callback(u->sink, sink_set_volume_cb);
+        pa_sink_enable_decibel_volume(u->sink, TRUE);
+    }
     u->sink->userdata = u;
 
     pa_sink_set_asyncmsgq(u->sink, sink_master->asyncmsgq);
@@ -1659,7 +1599,8 @@ int pa__init(pa_module*m) {
     u->sink_input->state_change = sink_input_state_change_cb;
     u->sink_input->may_move_to = sink_input_may_move_to_cb;
     u->sink_input->moving = sink_input_moving_cb;
-    u->sink_input->volume_changed = sink_input_volume_changed_cb;
+    if (!use_volume_sharing)
+        u->sink_input->volume_changed = sink_input_volume_changed_cb;
     u->sink_input->mute_changed = sink_input_mute_changed_cb;
     u->sink_input->userdata = u;
 
@@ -1734,6 +1675,8 @@ void pa__done(pa_module*m) {
     if (!(u = m->userdata))
         return;
 
+    u->dead = TRUE;
+
     /* See comments in source_output_kill_cb() above regarding
      * destruction order! */
 
@@ -1764,9 +1707,6 @@ void pa__done(pa_module*m) {
         pa_memblockq_free(u->source_memblockq);
     if (u->sink_memblockq)
         pa_memblockq_free(u->sink_memblockq);
-
-    if (u->ec->pp_state)
-        speex_preprocess_state_destroy(u->ec->pp_state);
 
     if (u->ec) {
         if (u->ec->done)
