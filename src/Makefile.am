@@ -48,6 +48,7 @@ AM_CFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	-DPA_ALSA_PATHS_DIR=\"$(alsapathsdir)\" \
 	-DPA_ALSA_PROFILE_SETS_DIR=\"$(alsaprofilesetsdir)\"
+SERVER_CFLAGS = -D__INCLUDED_FROM_PULSE_AUDIO
 
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
@@ -494,14 +495,14 @@ sigbus_test_CFLAGS = $(AM_CFLAGS)
 sigbus_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 gtk_test_SOURCES = tests/gtk-test.c
-gtk_test_LDADD = $(AM_LDADD) libpulse.la libpulse-mainloop-glib.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+gtk_test_LDADD = $(AM_LDADD) $(GTK20_LIBS) libpulse.la libpulse-mainloop-glib.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 gtk_test_CFLAGS = $(AM_CFLAGS) $(GTK20_CFLAGS)
-gtk_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(GTK20_LIBS)
+gtk_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 alsa_time_test_SOURCES = tests/alsa-time-test.c
-alsa_time_test_LDADD = $(AM_LDADD)
+alsa_time_test_LDADD = $(AM_LDADD) $(ASOUNDLIB_LIBS)
 alsa_time_test_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
-alsa_time_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(ASOUNDLIB_LIBS)
+alsa_time_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 usergroup_test_SOURCES = tests/usergroup-test.c
 usergroup_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
@@ -532,7 +533,6 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulse/util.c pulse/util.h \
 		pulse/timeval.c pulse/timeval.h \
 		pulse/rtclock.c pulse/rtclock.h \
-		pulse/format.c pulse/format.h \
 		pulsecore/atomic.h \
 		pulsecore/authkey.c pulsecore/authkey.h \
 		pulsecore/conf-parser.c pulsecore/conf-parser.h \
@@ -590,9 +590,9 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/sndfile-util.c pulsecore/sndfile-util.h \
 		pulsecore/socket.h
 
-libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS) $(LIBJSON_CFLAGS)
+libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS)
 libpulsecommon_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
-libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS) $(LIBJSON_LIBS)
+libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS)
 
 if HAVE_X11
 libpulsecommon_@PA_MAJORMINOR@_la_SOURCES += \
@@ -706,6 +706,7 @@ libpulse_la_SOURCES = \
 		pulse/ext-device-manager.c pulse/ext-device-manager.h \
 		pulse/ext-device-restore.c pulse/ext-device-restore.h \
 		pulse/ext-stream-restore.c pulse/ext-stream-restore.h \
+		pulse/format.c pulse/format.h \
 		pulse/gccmacro.h \
 		pulse/internal.h \
 		pulse/introspect.c pulse/introspect.h \
@@ -727,8 +728,8 @@ libpulse_la_SOURCES = \
 		pulse/volume.c pulse/volume.h \
 		pulse/xmalloc.c pulse/xmalloc.h
 
-libpulse_la_CFLAGS = $(AM_CFLAGS)
-libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINOR@.la
+libpulse_la_CFLAGS = $(AM_CFLAGS) $(LIBJSON_CFLAGS)
+libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) $(LIBJSON_LIBS) libpulsecommon-@PA_MAJORMINOR@.la
 libpulse_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_VERSION_INFO)
 
 if HAVE_DBUS
@@ -819,7 +820,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/time-smoother.c pulsecore/time-smoother.h \
 		pulsecore/database.h
 
-libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) $(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) $(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS)
 libpulsecore_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
 libpulsecore_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) $(LIBSAMPLERATE_LIBS) $(LIBSPEEX_LIBS) $(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) libpulsecommon-@PA_MAJORMINOR@.la libpulse.la libpulsecore-foreign.la
 
@@ -914,7 +915,7 @@ libprotocol_http_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
 libprotocol_http_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 
 libprotocol_native_la_SOURCES = pulsecore/protocol-native.c pulsecore/protocol-native.h pulsecore/native-common.h
-libprotocol_native_la_CFLAGS = $(AM_CFLAGS)
+libprotocol_native_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
 libprotocol_native_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
 libprotocol_native_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 if HAVE_DBUS
@@ -1069,7 +1070,8 @@ dist_alsaprofilesets_DATA = \
 		modules/alsa/mixer/profile-sets/native-instruments-traktor-audio6.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-traktor-audio10.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf \
-		modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf
+		modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf \
+		modules/alsa/mixer/profile-sets/kinect-audio.conf
 
 if HAVE_UDEV
 dist_udevrules_DATA = \
@@ -1462,7 +1464,7 @@ module_ladspa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_ladspa_sink_la_LIBADD = $(MODULE_LIBADD) $(LIBLTDL)
 
 module_equalizer_sink_la_SOURCES = modules/module-equalizer-sink.c
-module_equalizer_sink_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) $(FFTW_CFLAGS)
+module_equalizer_sink_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(DBUS_CFLAGS) $(FFTW_CFLAGS)
 module_equalizer_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_equalizer_sink_la_LIBADD = $(MODULE_LIBADD) $(DBUS_LIBS) $(FFTW_LIBS)
 
@@ -1484,10 +1486,12 @@ module_loopback_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_loopback_la_LIBADD = $(MODULE_LIBADD)
 
 module_virtual_sink_la_SOURCES = modules/module-virtual-sink.c
+module_virtual_sink_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
 module_virtual_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_virtual_sink_la_LIBADD = $(MODULE_LIBADD)
 
 module_virtual_source_la_SOURCES = modules/module-virtual-source.c
+module_virtual_source_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
 module_virtual_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_virtual_source_la_LIBADD = $(MODULE_LIBADD)
 
@@ -1547,7 +1551,7 @@ libalsa_util_la_SOURCES = \
 		modules/reserve-wrap.c modules/reserve-wrap.h
 libalsa_util_la_LDFLAGS = -avoid-version
 libalsa_util_la_LIBADD = $(MODULE_LIBADD) $(ASOUNDLIB_LIBS)
-libalsa_util_la_CFLAGS = $(AM_CFLAGS) $(ASOUNDLIB_CFLAGS)
+libalsa_util_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(ASOUNDLIB_CFLAGS)
 
 if HAVE_HAL
 libalsa_util_la_SOURCES += modules/hal-util.h modules/hal-util.c
@@ -1730,7 +1734,7 @@ module_echo_cancel_la_SOURCES = \
 		modules/echo-cancel/adrian.c modules/echo-cancel/adrian.h
 module_echo_cancel_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_echo_cancel_la_LIBADD = $(MODULE_LIBADD) $(LIBSPEEX_LIBS)
-module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(LIBSPEEX_CFLAGS)
+module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(LIBSPEEX_CFLAGS)
 if HAVE_ORC
 ORC_SOURCE += modules/echo-cancel/adrian-aec
 nodist_module_echo_cancel_la_SOURCES = \

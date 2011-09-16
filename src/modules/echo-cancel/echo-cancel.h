@@ -19,6 +19,9 @@
     USA.
 ***/
 
+#ifndef fooechocancelhfoo
+#define fooechocancelhfoo
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -40,6 +43,7 @@ struct pa_echo_canceller_params {
     union {
         struct {
             SpeexEchoState *state;
+            SpeexPreprocessState *pp_state;
         } speex;
         struct {
             uint32_t blocksize;
@@ -64,13 +68,6 @@ struct pa_echo_canceller {
     void        (*done)                 (pa_echo_canceller *ec);
 
     pa_echo_canceller_params params;
-
-    pa_bool_t agc;
-    pa_bool_t denoise;
-    pa_bool_t echo_suppress;
-    int32_t echo_suppress_attenuation;
-    int32_t echo_suppress_attenuation_active;
-    SpeexPreprocessState *pp_state;
 };
 
 /* Speex canceller functions */
@@ -88,3 +85,5 @@ pa_bool_t pa_adrian_ec_init(pa_core *c, pa_echo_canceller *ec,
                            uint32_t *blocksize, const char *args);
 void pa_adrian_ec_run(pa_echo_canceller *ec, const uint8_t *rec, const uint8_t *play, uint8_t *out);
 void pa_adrian_ec_done(pa_echo_canceller *ec);
+
+#endif /* fooechocancelhfoo */

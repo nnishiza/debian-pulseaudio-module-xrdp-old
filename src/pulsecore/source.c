@@ -307,8 +307,8 @@ pa_source* pa_source_new(
     PA_LLIST_HEAD_INIT(pa_source_volume_change, s->thread_info.volume_changes);
     s->thread_info.volume_changes_tail = NULL;
     pa_sw_cvolume_multiply(&s->thread_info.current_hw_volume, &s->soft_volume, &s->real_volume);
-    s->thread_info.volume_change_safety_margin = core->sync_volume_safety_margin_usec;
-    s->thread_info.volume_change_extra_delay = core->sync_volume_extra_delay_usec;
+    s->thread_info.volume_change_safety_margin = core->deferred_volume_safety_margin_usec;
+    s->thread_info.volume_change_extra_delay = core->deferred_volume_extra_delay_usec;
 
     /* FIXME: This should probably be moved to pa_source_put() */
     pa_assert_se(pa_idxset_put(core->sources, s, &s->index) >= 0);
@@ -361,7 +361,7 @@ static int source_set_state(pa_source *s, pa_source_state_t state) {
 
     s->state = state;
 
-    if (state != PA_SOURCE_UNLINKED) { /* if we enter UNLINKED state pa_source_unlink() will fire the apropriate events */
+    if (state != PA_SOURCE_UNLINKED) { /* if we enter UNLINKED state pa_source_unlink() will fire the appropriate events */
         pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SOURCE_STATE_CHANGED], s);
         pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE | PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
     }
@@ -426,9 +426,9 @@ void pa_source_set_write_volume_callback(pa_source *s, pa_source_cb_t cb) {
     flags = s->flags;
 
     if (cb)
-        s->flags |= PA_SOURCE_SYNC_VOLUME;
+        s->flags |= PA_SOURCE_DEFERRED_VOLUME;
     else
-        s->flags &= ~PA_SOURCE_SYNC_VOLUME;
+        s->flags &= ~PA_SOURCE_DEFERRED_VOLUME;
 
     /* If the flags have changed after init, let any clients know via a change event */
     if (s->state != PA_SOURCE_INIT && flags != s->flags)
@@ -526,7 +526,7 @@ void pa_source_put(pa_source *s) {
      * Note: All of these flags set here can change over the life time
      * of the source. */
     pa_assert(!(s->flags & PA_SOURCE_HW_VOLUME_CTRL) || s->set_volume);
-    pa_assert(!(s->flags & PA_SOURCE_SYNC_VOLUME) || s->write_volume);
+    pa_assert(!(s->flags & PA_SOURCE_DEFERRED_VOLUME) || s->write_volume);
     pa_assert(!(s->flags & PA_SOURCE_HW_MUTE_CTRL) || s->set_mute);
 
     /* XXX: Currently decibel volume is disabled for all sources that use volume
@@ -978,6 +978,27 @@ pa_bool_t pa_source_is_passthrough(pa_source *s) {
     return (s->monitor_of && pa_sink_is_passthrough(s->monitor_of));
 }
 
+/* Called from main context */
+void pa_source_enter_passthrough(pa_source *s) {
+    pa_cvolume volume;
+
+    /* set the volume to NORM */
+    s->saved_volume = *pa_source_get_volume(s, TRUE);
+    s->saved_save_volume = s->save_volume;
+
+    pa_cvolume_set(&volume, s->sample_spec.channels, PA_MIN(s->base_volume, PA_VOLUME_NORM));
+    pa_source_set_volume(s, &volume, TRUE, FALSE);
+}
+
+/* Called from main context */
+void pa_source_leave_passthrough(pa_source *s) {
+    /* Restore source volume to what it was before we entered passthrough mode */
+    pa_source_set_volume(s, &s->saved_volume, TRUE, s->saved_save_volume);
+
+    pa_cvolume_init(&s->saved_volume);
+    s->saved_save_volume = FALSE;
+}
+
 /* Called from main context. */
 static void compute_reference_ratio(pa_source_output *o) {
     unsigned c = 0;
@@ -1160,7 +1181,7 @@ static void get_maximum_output_volume(pa_source *s, pa_cvolume *max_volume, cons
 
             /* Ignore this output. The origin source uses volume sharing, so this
              * output's volume will be set to be equal to the root source's real
-             * volume. Obviously this outputs's current volume must not then
+             * volume. Obviously this output's current volume must not then
              * affect what the root source's real volume will be. */
             continue;
         }
@@ -1337,7 +1358,7 @@ static pa_bool_t update_reference_volume(pa_source *s, const pa_cvolume *v, cons
          * due to rounding errors. If that happens, we still want to propagate
          * the changed root source volume to the sources connected to the
          * intermediate source that didn't change its volume. This theoretical
-         * possiblity is the reason why we have that !(s->flags &
+         * possibility is the reason why we have that !(s->flags &
          * PA_SOURCE_SHARE_VOLUME_WITH_MASTER) condition. Probably nobody would
          * notice even if we returned here FALSE always if
          * reference_volume_changed is FALSE. */
@@ -1368,9 +1389,9 @@ void pa_source_set_volume(
     pa_assert(volume || pa_source_flat_volume_enabled(s));
     pa_assert(!volume || volume->channels == 1 || pa_cvolume_compatible(volume, &s->sample_spec));
 
-    /* make sure we don't change the volume when a PASSTHROUGH output is connected */
-    if (pa_source_is_passthrough(s)) {
-        /* FIXME: Need to notify client that volume control is disabled */
+    /* make sure we don't change the volume in PASSTHROUGH mode ...
+     * ... *except* if we're being invoked to reset the volume to ensure 0 dB gain */
+    if (pa_source_is_passthrough(s) && (!volume || !pa_cvolume_is_norm(volume))) {
         pa_log_warn("Cannot change volume, Source is monitor of a PASSTHROUGH sink");
         return;
     }
@@ -1418,6 +1439,9 @@ void pa_source_set_volume(
 
         /* Let's 'push' the reference volume if necessary */
         pa_cvolume_merge(&new_reference_volume, &s->reference_volume, &root_source->real_volume);
+        /* If the source and it's root don't have the same number of channels, we need to remap */
+        if (s != root_source && !pa_channel_map_equal(&s->channel_map, &root_source->channel_map))
+            pa_cvolume_remap(&new_reference_volume, &s->channel_map, &root_source->channel_map);
         update_reference_volume(root_source, &new_reference_volume, &root_source->channel_map, save);
 
         /* Now that the reference volume is updated, we can update the streams'
@@ -1431,7 +1455,7 @@ void pa_source_set_volume(
          * apply one to root_source->soft_volume */
 
         pa_cvolume_reset(&root_source->soft_volume, root_source->sample_spec.channels);
-        if (!(root_source->flags & PA_SOURCE_SYNC_VOLUME))
+        if (!(root_source->flags & PA_SOURCE_DEFERRED_VOLUME))
             root_source->set_volume(root_source);
 
     } else
@@ -1451,7 +1475,7 @@ void pa_source_set_soft_volume(pa_source *s, const pa_cvolume *volume) {
     pa_source_assert_ref(s);
     pa_assert(!(s->flags & PA_SOURCE_SHARE_VOLUME_WITH_MASTER));
 
-    if (s->flags & PA_SOURCE_SYNC_VOLUME)
+    if (s->flags & PA_SOURCE_DEFERRED_VOLUME)
         pa_source_assert_io_context(s);
     else
         pa_assert_ctl_context();
@@ -1461,7 +1485,7 @@ void pa_source_set_soft_volume(pa_source *s, const pa_cvolume *volume) {
     else
         s->soft_volume = *volume;
 
-    if (PA_SOURCE_IS_LINKED(s->state) && !(s->flags & PA_SOURCE_SYNC_VOLUME))
+    if (PA_SOURCE_IS_LINKED(s->state) && !(s->flags & PA_SOURCE_DEFERRED_VOLUME))
         pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_VOLUME, NULL, 0, NULL) == 0);
     else
         s->thread_info.soft_volume = s->soft_volume;
@@ -1554,7 +1578,7 @@ const pa_cvolume *pa_source_get_volume(pa_source *s, pa_bool_t force_refresh) {
 
         old_real_volume = s->real_volume;
 
-        if (!(s->flags & PA_SOURCE_SYNC_VOLUME) && s->get_volume)
+        if (!(s->flags & PA_SOURCE_DEFERRED_VOLUME) && s->get_volume)
             s->get_volume(s);
 
         pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_VOLUME, NULL, 0, NULL) == 0);
@@ -1595,7 +1619,7 @@ void pa_source_set_mute(pa_source *s, pa_bool_t mute, pa_bool_t save) {
     s->muted = mute;
     s->save_muted = (old_muted == s->muted && s->save_muted) || save;
 
-    if (!(s->flags & PA_SOURCE_SYNC_VOLUME) && s->set_mute)
+    if (!(s->flags & PA_SOURCE_DEFERRED_VOLUME) && s->set_mute)
         s->set_mute(s);
 
     pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_MUTE, NULL, 0, NULL) == 0);
@@ -1614,7 +1638,7 @@ pa_bool_t pa_source_get_mute(pa_source *s, pa_bool_t force_refresh) {
     if (s->refresh_muted || force_refresh) {
         pa_bool_t old_muted = s->muted;
 
-        if (!(s->flags & PA_SOURCE_SYNC_VOLUME) && s->get_mute)
+        if (!(s->flags & PA_SOURCE_DEFERRED_VOLUME) && s->get_mute)
             s->get_mute(s);
 
         pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_MUTE, NULL, 0, NULL) == 0);
@@ -1736,7 +1760,7 @@ unsigned pa_source_check_suspend(pa_source *s) {
         /* We do not assert here. It is perfectly valid for a source output to
          * be in the INIT state (i.e. created, marked done but not yet put)
          * and we should not care if it's unlinked as it won't contribute
-         * towarards our busy status.
+         * towards our busy status.
          */
         if (!PA_SOURCE_OUTPUT_IS_LINKED(st))
             continue;
@@ -1864,7 +1888,7 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
 
         case PA_SOURCE_MESSAGE_SET_VOLUME_SYNCED:
 
-            if (s->flags & PA_SOURCE_SYNC_VOLUME) {
+            if (s->flags & PA_SOURCE_DEFERRED_VOLUME) {
                 s->set_volume(s);
                 pa_source_volume_change_push(s);
             }
@@ -1884,7 +1908,7 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
 
         case PA_SOURCE_MESSAGE_GET_VOLUME:
 
-            if ((s->flags & PA_SOURCE_SYNC_VOLUME) && s->get_volume) {
+            if ((s->flags & PA_SOURCE_DEFERRED_VOLUME) && s->get_volume) {
                 s->get_volume(s);
                 pa_source_volume_change_flush(s);
                 pa_sw_cvolume_divide(&s->thread_info.current_hw_volume, &s->real_volume, &s->soft_volume);
@@ -1903,14 +1927,14 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
                 s->thread_info.soft_muted = s->muted;
             }
 
-            if (s->flags & PA_SOURCE_SYNC_VOLUME && s->set_mute)
+            if (s->flags & PA_SOURCE_DEFERRED_VOLUME && s->set_mute)
                 s->set_mute(s);
 
             return 0;
 
         case PA_SOURCE_MESSAGE_GET_MUTE:
 
-            if (s->flags & PA_SOURCE_SYNC_VOLUME && s->get_mute)
+            if (s->flags & PA_SOURCE_DEFERRED_VOLUME && s->get_mute)
                 s->get_mute(s);
 
             return 0;
@@ -2020,6 +2044,10 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
         case PA_SOURCE_MESSAGE_UPDATE_VOLUME_AND_MUTE:
             /* This message is sent from IO-thread and handled in main thread. */
             pa_assert_ctl_context();
+
+            /* Make sure we're not messing with main thread when no longer linked */
+            if (!PA_SOURCE_IS_LINKED(s->state))
+                return 0;
 
             pa_source_get_volume(s, TRUE);
             pa_source_get_mute(s, TRUE);
@@ -2402,7 +2430,7 @@ int pa_source_set_port(pa_source *s, const char *name, pa_bool_t save) {
         return 0;
     }
 
-    if (s->flags & PA_SOURCE_SYNC_VOLUME) {
+    if (s->flags & PA_SOURCE_DEFERRED_VOLUME) {
         struct source_message_set_port msg = { .port = port, .ret = 0 };
         pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_PORT, &msg, 0, NULL) == 0);
         ret = msg.ret;

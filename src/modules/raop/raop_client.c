@@ -47,6 +47,7 @@
 #include <pulsecore/iochannel.h>
 #include <pulsecore/socket-util.h>
 #include <pulsecore/log.h>
+#include <pulsecore/parseaddr.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/memchunk.h>
 #include <pulsecore/random.h>
@@ -67,10 +68,13 @@
 #define VOLUME_MIN -144
 #define VOLUME_MAX 0
 
+#define RAOP_PORT 5000
+
 
 struct pa_raop_client {
     pa_core *core;
     char *host;
+    uint16_t port;
     char *sid;
     pa_rtsp_client *rtsp;
 
@@ -110,7 +114,7 @@ static inline void bit_writer(uint8_t **buffer, uint8_t *bit_pos, int *size, uin
     if (!data_bit_len)
         return;
 
-    /* If bit pos is zero, we will definatly use at least one bit from the current byte so size increments. */
+    /* If bit pos is zero, we will definately use at least one bit from the current byte so size increments. */
     if (!*bit_pos)
         *size += 1;
 
@@ -128,7 +132,7 @@ static inline void bit_writer(uint8_t **buffer, uint8_t *bit_pos, int *size, uin
             **buffer = bit_data;
         /* If our data fits exactly into the current byte, we need to increment our pointer */
         if (0 == bit_overflow) {
-            /* Do not increment size as it will be incremeneted on next call as bit_pos is zero */
+            /* Do not increment size as it will be incremented on next call as bit_pos is zero */
             *buffer += 1;
             *bit_pos = 0;
         } else {
@@ -363,14 +367,23 @@ static void rtsp_cb(pa_rtsp_client *rtsp, pa_rtsp_state state, pa_headerlist* he
 }
 
 pa_raop_client* pa_raop_client_new(pa_core *core, const char* host) {
+    pa_parsed_address a;
     pa_raop_client* c = pa_xnew0(pa_raop_client, 1);
 
     pa_assert(core);
     pa_assert(host);
 
+    if (pa_parse_address(host, &a) < 0 || a.type == PA_PARSED_ADDRESS_UNIX)
+        return NULL;
+
     c->core = core;
     c->fd = -1;
-    c->host = pa_xstrdup(host);
+
+    c->host = pa_xstrdup(a.path_or_host);
+    if (a.port)
+        c->port = a.port;
+    else
+        c->port = RAOP_PORT;
 
     if (pa_raop_connect(c)) {
         pa_raop_client_free(c);
@@ -407,7 +420,7 @@ int pa_raop_connect(pa_raop_client* c) {
         return 0;
     }
 
-    c->rtsp = pa_rtsp_client_new(c->core->mainloop, c->host, 5000, "iTunes/4.6 (Macintosh; U; PPC Mac OS X 10.3)");
+    c->rtsp = pa_rtsp_client_new(c->core->mainloop, c->host, c->port, "iTunes/4.6 (Macintosh; U; PPC Mac OS X 10.3)");
 
     /* Initialise the AES encryption system */
     pa_random(c->aes_iv, sizeof(c->aes_iv));
@@ -523,7 +536,7 @@ int pa_raop_client_encode_sample(pa_raop_client* c, pa_memchunk* raw, pa_memchun
     pa_memblock_release(raw->memblock);
     encoded->length = header_size + size;
 
-    /* store the lenght (endian swapped: make this better) */
+    /* store the length (endian swapped: make this better) */
     len = size + header_size - 4;
     *(b + 2) = len >> 8;
     *(b + 3) = len & 0xff;

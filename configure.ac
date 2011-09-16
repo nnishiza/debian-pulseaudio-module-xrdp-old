@@ -40,7 +40,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 23)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [13:1:13])
+AC_SUBST(LIBPULSE_VERSION_INFO, [13:3:13])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -908,11 +908,11 @@ AC_ARG_ENABLE([dbus],
     AS_HELP_STRING([--disable-dbus],[Disable optional D-Bus support]))
 
 AS_IF([test "x$enable_dbus" != "xno"],
-    [PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.0.0 ], HAVE_DBUS=1, HAVE_DBUS=0)],
+    [PKG_CHECK_MODULES(DBUS, [ dbus-1 >= 1.3.0 ], HAVE_DBUS=1, HAVE_DBUS=0)],
     HAVE_DBUS=0)
 
 AS_IF([test "x$enable_dbus" = "xyes" && test "x$HAVE_DBUS" = "x0"],
-    [AC_MSG_ERROR([*** D-Bus support not found])])
+    [AC_MSG_ERROR([*** D-Bus (1.3.0+) support not found])])
 
 AS_IF([test "x$HAVE_DBUS" = "x1"],
     [

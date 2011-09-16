@@ -29,6 +29,7 @@
 #include <pulsecore/core.h>
 #include <pulsecore/sink-input.h>
 #include <pulsecore/source-output.h>
+#include <pulsecore/source.h>
 #include <pulsecore/modargs.h>
 #include <pulsecore/log.h>
 #include <pulsecore/namereg.h>
@@ -86,14 +87,14 @@ static pa_hook_result_t sink_put_hook_callback(pa_core *c, pa_sink *sink, void* 
     }
 
     PA_IDXSET_FOREACH(i, def->inputs, idx) {
-        if (i->save_sink)
+        if (i->save_sink || !PA_SINK_INPUT_IS_LINKED(i->state))
             continue;
 
         if (pa_sink_input_move_to(i, sink, FALSE) < 0)
             pa_log_info("Failed to move sink input %u \"%s\" to %s.", i->index,
                         pa_strnull(pa_proplist_gets(i->proplist, PA_PROP_APPLICATION_NAME)), sink->name);
         else
-            pa_log_info("Sucessfully moved sink input %u \"%s\" to %s.", i->index,
+            pa_log_info("Successfully moved sink input %u \"%s\" to %s.", i->index,
                         pa_strnull(pa_proplist_gets(i->proplist, PA_PROP_APPLICATION_NAME)), sink->name);
     }
 
@@ -111,6 +112,10 @@ static pa_hook_result_t source_put_hook_callback(pa_core *c, pa_source *source, 
 
     /* Don't want to run during startup or shutdown */
     if (c->state != PA_CORE_RUNNING)
+        return PA_HOOK_OK;
+
+    /* Don't switch to a monitoring source */
+    if (source->monitor_of)
         return PA_HOOK_OK;
 
     /* Don't switch to any internal devices */
@@ -135,14 +140,14 @@ static pa_hook_result_t source_put_hook_callback(pa_core *c, pa_source *source, 
     }
 
     PA_IDXSET_FOREACH(o, def->outputs, idx) {
-        if (o->save_source)
+        if (o->save_source || !PA_SOURCE_OUTPUT_IS_LINKED(o->state))
             continue;
 
         if (pa_source_output_move_to(o, source, FALSE) < 0)
             pa_log_info("Failed to move source output %u \"%s\" to %s.", o->index,
                         pa_strnull(pa_proplist_gets(o->proplist, PA_PROP_APPLICATION_NAME)), source->name);
         else
-            pa_log_info("Sucessfully moved source output %u \"%s\" to %s.", o->index,
+            pa_log_info("Successfully moved source output %u \"%s\" to %s.", o->index,
                         pa_strnull(pa_proplist_gets(o->proplist, PA_PROP_APPLICATION_NAME)), source->name);
     }
 

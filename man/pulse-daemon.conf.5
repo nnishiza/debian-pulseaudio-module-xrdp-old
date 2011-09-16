@@ -121,14 +121,14 @@ Some hardware drivers require the hardware playback buffer to be subdivided into
 \fBdefault-fragments=\f1 The default number of fragments. Defaults to 4.
 .TP
 \fBdefault-fragment-size-msec=\f1The duration of a single fragment. Defaults to 25ms (i.e. the total buffer is thus 100ms long).
-.SH DEFAULT SYNC VOLUME SETTINGS
-With the flat volume feature enabled, the sink HW volume is set to the same level as the highest volume input stream. Any other streams (with lower volumes) have the appropriate adjustment applied in SW to bring them to the correct overall level. Sadly hadware mixer changes cannot be timed accurately and thus this change of volumes can somtimes cause the resulting output sound to be momentarily too loud or too soft. So to ensure SW and HW volumes are applied concurrently without any glitches, their application needs to be synchronized. The sink implementation needs to support synchronized volumes. The following parameters can be used to refine the process.
+.SH DEFAULT DEFERRED VOLUME SETTINGS
+With the flat volume feature enabled, the sink HW volume is set to the same level as the highest volume input stream. Any other streams (with lower volumes) have the appropriate adjustment applied in SW to bring them to the correct overall level. Sadly hadware mixer changes cannot be timed accurately and thus this change of volumes can somtimes cause the resulting output sound to be momentarily too loud or too soft. So to ensure SW and HW volumes are applied concurrently without any glitches, their application needs to be synchronized. The sink implementation needs to support deferred volumes. The following parameters can be used to refine the process.
 .TP
-\fBenable-sync-volume=\f1 Enable sync volume for the sinks that support it. This feature is enabled by default.
+\fBenable-deferred-volume=\f1 Enable deferred volume for the sinks that support it. This feature is enabled by default.
 .TP
-\fBsync-volume-safety-margin-usec=\f1 The amount of time (in usec) by which the HW volume increases are delayed and HW volume decreases are advanced. Defaults to 8000 usec.
+\fBdeferred-volume-safety-margin-usec=\f1 The amount of time (in usec) by which the HW volume increases are delayed and HW volume decreases are advanced. Defaults to 8000 usec.
 .TP
-\fBsync-volume-extra-delay-usec=\f1 The amount of time (in usec) by which HW volume changes are delayed. Negative values are also allowed. Defaults to 0.
+\fBdeferred-volume-extra-delay-usec=\f1 The amount of time (in usec) by which HW volume changes are delayed. Negative values are also allowed. Defaults to 0.
 .SH AUTHORS
 The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO

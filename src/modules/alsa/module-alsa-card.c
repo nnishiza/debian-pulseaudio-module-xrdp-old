@@ -53,7 +53,7 @@ PA_MODULE_USAGE(
         "sink_properties=<properties for the sink> "
         "source_name=<name for the source> "
         "source_properties=<properties for the source> "
-        "namereg_fail=<pa_namereg_register() fail parameter value> "
+        "namereg_fail=<when false attempt to synthesise new names if they are already taken> "
         "device_id=<ALSA card index> "
         "format=<sample format> "
         "rate=<sample rate> "
@@ -65,7 +65,7 @@ PA_MODULE_USAGE(
         "tsched_buffer_watermark=<lower fill watermark> "
         "profile=<profile name> "
         "ignore_dB=<ignore dB information from the device?> "
-        "sync_volume=<syncronize sw and hw voluchanges in IO-thread?> "
+        "deferred_volume=<Synchronize software and hardware volume changes to avoid momentary jumps?> "
         "profile_set=<profile set configuration file> ");
 
 static const char* const valid_modargs[] = {
@@ -88,7 +88,7 @@ static const char* const valid_modargs[] = {
     "tsched_buffer_watermark",
     "profile",
     "ignore_dB",
-    "sync_volume",
+    "deferred_volume",
     "profile_set",
     NULL
 };
@@ -360,7 +360,7 @@ int pa__init(pa_module *m) {
      * variable is impossible. */
     namereg_fail = data.namereg_fail;
     if (pa_modargs_get_value_boolean(ma, "namereg_fail", &namereg_fail) < 0) {
-        pa_log("Failed to parse boolean argument namereg_fail.");
+        pa_log("Failed to parse namereg_fail argument.");
         pa_card_new_data_done(&data);
         goto fail;
     }
