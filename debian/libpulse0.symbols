@@ -151,6 +151,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_cvolume_set_position@PULSE_0 0.99.1
  pa_cvolume_snprint@PULSE_0 0.99.1
  pa_cvolume_valid@PULSE_0 0.99.1
+ pa_encoding_to_string@PULSE_0 0.99.4
  pa_ext_device_manager_delete@PULSE_0 0.99.1
  pa_ext_device_manager_enable_role_device_priority_routing@PULSE_0 0.99.1
  pa_ext_device_manager_read@PULSE_0 0.99.1
@@ -159,9 +160,9 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_ext_device_manager_set_subscribe_cb@PULSE_0 0.99.1
  pa_ext_device_manager_subscribe@PULSE_0 0.99.1
  pa_ext_device_manager_test@PULSE_0 0.99.1
- pa_ext_device_restore_read_sink_formats@PULSE_0 0.99.1
- pa_ext_device_restore_read_sink_formats_all@PULSE_0 0.99.1
- pa_ext_device_restore_save_sink_formats@PULSE_0 0.99.1
+ pa_ext_device_restore_read_formats@PULSE_0 0.99.4
+ pa_ext_device_restore_read_formats_all@PULSE_0 0.99.4
+ pa_ext_device_restore_save_formats@PULSE_0 0.99.4
  pa_ext_device_restore_set_subscribe_cb@PULSE_0 0.99.2
  pa_ext_device_restore_subscribe@PULSE_0 0.99.1
  pa_ext_device_restore_test@PULSE_0 0.99.1
@@ -171,6 +172,27 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_ext_stream_restore_subscribe@PULSE_0 0.99.1
  pa_ext_stream_restore_test@PULSE_0 0.99.1
  pa_ext_stream_restore_write@PULSE_0 0.99.1
+ pa_format_info_copy@PULSE_0 0.99.4
+ pa_format_info_free2@PULSE_0 0.99.4
+ pa_format_info_free@PULSE_0 0.99.4
+ pa_format_info_from_sample_spec@PULSE_0 0.99.4
+ pa_format_info_from_string@PULSE_0 0.99.4
+ pa_format_info_is_compatible@PULSE_0 0.99.4
+ pa_format_info_is_pcm@PULSE_0 0.99.4
+ pa_format_info_new@PULSE_0 0.99.4
+ pa_format_info_set_channel_map@PULSE_0 0.99.4
+ pa_format_info_set_channels@PULSE_0 0.99.4
+ pa_format_info_set_prop_int@PULSE_0 0.99.4
+ pa_format_info_set_prop_int_array@PULSE_0 0.99.4
+ pa_format_info_set_prop_int_range@PULSE_0 0.99.4
+ pa_format_info_set_prop_string@PULSE_0 0.99.4
+ pa_format_info_set_prop_string_array@PULSE_0 0.99.4
+ pa_format_info_set_rate@PULSE_0 0.99.4
+ pa_format_info_set_sample_format@PULSE_0 0.99.4
+ pa_format_info_snprint@PULSE_0 0.99.4
+ pa_format_info_to_sample_spec@PULSE_0 0.99.4
+ pa_format_info_to_sample_spec_fake@PULSE_0 0.99.4
+ pa_format_info_valid@PULSE_0 0.99.4
  pa_frame_size@PULSE_0 0.99.1
  pa_get_binary_name@PULSE_0 0.99.1
  pa_get_fqdn@PULSE_0 0.99.1
@@ -441,8 +463,6 @@ libpulsecommon-0.99.so libpulse0 #MINVER#
  pa_dynarray_new@Base 0.99.1
  pa_dynarray_put@Base 0.99.1
  pa_dynarray_size@Base 0.99.1
- pa_encoding_from_string@Base 0.99.2
- pa_encoding_to_string@Base 0.99.1
  pa_endswith@Base 0.99.1
  pa_escape@Base 0.99.1
  pa_find_config_file@Base 0.99.1
@@ -452,29 +472,6 @@ libpulsecommon-0.99.so libpulse0 #MINVER#
  pa_flist_pop@Base 0.99.1
  pa_flist_push@Base 0.99.1
  pa_fopen_cloexec@Base 0.99.1
- pa_format_info_copy@Base 0.99.1
- pa_format_info_free2@Base 0.99.1
- pa_format_info_free@Base 0.99.1
- pa_format_info_from_sample_spec@Base 0.99.1
- pa_format_info_from_string@Base 0.99.2
- pa_format_info_get_prop_int@Base 0.99.1
- pa_format_info_get_prop_string@Base 0.99.1
- pa_format_info_is_compatible@Base 0.99.1
- pa_format_info_is_pcm@Base 0.99.1
- pa_format_info_new@Base 0.99.1
- pa_format_info_set_channel_map@Base 0.99.1
- pa_format_info_set_channels@Base 0.99.1
- pa_format_info_set_prop_int@Base 0.99.1
- pa_format_info_set_prop_int_array@Base 0.99.1
- pa_format_info_set_prop_int_range@Base 0.99.1
- pa_format_info_set_prop_string@Base 0.99.1
- pa_format_info_set_prop_string_array@Base 0.99.1
- pa_format_info_set_rate@Base 0.99.1
- pa_format_info_set_sample_format@Base 0.99.1
- pa_format_info_snprint@Base 0.99.1
- pa_format_info_to_sample_spec@Base 0.99.1
- pa_format_info_to_sample_spec_fake@Base 0.99.1
- pa_format_info_valid@Base 0.99.1
  pa_frame_size@Base 0.99.1
  pa_gcd@Base 0.99.1
  pa_get_binary_name@Base 0.99.1
