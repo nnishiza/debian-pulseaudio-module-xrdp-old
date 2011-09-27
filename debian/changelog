@@ -1,10 +1,10 @@
-pulseaudio (1.0-1) UNRELEASED; urgency=low
+pulseaudio (1.0-1) unstable; urgency=low
 
   * New upstream release
   * debian/source/options: Switch to xz compression
   * debian/gbp.conf: Switch to xz compression
 
- -- Sjoerd Simons <sjoerd@debian.org>  Tue, 27 Sep 2011 23:39:55 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Wed, 28 Sep 2011 00:52:27 +0100
 
 pulseaudio (0.99.4-1) experimental; urgency=low
 
