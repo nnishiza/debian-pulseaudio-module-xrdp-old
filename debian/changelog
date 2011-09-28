@@ -1,7 +1,8 @@
 pulseaudio (1.0-2) UNRELEASED; urgency=low
 
-  * debian/libpulse-mainloop-glib0.symbols: 
+  * debian/libpulse-mainloop-glib0.symbols:
     + Fix the naming of the package providing this library (Closes: #639892)
+  * debian/rules: Install modules in /usr/lib/pulse-1.0
 
  -- Sjoerd Simons <sjoerd@debian.org>  Wed, 28 Sep 2011 07:25:08 +0100
 
