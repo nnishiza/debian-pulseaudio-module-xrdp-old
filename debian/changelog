@@ -1,8 +1,8 @@
-pulseaudio (1.0-3) UNRELEASED; urgency=low
+pulseaudio (1.0-3) unstable; urgency=low
 
   * debian/libpulse-mainloop-glib0.symbols: Actually fix the naming...
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 29 Sep 2011 10:15:23 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 29 Sep 2011 11:21:32 +0100
 
 pulseaudio (1.0-2) unstable; urgency=low
 
