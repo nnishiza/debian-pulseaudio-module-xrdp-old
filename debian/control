@@ -29,7 +29,7 @@ Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   lsb-base (>= 3.2-13), consolekit,
   udev (>= 143) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
-  libasound2-plugins
+  libasound2-plugins [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386]
 Conflicts: libltdl3 (<< 1.5.24-1)
 Recommends: pulseaudio-module-x11, gstreamer0.10-pulseaudio,
             pulseaudio-esound-compat, rtkit
