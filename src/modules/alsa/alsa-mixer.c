@@ -271,7 +271,7 @@ static int rtpoll_work_cb(pa_rtpoll_item *i) {
     struct pollfd *p;
     unsigned n_fds;
     unsigned short revents = 0;
-    int err;
+    int err, ret = 0;
 
     pd = pa_rtpoll_item_get_userdata(i);
     pa_assert_fp(pd);
@@ -281,17 +281,42 @@ static int rtpoll_work_cb(pa_rtpoll_item *i) {
 
     if ((err = snd_mixer_poll_descriptors_revents(pd->mixer, p, n_fds, &revents)) < 0) {
         pa_log_error("Unable to get poll revent: %s", pa_alsa_strerror(err));
-        pa_rtpoll_item_free(i);
-        return -1;
+        ret = -1;
+        goto fail;
     }
 
     if (revents) {
-        snd_mixer_handle_events(pd->mixer);
-        pa_rtpoll_item_free(i);
-        pa_alsa_set_mixer_rtpoll(pd, pd->mixer, pd->rtpoll);
+        if (revents & (POLLNVAL | POLLERR)) {
+            pa_log_debug("Device disconnected, stopping poll on mixer");
+            goto fail;
+        } else if (revents & POLLERR) {
+            /* This shouldn't happen. */
+            pa_log_error("Got a POLLERR (revents = %04x), stopping poll on mixer", revents);
+            goto fail;
+        }
+
+        err = snd_mixer_handle_events(pd->mixer);
+
+        if (PA_LIKELY(err >= 0)) {
+            pa_rtpoll_item_free(i);
+            pa_alsa_set_mixer_rtpoll(pd, pd->mixer, pd->rtpoll);
+        } else {
+            pa_log_error("Error handling mixer event: %s", pa_alsa_strerror(err));
+            ret = -1;
+            goto fail;
+        }
     }
 
-    return 0;
+    return ret;
+
+fail:
+    pa_rtpoll_item_free(i);
+
+    pd->poll_item = NULL;
+    pd->rtpoll = NULL;
+    pd->mixer = NULL;
+
+    return ret;
 }
 
 int pa_alsa_set_mixer_rtpoll(struct pa_alsa_mixer_pdata *pd, snd_mixer_t *mixer, pa_rtpoll *rtp) {

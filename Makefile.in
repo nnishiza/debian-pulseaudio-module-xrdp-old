@@ -56,8 +56,9 @@ host_triplet = @host@
 
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/config.h.in \
-	$(srcdir)/libpulse-mainloop-glib.pc.in \
+	$(srcdir)/Makefile.in $(srcdir)/PulseAudioConfig.cmake.in \
+	$(srcdir)/PulseAudioConfigVersion.cmake.in \
+	$(srcdir)/config.h.in $(srcdir)/libpulse-mainloop-glib.pc.in \
 	$(srcdir)/libpulse-simple.pc.in $(srcdir)/libpulse.pc.in \
 	$(top_srcdir)/configure $(top_srcdir)/src/pulse/version.h.in \
 	ABOUT-NLS compile config.guess config.rpath config.sub depcomp \
@@ -82,7 +83,8 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
 mkinstalldirs = $(SHELL) $(top_srcdir)/mkinstalldirs
 CONFIG_HEADER = config.h
 CONFIG_CLEAN_FILES = libpulse.pc libpulse-simple.pc \
-	libpulse-mainloop-glib.pc src/pulse/version.h
+	libpulse-mainloop-glib.pc src/pulse/version.h \
+	PulseAudioConfig.cmake PulseAudioConfigVersion.cmake
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_GEN = $(am__v_GEN_$(V))
 am__v_GEN_ = $(am__v_GEN_$(AM_DEFAULT_VERBOSITY))
@@ -120,8 +122,9 @@ am__nobase_list = $(am__nobase_strip_setup); \
 am__base_list = \
   sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
   sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__installdirs = "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(vapidir)"
-DATA = $(noinst_DATA) $(pkgconfig_DATA) $(vapi_DATA)
+am__installdirs = "$(DESTDIR)$(cmakedir)" "$(DESTDIR)$(pkgconfigdir)" \
+	"$(DESTDIR)$(vapidir)"
+DATA = $(cmake_DATA) $(noinst_DATA) $(pkgconfig_DATA) $(vapi_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
@@ -226,6 +229,7 @@ HAVE_ALSA = @HAVE_ALSA@
 HAVE_AVAHI = @HAVE_AVAHI@
 HAVE_BLUEZ = @HAVE_BLUEZ@
 HAVE_DBUS = @HAVE_DBUS@
+HAVE_GLIB20 = @HAVE_GLIB20@
 HAVE_HAL = @HAVE_HAL@
 HAVE_MKFIFO = @HAVE_MKFIFO@
 HAVE_OSS_OUTPUT = @HAVE_OSS_OUTPUT@
@@ -312,6 +316,8 @@ PA_API_VERSION = @PA_API_VERSION@
 PA_BINARY = @PA_BINARY@
 PA_DEFAULT_CONFIG_DIR = @PA_DEFAULT_CONFIG_DIR@
 PA_DLSEARCHPATH = @PA_DLSEARCHPATH@
+PA_INCDIR = @PA_INCDIR@
+PA_LIBDIR = @PA_LIBDIR@
 PA_MACHINE_ID = @PA_MACHINE_ID@
 PA_MAJOR = @PA_MAJOR@
 PA_MAJORMINOR = @PA_MAJORMINOR@
@@ -434,6 +440,8 @@ vapi_DATA = \
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libpulse.pc libpulse-simple.pc $(am__append_1)
+cmakedir = $(libdir)/cmake/PulseAudio
+cmake_DATA = PulseAudioConfig.cmake PulseAudioConfigVersion.cmake
 
 # see git-version-gen
 BUILT_SOURCES = $(top_srcdir)/.version
@@ -504,6 +512,10 @@ libpulse-mainloop-glib.pc: $(top_builddir)/config.status $(srcdir)/libpulse-main
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 src/pulse/version.h: $(top_builddir)/config.status $(top_srcdir)/src/pulse/version.h.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
+PulseAudioConfig.cmake: $(top_builddir)/config.status $(srcdir)/PulseAudioConfig.cmake.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
+PulseAudioConfigVersion.cmake: $(top_builddir)/config.status $(srcdir)/PulseAudioConfigVersion.cmake.in
+	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -513,6 +525,26 @@ clean-libtool:
 
 distclean-libtool:
 	-rm -f libtool config.lt
+install-cmakeDATA: $(cmake_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(cmakedir)" || $(MKDIR_P) "$(DESTDIR)$(cmakedir)"
+	@list='$(cmake_DATA)'; test -n "$(cmakedir)" || list=; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(cmakedir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(cmakedir)" || exit $$?; \
+	done
+
+uninstall-cmakeDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(cmake_DATA)'; test -n "$(cmakedir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	test -n "$$files" || exit 0; \
+	echo " ( cd '$(DESTDIR)$(cmakedir)' && rm -f" $$files ")"; \
+	cd "$(DESTDIR)$(cmakedir)" && rm -f $$files
 install-pkgconfigDATA: $(pkgconfig_DATA)
 	@$(NORMAL_INSTALL)
 	test -z "$(pkgconfigdir)" || $(MKDIR_P) "$(DESTDIR)$(pkgconfigdir)"
@@ -873,7 +905,7 @@ check: $(BUILT_SOURCES)
 all-am: Makefile $(DATA) config.h
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(vapidir)"; do \
+	for dir in "$(DESTDIR)$(cmakedir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(vapidir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -927,7 +959,8 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-pkgconfigDATA install-vapiDATA
+install-data-am: install-cmakeDATA install-pkgconfigDATA \
+	install-vapiDATA
 
 install-dvi: install-dvi-recursive
 
@@ -973,7 +1006,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-pkgconfigDATA uninstall-vapiDATA
+uninstall-am: uninstall-cmakeDATA uninstall-pkgconfigDATA \
+	uninstall-vapiDATA
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) all check \
 	ctags-recursive install install-am install-strip \
@@ -986,16 +1020,16 @@ uninstall-am: uninstall-pkgconfigDATA uninstall-vapiDATA
 	dist-zip distcheck distclean distclean-generic distclean-hdr \
 	distclean-libtool distclean-tags distcleancheck distdir \
 	distuninstallcheck dvi dvi-am html html-am info info-am \
-	install install-am install-data install-data-am install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-pdf install-pdf-am install-pkgconfigDATA install-ps \
-	install-ps-am install-strip install-vapiDATA installcheck \
-	installcheck-am installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-recursive \
-	uninstall uninstall-am uninstall-pkgconfigDATA \
-	uninstall-vapiDATA
+	install install-am install-cmakeDATA install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-html install-html-am install-info \
+	install-info-am install-man install-pdf install-pdf-am \
+	install-pkgconfigDATA install-ps install-ps-am install-strip \
+	install-vapiDATA installcheck installcheck-am installdirs \
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
+	ps ps-am tags tags-recursive uninstall uninstall-am \
+	uninstall-cmakeDATA uninstall-pkgconfigDATA uninstall-vapiDATA
 
 
 homepage: all dist doxygen

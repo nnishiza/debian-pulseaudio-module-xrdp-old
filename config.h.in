@@ -564,6 +564,12 @@
 /* Modules dir */
 #undef PA_DLSEARCHPATH
 
+/* PulseAudio include dir */
+#undef PA_INCDIR
+
+/* PulseAudio library dir */
+#undef PA_LIBDIR
+
 /* D-Bus machine-id file */
 #undef PA_MACHINE_ID
 
