@@ -2330,6 +2330,18 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
              * slow start, i.e. need some time to buffer client
              * samples before beginning streaming. */
 
+            /* FIXME: Actually rewinding should be requested before
+             * updating the sink requested latency, because updating
+             * the requested latency updates also max_rewind of the
+             * sink. Now consider this: a sink has a 10 s buffer and
+             * nobody has requested anything less. Then a new stream
+             * appears while the sink buffer is full. The new stream
+             * requests e.g. 100 ms latency. That request is forwarded
+             * to the sink, so now max_rewind is 100 ms. When a rewind
+             * is requested, the sink will only rewind 100 ms, and the
+             * new stream will have to wait about 10 seconds before it
+             * becomes audible. */
+
             /* In flat volume mode we need to update the volume as
              * well */
             return o->process_msg(o, PA_SINK_MESSAGE_SET_SHARED_VOLUME, NULL, 0, NULL);
@@ -2440,12 +2452,6 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
             if (i->attach)
                 i->attach(i);
 
-            if (i->thread_info.requested_sink_latency != (pa_usec_t) -1)
-                pa_sink_input_set_requested_latency_within_thread(i, i->thread_info.requested_sink_latency);
-
-            pa_sink_input_update_max_rewind(i, s->thread_info.max_rewind);
-            pa_sink_input_update_max_request(i, s->thread_info.max_request);
-
             if (i->thread_info.state != PA_SINK_INPUT_CORKED) {
                 pa_usec_t usec = 0;
                 size_t nbytes;
@@ -2460,6 +2466,17 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
                 pa_log_debug("Requesting rewind due to finished move");
                 pa_sink_request_rewind(s, nbytes);
             }
+
+            /* Updating the requested sink latency has to be done
+             * after the sink rewind request, not before, because
+             * otherwise the sink may limit the rewind amount
+             * needlessly. */
+
+            if (i->thread_info.requested_sink_latency != (pa_usec_t) -1)
+                pa_sink_input_set_requested_latency_within_thread(i, i->thread_info.requested_sink_latency);
+
+            pa_sink_input_update_max_rewind(i, s->thread_info.max_rewind);
+            pa_sink_input_update_max_request(i, s->thread_info.max_request);
 
             return o->process_msg(o, PA_SINK_MESSAGE_SET_SHARED_VOLUME, NULL, 0, NULL);
         }
@@ -3400,18 +3417,20 @@ static void pa_sink_volume_change_flush(pa_sink *s) {
 
 /* Called from the IO thread. */
 pa_bool_t pa_sink_volume_change_apply(pa_sink *s, pa_usec_t *usec_to_next) {
-    pa_usec_t now = pa_rtclock_now();
+    pa_usec_t now;
     pa_bool_t ret = FALSE;
 
     pa_assert(s);
 
-    if (!PA_SINK_IS_LINKED(s->state)) {
+    if (!s->thread_info.volume_changes || !PA_SINK_IS_LINKED(s->state)) {
         if (usec_to_next)
             *usec_to_next = 0;
         return ret;
     }
 
     pa_assert(s->write_volume);
+
+    now = pa_rtclock_now();
 
     while (s->thread_info.volume_changes && now >= s->thread_info.volume_changes->at) {
         pa_sink_volume_change *c = s->thread_info.volume_changes;
@@ -3423,7 +3442,7 @@ pa_bool_t pa_sink_volume_change_apply(pa_sink *s, pa_usec_t *usec_to_next) {
         pa_sink_volume_change_free(c);
     }
 
-    if (s->write_volume && ret)
+    if (ret)
         s->write_volume(s);
 
     if (s->thread_info.volume_changes) {

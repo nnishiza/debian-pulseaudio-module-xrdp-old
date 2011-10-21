@@ -405,7 +405,7 @@ static int source_set_state_cb(pa_source *s, pa_source_state_t state) {
     if (state == PA_SOURCE_RUNNING) {
         /* restart timer when both sink and source are active */
         u->active_mask |= 1;
-        if (u->active_mask == 3)
+        if (u->active_mask == 3 && u->adjust_time)
             pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
 
         pa_atomic_store(&u->request_resync, 1);
@@ -433,7 +433,7 @@ static int sink_set_state_cb(pa_sink *s, pa_sink_state_t state) {
     if (state == PA_SINK_RUNNING) {
         /* restart timer when both sink and source are active */
         u->active_mask |= 2;
-        if (u->active_mask == 3)
+        if (u->active_mask == 3 && u->adjust_time)
             pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
 
         pa_atomic_store(&u->request_resync, 1);
@@ -1357,6 +1357,11 @@ int pa__init(pa_module*m) {
     }
     pa_assert(sink_master);
 
+    if (source_master->monitor_of == sink_master) {
+        pa_log("Can't cancel echo between a sink and its monitor");
+        goto fail;
+    }
+
     source_ss = source_master->sample_spec;
     source_ss.rate = DEFAULT_RATE;
     source_ss.channels = DEFAULT_CHANNELS;
@@ -1717,6 +1722,15 @@ void pa__done(pa_module*m) {
 
     if (u->asyncmsgq)
         pa_asyncmsgq_unref(u->asyncmsgq);
+
+    if (u->save_aec) {
+        if (u->played_file)
+            fclose(u->played_file);
+        if (u->captured_file)
+            fclose(u->captured_file);
+        if (u->canceled_file)
+            fclose(u->canceled_file);
+    }
 
     pa_xfree(u);
 }

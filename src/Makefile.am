@@ -244,7 +244,6 @@ TESTS = \
 
 TESTS_norun = \
 		mcalign-test \
-		once-test \
 		pacat-simple \
 		parec-simple \
 		extended-test \
@@ -260,6 +259,11 @@ if !OS_IS_WIN32
 TESTS += \
 		sigbus-test \
 		usergroup-test
+endif
+
+if !OS_IS_DARWIN
+TESTS_norun += \
+		once-test
 endif
 
 if HAVE_SIGXCPU
@@ -590,9 +594,9 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/sndfile-util.c pulsecore/sndfile-util.h \
 		pulsecore/socket.h
 
-libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSNDFILE_CFLAGS)
+libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
 libpulsecommon_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
-libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) $(LIBSAMPLERATE_LIBS) $(LIBSNDFILE_LIBS)
+libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) $(LIBSNDFILE_LIBS)
 
 if HAVE_X11
 libpulsecommon_@PA_MAJORMINOR@_la_SOURCES += \
@@ -1609,7 +1613,7 @@ module_zeroconf_discover_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 module_bonjour_publish_la_SOURCES = modules/macosx/module-bonjour-publish.c
 module_bonjour_publish_la_LDFLAGS = $(MODULE_LDFLAGS) \
 			-Wl,-framework -Wl,CoreFoundation -framework CoreFoundation
-module_bonjour_publish_la_LIBADD = $(MODULE_LIBADD)
+module_bonjour_publish_la_LIBADD = $(MODULE_LIBADD) libprotocol-native.la
 
 # LIRC
 
