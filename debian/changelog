@@ -2,8 +2,9 @@ pulseaudio (1.1-1) UNRELEASED; urgency=low
 
   * New upstream release
   * debian/libpulse0.symbols: Soname of internal libpulsecommon library bumped
+  * debian/control: Update standards version
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 23 Oct 2011 10:35:54 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 23 Oct 2011 10:59:32 +0200
 
 pulseaudio (1.0-4) unstable; urgency=low
 
