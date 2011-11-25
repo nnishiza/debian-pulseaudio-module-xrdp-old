@@ -1,3 +1,10 @@
+pulseaudio (1.1-2) UNRELEASED; urgency=low
+
+  * debian/libpulse0.symbols: Tighten depends for packages using the private
+    libpulsecommon library (Closes: 647236)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 25 Nov 2011 21:55:29 +0100
+
 pulseaudio (1.1-1) unstable; urgency=low
 
   * New upstream bugfix release
