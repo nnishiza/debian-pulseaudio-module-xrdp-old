@@ -358,7 +358,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_xrealloc@PULSE_0 0.99.1
  pa_xstrdup@PULSE_0 0.99.1
  pa_xstrndup@PULSE_0 0.99.1
-libpulsecommon-1.1.so libpulse0 (>= 1.1)
+libpulsecommon-1.1.so libpulse0 (= 1.1)
  pa_accept_cloexec@Base 0.99.1
  pa_ascii_filter@Base 0.99.1
  pa_ascii_valid@Base 0.99.1

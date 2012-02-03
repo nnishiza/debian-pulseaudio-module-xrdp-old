@@ -1,3 +1,10 @@
+pulseaudio (1.1-3) UNRELEASED; urgency=low
+
+  * Tighten dependencies for packages that uses the internal helper library
+    (Closes: 651716)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 03 Feb 2012 21:12:54 +0100
+
 pulseaudio (1.1-2) unstable; urgency=low
 
   * debian/libpulse0.symbols: Tighten depends for packages using the private
