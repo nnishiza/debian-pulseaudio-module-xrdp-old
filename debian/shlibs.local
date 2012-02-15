@@ -1,0 +1,1 @@
+libpulsecommon 1.1 libpulse0 (= ${binary:Version})
