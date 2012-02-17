@@ -1,0 +1,33 @@
+From a53a0644a19bb11479dd4b3b2a0a34f667854a81 Mon Sep 17 00:00:00 2001
+From: Michael Biebl <biebl@debian.org>
+Date: Wed, 15 Feb 2012 21:54:28 +0100
+Subject: [PATCH 1/3] Move libpulsecommon into $pkglib
+
+libpulsecommon is a private library only for use within pulseaudio, so
+lets move it into a private directory
+---
+ src/Makefile.am |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index e3af12f..1084134 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -523,7 +523,7 @@ connect_stress_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+ #         Common library          #
+ ###################################
+ 
+-lib_LTLIBRARIES = \
++pkglib_LTLIBRARIES = \
+ 		libpulsecommon-@PA_MAJORMINOR@.la
+ 
+ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
+@@ -688,7 +688,7 @@ pulseinclude_HEADERS = \
+ 		pulse/volume.h \
+ 		pulse/xmalloc.h
+ 
+-lib_LTLIBRARIES += \
++lib_LTLIBRARIES = \
+ 		libpulse.la \
+ 		libpulse-simple.la
+ 

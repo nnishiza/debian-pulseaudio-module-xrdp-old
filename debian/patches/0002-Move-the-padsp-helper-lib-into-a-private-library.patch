@@ -1,5 +1,21 @@
+From d2acbf2b717a22764392f7e84208d343fcc36638 Mon Sep 17 00:00:00 2001
+From: Michael Biebl <biebl@debian.org>
+Date: Wed, 15 Feb 2012 21:59:17 +0100
+Subject: [PATCH 2/3] Move the padsp helper lib into a private library
+
+libpulsedsp is only used as a LD_PRELOAD library
+for the padsp wrapper. So no need to have it in
+a public library
+---
+ src/Makefile.am    |   13 +++++++-
+ src/utils/padsp    |   86 ----------------------------------------------------
+ src/utils/padsp.in |   86 ++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 97 insertions(+), 88 deletions(-)
+ delete mode 100755 src/utils/padsp
+ create mode 100644 src/utils/padsp.in
+
 diff --git a/src/Makefile.am b/src/Makefile.am
-index e3af12f..15045df 100644
+index 1084134..15045df 100644
 --- a/src/Makefile.am
 +++ b/src/Makefile.am
 @@ -86,7 +86,7 @@ EXTRA_DIST = \
@@ -11,24 +27,6 @@ index e3af12f..15045df 100644
  		utils/qpaeq \
  		modules/module-defs.h.m4 \
  		daemon/pulseaudio.desktop.in \
-@@ -523,7 +523,7 @@ connect_stress_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
- #         Common library          #
- ###################################
- 
--lib_LTLIBRARIES = \
-+pkglib_LTLIBRARIES = \
- 		libpulsecommon-@PA_MAJORMINOR@.la
- 
- libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
-@@ -688,7 +688,7 @@ pulseinclude_HEADERS = \
- 		pulse/volume.h \
- 		pulse/xmalloc.h
- 
--lib_LTLIBRARIES += \
-+lib_LTLIBRARIES = \
- 		libpulse.la \
- 		libpulse-simple.la
- 
 @@ -756,8 +756,17 @@ libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version
  ###################################
  
@@ -141,7 +139,7 @@ index 4fe175c..0000000
 -
 -exec "$@"
 diff --git a/src/utils/padsp.in b/src/utils/padsp.in
-new file mode 100755
+new file mode 100644
 index 0000000..4ecce8c
 --- /dev/null
 +++ b/src/utils/padsp.in
