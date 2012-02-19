@@ -1,4 +1,4 @@
-pulseaudio (1.1-3) UNRELEASED; urgency=low
+pulseaudio (1.1-3) unstable; urgency=low
 
   * Tighten dependencies for packages that uses the internal helper library
     (Closes: 651716)
@@ -7,7 +7,7 @@ pulseaudio (1.1-3) UNRELEASED; urgency=low
   * Move the alsa pulse.conf file to /usr/share/alsa/alsa.conf.d to follow the
     alsa-lib 1.0.25 changes
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Feb 2012 13:08:18 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 19 Feb 2012 13:54:55 +0100
 
 pulseaudio (1.1-2) unstable; urgency=low
 
