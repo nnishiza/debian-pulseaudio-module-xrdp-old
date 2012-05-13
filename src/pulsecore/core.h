@@ -113,6 +113,7 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_CARD_PUT,
     PA_CORE_HOOK_CARD_UNLINK,
     PA_CORE_HOOK_CARD_PROFILE_CHANGED,
+    PA_CORE_HOOK_PORT_AVAILABLE_CHANGED,
     PA_CORE_HOOK_MAX
 } pa_core_hook_t;
 
@@ -143,6 +144,7 @@ struct pa_core {
 
     pa_channel_map default_channel_map;
     pa_sample_spec default_sample_spec;
+    uint32_t alternate_sample_rate;
     unsigned default_n_fragments, default_fragment_size_msec;
     unsigned deferred_volume_safety_margin_usec;
     int deferred_volume_extra_delay_usec;

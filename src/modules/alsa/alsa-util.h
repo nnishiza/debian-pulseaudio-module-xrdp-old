@@ -133,11 +133,17 @@ char *pa_alsa_get_driver_name_by_pcm(snd_pcm_t *pcm);
 
 char *pa_alsa_get_reserve_name(const char *device);
 
+unsigned int *pa_alsa_get_supported_rates(snd_pcm_t *pcm);
+
 pa_bool_t pa_alsa_pcm_is_hw(snd_pcm_t *pcm);
 pa_bool_t pa_alsa_pcm_is_modem(snd_pcm_t *pcm);
 
 const char* pa_alsa_strerror(int errnum);
 
 pa_bool_t pa_alsa_may_tsched(pa_bool_t want);
+
+snd_hctl_elem_t* pa_alsa_find_jack(snd_hctl_t *hctl, const char* jack_name);
+
+snd_mixer_t *pa_alsa_open_mixer(int alsa_card_index, char **ctl_device, snd_hctl_t **hctl);
 
 #endif

@@ -74,9 +74,6 @@ Disallow module loading after startup. This is a security feature since it disal
 \fB--exit-idle-time\f1\fI=SECS\f1
 Terminate the daemon when idle and the specified number of seconds passed.
 .TP
-\fB--module-idle-time\f1\fI=SECS\f1
-Unload autoloaded modules when idle and the specified number of seconds passed.
-.TP
 \fB--scache-idle-time\f1\fI=SECS\f1
 Unload autoloaded samples from the cache when the haven't been used for the specified number of seconds.
 .TP
@@ -86,8 +83,17 @@ If an argument is passed, set the log level to the specified value, otherwise in
 \fB-v\f1
 Increase the configured verbosity level by one (see \fB--log-level\f1 above). Specify multiple times to increase log level multiple times.
 .TP
-\fB--log-target\f1\fI={auto,syslog,stderr}\f1
-Specify the log target. If set to \fIauto\f1 (which is the default), then logging is directed to syslog when \fB--daemonize\f1 is passed, otherwise to STDERR.
+\fB--log-target\f1\fI={auto,syslog,stderr,file:PATH}\f1
+Specify the log target. If set to \fIauto\f1 (which is the default), then logging is directed to syslog when \fB--daemonize\f1 is passed, otherwise to STDERR. If set to \fIfile:PATH\f1, logging is directed to the file indicated by PATH.
+.TP
+\fB--log-meta\f1\fI[=BOOL]\f1
+Show source code location in log messages.
+.TP
+\fB--log-time\f1\fI[=BOOL]\f1
+Show timestamps in log messages.
+.TP
+\fB--log-backtrace\f1\fI=FRAMES\f1
+When FRAMES is greater than 0, log for each message a stack trace up to the number of specified stack frames.
 .TP
 \fB--p | --dl-search-path\f1\fI=PATH\f1
 Set the search path for dynamic shared objects (plugins).
@@ -116,11 +122,11 @@ Open a command interpreter on STDIN/STDOUT after startup. This may be used to co
 \fB-n\f1
 Don't load default script file \fIdefault.pa\f1 (see below) on startup. Useful in conjunction with \fB-C\f1 or \fB--file\f1.
 .SH FILES
-\fI~/.pulse/daemon.conf\f1, \fI/usr/local/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
+\fI~/.pulse/daemon.conf\f1, \fI/home/arun/local/pulseaudio/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
 
-\fI~/.pulse/default.pa\f1, \fI/usr/local/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
+\fI~/.pulse/default.pa\f1, \fI/home/arun/local/pulseaudio/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
 
-\fI~/.pulse/client.conf\f1, \fI/usr/local/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
+\fI~/.pulse/client.conf\f1, \fI/home/arun/local/pulseaudio/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
 .SH SIGNALS
 \fISIGINT, SIGTERM\f1: the PulseAudio daemon will shut down (Same as \fB--kill\f1).
 
@@ -160,6 +166,6 @@ The PulseAudio client libraries check for the existance of the following environ
 
 These environment settings take precedence -- if set -- over the configuration settings from \fIclient.conf\f1 (see above).
 .SH AUTHORS
-The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
+The PulseAudio Developers <pulseaudio-discuss (at) lists (dot) freedesktop (dot) org>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO
 \fBpulse-daemon.conf(5)\f1, \fBdefault.pa(5)\f1, \fBpulse-client.conf(5)\f1, \fBpacmd(1)\f1

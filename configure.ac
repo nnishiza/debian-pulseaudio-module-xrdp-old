@@ -22,11 +22,11 @@
 
 AC_PREREQ(2.63)
 
-AC_INIT([pulseaudio],[m4_esyscmd(./git-version-gen .tarball-version)],[mzchyfrnhqvb (at) 0pointer (dot) net],[pulseaudio],[http://pulseaudio.org/])
+AC_INIT([pulseaudio],[m4_esyscmd(./git-version-gen .tarball-version)],[pulseaudio-discuss (at) lists (dot) freedesktop (dot) org],[pulseaudio],[http://pulseaudio.org/])
 AC_CONFIG_SRCDIR([src/daemon/main.c])
 AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
-AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules dist-xz tar-ustar])
+AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules color-tests dist-xz tar-ustar])
 
 m4_define(pa_major, `echo $VERSION | cut -d. -f1 | cut -d- -f1`)
 m4_define(pa_minor, `echo $VERSION | cut -d. -f2 | cut -d- -f1`)
@@ -36,11 +36,11 @@ AC_SUBST(PA_MINOR, pa_minor)
 AC_SUBST(PA_MAJORMINOR, pa_major.pa_minor)
 
 AC_SUBST(PA_API_VERSION, 12)
-AC_SUBST(PA_PROTOCOL_VERSION, 23)
+AC_SUBST(PA_PROTOCOL_VERSION, 26)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [13:5:13])
+AC_SUBST(LIBPULSE_VERSION_INFO, [14:2:14])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -78,6 +78,9 @@ AC_PROG_MKDIR_P
 AC_PROG_CC
 AC_PROG_CC_C99
 AM_PROG_CC_C_O
+# Only required if you want the WebRTC canceller -- no runtime dep on
+# libstdc++ otherwise
+AC_PROG_CXX
 AC_PROG_GCC_TRADITIONAL
 AC_USE_SYSTEM_EXTENSIONS
 
@@ -92,6 +95,7 @@ PKG_PROG_PKG_CONFIG
 
 # gettext
 
+if test "x$enable_nls" != "xno"; then
 IT_PROG_INTLTOOL([0.35.0])
 GETTEXT_PACKAGE=pulseaudio
 AC_SUBST([GETTEXT_PACKAGE])
@@ -100,6 +104,12 @@ AM_GLIB_GNU_GETTEXT
 
 pulselocaledir='${prefix}/${DATADIRNAME}/locale'
 AX_DEFINE_DIR(PULSE_LOCALEDIR, pulselocaledir, [Gettext locale dir])
+else
+# workaround till an intltool m4 bug is fixed upstream
+# (https://bugs.launchpad.net/intltool/+bug/904647)
+USE_NLS=no
+AC_SUBST(USE_NLS)
+fi
 
 
 #### Determine host OS ####
@@ -154,6 +164,9 @@ AX_APPEND_COMPILE_FLAGS(
     [-Wall -W -Wextra -pipe -Wno-long-long -Wvla -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option],
     [], [-pedantic -Werror])
 
+# Only enable fastpath asserts when doing a debug build, e.g. from bootstrap.sh.
+AS_CASE([" $CFLAGS "], [*" -O0 "*], [], [AX_APPEND_FLAG(["-DFASTPATH"], [CPPFLAGS])])
+
 
 #### Linker flags ####
 
@@ -161,7 +174,7 @@ AX_APPEND_COMPILE_FLAGS(
 # The Make variable $(srcdir) needs to be in the LDFLAGS in that form,
 # so that it is expanded the right way in every subdir.
 AX_CHECK_LINK_FLAG(["-Wl,-version-script=${srcdir}/src/map-file"],
-    [VERSIONING_LDFLAGS='-Wl,-version-script=$(srcdir)/map-file'])
+    [VERSIONING_LDFLAGS='-Wl,-version-script=$(abs_top_srcdir)/src/map-file'])
 AC_SUBST([VERSIONING_LDFLAGS])
 
 # Use immediate (now) bindings; avoids the funky re-call in itself.
@@ -484,7 +497,6 @@ AC_CHECK_FUNCS_ONCE([lrintf strtof])
 # POSIX
 AC_FUNC_FORK
 AC_FUNC_GETGROUPS
-AC_FUNC_SELECT_ARGTYPES
 AC_CHECK_FUNCS_ONCE([chmod chown fstat fchown fchmod clock_gettime getaddrinfo getgrgid_r getgrnam_r \
     getpwnam_r getpwuid_r gettimeofday getuid mlock nanosleep \
     pipe posix_fadvise posix_madvise posix_memalign setpgid setsid shm_open \
@@ -578,10 +590,6 @@ AC_SUBST(LIBJSON_LIBS)
 PKG_CHECK_MODULES(LIBSNDFILE, [ sndfile >= 1.0.20 ])
 AC_SUBST(LIBSNDFILE_CFLAGS)
 AC_SUBST(LIBSNDFILE_LIBS)
-
-PKG_CHECK_MODULES(LIBSPEEX, [ speexdsp >= 1.2 ])
-AC_SUBST(LIBSPEEX_CFLAGS)
-AC_SUBST(LIBSPEEX_LIBS)
 
 #### atomic-ops ####
 
@@ -730,6 +738,13 @@ AC_SUBST(ASOUNDLIB_LIBS)
 AC_SUBST(HAVE_ALSA)
 AM_CONDITIONAL([HAVE_ALSA], [test "x$HAVE_ALSA" = x1])
 AS_IF([test "x$HAVE_ALSA" = "x1"], AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?]))
+
+#### EsounD support (optional) ####
+
+AC_ARG_ENABLE([esound],
+    AS_HELP_STRING([--disable-esound],[Disable optional EsounD support]))
+AM_CONDITIONAL([HAVE_ESOUND], [test "x$enable_esound" != "xno"])
+AS_IF([test "x$enable_esound" != "xno"], [HAVE_ESOUND=1])
 
 #### Solaris audio support (optional) ####
 
@@ -932,6 +947,9 @@ AS_IF([test "x$HAVE_DBUS" = "x1"], AC_DEFINE([HAVE_DBUS], 1, [Have D-Bus.]))
 
 PA_MACHINE_ID="${localstatedir}/lib/dbus/machine-id"
 AX_DEFINE_DIR(PA_MACHINE_ID, PA_MACHINE_ID, [D-Bus machine-id file])
+PA_MACHINE_ID_FALLBACK="${sysconfdir}/machine-id"
+AX_DEFINE_DIR(PA_MACHINE_ID_FALLBACK, PA_MACHINE_ID_FALLBACK,
+	      [Fallback machine-id file])
 
 #### HAL support (optional), dependant on D-Bus ####
 
@@ -1043,9 +1061,68 @@ AS_IF([test "x$with_fftw" = "xyes" && test "x$HAVE_FFTW" = "x0"],
 
 AM_CONDITIONAL([HAVE_FFTW], [test "x$HAVE_FFTW" = "x1"])
 
+#### speex (optional) ####
+
+AC_ARG_WITH([speex],
+    AS_HELP_STRING([--without-speex],[Omit speex (resampling, AEC)]))
+
+AS_IF([test "x$with_speex" != "xno"],
+    [PKG_CHECK_MODULES(LIBSPEEX, [ speexdsp >= 1.2 ], HAVE_SPEEX=1, HAVE_SPEEX=0)],
+    HAVE_SPEEX=0)
+
+AS_IF([test "x$with_speex" = "xyes" && test "x$HAVE_SPEEX" = "x0"],
+    [AC_MSG_ERROR([*** speex support not found])])
+
+AM_CONDITIONAL([HAVE_SPEEX], [test "x$HAVE_SPEEX" = "x1"])
+AS_IF([test "x$HAVE_SPEEX" = "x1"], AC_DEFINE([HAVE_SPEEX], 1, [Have speex]))
+
+AC_SUBST(LIBSPEEX_CFLAGS)
+AC_SUBST(LIBSPEEX_LIBS)
+
+#### Xen support (optional) ####
+
+AC_ARG_ENABLE([xen],
+    AS_HELP_STRING([--disable-xen],[Disable optional Xen paravirtualized driver]))
+
+XEN_CFLAGS=
+XEN_LIBS=
+
+AS_IF([test "x$enable_xen" != "xno"],
+    [
+        HAVE_XEN=1
+        AC_CHECK_HEADER(xenctrl.h, [], [HAVE_XEN=0])
+        AC_CHECK_HEADER(xs.h, [], [HAVE_XEN=0])
+        AC_CHECK_LIB(xenctrl, xc_interface_open, [XEN_LIBS="$XEN_LIBS -lxenctrl"], [HAVE_XEN=0])
+        AC_CHECK_LIB(xenstore, xs_domain_open, [XEN_LIBS="$XEN_LIBS -lxenstore"], [HAVE_XEN=0])
+    ],
+    HAVE_XEN=0)
+
+AS_IF([test "x$enable_xen" = "xyes" && test "x$HAVE_XEN" = "x0"],
+    [AC_MSG_ERROR([*** Xen development headers or libraries not found])])
+
+AC_SUBST(XEN_CFLAGS)
+AC_SUBST(XEN_LIBS)
+AM_CONDITIONAL([HAVE_XEN], [test "x$HAVE_XEN" = x1])
+
 #### ORC (optional) ####
 
 ORC_CHECK([0.4.11])
+
+#### systemd support (optional) ####
+
+AC_ARG_ENABLE([systemd],
+    AS_HELP_STRING([--disable-systemd],[Disable optional systemd support]))
+
+AS_IF([test "x$enable_systemd" != "xno"],
+    [PKG_CHECK_MODULES(SYSTEMD, [ libsystemd-login libsystemd-daemon ], HAVE_SYSTEMD=1, HAVE_SYSTEMD=0)],
+    HAVE_SYSTEMD=0)
+
+AS_IF([test "x$enable_systemd" = "xyes" && test "x$HAVE_SYSTEMD" = "x0"],
+    [AC_MSG_ERROR([*** Needed systemd support not found])])
+
+AC_SUBST(HAVE_SYSTEMD)
+AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$HAVE_SYSTEMD" = x1])
+AS_IF([test "x$HAVE_SYSTEMD" = "x1"], AC_DEFINE([HAVE_SYSTEMD], 1, [Have SYSTEMD?]))
 
 #### Build and Install man pages ####
 
@@ -1140,6 +1217,27 @@ if test "x$os_is_darwin" = "x1" ; then
     fi
 fi
 
+AC_ARG_ENABLE([webrtc-aec],
+    AS_HELP_STRING([--enable-webrtc-aec], [Enable the optional WebRTC-based echo canceller]))
+
+AS_IF([test "x$enable_webrtc_aec" != "xno"],
+    [PKG_CHECK_MODULES(WEBRTC, [ webrtc-audio-processing ], [HAVE_WEBRTC=1], [HAVE_WEBRTC=0])],
+    [HAVE_WEBRTC=0])
+
+AS_IF([test "x$enable_webrtc_aec" = "xyes" && test "x$HAVE_WEBRTC" = "x0"],
+    [AC_MSG_ERROR([*** webrtc-audio-processing library not found])])
+
+AC_SUBST(WEBRTC_CFLAGS)
+AC_SUBST(WEBRTC_LIBS)
+AM_CONDITIONAL([HAVE_WEBRTC], [test "x$HAVE_WEBRTC" = "x1"])
+
+AC_ARG_ENABLE([adrian-aec],
+    AS_HELP_STRING([--enable-adrian-aec], [Enable Adrian's optional echo canceller]))
+AS_IF([test "x$enable_adrian_aec" != "xno"],
+    [HAVE_ADRIAN_EC=1])
+AM_CONDITIONAL([HAVE_ADRIAN_EC], [test "x$HAVE_ADRIAN_EC" = "x1"])
+
+
 
 ###################################
 #            Output               #
@@ -1232,6 +1330,7 @@ man/padsp.1.xml
 man/pulse-daemon.conf.5.xml
 man/pulse-client.conf.5.xml
 man/default.pa.5.xml
+man/pulse-cli-syntax.5.xml
 man/start-pulseaudio-kde.1.xml
 man/start-pulseaudio-x11.1.xml
 ])
@@ -1275,9 +1374,11 @@ AS_IF([test "x$HAVE_AVAHI" = "x1"], ENABLE_AVAHI=yes, ENABLE_AVAHI=no)
 AS_IF([test "x$HAVE_JACK" = "x1"], ENABLE_JACK=yes, ENABLE_JACK=no)
 AS_IF([test "x$HAVE_LIBASYNCNS" = "x1"], ENABLE_LIBASYNCNS=yes, ENABLE_LIBASYNCNS=no)
 AS_IF([test "x$HAVE_LIRC" = "x1"], ENABLE_LIRC=yes, ENABLE_LIRC=no)
+AS_IF([test "x$HAVE_XEN" = "x1"], ENABLE_XEN=yes, ENABLE_XEN=no)
 AS_IF([test "x$HAVE_DBUS" = "x1"], ENABLE_DBUS=yes, ENABLE_DBUS=no)
 AS_IF([test "x$HAVE_HAL" = "x1"], ENABLE_HAL=yes, ENABLE_HAL=no)
 AS_IF([test "x$HAVE_UDEV" = "x1"], ENABLE_UDEV=yes, ENABLE_UDEV=no)
+AS_IF([test "x$HAVE_SYSTEMD" = "x1"], ENABLE_SYSTEMD=yes, ENABLE_SYSTEMD=no)
 AS_IF([test "x$HAVE_BLUEZ" = "x1"], ENABLE_BLUEZ=yes, ENABLE_BLUEZ=no)
 AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], ENABLE_HAL_COMPAT=yes, ENABLE_HAL_COMPAT=no)
 AS_IF([test "x$HAVE_TCPWRAP" = "x1"], ENABLE_TCPWRAP=yes, ENABLE_TCPWRAP=no)
@@ -1286,10 +1387,14 @@ AS_IF([test "x$HAVE_IPV6" = "x1"], ENABLE_IPV6=yes, ENABLE_IPV6=no)
 AS_IF([test "x$HAVE_OPENSSL" = "x1"], ENABLE_OPENSSL=yes, ENABLE_OPENSSL=no)
 AS_IF([test "x$HAVE_FFTW" = "x1"], ENABLE_FFTW=yes, ENABLE_FFTW=no)
 AS_IF([test "x$HAVE_ORC" = "xyes"], ENABLE_ORC=yes, ENABLE_ORC=no)
+AS_IF([test "x$HAVE_ADRIAN_EC" = "x1"], ENABLE_ADRIAN_EC=yes, ENABLE_ADRIAN_EC=no)
+AS_IF([test "x$HAVE_SPEEX" = "x1"], ENABLE_SPEEX=yes, ENABLE_SPEEX=no)
+AS_IF([test "x$HAVE_WEBRTC" = "x1"], ENABLE_WEBRTC=yes, ENABLE_WEBRTC=no)
 AS_IF([test "x$HAVE_TDB" = "x1"], ENABLE_TDB=yes, ENABLE_TDB=no)
 AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
 AS_IF([test "x$HAVE_SIMPLEDB" = "x1"], ENABLE_SIMPLEDB=yes, ENABLE_SIMPLEDB=no)
-AS_IF([test "x$USE_PER_USER_ESOUND_SOCKET" = "x1"], ENABLE_PER_USER_ESOUND_SOCKET=yes, ENABLE_PER_USER_ESOUND_SOCKET=no)
+AS_IF([test "x$HAVE_ESOUND" = "x1"], ENABLE_ESOUND=yes, ENABLE_ESOUND=no)
+AS_IF([test "x$HAVE_ESOUND" = "x1" -a "x$USE_PER_USER_ESOUND_SOCKET" = "x1"], ENABLE_PER_USER_ESOUND_SOCKET=yes, ENABLE_PER_USER_ESOUND_SOCKET=no)
 AS_IF([test "x$enable_legacy_runtime_dir" != "xno"], ENABLE_LEGACY_RUNTIME_DIR=yes, ENABLE_LEGACY_RUNTIME_DIR=no)
 AS_IF([test "x$enable_legacy_database_entry_format" != "xno"], ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=yes, ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=no)
 
@@ -1310,6 +1415,7 @@ echo "
     Enable X11:                    ${ENABLE_X11}
     Enable OSS Output:             ${ENABLE_OSS_OUTPUT}
     Enable OSS Wrapper:            ${ENABLE_OSS_WRAPPER}
+    Enable EsounD:                 ${ENABLE_ESOUND}
     Enable Alsa:                   ${ENABLE_ALSA}
     Enable CoreAudio:              ${ENABLE_COREAUDIO}
     Enable Solaris:                ${ENABLE_SOLARIS}
@@ -1321,17 +1427,22 @@ echo "
     Enable Jack:                   ${ENABLE_JACK}
     Enable Async DNS:              ${ENABLE_LIBASYNCNS}
     Enable LIRC:                   ${ENABLE_LIRC}
+    Enable Xen PV driver:          ${ENABLE_XEN}
     Enable D-Bus:                  ${ENABLE_DBUS}
       Enable HAL:                  ${ENABLE_HAL}
       Enable BlueZ:                ${ENABLE_BLUEZ}
     Enable udev:                   ${ENABLE_UDEV}
       Enable HAL->udev compat:     ${ENABLE_HAL_COMPAT}
+    Enable systemd login:          ${ENABLE_SYSTEMD}
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable IPv6:                   ${ENABLE_IPV6}
     Enable OpenSSL (for Airtunes): ${ENABLE_OPENSSL}
     Enable fftw:                   ${ENABLE_FFTW}
     Enable orc:                    ${ENABLE_ORC}
+    Enable Adrian echo canceller:  ${ENABLE_ADRIAN_EC}
+    Enable speex (resampler, AEC): ${ENABLE_SPEEX}
+    Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
     Database
       tdb:                         ${ENABLE_TDB}
       gdbm:                        ${ENABLE_GDBM}
@@ -1347,6 +1458,10 @@ echo "
     Legacy Runtime Dir Support:    ${ENABLE_LEGACY_RUNTIME_DIR}
     Legacy Database Entry Support: ${ENABLE_LEGACY_DATABASE_ENTRY_FORMAT}
 "
+
+if test "${ENABLE_SPEEX}" = "no" && test "${ENABLE_WEBRTC}" = "no" && test "${ENABLE_ADRIAN_EC}" = "no" ; then
+AC_MSG_ERROR([At least one echo canceller implementation must be available.])
+fi
 
 if test "${ENABLE_DBUS}" = "no" && test "x$os_is_win32" != "x1" ; then
    echo "
@@ -1368,6 +1483,17 @@ You do not have udev support enabled. It is strongly recommended
 that you enable udev support if your platform supports it as it is
 the primary method used to detect hardware audio devices (on Linux)
 and is thus a critical part of PulseAudio on that platform.
+===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
+"
+fi
+
+if test "${ENABLE_SPEEX}" = "no" && test "x$os_is_win32" != "x1" ; then
+   echo "
+===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
+You do not have speex support enabled. It is strongly recommended
+that you enable speex support if your platform supports it as it is
+the primary method used for audio resampling and is thus a critical
+part of PulseAudio on that platform.
 ===== WARNING WARNING WARNING WARNING WARNING WARNING WARNING =====
 "
 fi

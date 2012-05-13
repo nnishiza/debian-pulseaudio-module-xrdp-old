@@ -25,7 +25,10 @@
 
 #include <string.h>
 #include <locale.h>
+
+#ifdef ENABLE_NLS
 #include <libintl.h>
+#endif
 
 #ifdef __APPLE__
 #include <crt_externs.h>
@@ -240,4 +243,34 @@ void pa_init_proplist(pa_proplist *p) {
             pa_xfree(s);
         }
     }
+}
+
+char *pa_proplist_get_stream_group(pa_proplist *p, const char *prefix, const char *cache) {
+    const char *r;
+    char *t;
+
+    if (!p)
+        return NULL;
+
+    if (cache && (r = pa_proplist_gets(p, cache)))
+        return pa_xstrdup(r);
+
+    if (!prefix)
+        prefix = "stream";
+
+    if ((r = pa_proplist_gets(p, PA_PROP_MEDIA_ROLE)))
+        t = pa_sprintf_malloc("%s-by-media-role:%s", prefix, r);
+    else if ((r = pa_proplist_gets(p, PA_PROP_APPLICATION_ID)))
+        t = pa_sprintf_malloc("%s-by-application-id:%s", prefix, r);
+    else if ((r = pa_proplist_gets(p, PA_PROP_APPLICATION_NAME)))
+        t = pa_sprintf_malloc("%s-by-application-name:%s", prefix, r);
+    else if ((r = pa_proplist_gets(p, PA_PROP_MEDIA_NAME)))
+        t = pa_sprintf_malloc("%s-by-media-name:%s", prefix, r);
+    else
+        t = pa_sprintf_malloc("%s-fallback:%s", prefix, r);
+
+    if (cache)
+        pa_proplist_sets(p, cache, t);
+
+    return t;
 }

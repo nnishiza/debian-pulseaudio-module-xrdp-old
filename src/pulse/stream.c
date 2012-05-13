@@ -112,7 +112,7 @@ static pa_stream *pa_stream_new_with_proplist_internal(
     if (ss)
         s->sample_spec = *ss;
     else
-        s->sample_spec.format = PA_SAMPLE_INVALID;
+        pa_sample_spec_init(&s->sample_spec);
 
     if (map)
         s->channel_map = *map;
@@ -143,7 +143,7 @@ static pa_stream *pa_stream_new_with_proplist_internal(
     s->requested_bytes = 0;
     memset(&s->buffer_attr, 0, sizeof(s->buffer_attr));
 
-    /* We initialize der target length here, so that if the user
+    /* We initialize the target length here, so that if the user
      * passes no explicit buffering metrics the default is similar to
      * what older PA versions provided. */
 
@@ -245,7 +245,7 @@ static void stream_unlink(pa_stream *s) {
 
     /* Detach from context */
 
-    /* Unref all operation object that point to us */
+    /* Unref all operation objects that point to us */
     for (o = s->context->operations; o; o = n) {
         n = o->next;
 
@@ -258,7 +258,7 @@ static void stream_unlink(pa_stream *s) {
         pa_pdispatch_unregister_reply(s->context->pdispatch, s);
 
     if (s->channel_valid) {
-        pa_hashmap_remove((s->direction == PA_STREAM_PLAYBACK) ? s->context->playback_streams : s->context->record_streams, PA_UINT32_TO_PTR(s->channel));
+        pa_hashmap_remove((s->direction == PA_STREAM_RECORD) ? s->context->record_streams : s->context->playback_streams, PA_UINT32_TO_PTR(s->channel));
         s->channel = 0;
         s->channel_valid = FALSE;
     }
@@ -284,8 +284,9 @@ static void stream_free(pa_stream *s) {
     stream_unlink(s);
 
     if (s->write_memblock) {
-        pa_memblock_release(s->write_memblock);
-        pa_memblock_unref(s->write_data);
+        if (s->write_data)
+            pa_memblock_release(s->write_memblock);
+        pa_memblock_unref(s->write_memblock);
     }
 
     if (s->peek_memchunk.memblock) {
@@ -472,7 +473,7 @@ static void check_smoother_status(pa_stream *s, pa_bool_t aposteriori, pa_bool_t
              * indications when audio really starts/stops playing, if
              * we don't have any timing info yet -- instead of trying
              * to be smart and guessing the server time. Otherwise the
-             * unknown transport delay add too much noise to our time
+             * unknown transport delay adds too much noise to our time
              * calculations. */
 
             return;
@@ -1140,10 +1141,11 @@ void pa_create_stream_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag,
         pa_assert(!s->record_memblockq);
 
         s->record_memblockq = pa_memblockq_new(
+                "client side record memblockq",
                 0,
                 s->buffer_attr.maxlength,
                 0,
-                pa_frame_size(&s->sample_spec),
+                &s->sample_spec,
                 1,
                 0,
                 0,

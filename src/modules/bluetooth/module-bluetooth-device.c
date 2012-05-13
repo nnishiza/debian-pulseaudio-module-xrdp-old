@@ -126,6 +126,15 @@ struct hsp_info {
     pa_hook_slot *source_state_changed_slot;
 };
 
+struct bluetooth_msg {
+    pa_msgobject parent;
+    pa_card *card;
+};
+
+typedef struct bluetooth_msg bluetooth_msg;
+PA_DEFINE_PRIVATE_CLASS(bluetooth_msg, pa_msgobject);
+#define BLUETOOTH_MSG(o) (bluetooth_msg_cast(o))
+
 struct userdata {
     pa_core *core;
     pa_module *module;
@@ -148,6 +157,7 @@ struct userdata {
     pa_rtpoll *rtpoll;
     pa_rtpoll_item *rtpoll_item;
     pa_thread *thread;
+    bluetooth_msg *msg;
 
     uint64_t read_index, write_index;
     pa_usec_t started_at;
@@ -174,6 +184,11 @@ struct userdata {
     int service_write_type, service_read_type;
 
     pa_bool_t filter_added;
+};
+
+enum {
+    BLUETOOTH_MESSAGE_SET_PROFILE,
+    BLUETOOTH_MESSAGE_MAX
 };
 
 #define FIXED_LATENCY_PLAYBACK_A2DP (25*PA_USEC_PER_MSEC)
@@ -1115,6 +1130,23 @@ static int source_process_msg(pa_msgobject *o, int code, void *data, int64_t off
     return (r < 0 || !failed) ? r : -1;
 }
 
+/* Called from main thread context */
+static int device_process_msg(pa_msgobject *obj, int code, void *data, int64_t offset, pa_memchunk *chunk) {
+    struct bluetooth_msg *u = BLUETOOTH_MSG(obj);
+
+    switch (code) {
+        case BLUETOOTH_MESSAGE_SET_PROFILE: {
+            const char *profile = data;
+            pa_log_debug("Switch profile to %s requested", profile);
+
+            if (pa_card_set_profile(u->card, profile, FALSE) < 0)
+                pa_log_debug("Failed to switch profile to %s", profile);
+            break;
+        }
+    }
+    return 0;
+}
+
 /* Run from IO thread */
 static int hsp_process_render(struct userdata *u) {
     int ret = 0;
@@ -1433,7 +1465,6 @@ static int a2dp_process_push(struct userdata *u) {
         void *d;
         ssize_t l;
         size_t to_write, to_decode;
-        unsigned frame_count;
 
         a2dp_prepare_buffer(u);
 
@@ -1509,8 +1540,6 @@ static int a2dp_process_push(struct userdata *u) {
 
             d = (uint8_t*) d + written;
             to_write -= written;
-
-            frame_count++;
         }
 
         memchunk.length -= to_write;
@@ -1721,7 +1750,7 @@ static void thread_func(void *userdata) {
 fail:
     /* If this was no regular exit from the loop we have to continue processing messages until we receive PA_MESSAGE_SHUTDOWN */
     pa_log_debug("IO thread failed");
-    pa_asyncmsgq_post(u->thread_mq.outq, PA_MSGOBJECT(u->core), PA_CORE_MESSAGE_UNLOAD_MODULE, u->module, 0, NULL, NULL);
+    pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(u->msg), BLUETOOTH_MESSAGE_SET_PROFILE, "off", 0, NULL, NULL);
     pa_asyncmsgq_wait_for(u->thread_mq.inq, PA_MESSAGE_SHUTDOWN);
 
 finish:
@@ -1801,6 +1830,56 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
         if (nrec != t->nrec) {
             pa_log_debug("dbus: property 'NREC' changed to value '%s'", t->nrec ? "True" : "False");
             pa_proplist_sets(u->source->proplist, "bluetooth.nrec", t->nrec ? "1" : "0");
+        }
+    } else if (dbus_message_is_signal(m, "org.bluez.HandsfreeGateway", "PropertyChanged")) {
+        const char *key;
+        DBusMessageIter iter;
+        DBusMessageIter variant;
+        pa_bt_audio_state_t state = PA_BT_AUDIO_STATE_INVALID;
+
+        if (!dbus_message_iter_init(m, &iter)) {
+            pa_log("Failed to parse PropertyChanged: %s", err.message);
+            goto fail;
+        }
+
+        if (dbus_message_iter_get_arg_type(&iter) != DBUS_TYPE_STRING) {
+            pa_log("Property name not a string.");
+            goto fail;
+        }
+
+        dbus_message_iter_get_basic(&iter, &key);
+
+        if (!dbus_message_iter_next(&iter)) {
+            pa_log("Property value missing");
+            goto fail;
+        }
+
+        dbus_message_iter_recurse(&iter, &variant);
+
+        if (dbus_message_iter_get_arg_type(&variant) == DBUS_TYPE_STRING) {
+            const char *value;
+            dbus_message_iter_get_basic(&variant, &value);
+
+            if (pa_streq(key, "State")) {
+                pa_log_debug("dbus: HSHFAG property 'State' changed to value '%s'", value);
+                state = pa_bt_audio_state_from_string(value);
+            }
+        }
+
+        switch(state) {
+            case PA_BT_AUDIO_STATE_INVALID:
+            case PA_BT_AUDIO_STATE_DISCONNECTED:
+            case PA_BT_AUDIO_STATE_CONNECTED:
+            case PA_BT_AUDIO_STATE_CONNECTING:
+                goto fail;
+
+            case PA_BT_AUDIO_STATE_PLAYING:
+                if (u->card) {
+                    pa_log_debug("Changing profile to hfgw");
+                    if (pa_card_set_profile(u->card, "hfgw", FALSE) < 0)
+                        pa_log("Failed to change profile to hfgw");
+                }
+                break;
         }
     }
 
@@ -2545,7 +2624,7 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
         pa_log_warn("A2DP is not connected, refused to switch profile");
         return -PA_ERR_IO;
     }
-    else if (device->hfgw_state <= PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_HFGW) {
+    else if (device->hfgw_state < PA_BT_AUDIO_STATE_CONNECTED && *d == PROFILE_HFGW) {
         pa_log_warn("HandsfreeGateway is not connected, refused to switch profile");
         return -PA_ERR_IO;
     }
@@ -2565,6 +2644,13 @@ static int card_set_profile(pa_card *c, pa_card_profile *new_profile) {
     }
 
     stop_thread(u);
+
+    if (u->profile != PROFILE_OFF && u->transport) {
+        bt_transport_release(u);
+        pa_xfree(u->transport);
+        u->transport = NULL;
+    }
+
     shutdown_bt(u);
 
     if (USE_SCO_OVER_PCM(u))
@@ -2806,7 +2892,7 @@ int pa__init(pa_module* m) {
     struct userdata *u;
     const char *address, *path;
     DBusError err;
-    char *mike, *speaker, *transport;
+    char *mike, *speaker;
     const pa_bluetooth_device *device;
 
     pa_assert(m);
@@ -2875,6 +2961,12 @@ int pa__init(pa_module* m) {
     if (add_card(u, device) < 0)
         goto fail;
 
+    if (!(u->msg = pa_msgobject_new(bluetooth_msg)))
+        goto fail;
+
+    u->msg->parent.process_msg = device_process_msg;
+    u->msg->card = u->card;
+
     if (!dbus_connection_add_filter(pa_dbus_connection_get(u->connection), filter_cb, u, NULL)) {
         pa_log_error("Failed to add filter function");
         goto fail;
@@ -2883,18 +2975,17 @@ int pa__init(pa_module* m) {
 
     speaker = pa_sprintf_malloc("type='signal',sender='org.bluez',interface='org.bluez.Headset',member='SpeakerGainChanged',path='%s'", u->path);
     mike = pa_sprintf_malloc("type='signal',sender='org.bluez',interface='org.bluez.Headset',member='MicrophoneGainChanged',path='%s'", u->path);
-    transport = pa_sprintf_malloc("type='signal',sender='org.bluez',interface='org.bluez.MediaTransport',member='PropertyChanged'");
 
     if (pa_dbus_add_matches(
                 pa_dbus_connection_get(u->connection), &err,
                 speaker,
                 mike,
-                transport,
+                "type='signal',sender='org.bluez',interface='org.bluez.MediaTransport',member='PropertyChanged'",
+                "type='signal',sender='org.bluez',interface='org.bluez.HandsfreeGateway',member='PropertyChanged'",
                 NULL) < 0) {
 
         pa_xfree(speaker);
         pa_xfree(mike);
-        pa_xfree(transport);
 
         pa_log("Failed to add D-Bus matches: %s", err.message);
         goto fail;
@@ -2902,7 +2993,6 @@ int pa__init(pa_module* m) {
 
     pa_xfree(speaker);
     pa_xfree(mike);
-    pa_xfree(transport);
 
     /* Connect to the BT service */
     init_bt(u);
@@ -2963,7 +3053,10 @@ void pa__done(pa_module *m) {
             speaker = pa_sprintf_malloc("type='signal',sender='org.bluez',interface='org.bluez.Headset',member='SpeakerGainChanged',path='%s'", u->path);
             mike = pa_sprintf_malloc("type='signal',sender='org.bluez',interface='org.bluez.Headset',member='MicrophoneGainChanged',path='%s'", u->path);
 
-            pa_dbus_remove_matches(pa_dbus_connection_get(u->connection), speaker, mike, NULL);
+            pa_dbus_remove_matches(pa_dbus_connection_get(u->connection), speaker, mike,
+                "type='signal',sender='org.bluez',interface='org.bluez.MediaTransport',member='PropertyChanged'",
+                "type='signal',sender='org.bluez',interface='org.bluez.HandsfreeGateway',member='PropertyChanged'",
+                NULL);
 
             pa_xfree(speaker);
             pa_xfree(mike);
@@ -2974,6 +3067,9 @@ void pa__done(pa_module *m) {
 
         pa_dbus_connection_unref(u->connection);
     }
+
+    if (u->msg)
+        pa_xfree(u->msg);
 
     if (u->card)
         pa_card_free(u->card);

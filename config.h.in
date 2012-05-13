@@ -362,6 +362,9 @@
 /* Have Solaris audio? */
 #undef HAVE_SOLARIS
 
+/* Have speex */
+#undef HAVE_SPEEX
+
 /* Define to 1 if the system has the type `ssize_t'. */
 #undef HAVE_SSIZE_T
 
@@ -400,6 +403,9 @@
 
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
+
+/* Have SYSTEMD? */
+#undef HAVE_SYSTEMD
 
 /* Define to 1 if you have the <sys/atomic.h> header file. */
 #undef HAVE_SYS_ATOMIC_H
@@ -573,6 +579,9 @@
 /* D-Bus machine-id file */
 #undef PA_MACHINE_ID
 
+/* Fallback machine-id file */
+#undef PA_MACHINE_ID_FALLBACK
+
 /* System config dir */
 #undef PA_SYSTEM_CONFIG_PATH
 
@@ -594,15 +603,6 @@
 
 /* Gettext locale dir */
 #undef PULSE_LOCALEDIR
-
-/* Define to the type of arg 1 for `select'. */
-#undef SELECT_TYPE_ARG1
-
-/* Define to the type of args 2, 3 and 4 for `select'. */
-#undef SELECT_TYPE_ARG234
-
-/* Define to the type of arg 5 for `select'. */
-#undef SELECT_TYPE_ARG5
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be
@@ -669,6 +669,11 @@
 
 /* Needed to get NSIG on Mac OS X */
 #undef _DARWIN_C_SOURCE
+
+/* Enable large inode numbers on Mac OS X 10.5.  */
+#ifndef _DARWIN_USE_64_BIT_INODE
+# define _DARWIN_USE_64_BIT_INODE 1
+#endif
 
 /* Number of bits in a file offset, on hosts where this is settable. */
 #undef _FILE_OFFSET_BITS

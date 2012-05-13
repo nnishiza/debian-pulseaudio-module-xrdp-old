@@ -112,7 +112,7 @@ char *pa_get_dbus_address_from_server_type(pa_server_type_t server_type) {
     }
 
     pa_xfree(runtime_path);
-    pa_xfree(escaped_path);
+    dbus_free(escaped_path);
 
     return address;
 }
@@ -360,7 +360,7 @@ static enum find_result_t find_handler_by_method(struct call_info *call_info) {
 
     PA_HASHMAP_FOREACH(call_info->iface_entry, call_info->obj_entry->interfaces, state) {
         if ((call_info->method_handler = pa_hashmap_get(call_info->iface_entry->method_handlers, call_info->method))) {
-            call_info->expected_method_sig = pa_hashmap_get(call_info->iface_entry->method_signatures, call_info->method);
+            pa_assert_se(call_info->expected_method_sig = pa_hashmap_get(call_info->iface_entry->method_signatures, call_info->method));
 
             if (pa_streq(call_info->method_sig, call_info->expected_method_sig))
                 return FOUND_METHOD;
@@ -468,10 +468,15 @@ static enum find_result_t find_handler(struct call_info *call_info) {
         else if (!(call_info->iface_entry = pa_hashmap_get(call_info->obj_entry->interfaces, call_info->interface)))
             return NO_SUCH_INTERFACE;
 
-        else if ((call_info->method_handler = pa_hashmap_get(call_info->iface_entry->method_handlers, call_info->method)))
+        else if ((call_info->method_handler = pa_hashmap_get(call_info->iface_entry->method_handlers, call_info->method))) {
+            pa_assert_se(call_info->expected_method_sig = pa_hashmap_get(call_info->iface_entry->method_signatures, call_info->method));
+
+            if (!pa_streq(call_info->method_sig, call_info->expected_method_sig))
+                return INVALID_METHOD_SIG;
+
             return FOUND_METHOD;
 
-        else
+        } else
             return NO_SUCH_METHOD;
 
     } else { /* The method call doesn't contain an interface. */

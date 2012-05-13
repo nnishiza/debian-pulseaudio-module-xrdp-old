@@ -25,13 +25,14 @@
 #include <string.h>
 #include <errno.h>
 #include <unistd.h>
-#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 
 #include <pulse/pulseaudio.h>
 #include <pulse/mainloop.h>
 
+#include <pulsecore/log.h>
+#include <pulsecore/macro.h>
 #include <pulsecore/thread.h>
 
 #define INTERPOLATE
@@ -87,7 +88,7 @@ static void stream_latency_cb(pa_stream *p, void *userdata) {
 
 /* This is called whenever the context status changes */
 static void context_state_callback(pa_context *c, void *userdata) {
-    assert(c);
+    pa_assert(c);
 
     switch (pa_context_get_state(c)) {
         case PA_CONTEXT_CONNECTING:
@@ -118,7 +119,7 @@ static void context_state_callback(pa_context *c, void *userdata) {
             if (latency > 0)
                 flags |= PA_STREAM_ADJUST_LATENCY;
 
-            fprintf(stderr, "Connection established.\n");
+            pa_log("Connection established");
 
             pa_assert_se(stream = pa_stream_new(c, "interpol-test", &ss, NULL));
 
@@ -140,7 +141,7 @@ static void context_state_callback(pa_context *c, void *userdata) {
 
         case PA_CONTEXT_FAILED:
         default:
-            fprintf(stderr, "Context error: %s\n", pa_strerror(pa_context_errno(c)));
+            pa_log_error("Context error: %s", pa_strerror(pa_context_errno(c)));
             abort();
     }
 }
@@ -154,13 +155,11 @@ int main(int argc, char *argv[]) {
     pa_bool_t corked = FALSE;
 #endif
 
-    pa_log_set_level(PA_LOG_DEBUG);
+    if (!getenv("MAKE_CHECK"))
+        pa_log_set_level(PA_LOG_DEBUG);
 
     playback = argc <= 1 || !pa_streq(argv[1], "-r");
-
-    latency =
-        (argc >= 2 && !pa_streq(argv[1], "-r")) ? atoi(argv[1]) :
-        (argc >= 3 ? atoi(argv[2]) : 0);
+    latency = (argc >= 2 && !pa_streq(argv[1], "-r")) ? atoi(argv[1]) : (argc >= 3 ? atoi(argv[2]) : 0);
 
     /* Set up a new main loop */
     pa_assert_se(m = pa_threaded_mainloop_new());
@@ -214,7 +213,7 @@ int main(int argc, char *argv[]) {
             pa_bool_t cork_now;
 #endif
             rtc = pa_timeval_diff(&now, &start);
-            printf("%i\t%llu\t%llu\t%llu\t%llu\t%lli\t%u\t%u\t%llu\t%llu\n", k,
+            pa_log_info("%i\t%llu\t%llu\t%llu\t%llu\t%lli\t%u\t%u\t%llu\t%llu\n", k,
                    (unsigned long long) rtc,
                    (unsigned long long) t,
                    (unsigned long long) (rtc-old_rtc),
@@ -245,7 +244,6 @@ int main(int argc, char *argv[]) {
         }
 
         /* Spin loop, ugly but normal usleep() is just too badly grained */
-
         tv = now;
         while (pa_timeval_diff(pa_gettimeofday(&now), &tv) < 1000)
             pa_thread_yield();

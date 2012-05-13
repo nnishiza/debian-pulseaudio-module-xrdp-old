@@ -428,11 +428,16 @@ static int mcast_socket(const struct sockaddr* sa, socklen_t salen) {
 
     pa_make_udp_socket_low_delay(fd);
 
+#ifdef SO_TIMESTAMP
     one = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_TIMESTAMP, &one, sizeof(one)) < 0) {
         pa_log("SO_TIMESTAMP failed: %s", pa_cstrerror(errno));
         goto fail;
     }
+#else
+    pa_log("SO_TIMESTAMP unsupported on this platform");
+    goto fail;
+#endif
 
     one = 1;
     if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &one, sizeof(one)) < 0) {
@@ -556,10 +561,11 @@ static struct session *session_new(struct userdata *u, const pa_sdp_info *sdp_in
         s->intended_latency = s->sink_latency*2;
 
     s->memblockq = pa_memblockq_new(
+            "module-rtp-recv memblockq",
             0,
             MEMBLOCKQ_MAXLENGTH,
             MEMBLOCKQ_MAXLENGTH,
-            pa_frame_size(&s->sink_input->sample_spec),
+            &s->sink_input->sample_spec,
             pa_usec_to_bytes(s->intended_latency - s->sink_latency, &s->sink_input->sample_spec),
             0,
             0,

@@ -98,6 +98,13 @@ void pa_source_new_data_set_channel_map(pa_source_new_data *data, const pa_chann
         data->channel_map = *map;
 }
 
+void pa_source_new_data_set_alternate_sample_rate(pa_source_new_data *data, const uint32_t alternate_sample_rate) {
+    pa_assert(data);
+
+    data->alternate_sample_rate_is_set = TRUE;
+    data->alternate_sample_rate = alternate_sample_rate;
+}
+
 void pa_source_new_data_set_volume(pa_source_new_data *data, const pa_cvolume *volume) {
     pa_assert(data);
 
@@ -124,14 +131,8 @@ void pa_source_new_data_done(pa_source_new_data *data) {
 
     pa_proplist_free(data->proplist);
 
-    if (data->ports) {
-        pa_device_port *p;
-
-        while ((p = pa_hashmap_steal_first(data->ports)))
-            pa_device_port_free(p);
-
-        pa_hashmap_free(data->ports, NULL, NULL);
-    }
+    if (data->ports)
+        pa_device_port_hashmap_free(data->ports);
 
     pa_xfree(data->name);
     pa_xfree(data->active_port);
@@ -150,6 +151,7 @@ static void reset_callbacks(pa_source *s) {
     s->update_requested_latency = NULL;
     s->set_port = NULL;
     s->get_formats = NULL;
+    s->update_rate = NULL;
 }
 
 /* Called from main context */
@@ -233,6 +235,7 @@ pa_source* pa_source_new(
     s->flags = flags;
     s->priority = 0;
     s->suspend_cause = 0;
+    pa_source_set_mixer_dirty(s, FALSE);
     s->name = pa_xstrdup(name);
     s->proplist = pa_proplist_copy(data->proplist);
     s->driver = pa_xstrdup(pa_path_get_filename(data->driver));
@@ -243,6 +246,17 @@ pa_source* pa_source_new(
 
     s->sample_spec = data->sample_spec;
     s->channel_map = data->channel_map;
+    s->default_sample_rate = s->sample_spec.rate;
+
+    if (data->alternate_sample_rate_is_set)
+        s->alternate_sample_rate = data->alternate_sample_rate;
+    else
+        s->alternate_sample_rate = s->core->alternate_sample_rate;
+
+    if (s->sample_spec.rate == s->alternate_sample_rate) {
+        pa_log_warn("Default and alternate sample rates are the same.");
+        s->alternate_sample_rate = 0;
+    }
 
     s->outputs = pa_idxset_new(NULL, NULL);
     s->n_corked = 0;
@@ -652,14 +666,8 @@ static void source_free(pa_object *o) {
     if (s->proplist)
         pa_proplist_free(s->proplist);
 
-    if (s->ports) {
-        pa_device_port *p;
-
-        while ((p = pa_hashmap_steal_first(s->ports)))
-            pa_device_port_free(p);
-
-        pa_hashmap_free(s->ports, NULL, NULL);
-    }
+    if (s->ports)
+        pa_device_port_hashmap_free(s->ports);
 
     pa_xfree(s);
 }
@@ -706,6 +714,12 @@ int pa_source_update_status(pa_source*s) {
     return source_set_state(s, pa_source_used_by(s) ? PA_SOURCE_RUNNING : PA_SOURCE_IDLE);
 }
 
+/* Called from any context - must be threadsafe */
+void pa_source_set_mixer_dirty(pa_source *s, pa_bool_t is_dirty)
+{
+    pa_atomic_store(&s->mixer_dirty, is_dirty ? 1 : 0);
+}
+
 /* Called from main context */
 int pa_source_suspend(pa_source *s, pa_bool_t suspend, pa_suspend_cause_t cause) {
     pa_source_assert_ref(s);
@@ -720,6 +734,27 @@ int pa_source_suspend(pa_source *s, pa_bool_t suspend, pa_suspend_cause_t cause)
         s->suspend_cause |= cause;
     else
         s->suspend_cause &= ~cause;
+
+    if (!(s->suspend_cause & PA_SUSPEND_SESSION) && (pa_atomic_load(&s->mixer_dirty) != 0)) {
+        /* This might look racy but isn't: If somebody sets mixer_dirty exactly here,
+           it'll be handled just fine. */
+        pa_source_set_mixer_dirty(s, FALSE);
+        pa_log_debug("Mixer is now accessible. Updating alsa mixer settings.");
+        if (s->active_port && s->set_port) {
+            if (s->flags & PA_SOURCE_DEFERRED_VOLUME) {
+                struct source_message_set_port msg = { .port = s->active_port, .ret = 0 };
+                pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_PORT, &msg, 0, NULL) == 0);
+            }
+            else
+                s->set_port(s, s->active_port);
+        }
+        else {
+            if (s->set_mute)
+                s->set_mute(s);
+            if (s->set_volume)
+                s->set_volume(s);
+        }
+    }
 
     if ((pa_source_get_state(s) == PA_SOURCE_SUSPENDED) == !!s->suspend_cause)
         return 0;
@@ -793,7 +828,7 @@ void pa_source_move_all_finish(pa_source *s, pa_queue *q, pa_bool_t save) {
         pa_source_output_unref(o);
     }
 
-    pa_queue_free(q, NULL, NULL);
+    pa_queue_free(q, NULL);
 }
 
 /* Called from main context */
@@ -808,7 +843,7 @@ void pa_source_move_all_fail(pa_queue *q) {
         pa_source_output_unref(o);
     }
 
-    pa_queue_free(q, NULL, NULL);
+    pa_queue_free(q, NULL);
 }
 
 /* Called from IO thread context */
@@ -905,6 +940,72 @@ void pa_source_post_direct(pa_source*s, pa_source_output *o, const pa_memchunk *
         pa_memblock_unref(vchunk.memblock);
     } else
         pa_source_output_push(o, chunk);
+}
+
+/* Called from main thread */
+pa_bool_t pa_source_update_rate(pa_source *s, uint32_t rate, pa_bool_t passthrough)
+{
+    if (s->update_rate) {
+        uint32_t desired_rate = rate;
+        uint32_t default_rate = s->default_sample_rate;
+        uint32_t alternate_rate = s->alternate_sample_rate;
+        uint32_t idx;
+        pa_source_output *o;
+        pa_bool_t use_alternate = FALSE;
+
+        if (PA_UNLIKELY(default_rate == alternate_rate)) {
+            pa_log_warn("Default and alternate sample rates are the same.");
+            return FALSE;
+        }
+
+        if (PA_SOURCE_IS_RUNNING(s->state)) {
+            pa_log_info("Cannot update rate, SOURCE_IS_RUNNING, will keep using %u Hz",
+                        s->sample_spec.rate);
+            return FALSE;
+        }
+
+        if (PA_UNLIKELY (desired_rate < 8000 ||
+                         desired_rate > PA_RATE_MAX))
+            return FALSE;
+
+        if (!passthrough) {
+            pa_assert(default_rate % 4000 || default_rate % 11025);
+            pa_assert(alternate_rate % 4000 || alternate_rate % 11025);
+
+            if (default_rate % 4000) {
+                /* default is a 11025 multiple */
+                if ((alternate_rate % 4000 == 0) && (desired_rate % 4000 == 0))
+                    use_alternate=TRUE;
+            } else {
+                /* default is 4000 multiple */
+                if ((alternate_rate % 11025 == 0) && (desired_rate % 11025 == 0))
+                    use_alternate=TRUE;
+            }
+
+            if (use_alternate)
+                desired_rate = alternate_rate;
+            else
+                desired_rate = default_rate;
+        } else {
+            desired_rate = rate; /* use stream sampling rate, discard default/alternate settings */
+        }
+
+        if (!passthrough && pa_source_used_by(s) > 0)
+            return FALSE;
+
+        pa_source_suspend(s, TRUE, PA_SUSPEND_IDLE); /* needed before rate update, will be resumed automatically */
+
+        if (s->update_rate(s, desired_rate) == TRUE) {
+            pa_log_info("Changed sampling rate successfully ");
+
+            PA_IDXSET_FOREACH(o, s->outputs, idx) {
+                if (o->state == PA_SOURCE_OUTPUT_CORKED)
+                    pa_source_output_update_rate(o);
+            }
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 /* Called from main thread */
@@ -1408,7 +1509,7 @@ void pa_source_set_volume(
     /* make sure we don't change the volume in PASSTHROUGH mode ...
      * ... *except* if we're being invoked to reset the volume to ensure 0 dB gain */
     if (pa_source_is_passthrough(s) && (!volume || !pa_cvolume_is_norm(volume))) {
-        pa_log_warn("Cannot change volume, Source is monitor of a PASSTHROUGH sink");
+        pa_log_warn("Cannot change volume, source is monitor of a PASSTHROUGH sink");
         return;
     }
 
@@ -1431,13 +1532,7 @@ void pa_source_set_volume(
         }
 
         pa_cvolume_remap(&new_reference_volume, &s->channel_map, &root_source->channel_map);
-    }
 
-    /* If volume is NULL we synchronize the source's real and reference
-     * volumes with the stream volumes. If it is not NULL we update
-     * the reference_volume with it. */
-
-    if (volume) {
         if (update_reference_volume(root_source, &new_reference_volume, &root_source->channel_map, save)) {
             if (pa_source_flat_volume_enabled(root_source)) {
                 /* OK, propagate this volume change back to the outputs */
@@ -1450,6 +1545,9 @@ void pa_source_set_volume(
         }
 
     } else {
+        /* If volume is NULL we synchronize the source's real and
+         * reference volumes with the stream volumes. */
+
         pa_assert(pa_source_flat_volume_enabled(root_source));
 
         /* Ok, let's determine the new real volume */
@@ -2436,7 +2534,7 @@ int pa_source_set_port(pa_source *s, const char *name, pa_bool_t save) {
         return -PA_ERR_NOTIMPLEMENTED;
     }
 
-    if (!s->ports)
+    if (!s->ports || !name)
         return -PA_ERR_NOENTITY;
 
     if (!(port = pa_hashmap_get(s->ports, name)))

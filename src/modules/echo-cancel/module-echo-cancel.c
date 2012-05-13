@@ -31,6 +31,7 @@
 #endif
 
 #include <stdio.h>
+#include <math.h>
 
 #include "echo-cancel.h"
 
@@ -66,6 +67,7 @@ PA_MODULE_USAGE(
           "sink_properties=<properties for the sink> "
           "sink_master=<name of sink to filter> "
           "adjust_time=<how often to readjust rates in s> "
+          "adjust_threshold=<how much drift to readjust after in ms> "
           "format=<sample format> "
           "rate=<sample rate> "
           "channels=<number of channels> "
@@ -80,34 +82,65 @@ PA_MODULE_USAGE(
 /* NOTE: Make sure the enum and ec_table are maintained in the correct order */
 typedef enum {
     PA_ECHO_CANCELLER_INVALID = -1,
-    PA_ECHO_CANCELLER_SPEEX = 0,
+#ifdef HAVE_SPEEX
+    PA_ECHO_CANCELLER_SPEEX,
+#endif
+#ifdef HAVE_ADRIAN_EC
     PA_ECHO_CANCELLER_ADRIAN,
+#endif
+#ifdef HAVE_WEBRTC
+    PA_ECHO_CANCELLER_WEBRTC,
+#endif
 } pa_echo_canceller_method_t;
 
+#ifdef HAVE_WEBRTC
+#define DEFAULT_ECHO_CANCELLER "webrtc"
+#else
 #define DEFAULT_ECHO_CANCELLER "speex"
+#endif
 
 static const pa_echo_canceller ec_table[] = {
+#ifdef HAVE_SPEEX
     {
         /* Speex */
         .init                   = pa_speex_ec_init,
         .run                    = pa_speex_ec_run,
         .done                   = pa_speex_ec_done,
     },
+#endif
+#ifdef HAVE_ADRIAN_EC
     {
         /* Adrian Andre's NLMS implementation */
         .init                   = pa_adrian_ec_init,
         .run                    = pa_adrian_ec_run,
         .done                   = pa_adrian_ec_done,
     },
+#endif
+#ifdef HAVE_WEBRTC
+    {
+        /* WebRTC's audio processing engine */
+        .init                   = pa_webrtc_ec_init,
+        .play                   = pa_webrtc_ec_play,
+        .record                 = pa_webrtc_ec_record,
+        .set_drift              = pa_webrtc_ec_set_drift,
+        .run                    = pa_webrtc_ec_run,
+        .done                   = pa_webrtc_ec_done,
+    },
+#endif
 };
 
 #define DEFAULT_RATE 32000
 #define DEFAULT_CHANNELS 1
 #define DEFAULT_ADJUST_TIME_USEC (1*PA_USEC_PER_SEC)
+#define DEFAULT_ADJUST_TOLERANCE (5*PA_USEC_PER_MSEC)
 #define DEFAULT_SAVE_AEC FALSE
 #define DEFAULT_AUTOLOADED FALSE
 
 #define MEMBLOCKQ_MAXLENGTH (16*1024*1024)
+
+/* Can only be used in main context */
+#define IS_ACTIVE(u) ((pa_source_get_state((u)->source) == PA_SOURCE_RUNNING) && \
+                      (pa_sink_get_state((u)->sink) == PA_SINK_RUNNING))
 
 /* This module creates a new (virtual) source and sink.
  *
@@ -131,12 +164,22 @@ static const pa_echo_canceller ec_table[] = {
  *    samples (because else the echo canceler does not work) or when the
  *    playback pointer drifts too far away.
  *
- * 2) periodically check the difference between capture and playback. we use a
- *    low and high watermark for adjusting the alignment. playback should always
+ * 2) periodically check the difference between capture and playback. We use a
+ *    low and high watermark for adjusting the alignment. Playback should always
  *    be before capture and the difference should not be bigger than one frame
  *    size. We would ideally like to resample the sink_input but most driver
  *    don't give enough accuracy to be able to do that right now.
  */
+
+struct userdata;
+
+struct pa_echo_canceller_msg {
+    pa_msgobject parent;
+    struct userdata *userdata;
+};
+
+PA_DEFINE_PRIVATE_CLASS(pa_echo_canceller_msg, pa_msgobject);
+#define PA_ECHO_CANCELLER_MSG(o) (pa_echo_canceller_msg_cast(o))
 
 struct snapshot {
     pa_usec_t sink_now;
@@ -166,7 +209,6 @@ struct userdata {
     pa_bool_t need_realign;
 
     /* to wakeup the source I/O thread */
-    pa_bool_t in_push;
     pa_asyncmsgq *asyncmsgq;
     pa_rtpoll_item *rtpoll_item_read, *rtpoll_item_write;
 
@@ -184,15 +226,26 @@ struct userdata {
     int64_t recv_counter;
     size_t sink_skip;
 
+    /* Bytes left over from previous iteration */
+    size_t sink_rem;
+    size_t source_rem;
+
     pa_atomic_t request_resync;
 
-    int active_mask;
     pa_time_event *time_event;
     pa_usec_t adjust_time;
+    int adjust_threshold;
 
     FILE *captured_file;
     FILE *played_file;
     FILE *canceled_file;
+    FILE *drift_file;
+
+    pa_bool_t use_volume_sharing;
+
+    struct {
+        pa_cvolume current_volume;
+    } thread_info;
 };
 
 static void source_output_snapshot_within_thread(struct userdata *u, struct snapshot *snapshot);
@@ -205,6 +258,7 @@ static const char* const valid_modargs[] = {
     "sink_properties",
     "sink_master",
     "adjust_time",
+    "adjust_threshold",
     "format",
     "rate",
     "channels",
@@ -226,6 +280,10 @@ enum {
 
 enum {
     SINK_INPUT_MESSAGE_LATENCY_SNAPSHOT
+};
+
+enum {
+    ECHO_CANCELLER_MESSAGE_SET_VOLUME,
 };
 
 static int64_t calc_diff(struct userdata *u, struct snapshot *snapshot) {
@@ -252,7 +310,7 @@ static int64_t calc_diff(struct userdata *u, struct snapshot *snapshot) {
     diff_time = (snapshot->sink_now + snapshot->sink_latency - buffer_latency) -
           (snapshot->source_now - snapshot->source_latency);
 
-    pa_log_debug("diff %lld (%lld - %lld + %lld) %lld %lld %lld %lld", (long long) diff_time,
+    pa_log_debug("Diff %lld (%lld - %lld + %lld) %lld %lld %lld %lld", (long long) diff_time,
         (long long) snapshot->sink_latency,
         (long long) buffer_latency, (long long) snapshot->source_latency,
         (long long) snapshot->source_delay, (long long) snapshot->sink_delay,
@@ -275,7 +333,7 @@ static void time_callback(pa_mainloop_api *a, pa_time_event *e, const struct tim
     pa_assert(u->time_event == e);
     pa_assert_ctl_context();
 
-    if (u->active_mask != 3)
+    if (!IS_ACTIVE(u))
         return;
 
     /* update our snapshots */
@@ -298,7 +356,7 @@ static void time_callback(pa_mainloop_api *a, pa_time_event *e, const struct tim
         new_rate = base_rate;
     }
     else {
-        if (diff_time > 1000) {
+        if (diff_time > u->adjust_threshold) {
             /* diff too big, quickly adjust */
             pa_asyncmsgq_post(u->asyncmsgq, PA_MSGOBJECT(u->source_output), SOURCE_OUTPUT_MESSAGE_APPLY_DIFF_TIME,
                 NULL, diff_time, NULL, NULL);
@@ -352,6 +410,9 @@ static int source_process_msg_cb(pa_msgobject *o, int code, void *data, int64_t 
 
             return 0;
 
+        case PA_SOURCE_MESSAGE_SET_VOLUME_SYNCED:
+            u->thread_info.current_volume = u->source->reference_volume;
+            break;
     }
 
     return pa_source_process_msg(o, code, data, offset, chunk);
@@ -400,20 +461,17 @@ static int source_set_state_cb(pa_source *s, pa_source_state_t state) {
         !PA_SOURCE_OUTPUT_IS_LINKED(pa_source_output_get_state(u->source_output)))
         return 0;
 
-    pa_log_debug("Source state %d %d", state, u->active_mask);
-
     if (state == PA_SOURCE_RUNNING) {
         /* restart timer when both sink and source are active */
-        u->active_mask |= 1;
-        if (u->active_mask == 3 && u->adjust_time)
+        if (IS_ACTIVE(u) && u->adjust_time)
             pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
 
         pa_atomic_store(&u->request_resync, 1);
         pa_source_output_cork(u->source_output, FALSE);
     } else if (state == PA_SOURCE_SUSPENDED) {
-        u->active_mask &= ~1;
         pa_source_output_cork(u->source_output, TRUE);
     }
+
     return 0;
 }
 
@@ -428,24 +486,21 @@ static int sink_set_state_cb(pa_sink *s, pa_sink_state_t state) {
         !PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(u->sink_input)))
         return 0;
 
-    pa_log_debug("Sink state %d %d", state, u->active_mask);
-
     if (state == PA_SINK_RUNNING) {
         /* restart timer when both sink and source are active */
-        u->active_mask |= 2;
-        if (u->active_mask == 3 && u->adjust_time)
+        if (IS_ACTIVE(u) && u->adjust_time)
             pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
 
         pa_atomic_store(&u->request_resync, 1);
         pa_sink_input_cork(u->sink_input, FALSE);
     } else if (state == PA_SINK_SUSPENDED) {
-        u->active_mask &= ~2;
         pa_sink_input_cork(u->sink_input, TRUE);
     }
+
     return 0;
 }
 
-/* Called from I/O thread context */
+/* Called from source I/O thread context */
 static void source_update_requested_latency_cb(pa_source *s) {
     struct userdata *u;
 
@@ -464,7 +519,7 @@ static void source_update_requested_latency_cb(pa_source *s) {
             pa_source_get_requested_latency_within_thread(s));
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context */
 static void sink_update_requested_latency_cb(pa_sink *s) {
     struct userdata *u;
 
@@ -483,7 +538,7 @@ static void sink_update_requested_latency_cb(pa_sink *s) {
             pa_sink_get_requested_latency_within_thread(s));
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context */
 static void sink_request_rewind_cb(pa_sink *s) {
     struct userdata *u;
 
@@ -529,6 +584,7 @@ static void sink_set_volume_cb(pa_sink *s) {
     pa_sink_input_set_volume(u->sink_input, &s->real_volume, s->save_volume, TRUE);
 }
 
+/* Called from main context. */
 static void source_get_volume_cb(pa_source *s) {
     struct userdata *u;
     pa_cvolume v;
@@ -592,7 +648,7 @@ static void source_get_mute_cb(pa_source *s) {
     pa_source_output_get_mute(u->source_output);
 }
 
-/* must be called from the input thread context */
+/* Called from source I/O thread context. */
 static void apply_diff_time(struct userdata *u, int64_t diff_time) {
     int64_t diff;
 
@@ -613,7 +669,7 @@ static void apply_diff_time(struct userdata *u, int64_t diff_time) {
         diff = pa_usec_to_bytes(diff_time, &u->source_output->sample_spec);
 
         if (diff > 0) {
-            pa_log("playback too far ahead (%lld), drop source %lld", (long long) diff_time, (long long) diff);
+            pa_log("Playback too far ahead (%lld), drop source %lld", (long long) diff_time, (long long) diff);
 
             u->source_skip = diff;
             u->sink_skip = 0;
@@ -621,7 +677,7 @@ static void apply_diff_time(struct userdata *u, int64_t diff_time) {
     }
 }
 
-/* must be called from the input thread */
+/* Called from source I/O thread context. */
 static void do_resync(struct userdata *u) {
     int64_t diff_time;
     struct snapshot latency_snapshot;
@@ -639,104 +695,165 @@ static void do_resync(struct userdata *u) {
     apply_diff_time(u, diff_time);
 }
 
-/* Called from input thread context */
-static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk) {
-    struct userdata *u;
+/* 1. Calculate drift at this point, pass to canceller
+ * 2. Push out playback samples in blocksize chunks
+ * 3. Push out capture samples in blocksize chunks
+ * 4. ???
+ * 5. Profit
+ *
+ * Called from source I/O thread context.
+ */
+static void do_push_drift_comp(struct userdata *u) {
     size_t rlen, plen;
+    pa_memchunk rchunk, pchunk, cchunk;
+    uint8_t *rdata, *pdata, *cdata;
+    float drift;
+    int unused PA_GCC_UNUSED;
 
-    pa_source_output_assert_ref(o);
-    pa_source_output_assert_io_context(o);
-    pa_assert_se(u = o->userdata);
+    rlen = pa_memblockq_get_length(u->source_memblockq);
+    plen = pa_memblockq_get_length(u->sink_memblockq);
 
-    if (!PA_SOURCE_OUTPUT_IS_LINKED(pa_source_output_get_state(u->source_output))) {
-        pa_log("push when no link?");
-        return;
+    /* Estimate snapshot drift as follows:
+     *   pd: amount of data consumed since last time
+     *   rd: amount of data consumed since last time
+     *
+     *   drift = (pd - rd) / rd;
+     *
+     * We calculate pd and rd as the memblockq length less the number of
+     * samples left from the last iteration (to avoid double counting
+     * those remainder samples.
+     */
+    drift = ((float)(plen - u->sink_rem) - (rlen - u->source_rem)) / ((float)(rlen - u->source_rem));
+    u->sink_rem = plen % u->blocksize;
+    u->source_rem = rlen % u->blocksize;
+
+    /* Now let the canceller work its drift compensation magic */
+    u->ec->set_drift(u->ec, drift);
+
+    if (u->save_aec) {
+        if (u->drift_file)
+            fprintf(u->drift_file, "d %a\n", drift);
     }
 
-    /* handle queued messages */
-    u->in_push = TRUE;
-    while (pa_asyncmsgq_process_one(u->asyncmsgq) > 0)
-        ;
-    u->in_push = FALSE;
+    /* Send in the playback samples first */
+    while (plen >= u->blocksize) {
+        pa_memblockq_peek_fixed_size(u->sink_memblockq, u->blocksize, &pchunk);
+        pdata = pa_memblock_acquire(pchunk.memblock);
+        pdata += pchunk.index;
 
-    if (pa_atomic_cmpxchg (&u->request_resync, 1, 0)) {
-        do_resync(u);
+        u->ec->play(u->ec, pdata);
+
+        if (u->save_aec) {
+            if (u->drift_file)
+                fprintf(u->drift_file, "p %d\n", u->blocksize);
+            if (u->played_file)
+                unused = fwrite(pdata, 1, u->blocksize, u->played_file);
+        }
+
+        pa_memblock_release(pchunk.memblock);
+        pa_memblockq_drop(u->sink_memblockq, u->blocksize);
+        pa_memblock_unref(pchunk.memblock);
+
+        plen -= u->blocksize;
     }
 
-    pa_memblockq_push_align(u->source_memblockq, chunk);
+    /* And now the capture samples */
+    while (rlen >= u->blocksize) {
+        pa_memblockq_peek_fixed_size(u->source_memblockq, u->blocksize, &rchunk);
+
+        rdata = pa_memblock_acquire(rchunk.memblock);
+        rdata += rchunk.index;
+
+        cchunk.index = 0;
+        cchunk.length = u->blocksize;
+        cchunk.memblock = pa_memblock_new(u->source->core->mempool, cchunk.length);
+        cdata = pa_memblock_acquire(cchunk.memblock);
+
+        u->ec->record(u->ec, rdata, cdata);
+
+        if (u->save_aec) {
+            if (u->drift_file)
+                fprintf(u->drift_file, "c %d\n", u->blocksize);
+            if (u->captured_file)
+                unused = fwrite(rdata, 1, u->blocksize, u->captured_file);
+            if (u->canceled_file)
+                unused = fwrite(cdata, 1, u->blocksize, u->canceled_file);
+        }
+
+        pa_memblock_release(cchunk.memblock);
+        pa_memblock_release(rchunk.memblock);
+
+        pa_memblock_unref(rchunk.memblock);
+
+        pa_source_post(u->source, &cchunk);
+        pa_memblock_unref(cchunk.memblock);
+
+        pa_memblockq_drop(u->source_memblockq, u->blocksize);
+        rlen -= u->blocksize;
+    }
+}
+
+/* This one's simpler than the drift compensation case -- we just iterate over
+ * the capture buffer, and pass the canceller blocksize bytes of playback and
+ * capture data.
+ *
+ * Called from source I/O thread context. */
+static void do_push(struct userdata *u) {
+    size_t rlen, plen;
+    pa_memchunk rchunk, pchunk, cchunk;
+    uint8_t *rdata, *pdata, *cdata;
+    int unused PA_GCC_UNUSED;
 
     rlen = pa_memblockq_get_length(u->source_memblockq);
     plen = pa_memblockq_get_length(u->sink_memblockq);
 
     while (rlen >= u->blocksize) {
-        pa_memchunk rchunk, pchunk;
-
         /* take fixed block from recorded samples */
         pa_memblockq_peek_fixed_size(u->source_memblockq, u->blocksize, &rchunk);
 
-        if (plen > u->blocksize && u->source_skip == 0) {
-            uint8_t *rdata, *pdata, *cdata;
-            pa_memchunk cchunk;
-            int unused;
+        if (plen >= u->blocksize) {
+            /* take fixed block from played samples */
+            pa_memblockq_peek_fixed_size(u->sink_memblockq, u->blocksize, &pchunk);
 
-            if (u->sink_skip) {
-                size_t to_skip;
+            rdata = pa_memblock_acquire(rchunk.memblock);
+            rdata += rchunk.index;
+            pdata = pa_memblock_acquire(pchunk.memblock);
+            pdata += pchunk.index;
 
-                if (u->sink_skip > plen)
-                    to_skip = plen;
-                else
-                    to_skip = u->sink_skip;
+            cchunk.index = 0;
+            cchunk.length = u->blocksize;
+            cchunk.memblock = pa_memblock_new(u->source->core->mempool, cchunk.length);
+            cdata = pa_memblock_acquire(cchunk.memblock);
 
-                pa_memblockq_drop(u->sink_memblockq, to_skip);
-                plen -= to_skip;
-
-                u->sink_skip -= to_skip;
+            if (u->save_aec) {
+                if (u->captured_file)
+                    unused = fwrite(rdata, 1, u->blocksize, u->captured_file);
+                if (u->played_file)
+                    unused = fwrite(pdata, 1, u->blocksize, u->played_file);
             }
 
-            if (plen > u->blocksize && u->sink_skip == 0) {
-                /* take fixed block from played samples */
-                pa_memblockq_peek_fixed_size(u->sink_memblockq, u->blocksize, &pchunk);
+            /* perform echo cancellation */
+            u->ec->run(u->ec, rdata, pdata, cdata);
 
-                rdata = pa_memblock_acquire(rchunk.memblock);
-                rdata += rchunk.index;
-                pdata = pa_memblock_acquire(pchunk.memblock);
-                pdata += pchunk.index;
-
-                cchunk.index = 0;
-                cchunk.length = u->blocksize;
-                cchunk.memblock = pa_memblock_new(u->source->core->mempool, cchunk.length);
-                cdata = pa_memblock_acquire(cchunk.memblock);
-
-                if (u->save_aec) {
-                    if (u->captured_file)
-                        unused = fwrite(rdata, 1, u->blocksize, u->captured_file);
-                    if (u->played_file)
-                        unused = fwrite(pdata, 1, u->blocksize, u->played_file);
-                }
-
-                /* perform echo cancellation */
-                u->ec->run(u->ec, rdata, pdata, cdata);
-
-                if (u->save_aec) {
-                    if (u->canceled_file)
-                        unused = fwrite(cdata, 1, u->blocksize, u->canceled_file);
-                }
-
-                pa_memblock_release(cchunk.memblock);
-                pa_memblock_release(pchunk.memblock);
-                pa_memblock_release(rchunk.memblock);
-
-                /* drop consumed sink samples */
-                pa_memblockq_drop(u->sink_memblockq, u->blocksize);
-                pa_memblock_unref(pchunk.memblock);
-
-                pa_memblock_unref(rchunk.memblock);
-                /* the filtered samples now become the samples from our
-                 * source */
-                rchunk = cchunk;
-
-                plen -= u->blocksize;
+            if (u->save_aec) {
+                if (u->canceled_file)
+                    unused = fwrite(cdata, 1, u->blocksize, u->canceled_file);
             }
+
+            pa_memblock_release(cchunk.memblock);
+            pa_memblock_release(pchunk.memblock);
+            pa_memblock_release(rchunk.memblock);
+
+            /* drop consumed sink samples */
+            pa_memblockq_drop(u->sink_memblockq, u->blocksize);
+            pa_memblock_unref(pchunk.memblock);
+
+            pa_memblock_unref(rchunk.memblock);
+            /* the filtered samples now become the samples from our
+             * source */
+            rchunk = cchunk;
+
+            plen -= u->blocksize;
         }
 
         /* forward the (echo-canceled) data to the virtual source */
@@ -745,20 +862,94 @@ static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk)
 
         pa_memblockq_drop(u->source_memblockq, u->blocksize);
         rlen -= u->blocksize;
-
-        if (u->source_skip) {
-            if (u->source_skip > u->blocksize) {
-                u->source_skip -= u->blocksize;
-            }
-            else {
-                u->sink_skip += (u->blocksize - u->source_skip);
-                u->source_skip = 0;
-            }
-        }
     }
 }
 
-/* Called from I/O thread context */
+/* Called from source I/O thread context. */
+static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk) {
+    struct userdata *u;
+    size_t rlen, plen, to_skip;
+    pa_memchunk rchunk;
+
+    pa_source_output_assert_ref(o);
+    pa_source_output_assert_io_context(o);
+    pa_assert_se(u = o->userdata);
+
+    if (!PA_SOURCE_OUTPUT_IS_LINKED(pa_source_output_get_state(u->source_output))) {
+        pa_log("Push when no link?");
+        return;
+    }
+
+    if (PA_UNLIKELY(u->source->thread_info.state != PA_SOURCE_RUNNING ||
+                    u->sink->thread_info.state != PA_SINK_RUNNING)) {
+        pa_source_post(u->source, chunk);
+        return;
+    }
+
+    /* handle queued messages, do any message sending of our own */
+    while (pa_asyncmsgq_process_one(u->asyncmsgq) > 0)
+        ;
+
+    pa_memblockq_push_align(u->source_memblockq, chunk);
+
+    rlen = pa_memblockq_get_length(u->source_memblockq);
+    plen = pa_memblockq_get_length(u->sink_memblockq);
+
+    /* Let's not do anything else till we have enough data to process */
+    if (rlen < u->blocksize)
+        return;
+
+    /* See if we need to drop samples in order to sync */
+    if (pa_atomic_cmpxchg (&u->request_resync, 1, 0)) {
+        do_resync(u);
+    }
+
+    /* Okay, skip cancellation for skipped source samples if needed. */
+    if (PA_UNLIKELY(u->source_skip)) {
+        /* The slightly tricky bit here is that we drop all but modulo
+         * blocksize bytes and then adjust for that last bit on the sink side.
+         * We do this because the source data is coming at a fixed rate, which
+         * means the only way to try to catch up is drop sink samples and let
+         * the canceller cope up with this. */
+        to_skip = rlen >= u->source_skip ? u->source_skip : rlen;
+        to_skip -= to_skip % u->blocksize;
+
+        if (to_skip) {
+            pa_memblockq_peek_fixed_size(u->source_memblockq, to_skip, &rchunk);
+            pa_source_post(u->source, &rchunk);
+
+            pa_memblock_unref(rchunk.memblock);
+            pa_memblockq_drop(u->source_memblockq, to_skip);
+
+            rlen -= to_skip;
+            u->source_skip -= to_skip;
+        }
+
+        if (rlen && u->source_skip % u->blocksize) {
+            u->sink_skip += u->blocksize - (u->source_skip % u->blocksize);
+            u->source_skip -= (u->source_skip % u->blocksize);
+        }
+    }
+
+    /* And for the sink, these samples have been played back already, so we can
+     * just drop them and get on with it. */
+    if (PA_UNLIKELY(u->sink_skip)) {
+        to_skip = plen >= u->sink_skip ? u->sink_skip : plen;
+
+        pa_memblockq_drop(u->sink_memblockq, to_skip);
+
+        plen -= to_skip;
+        u->sink_skip -= to_skip;
+    }
+
+    /* process and push out samples */
+    if (u->ec->params.drift_compensation)
+        do_push_drift_comp(u);
+    else
+        do_push(u);
+}
+
+/* Called from sink I/O thread context. */
 static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk) {
     struct userdata *u;
 
@@ -785,7 +976,7 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
     return 0;
 }
 
-/* Called from input thread context */
+/* Called from source I/O thread context. */
 static void source_output_process_rewind_cb(pa_source_output *o, size_t nbytes) {
     struct userdata *u;
 
@@ -805,7 +996,7 @@ static void source_output_process_rewind_cb(pa_source_output *o, size_t nbytes) 
         (long long) pa_memblockq_get_length (u->source_memblockq));
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes) {
     struct userdata *u;
 
@@ -820,6 +1011,7 @@ static void sink_input_process_rewind_cb(pa_sink_input *i, size_t nbytes) {
     u->send_counter -= nbytes;
 }
 
+/* Called from source I/O thread context. */
 static void source_output_snapshot_within_thread(struct userdata *u, struct snapshot *snapshot) {
     size_t delay, rlen, plen;
     pa_usec_t now, latency;
@@ -840,8 +1032,7 @@ static void source_output_snapshot_within_thread(struct userdata *u, struct snap
     snapshot->plen = plen + u->source_skip;
 }
 
-
-/* Called from output thread context */
+/* Called from source I/O thread context. */
 static int source_output_process_msg_cb(pa_msgobject *obj, int code, void *data, int64_t offset, pa_memchunk *chunk) {
     struct userdata *u = PA_SOURCE_OUTPUT(obj)->userdata;
 
@@ -851,7 +1042,7 @@ static int source_output_process_msg_cb(pa_msgobject *obj, int code, void *data,
 
             pa_source_output_assert_io_context(u->source_output);
 
-            if (PA_SOURCE_IS_OPENED(u->source_output->source->thread_info.state))
+            if (u->source_output->source->thread_info.state == PA_SOURCE_RUNNING)
                 pa_memblockq_push_align(u->sink_memblockq, chunk);
             else
                 pa_memblockq_flush_write(u->sink_memblockq, TRUE);
@@ -891,6 +1082,7 @@ static int source_output_process_msg_cb(pa_msgobject *obj, int code, void *data,
     return pa_source_output_process_msg(obj, code, data, offset, chunk);
 }
 
+/* Called from sink I/O thread context. */
 static int sink_input_process_msg_cb(pa_msgobject *obj, int code, void *data, int64_t offset, pa_memchunk *chunk) {
     struct userdata *u = PA_SINK_INPUT(obj)->userdata;
 
@@ -920,7 +1112,7 @@ static int sink_input_process_msg_cb(pa_msgobject *obj, int code, void *data, in
     return pa_sink_input_process_msg(obj, code, data, offset, chunk);
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
     struct userdata *u;
 
@@ -933,7 +1125,7 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
     pa_sink_set_max_rewind_within_thread(u->sink, nbytes);
 }
 
-/* Called from I/O thread context */
+/* Called from source I/O thread context. */
 static void source_output_update_max_rewind_cb(pa_source_output *o, size_t nbytes) {
     struct userdata *u;
 
@@ -945,7 +1137,7 @@ static void source_output_update_max_rewind_cb(pa_source_output *o, size_t nbyte
     pa_source_set_max_rewind_within_thread(u->source, nbytes);
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes) {
     struct userdata *u;
 
@@ -957,7 +1149,7 @@ static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes) {
     pa_sink_set_max_request_within_thread(u->sink, nbytes);
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_update_sink_requested_latency_cb(pa_sink_input *i) {
     struct userdata *u;
     pa_usec_t latency;
@@ -970,7 +1162,7 @@ static void sink_input_update_sink_requested_latency_cb(pa_sink_input *i) {
     pa_log_debug("Sink input update requested latency %lld", (long long) latency);
 }
 
-/* Called from I/O thread context */
+/* Called from source I/O thread context. */
 static void source_output_update_source_requested_latency_cb(pa_source_output *o) {
     struct userdata *u;
     pa_usec_t latency;
@@ -980,10 +1172,10 @@ static void source_output_update_source_requested_latency_cb(pa_source_output *o
 
     latency = pa_source_get_requested_latency_within_thread(o->source);
 
-    pa_log_debug("source output update requested latency %lld", (long long) latency);
+    pa_log_debug("Source output update requested latency %lld", (long long) latency);
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_update_sink_latency_range_cb(pa_sink_input *i) {
     struct userdata *u;
 
@@ -997,7 +1189,7 @@ static void sink_input_update_sink_latency_range_cb(pa_sink_input *i) {
     pa_sink_set_latency_range_within_thread(u->sink, i->sink->thread_info.min_latency, i->sink->thread_info.max_latency);
 }
 
-/* Called from I/O thread context */
+/* Called from source I/O thread context. */
 static void source_output_update_source_latency_range_cb(pa_source_output *o) {
     struct userdata *u;
 
@@ -1011,7 +1203,7 @@ static void source_output_update_source_latency_range_cb(pa_source_output *o) {
     pa_source_set_latency_range_within_thread(u->source, o->source->thread_info.min_latency, o->source->thread_info.max_latency);
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_update_sink_fixed_latency_cb(pa_sink_input *i) {
     struct userdata *u;
 
@@ -1024,7 +1216,7 @@ static void sink_input_update_sink_fixed_latency_cb(pa_sink_input *i) {
     pa_sink_set_fixed_latency_within_thread(u->sink, i->sink->thread_info.fixed_latency);
 }
 
-/* Called from I/O thread context */
+/* Called from source I/O thread context. */
 static void source_output_update_source_fixed_latency_cb(pa_source_output *o) {
     struct userdata *u;
 
@@ -1037,7 +1229,7 @@ static void source_output_update_source_fixed_latency_cb(pa_source_output *o) {
     pa_source_set_fixed_latency_within_thread(u->source, o->source->thread_info.fixed_latency);
 }
 
-/* Called from output thread context */
+/* Called from source I/O thread context. */
 static void source_output_attach_cb(pa_source_output *o) {
     struct userdata *u;
 
@@ -1060,7 +1252,7 @@ static void source_output_attach_cb(pa_source_output *o) {
             u->asyncmsgq);
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_attach_cb(pa_sink_input *i) {
     struct userdata *u;
 
@@ -1091,7 +1283,7 @@ static void sink_input_attach_cb(pa_sink_input *i) {
 }
 
 
-/* Called from output thread context */
+/* Called from source I/O thread context. */
 static void source_output_detach_cb(pa_source_output *o) {
     struct userdata *u;
 
@@ -1110,7 +1302,7 @@ static void source_output_detach_cb(pa_source_output *o) {
     }
 }
 
-/* Called from I/O thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_detach_cb(pa_sink_input *i) {
     struct userdata *u;
 
@@ -1129,7 +1321,7 @@ static void sink_input_detach_cb(pa_sink_input *i) {
     }
 }
 
-/* Called from output thread context */
+/* Called from source I/O thread context. */
 static void source_output_state_change_cb(pa_source_output *o, pa_source_output_state_t state) {
     struct userdata *u;
 
@@ -1140,7 +1332,7 @@ static void source_output_state_change_cb(pa_source_output *o, pa_source_output_
     pa_log_debug("Source output %d state %d", o->index, state);
 }
 
-/* Called from IO thread context */
+/* Called from sink I/O thread context. */
 static void sink_input_state_change_cb(pa_sink_input *i, pa_sink_input_state_t state) {
     struct userdata *u;
 
@@ -1158,7 +1350,7 @@ static void sink_input_state_change_cb(pa_sink_input *i, pa_sink_input_state_t s
     }
 }
 
-/* Called from main thread */
+/* Called from main context. */
 static void source_output_kill_cb(pa_source_output *o) {
     struct userdata *u;
 
@@ -1211,7 +1403,7 @@ static void sink_input_kill_cb(pa_sink_input *i) {
     pa_module_unload_request(u->module, TRUE);
 }
 
-/* Called from main thread */
+/* Called from main context. */
 static pa_bool_t source_output_may_move_to_cb(pa_source_output *o, pa_source *dest) {
     struct userdata *u;
 
@@ -1219,7 +1411,7 @@ static pa_bool_t source_output_may_move_to_cb(pa_source_output *o, pa_source *de
     pa_assert_ctl_context();
     pa_assert_se(u = o->userdata);
 
-    if (u->dead)
+    if (u->dead || u->autoloaded)
         return FALSE;
 
     return (u->source != dest) && (u->sink != dest->monitor_of);
@@ -1232,13 +1424,13 @@ static pa_bool_t sink_input_may_move_to_cb(pa_sink_input *i, pa_sink *dest) {
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
-    if (u->dead)
+    if (u->dead || u->autoloaded)
         return FALSE;
 
     return u->sink != dest;
 }
 
-/* Called from main thread */
+/* Called from main context. */
 static void source_output_moving_cb(pa_source_output *o, pa_source *dest) {
     struct userdata *u;
 
@@ -1253,13 +1445,14 @@ static void source_output_moving_cb(pa_source_output *o, pa_source *dest) {
         pa_source_set_asyncmsgq(u->source, NULL);
 
     if (u->source_auto_desc && dest) {
-        const char *z;
+        const char *y, *z;
         pa_proplist *pl;
 
         pl = pa_proplist_new();
+        y = pa_proplist_gets(u->sink_input->sink->proplist, PA_PROP_DEVICE_DESCRIPTION);
         z = pa_proplist_gets(dest->proplist, PA_PROP_DEVICE_DESCRIPTION);
-        pa_proplist_setf(pl, PA_PROP_DEVICE_DESCRIPTION, "Echo-Cancel Source %s on %s",
-                         pa_proplist_gets(u->source->proplist, "device.echo-cancel.name"), z ? z : dest->name);
+        pa_proplist_setf(pl, PA_PROP_DEVICE_DESCRIPTION, "%s (echo cancelled with %s)", z ? z : dest->name,
+                y ? y : u->sink_input->sink->name);
 
         pa_source_update_proplist(u->source, PA_UPDATE_REPLACE, pl);
         pa_proplist_free(pl);
@@ -1280,13 +1473,14 @@ static void sink_input_moving_cb(pa_sink_input *i, pa_sink *dest) {
         pa_sink_set_asyncmsgq(u->sink, NULL);
 
     if (u->sink_auto_desc && dest) {
-        const char *z;
+        const char *y, *z;
         pa_proplist *pl;
 
         pl = pa_proplist_new();
+        y = pa_proplist_gets(u->source_output->source->proplist, PA_PROP_DEVICE_DESCRIPTION);
         z = pa_proplist_gets(dest->proplist, PA_PROP_DEVICE_DESCRIPTION);
-        pa_proplist_setf(pl, PA_PROP_DEVICE_DESCRIPTION, "Echo-Cancel Sink %s on %s",
-                         pa_proplist_gets(u->sink->proplist, "device.echo-cancel.name"), z ? z : dest->name);
+        pa_proplist_setf(pl, PA_PROP_DEVICE_DESCRIPTION, "%s (echo cancelled with %s)", z ? z : dest->name,
+                         y ? y : u->source_output->source->name);
 
         pa_sink_update_proplist(u->sink, PA_UPDATE_REPLACE, pl);
         pa_proplist_free(pl);
@@ -1313,15 +1507,104 @@ static void sink_input_mute_changed_cb(pa_sink_input *i) {
     pa_sink_mute_changed(u->sink, i->muted);
 }
 
-static pa_echo_canceller_method_t get_ec_method_from_string(const char *method) {
-    if (pa_streq(method, "speex"))
-        return PA_ECHO_CANCELLER_SPEEX;
-    else if (pa_streq(method, "adrian"))
-        return PA_ECHO_CANCELLER_ADRIAN;
-    else
-        return PA_ECHO_CANCELLER_INVALID;
+/* Called from main context */
+static int canceller_process_msg_cb(pa_msgobject *o, int code, void *userdata, int64_t offset, pa_memchunk *chunk) {
+    struct pa_echo_canceller_msg *msg;
+    struct userdata *u;
+
+    pa_assert(o);
+
+    msg = PA_ECHO_CANCELLER_MSG(o);
+    u = msg->userdata;
+
+    switch (code) {
+        case ECHO_CANCELLER_MESSAGE_SET_VOLUME: {
+            pa_cvolume *v = (pa_cvolume *) userdata;
+
+            if (u->use_volume_sharing)
+                pa_source_set_volume(u->source, v, TRUE, FALSE);
+            else
+                pa_source_output_set_volume(u->source_output, v, FALSE, TRUE);
+
+            break;
+        }
+
+        default:
+            pa_assert_not_reached();
+            break;
+    }
+
+    return 0;
 }
 
+/* Called by the canceller, so source I/O thread context. */
+void pa_echo_canceller_get_capture_volume(pa_echo_canceller *ec, pa_cvolume *v) {
+    *v = ec->msg->userdata->thread_info.current_volume;
+}
+
+/* Called by the canceller, so source I/O thread context. */
+void pa_echo_canceller_set_capture_volume(pa_echo_canceller *ec, pa_cvolume *v) {
+    if (!pa_cvolume_equal(&ec->msg->userdata->thread_info.current_volume, v)) {
+        pa_cvolume *vol = pa_xnewdup(pa_cvolume, v, 1);
+
+        pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(ec->msg), ECHO_CANCELLER_MESSAGE_SET_VOLUME, vol, 0, NULL,
+                pa_xfree);
+    }
+}
+
+static pa_echo_canceller_method_t get_ec_method_from_string(const char *method) {
+#ifdef HAVE_SPEEX
+    if (pa_streq(method, "speex"))
+        return PA_ECHO_CANCELLER_SPEEX;
+#endif
+#ifdef HAVE_ADRIAN_EC
+    if (pa_streq(method, "adrian"))
+        return PA_ECHO_CANCELLER_ADRIAN;
+#endif
+#ifdef HAVE_WEBRTC
+    if (pa_streq(method, "webrtc"))
+        return PA_ECHO_CANCELLER_WEBRTC;
+#endif
+    return PA_ECHO_CANCELLER_INVALID;
+}
+
+/* Common initialisation bits between module-echo-cancel and the standalone
+ * test program.
+ *
+ * Called from main context. */
+static int init_common(pa_modargs *ma, struct userdata *u, pa_sample_spec *source_ss, pa_channel_map *source_map) {
+    pa_echo_canceller_method_t ec_method;
+
+    if (pa_modargs_get_sample_spec_and_channel_map(ma, source_ss, source_map, PA_CHANNEL_MAP_DEFAULT) < 0) {
+        pa_log("Invalid sample format specification or channel map");
+        goto fail;
+    }
+
+    u->ec = pa_xnew0(pa_echo_canceller, 1);
+    if (!u->ec) {
+        pa_log("Failed to alloc echo canceller");
+        goto fail;
+    }
+
+    if ((ec_method = get_ec_method_from_string(pa_modargs_get_value(ma, "aec_method", DEFAULT_ECHO_CANCELLER))) < 0) {
+        pa_log("Invalid echo canceller implementation");
+        goto fail;
+    }
+
+    u->ec->init = ec_table[ec_method].init;
+    u->ec->play = ec_table[ec_method].play;
+    u->ec->record = ec_table[ec_method].record;
+    u->ec->set_drift = ec_table[ec_method].set_drift;
+    u->ec->run = ec_table[ec_method].run;
+    u->ec->done = ec_table[ec_method].done;
+
+    return 0;
+
+fail:
+    return -1;
+}
+
+/* Called from main context. */
 int pa__init(pa_module*m) {
     struct userdata *u;
     pa_sample_spec source_ss, sink_ss;
@@ -1334,9 +1617,7 @@ int pa__init(pa_module*m) {
     pa_source_new_data source_data;
     pa_sink_new_data sink_data;
     pa_memchunk silence;
-    pa_echo_canceller_method_t ec_method;
-    uint32_t adjust_time_sec;
-    pa_bool_t use_volume_sharing = TRUE;
+    uint32_t temp;
 
     pa_assert(m);
 
@@ -1366,18 +1647,9 @@ int pa__init(pa_module*m) {
     source_ss.rate = DEFAULT_RATE;
     source_ss.channels = DEFAULT_CHANNELS;
     pa_channel_map_init_auto(&source_map, source_ss.channels, PA_CHANNEL_MAP_DEFAULT);
-    if (pa_modargs_get_sample_spec_and_channel_map(ma, &source_ss, &source_map, PA_CHANNEL_MAP_DEFAULT) < 0) {
-        pa_log("Invalid sample format specification or channel map");
-        goto fail;
-    }
 
     sink_ss = sink_master->sample_spec;
     sink_map = sink_master->channel_map;
-
-    if (pa_modargs_get_value_boolean(ma, "use_volume_sharing", &use_volume_sharing) < 0) {
-        pa_log("use_volume_sharing= expects a boolean argument");
-        goto fail;
-    }
 
     u = pa_xnew0(struct userdata, 1);
     if (!u) {
@@ -1389,31 +1661,33 @@ int pa__init(pa_module*m) {
     m->userdata = u;
     u->dead = FALSE;
 
-    u->ec = pa_xnew0(pa_echo_canceller, 1);
-    if (!u->ec) {
-        pa_log("Failed to alloc echo canceller");
+    u->use_volume_sharing = TRUE;
+    if (pa_modargs_get_value_boolean(ma, "use_volume_sharing", &u->use_volume_sharing) < 0) {
+        pa_log("use_volume_sharing= expects a boolean argument");
         goto fail;
     }
 
-    if ((ec_method = get_ec_method_from_string(pa_modargs_get_value(ma, "aec_method", DEFAULT_ECHO_CANCELLER))) < 0) {
-        pa_log("Invalid echo canceller implementation");
-        goto fail;
-    }
-
-    u->ec->init = ec_table[ec_method].init;
-    u->ec->run = ec_table[ec_method].run;
-    u->ec->done = ec_table[ec_method].done;
-
-    adjust_time_sec = DEFAULT_ADJUST_TIME_USEC / PA_USEC_PER_SEC;
-    if (pa_modargs_get_value_u32(ma, "adjust_time", &adjust_time_sec) < 0) {
+    temp = DEFAULT_ADJUST_TIME_USEC / PA_USEC_PER_SEC;
+    if (pa_modargs_get_value_u32(ma, "adjust_time", &temp) < 0) {
         pa_log("Failed to parse adjust_time value");
         goto fail;
     }
 
-    if (adjust_time_sec != DEFAULT_ADJUST_TIME_USEC / PA_USEC_PER_SEC)
-        u->adjust_time = adjust_time_sec * PA_USEC_PER_SEC;
+    if (temp != DEFAULT_ADJUST_TIME_USEC / PA_USEC_PER_SEC)
+        u->adjust_time = temp * PA_USEC_PER_SEC;
     else
         u->adjust_time = DEFAULT_ADJUST_TIME_USEC;
+
+    temp = DEFAULT_ADJUST_TOLERANCE / PA_USEC_PER_MSEC;
+    if (pa_modargs_get_value_u32(ma, "adjust_threshold", &temp) < 0) {
+        pa_log("Failed to parse adjust_threshold value");
+        goto fail;
+    }
+
+    if (temp != DEFAULT_ADJUST_TOLERANCE / PA_USEC_PER_MSEC)
+        u->adjust_threshold = temp * PA_USEC_PER_MSEC;
+    else
+        u->adjust_threshold = DEFAULT_ADJUST_TOLERANCE;
 
     u->save_aec = DEFAULT_SAVE_AEC;
     if (pa_modargs_get_value_boolean(ma, "save_aec", &u->save_aec) < 0) {
@@ -1427,14 +1701,21 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
+    if (init_common(ma, u, &source_ss, &source_map) < 0)
+        goto fail;
+
     u->asyncmsgq = pa_asyncmsgq_new(0);
     u->need_realign = TRUE;
+
     if (u->ec->init) {
         if (!u->ec->init(u->core, u->ec, &source_ss, &source_map, &sink_ss, &sink_map, &u->blocksize, pa_modargs_get_value(ma, "aec_args", NULL))) {
             pa_log("Failed to init AEC engine");
             goto fail;
         }
     }
+
+    if (u->ec->params.drift_compensation)
+        pa_assert(u->ec->set_drift);
 
     /* Create source */
     pa_source_new_data_init(&source_data);
@@ -1448,7 +1729,6 @@ int pa__init(pa_module*m) {
     pa_proplist_sets(source_data.proplist, PA_PROP_DEVICE_CLASS, "filter");
     if (!u->autoloaded)
         pa_proplist_sets(source_data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
-    pa_proplist_sets(source_data.proplist, "device.echo-cancel.name", source_data.name);
 
     if (pa_modargs_get_proplist(ma, "source_properties", source_data.proplist, PA_UPDATE_REPLACE) < 0) {
         pa_log("Invalid properties");
@@ -1457,14 +1737,16 @@ int pa__init(pa_module*m) {
     }
 
     if ((u->source_auto_desc = !pa_proplist_contains(source_data.proplist, PA_PROP_DEVICE_DESCRIPTION))) {
-        const char *z;
+        const char *y, *z;
 
+        y = pa_proplist_gets(sink_master->proplist, PA_PROP_DEVICE_DESCRIPTION);
         z = pa_proplist_gets(source_master->proplist, PA_PROP_DEVICE_DESCRIPTION);
-        pa_proplist_setf(source_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Echo-Cancel Source %s on %s", source_data.name, z ? z : source_master->name);
+        pa_proplist_setf(source_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "%s (echo cancelled with %s)",
+                z ? z : source_master->name, y ? y : sink_master->name);
     }
 
     u->source = pa_source_new(m->core, &source_data, (source_master->flags & (PA_SOURCE_LATENCY | PA_SOURCE_DYNAMIC_LATENCY))
-                                                     | (use_volume_sharing ? PA_SOURCE_SHARE_VOLUME_WITH_MASTER : 0));
+                                                     | (u->use_volume_sharing ? PA_SOURCE_SHARE_VOLUME_WITH_MASTER : 0));
     pa_source_new_data_done(&source_data);
 
     if (!u->source) {
@@ -1477,7 +1759,7 @@ int pa__init(pa_module*m) {
     u->source->update_requested_latency = source_update_requested_latency_cb;
     pa_source_set_get_mute_callback(u->source, source_get_mute_cb);
     pa_source_set_set_mute_callback(u->source, source_set_mute_cb);
-    if (!use_volume_sharing) {
+    if (!u->use_volume_sharing) {
         pa_source_set_get_volume_callback(u->source, source_get_volume_cb);
         pa_source_set_set_volume_callback(u->source, source_set_volume_cb);
         pa_source_enable_decibel_volume(u->source, TRUE);
@@ -1498,7 +1780,6 @@ int pa__init(pa_module*m) {
     pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_CLASS, "filter");
     if (!u->autoloaded)
         pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
-    pa_proplist_sets(sink_data.proplist, "device.echo-cancel.name", sink_data.name);
 
     if (pa_modargs_get_proplist(ma, "sink_properties", sink_data.proplist, PA_UPDATE_REPLACE) < 0) {
         pa_log("Invalid properties");
@@ -1507,14 +1788,16 @@ int pa__init(pa_module*m) {
     }
 
     if ((u->sink_auto_desc = !pa_proplist_contains(sink_data.proplist, PA_PROP_DEVICE_DESCRIPTION))) {
-        const char *z;
+        const char *y, *z;
 
+        y = pa_proplist_gets(source_master->proplist, PA_PROP_DEVICE_DESCRIPTION);
         z = pa_proplist_gets(sink_master->proplist, PA_PROP_DEVICE_DESCRIPTION);
-        pa_proplist_setf(sink_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "Echo-Cancel Sink %s on %s", sink_data.name, z ? z : sink_master->name);
+        pa_proplist_setf(sink_data.proplist, PA_PROP_DEVICE_DESCRIPTION, "%s (echo cancelled with %s)",
+                z ? z : sink_master->name, y ? y : source_master->name);
     }
 
     u->sink = pa_sink_new(m->core, &sink_data, (sink_master->flags & (PA_SINK_LATENCY | PA_SINK_DYNAMIC_LATENCY))
-                                               | (use_volume_sharing ? PA_SINK_SHARE_VOLUME_WITH_MASTER : 0));
+                                               | (u->use_volume_sharing ? PA_SINK_SHARE_VOLUME_WITH_MASTER : 0));
     pa_sink_new_data_done(&sink_data);
 
     if (!u->sink) {
@@ -1527,7 +1810,7 @@ int pa__init(pa_module*m) {
     u->sink->update_requested_latency = sink_update_requested_latency_cb;
     u->sink->request_rewind = sink_request_rewind_cb;
     pa_sink_set_set_mute_callback(u->sink, sink_set_mute_cb);
-    if (!use_volume_sharing) {
+    if (!u->use_volume_sharing) {
         pa_sink_set_set_volume_callback(u->sink, sink_set_volume_cb);
         pa_sink_enable_decibel_volume(u->sink, TRUE);
     }
@@ -1604,7 +1887,7 @@ int pa__init(pa_module*m) {
     u->sink_input->state_change = sink_input_state_change_cb;
     u->sink_input->may_move_to = sink_input_may_move_to_cb;
     u->sink_input->moving = sink_input_moving_cb;
-    if (!use_volume_sharing)
+    if (!u->use_volume_sharing)
         u->sink_input->volume_changed = sink_input_volume_changed_cb;
     u->sink_input->mute_changed = sink_input_mute_changed_cb;
     u->sink_input->userdata = u;
@@ -1613,10 +1896,10 @@ int pa__init(pa_module*m) {
 
     pa_sink_input_get_silence(u->sink_input, &silence);
 
-    u->source_memblockq = pa_memblockq_new(0, MEMBLOCKQ_MAXLENGTH, 0,
-        pa_frame_size(&source_ss), 1, 1, 0, &silence);
-    u->sink_memblockq = pa_memblockq_new(0, MEMBLOCKQ_MAXLENGTH, 0,
-        pa_frame_size(&sink_ss), 1, 1, 0, &silence);
+    u->source_memblockq = pa_memblockq_new("module-echo-cancel source_memblockq", 0, MEMBLOCKQ_MAXLENGTH, 0,
+        &source_ss, 1, 1, 0, &silence);
+    u->sink_memblockq = pa_memblockq_new("module-echo-cancel sink_memblockq", 0, MEMBLOCKQ_MAXLENGTH, 0,
+        &sink_ss, 1, 1, 0, &silence);
 
     pa_memblock_unref(silence.memblock);
 
@@ -1625,11 +1908,14 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    /* our source and sink are not suspended when we create them */
-    u->active_mask = 3;
-
-    if (u->adjust_time > 0)
+    if (u->adjust_time > 0 && !u->ec->params.drift_compensation)
         u->time_event = pa_core_rttime_new(m->core, pa_rtclock_now() + u->adjust_time, time_callback, u);
+    else if (u->ec->params.drift_compensation) {
+        pa_log_info("Canceller does drift compensation -- built-in compensation will be disabled");
+        u->adjust_time = 0;
+        /* Perform resync just once to give the canceller a leg up */
+        pa_atomic_store(&u->request_resync, 1);
+    }
 
     if (u->save_aec) {
         pa_log("Creating AEC files in /tmp");
@@ -1642,14 +1928,24 @@ int pa__init(pa_module*m) {
         u->canceled_file = fopen("/tmp/aec_out.sw", "wb");
         if (u->canceled_file == NULL)
             perror ("fopen failed");
+        if (u->ec->params.drift_compensation) {
+            u->drift_file = fopen("/tmp/aec_drift.txt", "w");
+            if (u->drift_file == NULL)
+                perror ("fopen failed");
+        }
     }
+
+    u->ec->msg = pa_msgobject_new(pa_echo_canceller_msg);
+    u->ec->msg->parent.process_msg = canceller_process_msg_cb;
+    u->ec->msg->userdata = u;
+
+    u->thread_info.current_volume = u->source->reference_volume;
 
     pa_sink_put(u->sink);
     pa_source_put(u->source);
 
     pa_sink_input_put(u->sink_input);
     pa_source_output_put(u->source_output);
-
     pa_modargs_free(ma);
 
     return 0;
@@ -1663,6 +1959,7 @@ fail:
     return -1;
 }
 
+/* Called from main context. */
 int pa__get_n_used(pa_module *m) {
     struct userdata *u;
 
@@ -1672,6 +1969,7 @@ int pa__get_n_used(pa_module *m) {
     return pa_sink_linked_by(u->sink) + pa_source_linked_by(u->source);
 }
 
+/* Called from main context. */
 void pa__done(pa_module*m) {
     struct userdata *u;
 
@@ -1730,7 +2028,184 @@ void pa__done(pa_module*m) {
             fclose(u->captured_file);
         if (u->canceled_file)
             fclose(u->canceled_file);
+        if (u->drift_file)
+            fclose(u->drift_file);
     }
 
     pa_xfree(u);
 }
+
+#ifdef ECHO_CANCEL_TEST
+/*
+ * Stand-alone test program for running in the canceller on pre-recorded files.
+ */
+int main(int argc, char* argv[]) {
+    struct userdata u;
+    pa_sample_spec source_ss, sink_ss;
+    pa_channel_map source_map, sink_map;
+    pa_modargs *ma = NULL;
+    uint8_t *rdata = NULL, *pdata = NULL, *cdata = NULL;
+    int unused PA_GCC_UNUSED;
+    int ret = 0, i;
+    char c;
+    float drift;
+
+    pa_memzero(&u, sizeof(u));
+
+    if (argc < 4 || argc > 7) {
+        goto usage;
+    }
+
+    u.captured_file = fopen(argv[2], "rb");
+    if (u.captured_file == NULL) {
+        perror ("fopen failed");
+        goto fail;
+    }
+    u.played_file = fopen(argv[1], "rb");
+    if (u.played_file == NULL) {
+        perror ("fopen failed");
+        goto fail;
+    }
+    u.canceled_file = fopen(argv[3], "wb");
+    if (u.canceled_file == NULL) {
+        perror ("fopen failed");
+        goto fail;
+    }
+
+    u.core = pa_xnew0(pa_core, 1);
+    u.core->cpu_info.cpu_type = PA_CPU_X86;
+    u.core->cpu_info.flags.x86 |= PA_CPU_X86_SSE;
+
+    if (!(ma = pa_modargs_new(argc > 4 ? argv[4] : NULL, valid_modargs))) {
+        pa_log("Failed to parse module arguments.");
+        goto fail;
+    }
+
+    source_ss.format = PA_SAMPLE_S16LE;
+    source_ss.rate = DEFAULT_RATE;
+    source_ss.channels = DEFAULT_CHANNELS;
+    pa_channel_map_init_auto(&source_map, source_ss.channels, PA_CHANNEL_MAP_DEFAULT);
+
+    if (init_common(ma, &u, &source_ss, &source_map) < 0)
+        goto fail;
+
+    if (!u.ec->init(u.core, u.ec, &source_ss, &source_map, &sink_ss, &sink_map, &u.blocksize,
+                     (argc > 4) ? argv[5] : NULL )) {
+        pa_log("Failed to init AEC engine");
+        goto fail;
+    }
+
+    if (u.ec->params.drift_compensation) {
+        if (argc < 7) {
+            pa_log("Drift compensation enabled but drift file not specified");
+            goto fail;
+        }
+
+        u.drift_file = fopen(argv[6], "rt");
+
+        if (u.drift_file == NULL) {
+            perror ("fopen failed");
+            goto fail;
+        }
+    }
+
+    rdata = pa_xmalloc(u.blocksize);
+    pdata = pa_xmalloc(u.blocksize);
+    cdata = pa_xmalloc(u.blocksize);
+
+    if (!u.ec->params.drift_compensation) {
+        while (fread(rdata, u.blocksize, 1, u.captured_file) > 0) {
+            if (fread(pdata, u.blocksize, 1, u.played_file) == 0) {
+                perror("Played file ended before captured file");
+                goto fail;
+            }
+
+            u.ec->run(u.ec, rdata, pdata, cdata);
+
+            unused = fwrite(cdata, u.blocksize, 1, u.canceled_file);
+        }
+    } else {
+        while (fscanf(u.drift_file, "%c", &c) > 0) {
+            switch (c) {
+                case 'd':
+                    if (!fscanf(u.drift_file, "%a", &drift)) {
+                        perror("Drift file incomplete");
+                        goto fail;
+                    }
+
+                    u.ec->set_drift(u.ec, drift);
+
+                    break;
+
+                case 'c':
+                    if (!fscanf(u.drift_file, "%d", &i)) {
+                        perror("Drift file incomplete");
+                        goto fail;
+                    }
+
+                    if (fread(rdata, i, 1, u.captured_file) <= 0) {
+                        perror("Captured file ended prematurely");
+                        goto fail;
+                    }
+
+                    u.ec->record(u.ec, rdata, cdata);
+
+                    unused = fwrite(cdata, i, 1, u.canceled_file);
+
+                    break;
+
+                case 'p':
+                    if (!fscanf(u.drift_file, "%d", &i)) {
+                        perror("Drift file incomplete");
+                        goto fail;
+                    }
+
+                    if (fread(pdata, i, 1, u.played_file) <= 0) {
+                        perror("Played file ended prematurely");
+                        goto fail;
+                    }
+
+                    u.ec->play(u.ec, pdata);
+
+                    break;
+            }
+        }
+
+        if (fread(rdata, i, 1, u.captured_file) > 0)
+            pa_log("All capture data was not consumed");
+        if (fread(pdata, i, 1, u.played_file) > 0)
+            pa_log("All playback data was not consumed");
+    }
+
+    u.ec->done(u.ec);
+
+out:
+    if (u.captured_file)
+        fclose(u.captured_file);
+    if (u.played_file)
+        fclose(u.played_file);
+    if (u.canceled_file)
+        fclose(u.canceled_file);
+    if (u.drift_file)
+        fclose(u.drift_file);
+
+    pa_xfree(rdata);
+    pa_xfree(pdata);
+    pa_xfree(cdata);
+
+    pa_xfree(u.ec);
+    pa_xfree(u.core);
+
+    if (ma)
+        pa_modargs_free(ma);
+
+    return ret;
+
+usage:
+    pa_log("Usage: %s play_file rec_file out_file [module args] [aec_args] [drift_file]", argv[0]);
+
+fail:
+    ret = -1;
+    goto out;
+}
+#endif /* ECHO_CANCEL_TEST */

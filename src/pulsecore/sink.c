@@ -106,6 +106,13 @@ void pa_sink_new_data_set_channel_map(pa_sink_new_data *data, const pa_channel_m
         data->channel_map = *map;
 }
 
+void pa_sink_new_data_set_alternate_sample_rate(pa_sink_new_data *data, const uint32_t alternate_sample_rate) {
+    pa_assert(data);
+
+    data->alternate_sample_rate_is_set = TRUE;
+    data->alternate_sample_rate = alternate_sample_rate;
+}
+
 void pa_sink_new_data_set_volume(pa_sink_new_data *data, const pa_cvolume *volume) {
     pa_assert(data);
 
@@ -132,40 +139,13 @@ void pa_sink_new_data_done(pa_sink_new_data *data) {
 
     pa_proplist_free(data->proplist);
 
-    if (data->ports) {
-        pa_device_port *p;
-
-        while ((p = pa_hashmap_steal_first(data->ports)))
-            pa_device_port_free(p);
-
-        pa_hashmap_free(data->ports, NULL, NULL);
-    }
+    if (data->ports)
+        pa_device_port_hashmap_free(data->ports);
 
     pa_xfree(data->name);
     pa_xfree(data->active_port);
 }
 
-pa_device_port *pa_device_port_new(const char *name, const char *description, size_t extra) {
-    pa_device_port *p;
-
-    pa_assert(name);
-
-    p = pa_xmalloc(PA_ALIGN(sizeof(pa_device_port)) + extra);
-    p->name = pa_xstrdup(name);
-    p->description = pa_xstrdup(description);
-
-    p->priority = 0;
-
-    return p;
-}
-
-void pa_device_port_free(pa_device_port *p) {
-    pa_assert(p);
-
-    pa_xfree(p->name);
-    pa_xfree(p->description);
-    pa_xfree(p);
-}
 
 /* Called from main context */
 static void reset_callbacks(pa_sink *s) {
@@ -182,6 +162,7 @@ static void reset_callbacks(pa_sink *s) {
     s->set_port = NULL;
     s->get_formats = NULL;
     s->set_formats = NULL;
+    s->update_rate = NULL;
 }
 
 /* Called from main context */
@@ -267,6 +248,7 @@ pa_sink* pa_sink_new(
     s->flags = flags;
     s->priority = 0;
     s->suspend_cause = 0;
+    pa_sink_set_mixer_dirty(s, FALSE);
     s->name = pa_xstrdup(name);
     s->proplist = pa_proplist_copy(data->proplist);
     s->driver = pa_xstrdup(pa_path_get_filename(data->driver));
@@ -277,6 +259,17 @@ pa_sink* pa_sink_new(
 
     s->sample_spec = data->sample_spec;
     s->channel_map = data->channel_map;
+    s->default_sample_rate = s->sample_spec.rate;
+
+    if (data->alternate_sample_rate_is_set)
+        s->alternate_sample_rate = data->alternate_sample_rate;
+    else
+        s->alternate_sample_rate = s->core->alternate_sample_rate;
+
+    if (s->sample_spec.rate == s->alternate_sample_rate) {
+        pa_log_warn("Default and alternate sample rates are the same.");
+        s->alternate_sample_rate = 0;
+    }
 
     s->inputs = pa_idxset_new(NULL, NULL);
     s->n_corked = 0;
@@ -364,6 +357,7 @@ pa_sink* pa_sink_new(
     pa_source_new_data_init(&source_data);
     pa_source_new_data_set_sample_spec(&source_data, &s->sample_spec);
     pa_source_new_data_set_channel_map(&source_data, &s->channel_map);
+    pa_source_new_data_set_alternate_sample_rate(&source_data, s->alternate_sample_rate);
     source_data.name = pa_sprintf_malloc("%s.monitor", name);
     source_data.driver = data->driver;
     source_data.module = data->module;
@@ -742,14 +736,8 @@ static void sink_free(pa_object *o) {
     if (s->proplist)
         pa_proplist_free(s->proplist);
 
-    if (s->ports) {
-        pa_device_port *p;
-
-        while ((p = pa_hashmap_steal_first(s->ports)))
-            pa_device_port_free(p);
-
-        pa_hashmap_free(s->ports, NULL, NULL);
-    }
+    if (s->ports)
+        pa_device_port_hashmap_free(s->ports);
 
     pa_xfree(s);
 }
@@ -808,6 +796,12 @@ int pa_sink_update_status(pa_sink*s) {
     return sink_set_state(s, pa_sink_used_by(s) ? PA_SINK_RUNNING : PA_SINK_IDLE);
 }
 
+/* Called from any context - must be threadsafe */
+void pa_sink_set_mixer_dirty(pa_sink *s, pa_bool_t is_dirty)
+{
+    pa_atomic_store(&s->mixer_dirty, is_dirty ? 1 : 0);
+}
+
 /* Called from main context */
 int pa_sink_suspend(pa_sink *s, pa_bool_t suspend, pa_suspend_cause_t cause) {
     pa_sink_assert_ref(s);
@@ -821,6 +815,27 @@ int pa_sink_suspend(pa_sink *s, pa_bool_t suspend, pa_suspend_cause_t cause) {
     } else {
         s->suspend_cause &= ~cause;
         s->monitor_source->suspend_cause &= ~cause;
+    }
+
+    if (!(s->suspend_cause & PA_SUSPEND_SESSION) && (pa_atomic_load(&s->mixer_dirty) != 0)) {
+        /* This might look racy but isn't: If somebody sets mixer_dirty exactly here,
+           it'll be handled just fine. */
+        pa_sink_set_mixer_dirty(s, FALSE);
+        pa_log_debug("Mixer is now accessible. Updating alsa mixer settings.");
+        if (s->active_port && s->set_port) {
+            if (s->flags & PA_SINK_DEFERRED_VOLUME) {
+                struct sink_message_set_port msg = { .port = s->active_port, .ret = 0 };
+                pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_PORT, &msg, 0, NULL) == 0);
+            }
+            else
+                s->set_port(s, s->active_port);
+        }
+        else {
+            if (s->set_mute)
+                s->set_mute(s);
+            if (s->set_volume)
+                s->set_volume(s);
+        }
     }
 
     if ((pa_sink_get_state(s) == PA_SINK_SUSPENDED) == !!s->suspend_cause)
@@ -876,7 +891,7 @@ void pa_sink_move_all_finish(pa_sink *s, pa_queue *q, pa_bool_t save) {
         pa_sink_input_unref(i);
     }
 
-    pa_queue_free(q, NULL, NULL);
+    pa_queue_free(q, NULL);
 }
 
 /* Called from main context */
@@ -891,7 +906,7 @@ void pa_sink_move_all_fail(pa_queue *q) {
         pa_sink_input_unref(i);
     }
 
-    pa_queue_free(q, NULL, NULL);
+    pa_queue_free(q, NULL);
 }
 
 /* Called from IO thread context */
@@ -1310,6 +1325,83 @@ void pa_sink_render_full(pa_sink *s, size_t length, pa_memchunk *result) {
     }
 
     pa_sink_unref(s);
+}
+
+/* Called from main thread */
+pa_bool_t pa_sink_update_rate(pa_sink *s, uint32_t rate, pa_bool_t passthrough)
+{
+    if (s->update_rate) {
+        uint32_t desired_rate = rate;
+        uint32_t default_rate = s->default_sample_rate;
+        uint32_t alternate_rate = s->alternate_sample_rate;
+        uint32_t idx;
+        pa_sink_input *i;
+        pa_bool_t use_alternate = FALSE;
+
+        if (PA_UNLIKELY(default_rate == alternate_rate)) {
+            pa_log_warn("Default and alternate sample rates are the same.");
+            return FALSE;
+        }
+
+        if (PA_SINK_IS_RUNNING(s->state)) {
+            pa_log_info("Cannot update rate, SINK_IS_RUNNING, will keep using %u Hz",
+                        s->sample_spec.rate);
+            return FALSE;
+        }
+
+        if (s->monitor_source) {
+            if (PA_SOURCE_IS_RUNNING(s->monitor_source->state) == TRUE) {
+                pa_log_info("Cannot update rate, monitor source is RUNNING");
+                return FALSE;
+            }
+        }
+
+        if (PA_UNLIKELY (desired_rate < 8000 ||
+                         desired_rate > PA_RATE_MAX))
+            return FALSE;
+
+        if (!passthrough) {
+            pa_assert(default_rate % 4000 || default_rate % 11025);
+            pa_assert(alternate_rate % 4000 || alternate_rate % 11025);
+
+            if (default_rate % 4000) {
+                /* default is a 11025 multiple */
+                if ((alternate_rate % 4000 == 0) && (desired_rate % 4000 == 0))
+                    use_alternate=TRUE;
+            } else {
+                /* default is 4000 multiple */
+                if ((alternate_rate % 11025 == 0) && (desired_rate % 11025 == 0))
+                    use_alternate=TRUE;
+            }
+
+            if (use_alternate)
+                desired_rate = alternate_rate;
+            else
+                desired_rate = default_rate;
+        } else {
+            desired_rate = rate; /* use stream sampling rate, discard default/alternate settings */
+        }
+
+        if (!passthrough && pa_sink_used_by(s) > 0)
+            return FALSE;
+
+        pa_sink_suspend(s, TRUE, PA_SUSPEND_IDLE); /* needed before rate update, will be resumed automatically */
+
+        if (s->update_rate(s, desired_rate) == TRUE) {
+            /* update monitor source as well */
+            if (s->monitor_source && !passthrough)
+                pa_source_update_rate(s->monitor_source, desired_rate, FALSE);
+            pa_log_info("Changed sampling rate successfully");
+
+            PA_IDXSET_FOREACH(i, s->inputs, idx) {
+                if (i->state == PA_SINK_INPUT_CORKED)
+                    pa_sink_input_update_rate(i);
+            }
+
+            return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 /* Called from main thread */
@@ -1855,13 +1947,7 @@ void pa_sink_set_volume(
         }
 
         pa_cvolume_remap(&new_reference_volume, &s->channel_map, &root_sink->channel_map);
-    }
 
-    /* If volume is NULL we synchronize the sink's real and reference
-     * volumes with the stream volumes. If it is not NULL we update
-     * the reference_volume with it. */
-
-    if (volume) {
         if (update_reference_volume(root_sink, &new_reference_volume, &root_sink->channel_map, save)) {
             if (pa_sink_flat_volume_enabled(root_sink)) {
                 /* OK, propagate this volume change back to the inputs */
@@ -1874,6 +1960,9 @@ void pa_sink_set_volume(
         }
 
     } else {
+        /* If volume is NULL we synchronize the sink's real and
+         * reference volumes with the stream volumes. */
+
         pa_assert(pa_sink_flat_volume_enabled(root_sink));
 
         /* Ok, let's determine the new real volume */
@@ -2403,6 +2492,46 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
                 pa_usec_t usec = 0;
                 size_t sink_nbytes, total_nbytes;
 
+                /* The old sink probably has some audio from this
+                 * stream in its buffer. We want to "take it back" as
+                 * much as possible and play it to the new sink. We
+                 * don't know at this point how much the old sink can
+                 * rewind. We have to pick something, and that
+                 * something is the full latency of the old sink here.
+                 * So we rewind the stream buffer by the sink latency
+                 * amount, which may be more than what we should
+                 * rewind. This can result in a chunk of audio being
+                 * played both to the old sink and the new sink.
+                 *
+                 * FIXME: Fix this code so that we don't have to make
+                 * guesses about how much the sink will actually be
+                 * able to rewind. If someone comes up with a solution
+                 * for this, something to note is that the part of the
+                 * latency that the old sink couldn't rewind should
+                 * ideally be compensated after the stream has moved
+                 * to the new sink by adding silence. The new sink
+                 * most likely can't start playing the moved stream
+                 * immediately, and that gap should be removed from
+                 * the "compensation silence" (at least at the time of
+                 * writing this, the move finish code will actually
+                 * already take care of dropping the new sink's
+                 * unrewindable latency, so taking into account the
+                 * unrewindable latency of the old sink is the only
+                 * problem).
+                 *
+                 * The render_memblockq contents are discarded,
+                 * because when the sink changes, the format of the
+                 * audio stored in the render_memblockq may change
+                 * too, making the stored audio invalid. FIXME:
+                 * However, the read and write indices are moved back
+                 * the same amount, so if they are not the same now,
+                 * they won't be the same after the rewind either. If
+                 * the write index of the render_memblockq is ahead of
+                 * the read index, then the render_memblockq will feed
+                 * the new sink some silence first, which it shouldn't
+                 * do. The write index should be flushed to be the
+                 * same as the read index. */
+
                 /* Get the latency of the sink */
                 usec = pa_sink_get_latency_within_thread(s);
                 sink_nbytes = pa_usec_to_bytes(usec, &s->sample_spec);
@@ -2455,6 +2584,24 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
             if (i->thread_info.state != PA_SINK_INPUT_CORKED) {
                 pa_usec_t usec = 0;
                 size_t nbytes;
+
+                /* In the ideal case the new sink would start playing
+                 * the stream immediately. That requires the sink to
+                 * be able to rewind all of its latency, which usually
+                 * isn't possible, so there will probably be some gap
+                 * before the moved stream becomes audible. We then
+                 * have two possibilities: 1) start playing the stream
+                 * from where it is now, or 2) drop the unrewindable
+                 * latency of the sink from the stream. With option 1
+                 * we won't lose any audio but the stream will have a
+                 * pause. With option 2 we may lose some audio but the
+                 * stream time will be somewhat in sync with the wall
+                 * clock. Lennart seems to have chosen option 2 (one
+                 * of the reasons might have been that option 1 is
+                 * actually much harder to implement), so we drop the
+                 * latency of the new sink from the moved stream and
+                 * hope that the sink will undo most of that in the
+                 * rewind. */
 
                 /* Get the latency of the sink */
                 usec = pa_sink_get_latency_within_thread(s);
@@ -3117,7 +3264,7 @@ int pa_sink_set_port(pa_sink *s, const char *name, pa_bool_t save) {
         return -PA_ERR_NOTIMPLEMENTED;
     }
 
-    if (!s->ports)
+    if (!s->ports || !name)
         return -PA_ERR_NOENTITY;
 
     if (!(port = pa_hashmap_get(s->ports, name)))
@@ -3227,7 +3374,7 @@ pa_bool_t pa_device_init_description(pa_proplist *p) {
 
     if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_FORM_FACTOR)))
         if (pa_streq(s, "internal"))
-            d = _("Internal Audio");
+            d = _("Built-in Audio");
 
     if (!d)
         if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_CLASS)))
@@ -3243,7 +3390,7 @@ pa_bool_t pa_device_init_description(pa_proplist *p) {
     k = pa_proplist_gets(p, PA_PROP_DEVICE_PROFILE_DESCRIPTION);
 
     if (d && k)
-        pa_proplist_setf(p, PA_PROP_DEVICE_DESCRIPTION, _("%s %s"), d, k);
+        pa_proplist_setf(p, PA_PROP_DEVICE_DESCRIPTION, "%s %s", d, k);
     else if (d)
         pa_proplist_sets(p, PA_PROP_DEVICE_DESCRIPTION, d);
 

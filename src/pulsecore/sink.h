@@ -24,7 +24,6 @@
 ***/
 
 typedef struct pa_sink pa_sink;
-typedef struct pa_device_port pa_device_port;
 typedef struct pa_sink_volume_change pa_sink_volume_change;
 
 #include <inttypes.h>
@@ -43,6 +42,7 @@ typedef struct pa_sink_volume_change pa_sink_volume_change;
 #include <pulsecore/asyncmsgq.h>
 #include <pulsecore/msgobject.h>
 #include <pulsecore/rtpoll.h>
+#include <pulsecore/device-port.h>
 #include <pulsecore/card.h>
 #include <pulsecore/queue.h>
 #include <pulsecore/thread-mq.h>
@@ -54,17 +54,6 @@ typedef struct pa_sink_volume_change pa_sink_volume_change;
 static inline pa_bool_t PA_SINK_IS_LINKED(pa_sink_state_t x) {
     return x == PA_SINK_RUNNING || x == PA_SINK_IDLE || x == PA_SINK_SUSPENDED;
 }
-
-struct pa_device_port {
-    char *name;
-    char *description;
-
-    unsigned priority;
-
-    /* .. followed by some implementation specific data */
-};
-
-#define PA_DEVICE_PORT_DATA(d) ((void*) ((uint8_t*) d + PA_ALIGN(sizeof(pa_device_port))))
 
 /* A generic definition for void callback functions */
 typedef void(*pa_sink_cb_t)(pa_sink *s);
@@ -88,6 +77,8 @@ struct pa_sink {
 
     pa_sample_spec sample_spec;
     pa_channel_map channel_map;
+    uint32_t default_sample_rate;
+    uint32_t alternate_sample_rate;
 
     pa_idxset *inputs;
     unsigned n_corked;
@@ -120,6 +111,7 @@ struct pa_sink {
 
     pa_hashmap *ports;
     pa_device_port *active_port;
+    pa_atomic_t mixer_dirty;
 
     unsigned priority;
 
@@ -219,8 +211,8 @@ struct pa_sink {
      * thread context. */
     pa_sink_cb_t update_requested_latency; /* may be NULL */
 
-    /* Called whenever the port shall be changed. Called from main
-     * thread. */
+    /* Called whenever the port shall be changed. Called from IO
+     * thread if deferred volumes are enabled, and main thread otherwise. */
     int (*set_port)(pa_sink *s, pa_device_port *port); /* may be NULL */
 
     /* Called to get the list of formats supported by the sink, sorted
@@ -232,6 +224,10 @@ struct pa_sink {
      * FALSE otherwise (for example when an unsupportable format is
      * set). Makes a copy of the formats passed in. */
     pa_bool_t (*set_formats)(pa_sink *s, pa_idxset *formats); /* may be NULL */
+
+    /* Called whenever the sampling frequency shall be changed. Called from
+     * main thread. */
+    pa_bool_t (*update_rate)(pa_sink *s, uint32_t rate);
 
     /* Contains copies of the above data so that the real-time worker
      * thread can work without access locking */
@@ -337,11 +333,13 @@ typedef struct pa_sink_new_data {
 
     pa_sample_spec sample_spec;
     pa_channel_map channel_map;
+    uint32_t alternate_sample_rate;
     pa_cvolume volume;
     pa_bool_t muted :1;
 
     pa_bool_t sample_spec_is_set:1;
     pa_bool_t channel_map_is_set:1;
+    pa_bool_t alternate_sample_rate_is_set:1;
     pa_bool_t volume_is_set:1;
     pa_bool_t muted_is_set:1;
 
@@ -356,6 +354,7 @@ pa_sink_new_data* pa_sink_new_data_init(pa_sink_new_data *data);
 void pa_sink_new_data_set_name(pa_sink_new_data *data, const char *name);
 void pa_sink_new_data_set_sample_spec(pa_sink_new_data *data, const pa_sample_spec *spec);
 void pa_sink_new_data_set_channel_map(pa_sink_new_data *data, const pa_channel_map *map);
+void pa_sink_new_data_set_alternate_sample_rate(pa_sink_new_data *data, const uint32_t alternate_sample_rate);
 void pa_sink_new_data_set_volume(pa_sink_new_data *data, const pa_cvolume *volume);
 void pa_sink_new_data_set_muted(pa_sink_new_data *data, pa_bool_t mute);
 void pa_sink_new_data_set_port(pa_sink_new_data *data, const char *port);
@@ -403,6 +402,8 @@ unsigned pa_device_init_priority(pa_proplist *p);
 
 /**** May be called by everyone, from main context */
 
+pa_bool_t pa_sink_update_rate(pa_sink *s, uint32_t rate, pa_bool_t passthrough);
+
 /* The returned value is supposed to be in the time domain of the sound card! */
 pa_usec_t pa_sink_get_latency(pa_sink *s);
 pa_usec_t pa_sink_get_requested_latency(pa_sink *s);
@@ -438,6 +439,7 @@ pa_bool_t pa_sink_get_mute(pa_sink *sink, pa_bool_t force_refresh);
 pa_bool_t pa_sink_update_proplist(pa_sink *s, pa_update_mode_t mode, pa_proplist *p);
 
 int pa_sink_set_port(pa_sink *s, const char *name, pa_bool_t save);
+void pa_sink_set_mixer_dirty(pa_sink *s, pa_bool_t is_dirty);
 
 unsigned pa_sink_linked_by(pa_sink *s); /* Number of connected streams */
 unsigned pa_sink_used_by(pa_sink *s); /* Number of connected streams which are not corked */
@@ -487,9 +489,6 @@ void pa_sink_request_rewind(pa_sink*s, size_t nbytes);
 void pa_sink_invalidate_requested_latency(pa_sink *s, pa_bool_t dynamic);
 
 pa_usec_t pa_sink_get_latency_within_thread(pa_sink *s);
-
-pa_device_port *pa_device_port_new(const char *name, const char *description, size_t extra);
-void pa_device_port_free(pa_device_port *p);
 
 /* Verify that we called in IO context (aka 'thread context), or that
  * the sink is not yet set up, i.e. the thread not set up yet. See

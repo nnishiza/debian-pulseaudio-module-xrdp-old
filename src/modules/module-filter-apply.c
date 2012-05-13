@@ -35,6 +35,7 @@
 #include <pulsecore/hook-list.h>
 #include <pulsecore/sink-input.h>
 #include <pulsecore/modargs.h>
+#include <pulsecore/proplist-util.h>
 
 #include "module-filter-apply-symdef.h"
 
@@ -57,9 +58,10 @@ static const char* const valid_modargs[] = {
 struct filter {
     char *name;
     uint32_t module_index;
-    pa_bool_t is_sink;
-    pa_object *parent_obj;      /* source or sink that the filter is connected to */
-    pa_object *obj;             /* source or sink of the filter */
+    pa_sink *sink;
+    pa_sink *sink_master;
+    pa_source *source;
+    pa_source *source_master;
 };
 
 struct userdata {
@@ -83,17 +85,19 @@ struct userdata {
 static unsigned filter_hash(const void *p) {
     const struct filter *f = p;
 
-    if (f->is_sink)
-        return (unsigned) (PA_SINK(f->parent_obj)->index + pa_idxset_string_hash_func(f->name));
+    if (f->sink_master && !f->source_master)
+        return (unsigned) (f->sink_master->index + pa_idxset_string_hash_func(f->name));
+    else if (!f->sink_master && f->source_master)
+        return (unsigned) ((f->source_master->index << 16) + pa_idxset_string_hash_func(f->name));
     else
-        return (unsigned) ((PA_SOURCE(f->parent_obj)->index << 16) + pa_idxset_string_hash_func(f->name));
+        return (unsigned) (f->sink_master->index + (f->source_master->index << 16) + pa_idxset_string_hash_func(f->name));
 }
 
 static int filter_compare(const void *a, const void *b) {
     const struct filter *fa = a, *fb = b;
     int r;
 
-    if (fa->parent_obj != fb->parent_obj)
+    if (fa->sink_master != fb->sink_master || fa->source_master != fb->source_master)
         return 1;
     if ((r = strcmp(fa->name, fb->name)))
         return r;
@@ -101,15 +105,19 @@ static int filter_compare(const void *a, const void *b) {
     return 0;
 }
 
-static struct filter *filter_new(const char *name, pa_object* parent_obj, pa_bool_t is_sink) {
+static struct filter *filter_new(const char *name, pa_sink *sink, pa_source *source) {
     struct filter *f;
+
+    pa_assert(sink || source);
 
     f = pa_xnew(struct filter, 1);
     f->name = pa_xstrdup(name);
-    pa_assert_se(f->parent_obj = parent_obj);
-    f->is_sink = is_sink;
+    f->sink_master = sink;
+    f->source_master = source;
     f->module_index = PA_INVALID_INDEX;
-    f->obj = NULL;
+    f->sink = NULL;
+    f->source = NULL;
+
     return f;
 }
 
@@ -140,12 +148,99 @@ static const char* should_filter(pa_object *o, pa_bool_t is_sink_input) {
     return NULL;
 }
 
-static pa_bool_t nothing_attached(pa_object *obj, pa_bool_t is_sink)
-{
-    if (is_sink)
-        return pa_idxset_isempty(PA_SINK(obj)->inputs);
+static pa_bool_t should_group_filter(struct filter *filter) {
+    return pa_streq(filter->name, "echo-cancel");
+}
+
+static char* get_group(pa_object *o, pa_bool_t is_sink_input) {
+    pa_proplist *pl;
+
+    if (is_sink_input)
+        pl = PA_SINK_INPUT(o)->proplist;
     else
-        return pa_idxset_isempty(PA_SOURCE(obj)->outputs);
+        pl = PA_SOURCE_OUTPUT(o)->proplist;
+
+    /* There's a bit of cleverness here -- the second argument ensures that we
+     * only group streams that require the same filter */
+    return pa_proplist_get_stream_group(pl, pa_proplist_gets(pl, PA_PROP_FILTER_APPLY), NULL);
+}
+
+/* For filters that apply on a source-output/sink-input pair, this finds the
+ * master sink if we know the master source, or vice versa. It does this by
+ * looking up streams that belong to the same stream group as the original
+ * object. The idea is that streams from the sam group are always routed
+ * together. */
+static pa_bool_t find_paired_master(struct userdata *u, struct filter *filter, pa_object *o, pa_bool_t is_sink_input) {
+    char *group;
+
+    if ((group = get_group(o, is_sink_input))) {
+        uint32_t idx;
+        char *g;
+        char *module_name = pa_sprintf_malloc("module-%s", filter->name);
+
+        if (is_sink_input) {
+            pa_source_output *so;
+
+            PA_IDXSET_FOREACH(so, u->core->source_outputs, idx) {
+                g = get_group(PA_OBJECT(so), FALSE);
+
+                if (pa_streq(g, group)) {
+                    if (pa_streq(module_name, so->source->module->name)) {
+                        /* Make sure we're not routing to another instance of
+                         * the same filter. */
+                        filter->source_master = so->source->output_from_master->source;
+                    } else {
+                        filter->source_master = so->source;
+                    }
+
+                    pa_xfree(g);
+                    break;
+                }
+
+                pa_xfree (g);
+            }
+        } else {
+            pa_sink_input *si;
+
+            PA_IDXSET_FOREACH(si, u->core->sink_inputs, idx) {
+                g = get_group(PA_OBJECT(si), TRUE);
+
+                if (pa_streq(g, group)) {
+                    if (pa_streq(module_name, si->sink->module->name)) {
+                        /* Make sure we're not routing to another instance of
+                         * the same filter. */
+                        filter->sink_master = si->sink->input_to_master->sink;
+                    } else {
+                        filter->sink_master = si->sink;
+                    }
+
+                    pa_xfree(g);
+                    break;
+                }
+
+                pa_xfree(g);
+            }
+        }
+
+        pa_xfree(group);
+        pa_xfree(module_name);
+
+        if (!filter->sink_master || !filter->source_master)
+            return FALSE;
+    }
+
+    return TRUE;
+}
+
+static pa_bool_t nothing_attached(struct filter *f) {
+    pa_bool_t no_si = TRUE, no_so = TRUE;
+
+    if (f->sink)
+        no_si = pa_idxset_isempty(f->sink->inputs);
+    if (f->source)
+        no_so = pa_idxset_isempty(f->source->outputs);
+
+    return no_si && no_so;
 }
 
 static void housekeeping_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct timeval *t, void *userdata) {
@@ -162,7 +257,7 @@ static void housekeeping_time_callback(pa_mainloop_api*a, pa_time_event* e, cons
     u->housekeeping_time_event = NULL;
 
     PA_HASHMAP_FOREACH(filter, u->filters, state) {
-        if (filter->obj && nothing_attached(filter->obj, filter->is_sink)) {
+        if (nothing_attached(filter)) {
             uint32_t idx;
 
             pa_log_debug("Detected filter %s as no longer used. Unloading.", filter->name);
@@ -203,13 +298,17 @@ static void move_object_for_filter(pa_object *o, struct filter* filter, pa_bool_
     pa_assert(o);
     pa_assert(filter);
 
-    pa_assert_se(parent = (restore ? filter->parent_obj : filter->obj));
-
     if (is_sink_input) {
         pl = PA_SINK_INPUT(o)->proplist;
+        parent = PA_OBJECT(restore ? filter->sink_master : filter->sink);
+        if (!parent)
+            return;
         name = PA_SINK(parent)->name;
     } else {
         pl = PA_SOURCE_OUTPUT(o)->proplist;
+        parent = PA_OBJECT(restore ? filter->source_master : filter->source);
+        if (!parent)
+            return;
         name = PA_SOURCE(parent)->name;
     }
 
@@ -225,21 +324,58 @@ static void move_object_for_filter(pa_object *o, struct filter* filter, pa_bool_
     pa_proplist_unset(pl, PA_PROP_FILTER_APPLY_MOVING);
 }
 
+static void move_objects_for_filter(struct userdata *u, pa_object *o, struct filter* filter, pa_bool_t restore,
+        pa_bool_t is_sink_input) {
+
+    if (!should_group_filter(filter))
+        move_object_for_filter(o, filter, restore, is_sink_input);
+    else {
+        pa_source_output *so;
+        pa_sink_input *si;
+        char *g, *group;
+        uint32_t idx;
+
+        group = get_group(o, is_sink_input);
+
+        PA_IDXSET_FOREACH(so, u->core->source_outputs, idx) {
+            g = get_group(PA_OBJECT(so), FALSE);
+
+            if (pa_streq(g, group))
+                move_object_for_filter(PA_OBJECT(so), filter, restore, FALSE);
+
+            pa_xfree(g);
+        }
+
+        PA_IDXSET_FOREACH(si, u->core->sink_inputs, idx) {
+            g = get_group(PA_OBJECT(si), TRUE);
+
+            if (pa_streq(g, group))
+                move_object_for_filter(PA_OBJECT(si), filter, restore, TRUE);
+
+            pa_xfree(g);
+        }
+
+        pa_xfree(group);
+    }
+}
+
+/* Note that we assume a filter will provide at most one sink and at most one
+ * source (and at least one of either). */
 static void find_filters_for_module(struct userdata *u, pa_module *m, const char *name) {
     uint32_t idx;
     pa_sink *sink;
     pa_source *source;
-    struct filter *fltr;
+    struct filter *fltr = NULL;
 
     PA_IDXSET_FOREACH(sink, u->core->sinks, idx) {
         if (sink->module == m) {
             pa_assert(sink->input_to_master != NULL);
 
-            fltr = filter_new(name, PA_OBJECT(sink->input_to_master->sink), TRUE);
+            fltr = filter_new(name, sink->input_to_master->sink, NULL);
             fltr->module_index = m->index;
-            fltr->obj = PA_OBJECT(sink);
+            fltr->sink = sink;
 
-            pa_hashmap_put(u->filters, fltr, fltr);
+            break;
         }
     }
 
@@ -247,13 +383,20 @@ static void find_filters_for_module(struct userdata *u, pa_module *m, const char
         if (source->module == m && !source->monitor_of) {
             pa_assert(source->output_from_master != NULL);
 
-            fltr = filter_new(name, PA_OBJECT(source->output_from_master->source), FALSE);
-            fltr->module_index = m->index;
-            fltr->obj = PA_OBJECT(source);
+            if (!fltr) {
+                fltr = filter_new(name, NULL, source->output_from_master->source);
+                fltr->module_index = m->index;
+                fltr->source = source;
+            } else {
+                fltr->source = source;
+                fltr->source_master = source->output_from_master->source;
+            }
 
-            pa_hashmap_put(u->filters, fltr, fltr);
+            break;
         }
     }
+
+    pa_hashmap_put(u->filters, fltr, fltr);
 }
 
 static pa_bool_t can_unload_module(struct userdata *u, uint32_t idx) {
@@ -262,7 +405,7 @@ static pa_bool_t can_unload_module(struct userdata *u, uint32_t idx) {
 
     /* Check if any other struct filters point to the same module */
     PA_HASHMAP_FOREACH(filter, u->filters, state) {
-        if (filter->module_index == idx && !nothing_attached(filter->obj, pa_sink_isinstance(filter->obj)))
+        if (filter->module_index == idx && !nothing_attached(filter))
             return FALSE;
     }
 
@@ -272,23 +415,20 @@ static pa_bool_t can_unload_module(struct userdata *u, uint32_t idx) {
 static pa_hook_result_t process(struct userdata *u, pa_object *o, pa_bool_t is_sink_input) {
     const char *want;
     pa_bool_t done_something = FALSE;
-
-    pa_object *parent; /* source/sink of the given source-output/sink-input */
-    const char *parent_name;
+    pa_sink *sink = NULL;
+    pa_source *source = NULL;
     pa_module *module;
 
     if (is_sink_input) {
-        parent = PA_OBJECT(PA_SINK_INPUT(o)->sink);
-        parent_name = PA_SINK_INPUT(o)->sink->name;
-        module = PA_SINK_INPUT(o)->sink->module;
+        sink = PA_SINK_INPUT(o)->sink;
+        module = sink->module;
     } else {
-        parent = PA_OBJECT(PA_SOURCE_OUTPUT(o)->source);
-        parent_name = PA_SOURCE_OUTPUT(o)->source->name;
-        module = PA_SOURCE_OUTPUT(o)->source->module;
+        source = PA_SOURCE_OUTPUT(o)->source;
+        module = source->module;
     }
 
-    /* If there is no sink yet, we can't do much */
-    if (!parent)
+    /* If there is no sink/source yet, we can't do much */
+    if ((is_sink_input && !sink) || (!is_sink_input && !source))
         return PA_HOOK_OK;
 
     /* If the stream doesn't what any filter, then let it be. */
@@ -309,13 +449,23 @@ static pa_hook_result_t process(struct userdata *u, pa_object *o, pa_bool_t is_s
             return PA_HOOK_OK;
         }
 
-        fltr = filter_new(want, parent, is_sink_input);
+        fltr = filter_new(want, sink, source);
+
+        if (should_group_filter(fltr) && !find_paired_master(u, fltr, o, is_sink_input)) {
+            pa_log_debug("Want group filtering but don't have enough streams.");
+            return PA_HOOK_OK;
+        }
 
         if (!(filter = pa_hashmap_get(u->filters, fltr))) {
             char *args;
             pa_module *m;
 
-            args = pa_sprintf_malloc("autoloaded=1 %s_master=%s", is_sink_input ? "sink" : "source", parent_name);
+            args = pa_sprintf_malloc("autoloaded=1 %s%s %s%s",
+                    fltr->sink_master ? "sink_master=" : "",
+                    fltr->sink_master ? fltr->sink_master->name : "",
+                    fltr->source_master ? "source_master=" : "",
+                    fltr->source_master ? fltr->source_master->name : "");
+
             pa_log_debug("Loading %s with arguments '%s'", module_name, args);
 
             if ((m = pa_module_load(u->core, module_name, args))) {
@@ -329,16 +479,16 @@ static pa_hook_result_t process(struct userdata *u, pa_object *o, pa_bool_t is_s
         pa_xfree(fltr);
 
         if (!filter) {
-            pa_log("Unable to load %s for <%s>", module_name, parent_name);
+            pa_log("Unable to load %s", module_name);
             pa_xfree(module_name);
             return PA_HOOK_OK;
         }
         pa_xfree(module_name);
 
-        if (filter->obj) {
-            /* We can move the sink_input now as the know the destination.
-             * If this isn't true, we will do it later when the sink appears. */
-            move_object_for_filter(o, filter, FALSE, is_sink_input);
+        /* We can move the stream now as we know the destination. If this
+         * isn't true, we will do it later when the sink appears. */
+        if ((is_sink_input && filter->sink) || (!is_sink_input && filter->source)) {
+            move_objects_for_filter(u, o, filter, FALSE, is_sink_input);
             done_something = TRUE;
         }
     } else {
@@ -348,8 +498,8 @@ static pa_hook_result_t process(struct userdata *u, pa_object *o, pa_bool_t is_s
         /* We do not want to filter... but are we already filtered?
          * This can happen if an input's proplist changes */
         PA_HASHMAP_FOREACH(filter, u->filters, state) {
-            if (parent == filter->obj) {
-                move_object_for_filter(o, filter, TRUE, is_sink_input);
+            if ((is_sink_input && sink == filter->sink) || (!is_sink_input && source == filter->source)) {
+                move_objects_for_filter(u, o, filter, TRUE, is_sink_input);
                 done_something = TRUE;
                 break;
             }
@@ -409,17 +559,17 @@ static pa_hook_result_t sink_unlink_cb(pa_core *core, pa_sink *sink, struct user
     /* If either the parent or the sink we've loaded disappears,
      * we should remove it from our hashmap */
     PA_HASHMAP_FOREACH(filter, u->filters, state) {
-        if (filter->parent_obj == PA_OBJECT(sink) || filter->obj == PA_OBJECT(sink)) {
+        if (filter->sink_master == sink || filter->sink == sink) {
             uint32_t idx;
 
             /* Attempt to rescue any streams to the parent sink as this is likely
              * the best course of action (as opposed to a generic rescue via
              * module-rescue-streams */
-            if (filter->obj == PA_OBJECT(sink)) {
+            if (filter->sink == sink) {
                 pa_sink_input *i;
 
                 PA_IDXSET_FOREACH(i, sink->inputs, idx)
-                    move_object_for_filter(PA_OBJECT(i), filter, TRUE, TRUE);
+                    move_objects_for_filter(u, PA_OBJECT(i), filter, TRUE, TRUE);
             }
 
             idx = filter->module_index;
@@ -481,17 +631,17 @@ static pa_hook_result_t source_unlink_cb(pa_core *core, pa_source *source, struc
     /* If either the parent or the source we've loaded disappears,
      * we should remove it from our hashmap */
     PA_HASHMAP_FOREACH(filter, u->filters, state) {
-        if (filter->parent_obj == PA_OBJECT(source) || filter->obj == PA_OBJECT(source)) {
+        if (filter->source_master == source || filter->source == source) {
             uint32_t idx;
 
             /* Attempt to rescue any streams to the parent source as this is likely
              * the best course of action (as opposed to a generic rescue via
              * module-rescue-streams */
-            if (filter->obj == PA_OBJECT(source)) {
+            if (filter->source == source) {
                 pa_source_output *o;
 
                 PA_IDXSET_FOREACH(o, source->outputs, idx)
-                    move_object_for_filter(PA_OBJECT(o), filter, TRUE, FALSE);
+                    move_objects_for_filter(u, PA_OBJECT(o), filter, TRUE, FALSE);
             }
 
             idx = filter->module_index;
