@@ -3,7 +3,7 @@
 
   This module is based off Lennart Poettering's LADSPA sink and swaps out
   LADSPA functionality for a dbus-aware STFT OLA based digital equalizer.
-  All new work is published under Pulseaudio's original license.
+  All new work is published under PulseAudio's original license.
 
   Copyright 2009 Jason Newton <nevion@gmail.com>
 
@@ -369,7 +369,7 @@ static void dsp_logic(
     for(size_t j = 0; j < u->window_size; ++j){
         dst[j] = X * W[j] * src[j];
     }
-    //zero pad the the remaining fft window
+    //zero pad the remaining fft window
     memset(dst + u->window_size, 0, (u->fft_size - u->window_size) * sizeof(float));
     //Processing is done here!
     //do fft
@@ -441,7 +441,7 @@ static void dsp_logic(
 //        d->v = x->v * w->v * s->v;
 //#endif
     }
-    //zero pad the the remaining fft window
+    //zero pad the remaining fft window
     memset(dst + u->window_size, 0, (u->fft_size - u->window_size) * sizeof(float));
 
     //Processing is done here!
@@ -1055,6 +1055,9 @@ static pa_bool_t sink_input_may_move_to_cb(pa_sink_input *i, pa_sink *dest) {
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
+    if (u->autoloaded)
+        return FALSE;
+
     return u->sink != dest;
 }
 
@@ -1081,7 +1084,7 @@ int pa__init(pa_module*m) {
     pa_sink *master;
     pa_sink_input_new_data sink_input_data;
     pa_sink_new_data sink_data;
-    size_t fs, i;
+    size_t i;
     unsigned c;
     float *H;
     unsigned a_i;
@@ -1107,7 +1110,7 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    fs = pa_frame_size(&ss);
+    //fs = pa_frame_size(&ss);
 
     if (pa_modargs_get_value_boolean(ma, "use_volume_sharing", &use_volume_sharing) < 0) {
         pa_log("use_volume_sharing= expects a boolean argument");
@@ -1207,8 +1210,8 @@ int pa__init(pa_module*m) {
     }
     u->sink->userdata = u;
 
-    u->input_q = pa_memblockq_new(0,  MEMBLOCKQ_MAXLENGTH, 0, fs, 1, 1, 0, &u->sink->silence);
-    u->output_q = pa_memblockq_new(0,  MEMBLOCKQ_MAXLENGTH, 0, fs, 1, 1, 0, NULL);
+    u->input_q = pa_memblockq_new("module-equalizer-sink input_q", 0, MEMBLOCKQ_MAXLENGTH, 0, &ss, 1, 1, 0, &u->sink->silence);
+    u->output_q = pa_memblockq_new("module-equalizer-sink output_q", 0, MEMBLOCKQ_MAXLENGTH, 0, &ss, 1, 1, 0, NULL);
     u->output_buffer = NULL;
     u->output_buffer_length = 0;
     u->output_buffer_max_length = 0;

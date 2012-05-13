@@ -30,14 +30,14 @@
 #     if (sample < 0)
 #          signc = |      0      |      0xffff     | (unsigned)
 #     else
-#          signc = |      0      |        0        | (unsgined)
+#          signc = |      0      |        0        | (unsigned)
 #
 #     if (sample < 0)
-#             ml = |      0      | -((s*vl) >> 16) | (unsgined)
+#             ml = |      0      | -((s*vl) >> 16) | (unsigned)
 #     else
-#             ml = |      0      |   (s*vl) >> 16  | (unsgined)
+#             ml = |      0      |   (s*vl) >> 16  | (unsigned)
 #
-#             vh =               |      v >> 16    | (signed, but value is always signed
+#             vh =               |      v >> 16    | (signed, but sign bit is always zero
 #                                                     since PA_VOLUME_MAX is 0x0fffffff)
 #             mh = |         (s * vh) >> 16        | (signed)
 #             ml = |           ml + mh             | (signed)

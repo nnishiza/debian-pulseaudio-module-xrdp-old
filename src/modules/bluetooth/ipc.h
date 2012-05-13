@@ -4,6 +4,7 @@
  *
  *  Copyright (C) 2004-2010  Marcel Holtmann <marcel@holtmann.org>
  *
+ *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Lesser General Public
  *  License as published by the Free Software Foundation; either
@@ -264,7 +265,7 @@ struct bt_start_stream_rsp {
 } __attribute__ ((packed));
 
 /* This message is followed by one byte of data containing the stream data fd
-   as ancilliary data */
+   as ancillary data */
 struct bt_new_stream_ind {
 	bt_audio_msg_header_t	h;
 } __attribute__ ((packed));

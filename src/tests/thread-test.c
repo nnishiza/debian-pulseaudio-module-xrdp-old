@@ -21,12 +21,13 @@
 #include <config.h>
 #endif
 
+#include <pulse/xmalloc.h>
 #include <pulsecore/thread.h>
+#include <pulsecore/macro.h>
 #include <pulsecore/mutex.h>
 #include <pulsecore/once.h>
 #include <pulsecore/log.h>
 #include <pulsecore/core-util.h>
-#include <pulse/xmalloc.h>
 
 static pa_mutex *mutex = NULL;
 static pa_cond *cond1 = NULL, *cond2 = NULL;
@@ -45,14 +46,14 @@ static pa_once once = PA_ONCE_INIT;
 static void thread_func(void *data) {
     pa_tls_set(tls, data);
 
-    pa_log("thread_func() for %s starting...", (char*) pa_tls_get(tls));
+    pa_log_info("thread_func() for %s starting...", (char*) pa_tls_get(tls));
 
     pa_mutex_lock(mutex);
 
     for (;;) {
         int k, n;
 
-        pa_log("%s waiting ...", (char*) pa_tls_get(tls));
+        pa_log_info("%s waiting ...", (char*) pa_tls_get(tls));
 
         for (;;) {
 
@@ -74,7 +75,7 @@ static void thread_func(void *data) {
 
         pa_cond_signal(cond2, 0);
 
-        pa_log("%s got number %i", (char*) pa_tls_get(tls), k);
+        pa_log_info("%s got number %i", (char*) pa_tls_get(tls), k);
 
         /* Spin! */
         for (n = 0; n < k; n++)
@@ -87,12 +88,15 @@ quit:
 
     pa_mutex_unlock(mutex);
 
-    pa_log("thread_func() for %s done...", (char*) pa_tls_get(tls));
+    pa_log_info("thread_func() for %s done...", (char*) pa_tls_get(tls));
 }
 
 int main(int argc, char *argv[]) {
     int i, k;
     pa_thread* t[THREADS_MAX];
+
+    if (!getenv("MAKE_CHECK"))
+        pa_log_set_level(PA_LOG_DEBUG);
 
     mutex = pa_mutex_new(FALSE, FALSE);
     cond1 = pa_cond_new();
@@ -100,8 +104,7 @@ int main(int argc, char *argv[]) {
     tls = pa_tls_new(pa_xfree);
 
     for (i = 0; i < THREADS_MAX; i++) {
-        t[i] = pa_thread_new("test", thread_func, pa_sprintf_malloc("Thread #%i", i+1));
-        assert(t[i]);
+        pa_assert_se(t[i] = pa_thread_new("test", thread_func, pa_sprintf_malloc("Thread #%i", i+1)));
     }
 
     pa_mutex_lock(mutex);
@@ -109,12 +112,11 @@ int main(int argc, char *argv[]) {
     pa_log("loop-init");
 
     for (k = 0; k < 100; k++) {
-        assert(magic_number == 0);
-
+        pa_assert(magic_number == 0);
 
         magic_number = (int) rand() % 0x10000;
 
-        pa_log("iteration %i (%i)", k, magic_number);
+        pa_log_info("iteration %i (%i)", k, magic_number);
 
         pa_cond_signal(cond1, 0);
 

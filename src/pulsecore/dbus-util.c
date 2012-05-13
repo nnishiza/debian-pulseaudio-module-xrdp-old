@@ -367,13 +367,8 @@ fail:
     va_end(ap);
     va_start(ap, error);
     for (; k > 0; k--) {
-        DBusError e;
-
         pa_assert_se(t = va_arg(ap, const char*));
-
-        dbus_error_init(&e);
-        dbus_bus_remove_match(c, t, &e);
-        dbus_error_free(&e);
+        dbus_bus_remove_match(c, t, NULL);
     }
     va_end(ap);
 
@@ -383,17 +378,12 @@ fail:
 void pa_dbus_remove_matches(DBusConnection *c, ...) {
     const char *t;
     va_list ap;
-    DBusError error;
 
     pa_assert(c);
 
-    dbus_error_init(&error);
-
     va_start(ap, c);
-    while ((t = va_arg(ap, const char*))) {
-        dbus_bus_remove_match(c, t, &error);
-        dbus_error_free(&error);
-    }
+    while ((t = va_arg(ap, const char*)))
+        dbus_bus_remove_match(c, t, NULL);
     va_end(ap);
 }
 
@@ -450,6 +440,20 @@ void pa_dbus_free_pending_list(pa_dbus_pending **p) {
         PA_LLIST_REMOVE(pa_dbus_pending, *p, i);
         pa_dbus_pending_free(i);
     }
+}
+
+const char *pa_dbus_get_error_message(DBusMessage *m) {
+    const char *message;
+
+    pa_assert(m);
+    pa_assert(dbus_message_get_type(m) == DBUS_MESSAGE_TYPE_ERROR);
+
+    if (dbus_message_get_signature(m)[0] != 's')
+        return "<no explanation>";
+
+    pa_assert_se(dbus_message_get_args(m, NULL, DBUS_TYPE_STRING, &message, DBUS_TYPE_INVALID));
+
+    return message;
 }
 
 void pa_dbus_send_error(DBusConnection *c, DBusMessage *in_reply_to, const char *name, const char *format, ...) {

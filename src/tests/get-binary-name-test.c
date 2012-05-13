@@ -27,6 +27,8 @@
 #include <pulse/util.h>
 #include <pulse/xmalloc.h>
 
+#include <pulsecore/log.h>
+
 int main(int argc, char *argv[]) {
     char *exename;
     size_t allocated = 128;
@@ -35,20 +37,20 @@ int main(int argc, char *argv[]) {
         exename = pa_xmalloc(allocated);
 
         if (!pa_get_binary_name(exename, allocated)) {
-            printf("failed to read binary name\n");
+            pa_log_error("failed to read binary name");
             pa_xfree(exename);
             break;
         }
 
         if (strlen(exename) < allocated - 1) {
-            printf("%s\n", exename);
+            pa_log("%s", exename);
             pa_xfree(exename);
-            break;
+            return 0;
         }
 
         pa_xfree(exename);
         allocated *= 2;
     }
 
-    return 0;
+    return 1;
 }

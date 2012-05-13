@@ -272,15 +272,10 @@ int pa_source_output_new(
 
     /* Now populate the sample spec and format according to the final
      * format that we've negotiated */
-    if (PA_LIKELY(data->format->encoding == PA_ENCODING_PCM)) {
-        pa_return_val_if_fail(pa_format_info_to_sample_spec(data->format, &ss, &map), -PA_ERR_INVALID);
-        pa_source_output_new_data_set_sample_spec(data, &ss);
-        if (pa_channel_map_valid(&map))
-            pa_source_output_new_data_set_channel_map(data, &map);
-    } else {
-        pa_return_val_if_fail(pa_format_info_to_sample_spec_fake(data->format, &ss), -PA_ERR_INVALID);
-        pa_source_output_new_data_set_sample_spec(data, &ss);
-    }
+    pa_return_val_if_fail(pa_format_info_to_sample_spec(data->format, &ss, &map) == 0, -PA_ERR_INVALID);
+    pa_source_output_new_data_set_sample_spec(data, &ss);
+    if (pa_format_info_is_pcm(data->format) && pa_channel_map_valid(&map))
+        pa_source_output_new_data_set_channel_map(data, &map);
 
     pa_return_val_if_fail(PA_SOURCE_IS_LINKED(pa_source_get_state(data->source)), -PA_ERR_BADSTATE);
     pa_return_val_if_fail(!data->direct_on_input || data->direct_on_input->sink == data->source->monitor_of, -PA_ERR_INVALID);
@@ -347,6 +342,19 @@ int pa_source_output_new(
 
     /* Due to the fixing of the sample spec the volume might not match anymore */
     pa_cvolume_remap(&data->volume, &original_cm, &data->channel_map);
+
+    if (!(data->flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) &&
+        !pa_sample_spec_equal(&data->sample_spec, &data->source->sample_spec)){
+        /* try to change source rate. This is done before the FIXATE hook since
+           module-suspend-on-idle can resume a source */
+
+        pa_log_info("Trying to change sample rate");
+        if (pa_source_update_rate(data->source, data->sample_spec.rate, pa_source_output_new_data_is_passthrough(data)) == TRUE)
+            pa_log_info("Rate changed to %u Hz",
+                        data->source->sample_spec.rate);
+        else
+            pa_log_info("Resampling enabled to %u Hz", data->source->sample_spec.rate);
+    }
 
     if (data->resample_method == PA_RESAMPLER_INVALID)
         data->resample_method = core->resample_method;
@@ -444,10 +452,11 @@ int pa_source_output_new(
     o->thread_info.direct_on_input = o->direct_on_input;
 
     o->thread_info.delay_memblockq = pa_memblockq_new(
+            "source output delay_memblockq",
             0,
             MEMBLOCKQ_MAXLENGTH,
             0,
-            pa_frame_size(&o->source->sample_spec),
+            &o->source->sample_spec,
             0,
             1,
             0,
@@ -500,6 +509,12 @@ static void source_output_set_state(pa_source_output *o, pa_source_output_state_
 
     if (o->state == state)
         return;
+
+    if (o->state == PA_SOURCE_OUTPUT_CORKED && state == PA_SOURCE_OUTPUT_RUNNING && pa_source_used_by(o->source) == 0) {
+        /* We were uncorked and the source was not playing anything -- let's try
+         * to update the sample rate to avoid resampling */
+        pa_source_update_rate(o->source, o->sample_spec.rate, pa_source_output_is_passthrough(o));
+    }
 
     pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o), PA_SOURCE_OUTPUT_MESSAGE_SET_STATE, PA_UINT_TO_PTR(state), 0, NULL) == 0);
 
@@ -567,7 +582,9 @@ void pa_source_output_unlink(pa_source_output*o) {
     }
 
     if (o->source) {
-        pa_source_update_status(o->source);
+        if (PA_SOURCE_IS_LINKED(pa_source_get_state(o->source)))
+            pa_source_update_status(o->source);
+
         o->source = NULL;
     }
 
@@ -1143,6 +1160,17 @@ pa_bool_t pa_source_output_may_move(pa_source_output *o) {
     return TRUE;
 }
 
+static pa_bool_t find_filter_source_output(pa_source_output *target, pa_source *s) {
+    int i = 0;
+    while (s && s->output_from_master) {
+        if (s->output_from_master == target)
+            return TRUE;
+        s = s->output_from_master->source;
+        pa_assert(i++ < 100);
+    }
+    return FALSE;
+}
+
 /* Called from main context */
 pa_bool_t pa_source_output_may_move_to(pa_source_output *o, pa_source *dest) {
     pa_source_output_assert_ref(o);
@@ -1154,6 +1182,12 @@ pa_bool_t pa_source_output_may_move_to(pa_source_output *o, pa_source *dest) {
 
     if (!pa_source_output_may_move(o))
         return FALSE;
+
+    /* Make sure we're not creating a filter source cycle */
+    if (find_filter_source_output(o, dest)) {
+        pa_log_debug("Can't connect output to %s, as that would create a cycle.", dest->name);
+        return FALSE;
+    }
 
     if (pa_idxset_size(dest->outputs) >= PA_MAX_OUTPUTS_PER_SOURCE) {
         pa_log_warn("Failed to move source output: too many outputs per source.");
@@ -1362,8 +1396,6 @@ static void update_volume_due_to_moving(pa_source_output *o, pa_source *dest) {
 
 /* Called from main context */
 int pa_source_output_finish_move(pa_source_output *o, pa_source *dest, pa_bool_t save) {
-    pa_resampler *new_resampler;
-
     pa_source_output_assert_ref(o);
     pa_assert_ctl_context();
     pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
@@ -1384,33 +1416,20 @@ int pa_source_output_finish_move(pa_source_output *o, pa_source *dest, pa_bool_t
         return -PA_ERR_NOTSUPPORTED;
     }
 
-    if (o->thread_info.resampler &&
-        pa_sample_spec_equal(pa_resampler_input_sample_spec(o->thread_info.resampler), &dest->sample_spec) &&
-        pa_channel_map_equal(pa_resampler_input_channel_map(o->thread_info.resampler), &dest->channel_map))
+    if (!(o->flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) &&
+        !pa_sample_spec_equal(&o->sample_spec, &dest->sample_spec)){
+        /* try to change dest sink rate if possible without glitches.
+           module-suspend-on-idle resumes destination source with
+           SOURCE_OUTPUT_MOVE_FINISH hook */
 
-        /* Try to reuse the old resampler if possible */
-        new_resampler = o->thread_info.resampler;
-
-    else if (!pa_source_output_is_passthrough(o) &&
-             ((o->flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) ||
-              !pa_sample_spec_equal(&o->sample_spec, &dest->sample_spec) ||
-              !pa_channel_map_equal(&o->channel_map, &dest->channel_map))) {
-
-        /* Okay, we need a new resampler for the new source */
-
-        if (!(new_resampler = pa_resampler_new(
-                      o->core->mempool,
-                      &dest->sample_spec, &dest->channel_map,
-                      &o->sample_spec, &o->channel_map,
-                      o->requested_resample_method,
-                      ((o->flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
-                      ((o->flags & PA_SOURCE_OUTPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
-                      (o->core->disable_remixing || (o->flags & PA_SOURCE_OUTPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0)))) {
-            pa_log_warn("Unsupported resampling operation.");
-            return -PA_ERR_NOTSUPPORTED;
-        }
-    } else
-        new_resampler = NULL;
+        pa_log_info("Trying to change sample rate");
+        if (pa_source_update_rate(dest, o->sample_spec.rate, pa_source_output_is_passthrough(o)) == TRUE)
+            pa_log_info("Rate changed to %u Hz",
+                        dest->sample_spec.rate);
+        else
+            pa_log_info("Resampling enabled to %u Hz",
+                        dest->sample_spec.rate);
+    }
 
     if (o->moving)
         o->moving(o, dest);
@@ -1424,26 +1443,7 @@ int pa_source_output_finish_move(pa_source_output *o, pa_source *dest, pa_bool_t
     if (pa_source_output_get_state(o) == PA_SOURCE_OUTPUT_CORKED)
         o->source->n_corked++;
 
-    /* Replace resampler */
-    if (new_resampler != o->thread_info.resampler) {
-
-        if (o->thread_info.resampler)
-            pa_resampler_free(o->thread_info.resampler);
-        o->thread_info.resampler = new_resampler;
-
-        pa_memblockq_free(o->thread_info.delay_memblockq);
-
-        o->thread_info.delay_memblockq = pa_memblockq_new(
-                0,
-                MEMBLOCKQ_MAXLENGTH,
-                0,
-                pa_frame_size(&o->source->sample_spec),
-                0,
-                1,
-                0,
-                &o->source->silence);
-        o->actual_resample_method = new_resampler ? pa_resampler_get_method(new_resampler) : PA_RESAMPLER_INVALID;
-    }
+    pa_source_output_update_rate(o);
 
     pa_source_update_status(dest);
 
@@ -1615,4 +1615,70 @@ void pa_source_output_send_event(pa_source_output *o, const char *event, pa_prop
 finish:
     if (pl)
         pa_proplist_free(pl);
+}
+
+/* Called from main context */
+/* Updates the source output's resampler with whatever the current source
+ * requires -- useful when the underlying source's rate might have changed */
+int pa_source_output_update_rate(pa_source_output *o) {
+    pa_resampler *new_resampler;
+    char *memblockq_name;
+
+    pa_source_output_assert_ref(o);
+    pa_assert_ctl_context();
+
+    if (o->thread_info.resampler &&
+        pa_sample_spec_equal(pa_resampler_input_sample_spec(o->thread_info.resampler), &o->source->sample_spec) &&
+        pa_channel_map_equal(pa_resampler_input_channel_map(o->thread_info.resampler), &o->source->channel_map))
+
+        new_resampler = o->thread_info.resampler;
+
+    else if (!pa_source_output_is_passthrough(o) &&
+        ((o->flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) ||
+         !pa_sample_spec_equal(&o->sample_spec, &o->source->sample_spec) ||
+         !pa_channel_map_equal(&o->channel_map, &o->source->channel_map))) {
+
+        new_resampler = pa_resampler_new(o->core->mempool,
+                                     &o->source->sample_spec, &o->source->channel_map,
+                                     &o->sample_spec, &o->channel_map,
+                                     o->requested_resample_method,
+                                     ((o->flags & PA_SOURCE_OUTPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
+                                     ((o->flags & PA_SOURCE_OUTPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
+                                     (o->core->disable_remixing || (o->flags & PA_SOURCE_OUTPUT_NO_REMIX) ? PA_RESAMPLER_NO_REMIX : 0));
+
+        if (!new_resampler) {
+            pa_log_warn("Unsupported resampling operation.");
+            return -PA_ERR_NOTSUPPORTED;
+        }
+    } else
+        new_resampler = NULL;
+
+    if (new_resampler == o->thread_info.resampler)
+        return 0;
+
+    if (o->thread_info.resampler)
+        pa_resampler_free(o->thread_info.resampler);
+
+    o->thread_info.resampler = new_resampler;
+
+    pa_memblockq_free(o->thread_info.delay_memblockq);
+
+    memblockq_name = pa_sprintf_malloc("source output delay_memblockq [%u]", o->index);
+    o->thread_info.delay_memblockq = pa_memblockq_new(
+            memblockq_name,
+            0,
+            MEMBLOCKQ_MAXLENGTH,
+            0,
+            &o->source->sample_spec,
+            0,
+            1,
+            0,
+            &o->source->silence);
+    pa_xfree(memblockq_name);
+
+    o->actual_resample_method = new_resampler ? pa_resampler_get_method(new_resampler) : PA_RESAMPLER_INVALID;
+
+    pa_log_debug("Updated resampler for source output %d", o->index);
+
+    return 0;
 }

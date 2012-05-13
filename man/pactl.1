@@ -27,13 +27,13 @@ Choose the server to connect to.
 Specify the client name \fIpactl\f1 shall pass to the server when connecting.
 .SH COMMANDS
 .TP
-\fBstat\f1 [short]
+\fBstat\f1 [\fIshort\f1]
 Dump a few statistics about the memory usage of the PulseAudio daemon. (Note: for backwards compatibility, we also show the output of the \fIinfo\f1 command. In order to only show statistics, use the optional \fIshort\f1 argument. In a future version of PA we will make this the default)
 .TP
 \fBinfo\f1
 Dump some info about the PulseAudio daemon.
 .TP
-\fBlist\f1 [short] [\fITYPE\f1]
+\fBlist\f1 [\fIshort\f1] [\fITYPE\f1]
 Dump all currently loaded modules, available sinks, sources, streams, etc. \fITYPE\f1 must be one of: modules, sinks, sources, sink-inputs, source-outputs, clients, samples, cards. If not specified, all info is listed. If short is given, output is in a tabular format, for easy parsing by scripts.
 .TP
 \fBexit\f1
@@ -105,6 +105,6 @@ Set the supported formats of the specified sink (identified by its numerical ind
 \fBsubscribe\f1
 Subscribe to events, pactl does not exit by itself, but keeps waiting for new events.
 .SH AUTHORS
-The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
+The PulseAudio Developers <pulseaudio-discuss (at) lists (dot) freedesktop (dot) org>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO
 \fBpulseaudio(1)\f1, \fBpacmd(1)\f1

@@ -64,9 +64,12 @@ PA_MODULE_USAGE(
         "tsched_buffer_size=<buffer size when using timer based scheduling> "
         "tsched_buffer_watermark=<lower fill watermark> "
         "profile=<profile name> "
+        "fixed_latency_range=<disable latency range changes on underrun?> "
         "ignore_dB=<ignore dB information from the device?> "
         "deferred_volume=<Synchronize software and hardware volume changes to avoid momentary jumps?> "
-        "profile_set=<profile set configuration file> ");
+        "profile_set=<profile set configuration file> "
+        "paths_dir=<directory containing the path configuration files> "
+);
 
 static const char* const valid_modargs[] = {
     "name",
@@ -86,10 +89,12 @@ static const char* const valid_modargs[] = {
     "tsched",
     "tsched_buffer_size",
     "tsched_buffer_watermark",
+    "fixed_latency_range",
     "profile",
     "ignore_dB",
     "deferred_volume",
     "profile_set",
+    "paths_dir",
     NULL
 };
 
@@ -100,6 +105,12 @@ struct userdata {
     pa_module *module;
 
     char *device_id;
+    int alsa_card_index;
+
+    snd_mixer_t *mixer_handle;
+    snd_hctl_t *hctl_handle;
+    pa_hashmap *jacks;
+    pa_alsa_fdlist *mixer_fdl;
 
     pa_card *card;
 
@@ -112,7 +123,7 @@ struct profile_data {
     pa_alsa_profile *profile;
 };
 
-static void add_profiles(struct userdata *u, pa_hashmap *h) {
+static void add_profiles(struct userdata *u, pa_hashmap *h, pa_hashmap *ports) {
     pa_alsa_profile *ap;
     void *state;
 
@@ -131,17 +142,21 @@ static void add_profiles(struct userdata *u, pa_hashmap *h) {
         if (ap->output_mappings) {
             cp->n_sinks = pa_idxset_size(ap->output_mappings);
 
-            PA_IDXSET_FOREACH(m, ap->output_mappings, idx)
+            PA_IDXSET_FOREACH(m, ap->output_mappings, idx) {
+                pa_alsa_path_set_add_ports(m->output_path_set, cp, ports, NULL, u->core);
                 if (m->channel_map.channels > cp->max_sink_channels)
                     cp->max_sink_channels = m->channel_map.channels;
+            }
         }
 
         if (ap->input_mappings) {
             cp->n_sources = pa_idxset_size(ap->input_mappings);
 
-            PA_IDXSET_FOREACH(m, ap->input_mappings, idx)
+            PA_IDXSET_FOREACH(m, ap->input_mappings, idx) {
+                pa_alsa_path_set_add_ports(m->input_path_set, cp, ports, NULL, u->core);
                 if (m->channel_map.channels > cp->max_source_channels)
                     cp->max_source_channels = m->channel_map.channels;
+            }
         }
 
         d = PA_CARD_PROFILE_DATA(cp);
@@ -258,6 +273,115 @@ static void init_profile(struct userdata *u) {
             am->source = pa_alsa_source_new(u->module, u->modargs, __FILE__, u->card, am);
 }
 
+static void report_port_state(pa_device_port *p, struct userdata *u)
+{
+    void *state;
+    pa_alsa_jack *jack;
+    pa_port_available_t pa = PA_PORT_AVAILABLE_UNKNOWN;
+
+    PA_HASHMAP_FOREACH(jack, u->jacks, state) {
+        pa_port_available_t cpa;
+
+        if (!jack->path)
+            continue;
+
+        if (p != jack->path->port)
+            continue;
+
+        cpa = jack->plugged_in ? jack->state_plugged : jack->state_unplugged;
+
+        /* "Yes" and "no" trumphs "unknown" if we have more than one jack */
+        if (cpa == PA_PORT_AVAILABLE_UNKNOWN)
+            continue;
+
+        if ((cpa == PA_PORT_AVAILABLE_NO && pa == PA_PORT_AVAILABLE_YES) ||
+            (pa == PA_PORT_AVAILABLE_NO && cpa == PA_PORT_AVAILABLE_YES))
+            pa_log_warn("Availability of port '%s' is inconsistent!", p->name);
+        else
+            pa = cpa;
+    }
+
+    pa_device_port_set_available(p, pa);
+}
+
+static int report_jack_state(snd_hctl_elem_t *elem, unsigned int mask)
+{
+    struct userdata *u = snd_hctl_elem_get_callback_private(elem);
+    snd_ctl_elem_value_t *elem_value;
+    pa_bool_t plugged_in;
+    void *state;
+    pa_alsa_jack *jack;
+
+    pa_assert(u);
+
+    if (mask == SND_CTL_EVENT_MASK_REMOVE)
+        return 0;
+
+    snd_ctl_elem_value_alloca(&elem_value);
+    if (snd_hctl_elem_read(elem, elem_value) < 0) {
+        pa_log_warn("Failed to read jack detection from '%s'", pa_strnull(snd_hctl_elem_get_name(elem)));
+        return 0;
+    }
+
+    plugged_in = !!snd_ctl_elem_value_get_boolean(elem_value, 0);
+
+    pa_log_debug("Jack '%s' is now %s", pa_strnull(snd_hctl_elem_get_name(elem)), plugged_in ? "plugged in" : "unplugged");
+
+    PA_HASHMAP_FOREACH(jack, u->jacks, state)
+        if (jack->hctl_elem == elem) {
+            jack->plugged_in = plugged_in;
+            pa_assert(jack->path && jack->path->port);
+            report_port_state(jack->path->port, u);
+        }
+    return 0;
+}
+
+static void init_jacks(struct userdata *u) {
+    void *state;
+    pa_alsa_path* path;
+    pa_alsa_jack* jack;
+
+    u->jacks = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
+
+    /* See if we have any jacks */
+    if (u->profile_set->output_paths)
+        PA_HASHMAP_FOREACH(path, u->profile_set->output_paths, state)
+            PA_LLIST_FOREACH(jack, path->jacks)
+                if (jack->has_control)
+                    pa_hashmap_put(u->jacks, jack, jack);
+
+    if (u->profile_set->input_paths)
+        PA_HASHMAP_FOREACH(path, u->profile_set->input_paths, state)
+            PA_LLIST_FOREACH(jack, path->jacks)
+                if (jack->has_control)
+                    pa_hashmap_put(u->jacks, jack, jack);
+
+    pa_log_debug("Found %d jacks.", pa_hashmap_size(u->jacks));
+
+    if (pa_hashmap_size(u->jacks) == 0)
+        return;
+
+    u->mixer_fdl = pa_alsa_fdlist_new();
+
+    u->mixer_handle = pa_alsa_open_mixer(u->alsa_card_index, NULL, &u->hctl_handle);
+    if (u->mixer_handle && pa_alsa_fdlist_set_handle(u->mixer_fdl, NULL, u->hctl_handle, u->core->mainloop) >= 0) {
+        PA_HASHMAP_FOREACH(jack, u->jacks, state) {
+            jack->hctl_elem = pa_alsa_find_jack(u->hctl_handle, jack->alsa_name);
+            if (!jack->hctl_elem) {
+                pa_log_warn("Jack '%s' seems to have disappeared.", jack->alsa_name);
+                jack->has_control = FALSE;
+                continue;
+            }
+            snd_hctl_elem_set_callback_private(jack->hctl_elem, u);
+            snd_hctl_elem_set_callback(jack->hctl_elem, report_jack_state);
+            report_jack_state(jack->hctl_elem, 0);
+        }
+
+    } else
+        pa_log("Failed to open hctl/mixer for jack detection");
+
+}
+
 static void set_card_name(pa_card_new_data *data, pa_modargs *ma, const char *device_id) {
     char *t;
     const char *n;
@@ -287,10 +411,11 @@ static void set_card_name(pa_card_new_data *data, pa_modargs *ma, const char *de
 int pa__init(pa_module *m) {
     pa_card_new_data data;
     pa_modargs *ma;
-    int alsa_card_index;
+    pa_bool_t ignore_dB = FALSE;
     struct userdata *u;
     pa_reserve_wrapper *reserve = NULL;
     const char *description;
+    const char *profile = NULL;
     char *fn = NULL;
     pa_bool_t namereg_fail = FALSE;
 
@@ -303,14 +428,19 @@ int pa__init(pa_module *m) {
         goto fail;
     }
 
+    if (pa_modargs_get_value_boolean(ma, "ignore_dB", &ignore_dB) < 0) {
+        pa_log("Failed to parse ignore_dB argument.");
+        goto fail;
+    }
+
     m->userdata = u = pa_xnew0(struct userdata, 1);
     u->core = m->core;
     u->module = m;
     u->device_id = pa_xstrdup(pa_modargs_get_value(ma, "device_id", DEFAULT_DEVICE_ID));
     u->modargs = ma;
 
-    if ((alsa_card_index = snd_card_get_index(u->device_id)) < 0) {
-        pa_log("Card '%s' doesn't exist: %s", u->device_id, pa_alsa_strerror(alsa_card_index));
+    if ((u->alsa_card_index = snd_card_get_index(u->device_id)) < 0) {
+        pa_log("Card '%s' doesn't exist: %s", u->device_id, pa_alsa_strerror(u->alsa_card_index));
         goto fail;
     }
 
@@ -327,7 +457,7 @@ int pa__init(pa_module *m) {
     }
 
 #ifdef HAVE_UDEV
-    fn = pa_udev_get_property(alsa_card_index, "PULSE_PROFILE_SET");
+    fn = pa_udev_get_property(u->alsa_card_index, "PULSE_PROFILE_SET");
 #endif
 
     if (pa_modargs_get_value(ma, "profile_set", NULL)) {
@@ -337,6 +467,8 @@ int pa__init(pa_module *m) {
 
     u->profile_set = pa_alsa_profile_set_new(fn, &u->core->default_channel_map);
     pa_xfree(fn);
+
+    u->profile_set->ignore_dB = ignore_dB;
 
     if (!u->profile_set)
         goto fail;
@@ -348,7 +480,7 @@ int pa__init(pa_module *m) {
     data.driver = __FILE__;
     data.module = m;
 
-    pa_alsa_init_proplist_card(m->core, data.proplist, alsa_card_index);
+    pa_alsa_init_proplist_card(m->core, data.proplist, u->alsa_card_index);
 
     pa_proplist_sets(data.proplist, PA_PROP_DEVICE_STRING, u->device_id);
     pa_alsa_init_description(data.proplist);
@@ -371,7 +503,7 @@ int pa__init(pa_module *m) {
             pa_reserve_wrapper_set_application_device_name(reserve, description);
 
     data.profiles = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
-    add_profiles(u, data.profiles);
+    add_profiles(u, data.profiles, data.ports);
 
     if (pa_hashmap_isempty(data.profiles)) {
         pa_log("Failed to find a working profile.");
@@ -387,6 +519,9 @@ int pa__init(pa_module *m) {
         goto fail;
     }
 
+    if ((profile = pa_modargs_get_value(ma, "profile", NULL)))
+        pa_card_new_data_set_profile(&data, profile);
+
     u->card = pa_card_new(m->core, &data);
     pa_card_new_data_done(&data);
 
@@ -397,6 +532,7 @@ int pa__init(pa_module *m) {
     u->card->set_profile = card_set_profile;
 
     init_profile(u);
+    init_jacks(u);
 
     if (reserve)
         pa_reserve_wrapper_unref(reserve);
@@ -404,10 +540,10 @@ int pa__init(pa_module *m) {
     if (!pa_hashmap_isempty(u->profile_set->decibel_fixes))
         pa_log_warn("Card %s uses decibel fixes (i.e. overrides the decibel information for some alsa volume elements). "
                     "Please note that this feature is meant just as a help for figuring out the correct decibel values. "
-                    "Pulseaudio is not the correct place to maintain the decibel mappings! The fixed decibel values "
+                    "PulseAudio is not the correct place to maintain the decibel mappings! The fixed decibel values "
                     "should be sent to ALSA developers so that they can fix the driver. If it turns out that this feature "
                     "is abused (i.e. fixes are not pushed to ALSA), the decibel fix feature may be removed in some future "
-                    "Pulseaudio version.", u->card->name);
+                    "PulseAudio version.", u->card->name);
 
     return 0;
 
@@ -447,6 +583,13 @@ void pa__done(pa_module*m) {
 
     if (!(u = m->userdata))
         goto finish;
+
+    if (u->mixer_fdl)
+        pa_alsa_fdlist_free(u->mixer_fdl);
+    if (u->mixer_handle)
+        snd_mixer_close(u->mixer_handle);
+    if (u->jacks)
+        pa_hashmap_free(u->jacks, NULL, NULL);
 
     if (u->card && u->card->sinks) {
         pa_sink *s;

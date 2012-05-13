@@ -4,10 +4,10 @@ pulse-daemon.conf \- PulseAudio daemon configuration file
 .SH SYNOPSIS
 \fB\fI~/.pulse/daemon.conf\fB
 
-\fI/usr/local/etc/pulse/daemon.conf\fB
+\fI/home/arun/local/pulseaudio/etc/pulse/daemon.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a file \fI~/.pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/usr/local/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
+The PulseAudio sound server reads configuration directives from a file \fI~/.pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/home/arun/local/pulseaudio/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -34,6 +34,8 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBsystem-instance=\f1 Run the daemon as system-wide instance, requires root priviliges. Takes a boolean argument, defaults to \fBno\f1. The \fB--system\f1 command line argument takes precedence.
 .TP
+\fBlocal-server-type=\f1 Please don't use this option if you don't have to! This option is currently only useful when you want D-Bus clients to use a remote server. This option may be removed in future versions. If you only want to run PulseAudio in the system mode, use the \fBsystem-instance\f1 option. This option takes one of \fBuser\f1, \fBsystem\f1 or \fBnone\f1 as the argument. This is essentially a duplicate for the \fBsystem-instance\f1 option. The difference is the \fBnone\f1 option, which is useful when you want to use a remote server with D-Bus clients. If both this and \fBsystem-instance\f1 are defined, this option takes precedence. Defaults to whatever the \fBsystem-instance\f1 is set.
+.TP
 \fBenable-shm=\f1 Enable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fByes\f1. The \fB--disable-shm\f1 command line argument takes precedence.
 .TP
 \fBshm-size-bytes=\f1 Sets the shared memory segment size for the daemon, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
@@ -59,7 +61,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBdl-search-path=\f1 The path were to look for dynamic shared objects (DSOs/plugins). You may specify more than one path seperated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
 .TP
-\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/usr/local/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/usr/local/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
+\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/home/arun/local/pulseaudio/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/home/arun/local/pulseaudio/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
 .TP
 \fBload-default-script-file=\f1 Load the default configuration script file as specified in \fBdefault-script-file=\f1. Defaults to \fByes\f1.
 .SH LOGGING
@@ -72,7 +74,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBlog-time=\f1 With each logged messages log the relative time since startup. Defaults to \fBno\f1.
 .TP
-\fBlog-backtrace=\f1 When greater than 0, with each logged message log a code stack trace up the the specified number of stack frames. Defaults to \fB0\f1.
+\fBlog-backtrace=\f1 When greater than 0, with each logged message log a code stack trace up the specified number of stack frames. Defaults to \fB0\f1.
 .SH RESOURCE LIMITS
 See \fBgetrlimit(2)\f1 for more information. Set to -1 if PulseAudio shall not touch the resource limit. Not all resource limits are available on all operating systems.
 .TP
@@ -115,6 +117,8 @@ Most drivers try to open the audio device with these settings and then fall back
 \fBdefault-sample-channels\f1 The default number of channels.
 .TP
 \fBdefault-channel-map\f1 The default channel map.
+.TP
+\fBalternate-sample-rate\f1 The alternate sample frequency. Sinks and sources will use either the default-rate-rate value or this alternate value, typically 44.1 or 48kHz. Switching between default and alternate values is enabled only when the sinks/sources are suspended. This option is ignored in passthrough mode where the stream rate will be used. If set to zero, this feature is disabled.
 .SH DEFAULT FRAGMENT SETTINGS
 Some hardware drivers require the hardware playback buffer to be subdivided into several fragments. It is possible to change these buffer metrics for machines with high scheduling latencies. Not all possible values that may be configured here are available in all hardware. The driver will to find the nearest setting supported. Modern drivers that support timer-based scheduling ignore these options.
 .TP
@@ -130,6 +134,6 @@ With the flat volume feature enabled, the sink HW volume is set to the same leve
 .TP
 \fBdeferred-volume-extra-delay-usec=\f1 The amount of time (in usec) by which HW volume changes are delayed. Negative values are also allowed. Defaults to 0.
 .SH AUTHORS
-The PulseAudio Developers <mzchyfrnhqvb (at) 0pointer (dot) net>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
+The PulseAudio Developers <pulseaudio-discuss (at) lists (dot) freedesktop (dot) org>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO
 \fBpulse-client.conf(5)\f1, \fBdefault.pa(5)\f1, \fBpulseaudio(1)\f1, \fBpacmd(1)\f1

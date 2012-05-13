@@ -85,8 +85,8 @@ static const struct option long_options[] = {
     {"realtime",                    2, 0, ARG_REALTIME},
     {"disallow-module-loading",     2, 0, ARG_DISALLOW_MODULE_LOADING},
     {"disallow-exit",               2, 0, ARG_DISALLOW_EXIT},
-    {"exit-idle-time",              2, 0, ARG_EXIT_IDLE_TIME},
-    {"scache-idle-time",            2, 0, ARG_SCACHE_IDLE_TIME},
+    {"exit-idle-time",              1, 0, ARG_EXIT_IDLE_TIME},
+    {"scache-idle-time",            1, 0, ARG_SCACHE_IDLE_TIME},
     {"log-target",                  1, 0, ARG_LOG_TARGET},
     {"log-meta",                    2, 0, ARG_LOG_META},
     {"log-time",                    2, 0, ARG_LOG_TIME},
@@ -137,8 +137,6 @@ void pa_cmdline_help(const char *argv0) {
            "      --disallow-exit[=BOOL]            Disallow user requested exit\n"
            "      --exit-idle-time=SECS             Terminate the daemon when idle and this\n"
            "                                        time passed\n"
-           "      --module-idle-time=SECS           Unload autoloaded modules when idle and\n"
-           "                                        this time passed\n"
            "      --scache-idle-time=SECS           Unload autoloaded samples when idle and\n"
            "                                        this time passed\n"
            "      --log-level[=LEVEL]               Increase or set verbosity level\n"

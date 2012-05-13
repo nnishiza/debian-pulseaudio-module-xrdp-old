@@ -37,7 +37,6 @@
 #include <pulsecore/socket.h>
 #include <pulsecore/queue.h>
 #include <pulsecore/log.h>
-#include <pulsecore/core-scache.h>
 #include <pulsecore/creds.h>
 #include <pulsecore/refcnt.h>
 #include <pulsecore/flist.h>
@@ -74,7 +73,11 @@ enum {
 typedef uint32_t pa_pstream_descriptor[PA_PSTREAM_DESCRIPTOR_MAX];
 
 #define PA_PSTREAM_DESCRIPTOR_SIZE (PA_PSTREAM_DESCRIPTOR_MAX*sizeof(uint32_t))
-#define FRAME_SIZE_MAX_ALLOW PA_SCACHE_ENTRY_SIZE_MAX /* allow uploading a single sample in one frame at max */
+
+/* To allow uploading a single sample in one frame, this value should be the
+ * same size (16 MB) as PA_SCACHE_ENTRY_SIZE_MAX from pulsecore/core-scache.h.
+ */
+#define FRAME_SIZE_MAX_ALLOW (1024*1024*16)
 
 PA_STATIC_FLIST_DECLARE(items, 0, pa_xfree);
 
@@ -136,11 +139,11 @@ struct pa_pstream {
     pa_memimport *import;
     pa_memexport *export;
 
-    pa_pstream_packet_cb_t recieve_packet_callback;
-    void *recieve_packet_callback_userdata;
+    pa_pstream_packet_cb_t receive_packet_callback;
+    void *receive_packet_callback_userdata;
 
-    pa_pstream_memblock_cb_t recieve_memblock_callback;
-    void *recieve_memblock_callback_userdata;
+    pa_pstream_memblock_cb_t receive_memblock_callback;
+    void *receive_memblock_callback_userdata;
 
     pa_pstream_notify_cb_t drain_callback;
     void *drain_callback_userdata;
@@ -245,10 +248,10 @@ pa_pstream *pa_pstream_new(pa_mainloop_api *m, pa_iochannel *io, pa_mempool *poo
     p->read.packet = NULL;
     p->read.index = 0;
 
-    p->recieve_packet_callback = NULL;
-    p->recieve_packet_callback_userdata = NULL;
-    p->recieve_memblock_callback = NULL;
-    p->recieve_memblock_callback_userdata = NULL;
+    p->receive_packet_callback = NULL;
+    p->receive_packet_callback_userdata = NULL;
+    p->receive_memblock_callback = NULL;
+    p->receive_memblock_callback_userdata = NULL;
     p->drain_callback = NULL;
     p->drain_callback_userdata = NULL;
     p->die_callback = NULL;
@@ -276,7 +279,7 @@ pa_pstream *pa_pstream_new(pa_mainloop_api *m, pa_iochannel *io, pa_mempool *poo
     return p;
 }
 
-static void item_free(void *item, void *q) {
+static void item_free(void *item) {
     struct item_info *i = item;
     pa_assert(i);
 
@@ -297,10 +300,10 @@ static void pstream_free(pa_pstream *p) {
 
     pa_pstream_unlink(p);
 
-    pa_queue_free(p->send_queue, item_free, NULL);
+    pa_queue_free(p->send_queue, item_free);
 
     if (p->write.current)
-        item_free(p->write.current, NULL);
+        item_free(p->write.current);
 
     if (p->write.memchunk.memblock)
         pa_memblock_unref(p->write.memchunk.memblock);
@@ -604,7 +607,7 @@ static int do_write(pa_pstream *p) {
 
     if (p->write.index >= PA_PSTREAM_DESCRIPTOR_SIZE + ntohl(p->write.descriptor[PA_PSTREAM_DESCRIPTOR_LENGTH])) {
         pa_assert(p->write.current);
-        item_free(p->write.current, NULL);
+        item_free(p->write.current);
         p->write.current = NULL;
 
         if (p->write.memchunk.memblock)
@@ -759,7 +762,7 @@ static int do_read(pa_pstream *p) {
     } else if (p->read.index > PA_PSTREAM_DESCRIPTOR_SIZE) {
         /* Frame payload available */
 
-        if (p->read.memblock && p->recieve_memblock_callback) {
+        if (p->read.memblock && p->receive_memblock_callback) {
 
             /* Is this memblock data? Than pass it to the user */
             l = (p->read.index - (size_t) r) < PA_PSTREAM_DESCRIPTOR_SIZE ? (size_t) (p->read.index - PA_PSTREAM_DESCRIPTOR_SIZE) : (size_t) r;
@@ -771,20 +774,20 @@ static int do_read(pa_pstream *p) {
                 chunk.index = p->read.index - PA_PSTREAM_DESCRIPTOR_SIZE - l;
                 chunk.length = l;
 
-                if (p->recieve_memblock_callback) {
+                if (p->receive_memblock_callback) {
                     int64_t offset;
 
                     offset = (int64_t) (
                             (((uint64_t) ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_HI])) << 32) |
                             (((uint64_t) ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_LO]))));
 
-                    p->recieve_memblock_callback(
+                    p->receive_memblock_callback(
                         p,
                         ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_CHANNEL]),
                         offset,
                         ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS]) & PA_FLAG_SEEKMASK,
                         &chunk,
-                        p->recieve_memblock_callback_userdata);
+                        p->receive_memblock_callback_userdata);
                 }
 
                 /* Drop seek info for following callbacks */
@@ -804,11 +807,11 @@ static int do_read(pa_pstream *p) {
 
             } else if (p->read.packet) {
 
-                if (p->recieve_packet_callback)
+                if (p->receive_packet_callback)
 #ifdef HAVE_CREDS
-                    p->recieve_packet_callback(p, p->read.packet, p->read_creds_valid ? &p->read_creds : NULL, p->recieve_packet_callback_userdata);
+                    p->receive_packet_callback(p, p->read.packet, p->read_creds_valid ? &p->read_creds : NULL, p->receive_packet_callback_userdata);
 #else
-                    p->recieve_packet_callback(p, p->read.packet, NULL, p->recieve_packet_callback_userdata);
+                    p->receive_packet_callback(p, p->read.packet, NULL, p->receive_packet_callback_userdata);
 #endif
 
                 pa_packet_unref(p->read.packet);
@@ -829,7 +832,7 @@ static int do_read(pa_pstream *p) {
                         pa_log_debug("Failed to import memory block.");
                 }
 
-                if (p->recieve_memblock_callback) {
+                if (p->receive_memblock_callback) {
                     int64_t offset;
                     pa_memchunk chunk;
 
@@ -841,13 +844,13 @@ static int do_read(pa_pstream *p) {
                             (((uint64_t) ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_HI])) << 32) |
                             (((uint64_t) ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_LO]))));
 
-                    p->recieve_memblock_callback(
+                    p->receive_memblock_callback(
                             p,
                             ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_CHANNEL]),
                             offset,
                             ntohl(p->read.descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS]) & PA_FLAG_SEEKMASK,
                             &chunk,
-                            p->recieve_memblock_callback_userdata);
+                            p->receive_memblock_callback_userdata);
                 }
 
                 if (b)
@@ -895,20 +898,20 @@ void pa_pstream_set_drain_callback(pa_pstream *p, pa_pstream_notify_cb_t cb, voi
     p->drain_callback_userdata = userdata;
 }
 
-void pa_pstream_set_recieve_packet_callback(pa_pstream *p, pa_pstream_packet_cb_t cb, void *userdata) {
+void pa_pstream_set_receive_packet_callback(pa_pstream *p, pa_pstream_packet_cb_t cb, void *userdata) {
     pa_assert(p);
     pa_assert(PA_REFCNT_VALUE(p) > 0);
 
-    p->recieve_packet_callback = cb;
-    p->recieve_packet_callback_userdata = userdata;
+    p->receive_packet_callback = cb;
+    p->receive_packet_callback_userdata = userdata;
 }
 
-void pa_pstream_set_recieve_memblock_callback(pa_pstream *p, pa_pstream_memblock_cb_t cb, void *userdata) {
+void pa_pstream_set_receive_memblock_callback(pa_pstream *p, pa_pstream_memblock_cb_t cb, void *userdata) {
     pa_assert(p);
     pa_assert(PA_REFCNT_VALUE(p) > 0);
 
-    p->recieve_memblock_callback = cb;
-    p->recieve_memblock_callback_userdata = userdata;
+    p->receive_memblock_callback = cb;
+    p->receive_memblock_callback_userdata = userdata;
 }
 
 void pa_pstream_set_release_callback(pa_pstream *p, pa_pstream_block_id_cb_t cb, void *userdata) {
@@ -987,8 +990,8 @@ void pa_pstream_unlink(pa_pstream *p) {
 
     p->die_callback = NULL;
     p->drain_callback = NULL;
-    p->recieve_packet_callback = NULL;
-    p->recieve_memblock_callback = NULL;
+    p->receive_packet_callback = NULL;
+    p->receive_memblock_callback = NULL;
 }
 
 void pa_pstream_enable_shm(pa_pstream *p, pa_bool_t enable) {

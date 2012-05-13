@@ -124,6 +124,20 @@ typedef enum pa_context_flags {
 #define PA_CONTEXT_NOFAIL PA_CONTEXT_NOFAIL
 /** \endcond */
 
+/** Direction bitfield - while we currently do not expose anything bidirectional,
+  one should test against the bit instead of the value (e g if (d & PA_DIRECTION_OUTPUT)),
+  because we might add bidirectional stuff in the future. \since 2.0
+*/
+typedef enum pa_direction {
+    PA_DIRECTION_OUTPUT = 0x0001U,  /**< Output direction */
+    PA_DIRECTION_INPUT = 0x0002U    /**< Input direction */
+} pa_direction_t;
+
+/** \cond fulldocs */
+#define PA_DIRECTION_OUTPUT PA_DIRECTION_OUTPUT
+#define PA_DIRECTION_INPUT PA_DIRECTION_INPUT
+/** \endcond */
+
 /** The type of device we are dealing with */
 typedef enum pa_device_type {
     PA_DEVICE_TYPE_SINK,     /**< Playback device */
@@ -339,7 +353,7 @@ typedef enum pa_stream_flags {
 /** Playback and record buffer metrics */
 typedef struct pa_buffer_attr {
     uint32_t maxlength;
-    /**< Maximum length of the buffer. Setting this to (uint32_t) -1
+    /**< Maximum length of the buffer in bytes. Setting this to (uint32_t) -1
      * will initialize this to the maximum value supported by server,
      * which is recommended. */
 
@@ -399,7 +413,7 @@ typedef struct pa_buffer_attr {
 } pa_buffer_attr;
 
 /** Error values as used by pa_context_errno(). Use pa_strerror() to convert these values to human readable strings */
-enum {
+typedef enum pa_error_code {
     PA_OK = 0,                     /**< No error */
     PA_ERR_ACCESS,                 /**< Access failure */
     PA_ERR_COMMAND,                /**< Unknown command */
@@ -428,7 +442,7 @@ enum {
     PA_ERR_IO,                     /**< An IO error happened. \since 0.9.16 */
     PA_ERR_BUSY,                   /**< Device or resource busy. \since 0.9.17 */
     PA_ERR_MAX                     /**< Not really an error but the first invalid error code */
-};
+} pa_error_code_t;
 
 /** \cond fulldocs */
 #define PA_OK PA_OK
@@ -826,6 +840,11 @@ static inline int PA_SINK_IS_OPENED(pa_sink_state_t x) {
     return x == PA_SINK_RUNNING || x == PA_SINK_IDLE;
 }
 
+/** Returns non-zero if sink is running. \since 1.0 */
+static inline int PA_SINK_IS_RUNNING(pa_sink_state_t x) {
+    return x == PA_SINK_RUNNING;
+}
+
 /** \cond fulldocs */
 #define PA_SINK_INVALID_STATE PA_SINK_INVALID_STATE
 #define PA_SINK_RUNNING PA_SINK_RUNNING
@@ -937,6 +956,11 @@ static inline int PA_SOURCE_IS_OPENED(pa_source_state_t x) {
     return x == PA_SOURCE_RUNNING || x == PA_SOURCE_IDLE;
 }
 
+/** Returns non-zero if source is running \since 1.0 */
+static inline int PA_SOURCE_IS_RUNNING(pa_source_state_t x) {
+    return x == PA_SOURCE_RUNNING;
+}
+
 /** \cond fulldocs */
 #define PA_SOURCE_INVALID_STATE PA_SOURCE_INVALID_STATE
 #define PA_SOURCE_RUNNING PA_SOURCE_RUNNING
@@ -966,6 +990,21 @@ typedef void (*pa_free_cb_t)(void *p);
  * to connect a new stream to renegotiate a format and continue
  * playback, \since 1.0 */
 #define PA_STREAM_EVENT_FORMAT_LOST "format-lost"
+
+/** Port availability / jack detection status
+ * \since 2.0 */
+typedef enum pa_port_available {
+    PA_PORT_AVAILABLE_UNKNOWN = 0, /**< This port does not support jack detection \since 2.0 */
+    PA_PORT_AVAILABLE_NO = 1,      /**< This port is not available, likely because the jack is not plugged in. \since 2.0 */
+    PA_PORT_AVAILABLE_YES = 2,     /**< This port is available, likely because the jack is plugged in. \since 2.0 */
+} pa_port_available_t;
+
+/** \cond fulldocs */
+#define PA_PORT_AVAILABLE_UNKNOWN PA_PORT_AVAILABLE_UNKNOWN
+#define PA_PORT_AVAILABLE_NO PA_PORT_AVAILABLE_NO
+#define PA_PORT_AVAILABLE_YES PA_PORT_AVAILABLE_YES
+
+/** \endcond */
 
 PA_C_DECL_END
 

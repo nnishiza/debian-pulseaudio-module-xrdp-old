@@ -48,6 +48,7 @@ AM_CFLAGS = \
 	$(PTHREAD_CFLAGS) \
 	-DPA_ALSA_PATHS_DIR=\"$(alsapathsdir)\" \
 	-DPA_ALSA_PROFILE_SETS_DIR=\"$(alsaprofilesetsdir)\"
+AM_CXXFLAGS = $(AM_CFLAGS)
 SERVER_CFLAGS = -D__INCLUDED_FROM_PULSE_AUDIO
 
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
@@ -86,7 +87,7 @@ EXTRA_DIST = \
 		daemon/esdcompat.in \
 		daemon/start-pulseaudio-x11.in \
 		daemon/start-pulseaudio-kde.in \
-		utils/padsp \
+		utils/padsp.in \
 		utils/qpaeq \
 		modules/module-defs.h.m4 \
 		daemon/pulseaudio.desktop.in \
@@ -214,12 +215,10 @@ pax11publish_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 #         Test programs           #
 ###################################
 
-TESTS = \
+TESTS_default = \
 		mainloop-test \
 		strlist-test \
 		close-test \
-		voltest \
-		vector-test \
 		memblockq-test \
 		channelmap-test \
 		thread-mainloop-test \
@@ -233,36 +232,40 @@ TESTS = \
 		asyncmsgq-test \
 		queue-test \
 		rtpoll-test \
-		sig2str-test \
 		resampler-test \
 		smoother-test \
+		thread-test \
+		volume-test \
 		mix-test \
-		remix-test \
 		proplist-test \
-		lock-autospawn-test \
-		prioq-test
+		lock-autospawn-test
 
 TESTS_norun = \
 		mcalign-test \
 		pacat-simple \
 		parec-simple \
-		extended-test \
-		sync-playback \
-		interpol-test \
-		thread-test \
 		flist-test \
+		remix-test \
 		rtstutter \
+		sig2str-test \
 		stripnul \
-		connect-stress
+		echo-cancel-test
+
+# These tests need a running pulseaudio daemon
+TESTS_daemon = \
+		connect-stress \
+		extended-test \
+		interpol-test \
+		sync-playback
 
 if !OS_IS_WIN32
-TESTS += \
+TESTS_default += \
 		sigbus-test \
 		usergroup-test
 endif
 
 if !OS_IS_DARWIN
-TESTS_norun += \
+TESTS_default += \
 		once-test
 endif
 
@@ -273,7 +276,7 @@ TESTS_norun += \
 endif
 
 if HAVE_GLIB20
-TESTS += \
+TESTS_default += \
 		mainloop-test-glib
 endif
 
@@ -287,11 +290,17 @@ TESTS_norun += \
 		alsa-time-test
 endif
 
+TESTS_ENVIRONMENT=MAKE_CHECK=1
+TESTS = $(TESTS_default)
+
 if BUILD_TESTS_DEFAULT
-noinst_PROGRAMS = $(TESTS) $(TESTS_norun)
+noinst_PROGRAMS = $(TESTS_default) $(TESTS_norun) $(TESTS_daemon)
 else
-check_PROGRAMS = $(TESTS) $(TESTS_norun)
+check_PROGRAMS = $(TESTS_default) $(TESTS_norun) $(TESTS_daemon)
 endif
+
+check-daemon:
+	$(MAKE) check TESTS="$(TESTS_daemon)"
 
 mainloop_test_SOURCES = tests/mainloop-test.c
 mainloop_test_CFLAGS = $(AM_CFLAGS)
@@ -305,7 +314,7 @@ thread_mainloop_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 utf8_test_SOURCES = tests/utf8-test.c
 utf8_test_CFLAGS = $(AM_CFLAGS)
-utf8_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+utf8_test_LDADD = $(AM_LDADD) libpulse.la
 utf8_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 format_test_SOURCES = tests/format-test.c
@@ -374,17 +383,17 @@ mcalign_test_LDADD = $(AM_LDADD) $(WINSOCK_LIBS) libpulsecore-@PA_MAJORMINOR@.la
 mcalign_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 pacat_simple_SOURCES = tests/pacat-simple.c
-pacat_simple_LDADD = $(AM_LDADD) libpulse.la libpulse-simple.la libpulsecommon-@PA_MAJORMINOR@.la
+pacat_simple_LDADD = $(AM_LDADD) libpulse.la libpulse-simple.la
 pacat_simple_CFLAGS = $(AM_CFLAGS)
 pacat_simple_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 parec_simple_SOURCES = tests/parec-simple.c
-parec_simple_LDADD = $(AM_LDADD) libpulse.la libpulse-simple.la libpulsecommon-@PA_MAJORMINOR@.la
+parec_simple_LDADD = $(AM_LDADD) libpulse.la libpulse-simple.la
 parec_simple_CFLAGS = $(AM_CFLAGS)
 parec_simple_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 extended_test_SOURCES = tests/extended-test.c
-extended_test_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+extended_test_LDADD = $(AM_LDADD) libpulse.la
 extended_test_CFLAGS = $(AM_CFLAGS)
 extended_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
@@ -398,19 +407,14 @@ close_test_CFLAGS = $(AM_CFLAGS)
 close_test_LDADD = $(AM_LDADD) $(WINSOCK_LIBS) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 close_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-voltest_SOURCES = tests/voltest.c
-voltest_CFLAGS = $(AM_CFLAGS)
-voltest_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
-voltest_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
-
-vector_test_SOURCES = tests/vector-test.c
-vector_test_CFLAGS = $(AM_CFLAGS)
-vector_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
-vector_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
+volume_test_SOURCES = tests/volume-test.c
+volume_test_CFLAGS = $(AM_CFLAGS)
+volume_test_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+volume_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 channelmap_test_SOURCES = tests/channelmap-test.c
 channelmap_test_CFLAGS = $(AM_CFLAGS)
-channelmap_test_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+channelmap_test_LDADD = $(AM_LDADD) libpulse.la
 channelmap_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 cpulimit_test_SOURCES = tests/cpulimit-test.c daemon/cpulimit.c daemon/cpulimit.h
@@ -434,12 +438,12 @@ memblockq_test_LDADD = $(AM_LDADD) $(WINSOCK_LIBS) libpulsecore-@PA_MAJORMINOR@.
 memblockq_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 sync_playback_SOURCES = tests/sync-playback.c
-sync_playback_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+sync_playback_LDADD = $(AM_LDADD) libpulse.la
 sync_playback_CFLAGS = $(AM_CFLAGS)
 sync_playback_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 interpol_test_SOURCES = tests/interpol-test.c
-interpol_test_LDADD = $(AM_LDADD) libpulse.la libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+interpol_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 interpol_test_CFLAGS = $(AM_CFLAGS)
 interpol_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
@@ -488,18 +492,13 @@ lock_autospawn_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse
 lock_autospawn_test_CFLAGS = $(AM_CFLAGS)
 lock_autospawn_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
-prioq_test_SOURCES = tests/prioq-test.c
-prioq_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
-prioq_test_CFLAGS = $(AM_CFLAGS)
-prioq_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
-
 sigbus_test_SOURCES = tests/sigbus-test.c
 sigbus_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 sigbus_test_CFLAGS = $(AM_CFLAGS)
 sigbus_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 gtk_test_SOURCES = tests/gtk-test.c
-gtk_test_LDADD = $(AM_LDADD) $(GTK20_LIBS) libpulse.la libpulse-mainloop-glib.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+gtk_test_LDADD = $(AM_LDADD) $(GTK20_LIBS) libpulse-mainloop-glib.la libpulse.la
 gtk_test_CFLAGS = $(AM_CFLAGS) $(GTK20_CFLAGS)
 gtk_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
@@ -514,16 +513,24 @@ usergroup_test_CFLAGS = $(AM_CFLAGS)
 usergroup_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 connect_stress_SOURCES = tests/connect-stress.c
-connect_stress_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+connect_stress_LDADD = $(AM_LDADD) libpulse.la
 connect_stress_CFLAGS = $(AM_CFLAGS)
 connect_stress_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
+echo_cancel_test_SOURCES = $(module_echo_cancel_la_SOURCES)
+nodist_echo_cancel_test_SOURCES = $(nodist_module_echo_cancel_la_SOURCES)
+echo_cancel_test_LDADD = $(module_echo_cancel_la_LIBADD)
+echo_cancel_test_CFLAGS = $(module_echo_cancel_la_CFLAGS) -DECHO_CANCEL_TEST=1
+if HAVE_WEBRTC
+echo_cancel_test_CXXFLAGS = $(module_echo_cancel_la_CXXFLAGS) -DECHO_CANCEL_TEST=1
+endif
+echo_cancel_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 
 ###################################
 #         Common library          #
 ###################################
 
-lib_LTLIBRARIES = \
+pkglib_LTLIBRARIES = \
 		libpulsecommon-@PA_MAJORMINOR@.la
 
 libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
@@ -558,7 +565,7 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/lock-autospawn.c pulsecore/lock-autospawn.h \
 		pulsecore/log.c pulsecore/log.h \
 		pulsecore/ratelimit.c pulsecore/ratelimit.h \
-		pulsecore/macro.h pulsecore/vector.h \
+		pulsecore/macro.h \
 		pulsecore/mcalign.c pulsecore/mcalign.h \
 		pulsecore/memblock.c pulsecore/memblock.h \
 		pulsecore/memblockq.c pulsecore/memblockq.h \
@@ -571,7 +578,6 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/pid.c pulsecore/pid.h \
 		pulsecore/pipe.c pulsecore/pipe.h \
 		pulsecore/poll.c pulsecore/poll.h \
-		pulsecore/prioq.c pulsecore/prioq.h \
 		pulsecore/memtrap.c pulsecore/memtrap.h \
 		pulsecore/aupdate.c pulsecore/aupdate.h \
 		pulsecore/proplist-util.c pulsecore/proplist-util.h \
@@ -688,7 +694,7 @@ pulseinclude_HEADERS = \
 		pulse/volume.h \
 		pulse/xmalloc.h
 
-lib_LTLIBRARIES += \
+lib_LTLIBRARIES = \
 		libpulse.la \
 		libpulse-simple.la
 
@@ -756,8 +762,18 @@ libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version
 ###################################
 
 if HAVE_OSS_WRAPPER
-lib_LTLIBRARIES += libpulsedsp.la
-bin_SCRIPTS += utils/padsp
+padsplibdir = $(pkglibdir)
+padsplib_LTLIBRARIES = libpulsedsp.la
+bin_SCRIPTS += padsp
+
+edit = @SED@ \
+       -e "s|@pkglibdir[@]|$(pkglibdir)|g"
+
+padsp: utils/padsp.in
+	$(edit) $< > $@
+
+CLEANFILES += padsp
+
 endif
 
 libpulsedsp_la_SOURCES = utils/padsp.c
@@ -811,9 +827,9 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/sconv_sse.c \
 		pulsecore/sconv.c pulsecore/sconv.h \
 		pulsecore/shared.c pulsecore/shared.h \
-		pulsecore/shm.c pulsecore/shm.h \
 		pulsecore/sink-input.c pulsecore/sink-input.h \
 		pulsecore/sink.c pulsecore/sink.h \
+		pulsecore/device-port.c pulsecore/device-port.h \
 		pulsecore/sioman.c pulsecore/sioman.h \
 		pulsecore/sound-file-stream.c pulsecore/sound-file-stream.h \
 		pulsecore/sound-file.c pulsecore/sound-file.h \
@@ -821,7 +837,6 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/source.c pulsecore/source.h \
 		pulsecore/start-child.c pulsecore/start-child.h \
 		pulsecore/thread-mq.c pulsecore/thread-mq.h \
-		pulsecore/time-smoother.c pulsecore/time-smoother.h \
 		pulsecore/database.h
 
 libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(LIBSAMPLERATE_CFLAGS) $(LIBSPEEX_CFLAGS) $(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS)
@@ -888,8 +903,12 @@ modlibexec_LTLIBRARIES = \
 		libprotocol-cli.la \
 		libprotocol-simple.la \
 		libprotocol-http.la \
-		libprotocol-native.la \
+		libprotocol-native.la
+
+if HAVE_ESOUND
+modlibexec_LTLIBRARIES += \
 		libprotocol-esound.la
+endif
 
 # We need to emulate sendmsg/recvmsg to support this on Win32
 if !OS_IS_WIN32
@@ -927,9 +946,11 @@ libprotocol_native_la_CFLAGS += $(DBUS_CFLAGS)
 libprotocol_native_la_LIBADD += $(DBUS_LIBS)
 endif
 
+if HAVE_ESOUND
 libprotocol_esound_la_SOURCES = pulsecore/protocol-esound.c pulsecore/protocol-esound.h pulsecore/esound.h
 libprotocol_esound_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
 libprotocol_esound_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
+endif
 
 librtp_la_SOURCES = \
 		modules/rtp/rtp.c modules/rtp/rtp.h \
@@ -986,23 +1007,29 @@ modlibexec_LTLIBRARIES += \
 		module-sine.la \
 		module-native-protocol-tcp.la \
 		module-native-protocol-fd.la \
-		module-esound-protocol-tcp.la \
 		module-combine.la \
 		module-combine-sink.la \
 		module-remap-sink.la \
 		module-ladspa-sink.la \
-		module-esound-sink.la \
 		module-tunnel-sink.la \
 		module-tunnel-source.la \
 		module-position-event-sounds.la \
 		module-augment-properties.la \
-		module-cork-music-on-phone.la \
+		module-role-cork.la \
 		module-loopback.la \
 		module-virtual-sink.la \
 		module-virtual-source.la \
+		module-virtual-surround-sink.la \
 		module-switch-on-connect.la \
+		module-switch-on-port-available.la \
 		module-filter-apply.la \
 		module-filter-heuristics.la
+
+if HAVE_ESOUND
+modlibexec_LTLIBRARIES += \
+		module-esound-protocol-tcp.la \
+		module-esound-sink.la
+endif
 
 # See comment at librtp.la above
 if !OS_IS_WIN32
@@ -1016,8 +1043,11 @@ modlibexec_LTLIBRARIES += \
 		module-cli-protocol-unix.la \
 		module-simple-protocol-unix.la \
 		module-http-protocol-unix.la \
-		module-native-protocol-unix.la \
+		module-native-protocol-unix.la
+if HAVE_ESOUND
+modlibexec_LTLIBRARIES += \
 		module-esound-protocol-unix.la
+endif
 endif
 
 if HAVE_MKFIFO
@@ -1027,9 +1057,11 @@ modlibexec_LTLIBRARIES += \
 endif
 
 if !OS_IS_WIN32
+if HAVE_ESOUND
 modlibexec_LTLIBRARIES += \
 		module-esound-compat-spawnfd.la \
 		module-esound-compat-spawnpid.la
+endif
 endif
 
 if HAVE_REGEX
@@ -1068,6 +1100,7 @@ modlibexec_LTLIBRARIES += \
 
 dist_alsaprofilesets_DATA = \
 		modules/alsa/mixer/profile-sets/default.conf \
+		modules/alsa/mixer/profile-sets/extra-hdmi.conf \
 		modules/alsa/mixer/profile-sets/maudio-fasttrack-pro.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf \
@@ -1105,7 +1138,11 @@ dist_alsapaths_DATA = \
 		modules/alsa/mixer/paths/analog-output-headphones-2.conf \
 		modules/alsa/mixer/paths/analog-output-lfe-on-mono.conf \
 		modules/alsa/mixer/paths/analog-output-mono.conf \
-		modules/alsa/mixer/paths/iec958-stereo-output.conf
+		modules/alsa/mixer/paths/iec958-stereo-output.conf \
+		modules/alsa/mixer/paths/hdmi-output-0.conf \
+		modules/alsa/mixer/paths/hdmi-output-1.conf \
+		modules/alsa/mixer/paths/hdmi-output-2.conf \
+		modules/alsa/mixer/paths/hdmi-output-3.conf
 
 endif
 
@@ -1129,6 +1166,12 @@ if HAVE_LIRC
 modlibexec_LTLIBRARIES += \
 		module-lirc.la
 endif
+
+if HAVE_XEN
+modlibexec_LTLIBRARIES += \
+		module-xenpv-sink.la
+endif
+
 
 if HAVE_EVDEV
 modlibexec_LTLIBRARIES += \
@@ -1173,6 +1216,11 @@ endif
 if HAVE_UDEV
 modlibexec_LTLIBRARIES += \
 		module-udev-detect.la
+endif
+
+if HAVE_SYSTEMD
+modlibexec_LTLIBRARIES += \
+		module-systemd-login.la
 endif
 
 if HAVE_DBUS
@@ -1221,8 +1269,6 @@ SYMDEF_FILES = \
 		module-pipe-source-symdef.h \
 		module-simple-protocol-tcp-symdef.h \
 		module-simple-protocol-unix-symdef.h \
-		module-esound-protocol-tcp-symdef.h \
-		module-esound-protocol-unix-symdef.h \
 		module-native-protocol-tcp-symdef.h \
 		module-native-protocol-unix-symdef.h \
 		module-native-protocol-fd-symdef.h \
@@ -1232,19 +1278,17 @@ SYMDEF_FILES = \
 		module-remap-sink-symdef.h \
 		module-ladspa-sink-symdef.h \
 		module-equalizer-sink-symdef.h \
-		module-esound-compat-spawnfd-symdef.h \
-		module-esound-compat-spawnpid-symdef.h \
 		module-match-symdef.h \
 		module-tunnel-sink-symdef.h \
 		module-tunnel-source-symdef.h \
 		module-null-sink-symdef.h \
 		module-null-source-symdef.h \
 		module-sine-source-symdef.h \
-		module-esound-sink-symdef.h \
 		module-zeroconf-publish-symdef.h \
 		module-zeroconf-discover-symdef.h \
 		module-bonjour-publish-symdef.h \
 		module-lirc-symdef.h \
+		module-xenpv-sink-symdef.h \
 		module-mmkbd-evdev-symdef.h \
 		module-http-protocol-tcp-symdef.h \
 		module-http-protocol-unix-symdef.h \
@@ -1280,6 +1324,7 @@ SYMDEF_FILES = \
 		module-echo-cancel-symdef.h \
 		module-hal-detect-symdef.h \
 		module-udev-detect-symdef.h \
+		module-systemd-login-symdef.h \
 		module-bluetooth-proximity-symdef.h \
 		module-bluetooth-discover-symdef.h \
 		module-bluetooth-device-symdef.h \
@@ -1288,15 +1333,26 @@ SYMDEF_FILES = \
 		module-gconf-symdef.h \
 		module-position-event-sounds-symdef.h \
 		module-augment-properties-symdef.h \
-		module-cork-music-on-phone-symdef.h \
+		module-role-cork-symdef.h \
 		module-console-kit-symdef.h \
 		module-dbus-protocol-symdef.h \
 		module-loopback-symdef.h \
 		module-virtual-sink-symdef.h \
 		module-virtual-source-symdef.h \
+		module-virtual-surround-sink-symdef.h \
 		module-switch-on-connect-symdef.h \
+		module-switch-on-port-available-symdef.h \
 		module-filter-apply-symdef.h \
 		module-filter-heuristics-symdef.h
+
+if HAVE_ESOUND
+SYMDEF_FILES += \
+		module-esound-protocol-tcp-symdef.h \
+		module-esound-protocol-unix-symdef.h \
+		module-esound-compat-spawnfd-symdef.h \
+		module-esound-compat-spawnpid-symdef.h \
+		module-esound-sink-symdef.h
+endif
 
 EXTRA_DIST += $(SYMDEF_FILES)
 BUILT_SOURCES += $(SYMDEF_FILES) builddirs
@@ -1386,6 +1442,7 @@ module_native_protocol_fd_la_LIBADD = $(MODULE_LIBADD) libprotocol-native.la
 
 # EsounD protocol
 
+if HAVE_ESOUND
 module_esound_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
 module_esound_protocol_tcp_la_CFLAGS = -DUSE_TCP_SOCKETS -DUSE_PROTOCOL_ESOUND $(AM_CFLAGS)
 module_esound_protocol_tcp_la_LDFLAGS = $(MODULE_LDFLAGS)
@@ -1407,6 +1464,7 @@ module_esound_compat_spawnpid_la_LIBADD = $(MODULE_LIBADD)
 module_esound_sink_la_SOURCES = modules/module-esound-sink.c
 module_esound_sink_la_LDFLAGS = $(MODULE_LDFLAGS) $(WINSOCK_LIBS)
 module_esound_sink_la_LIBADD = $(MODULE_LIBADD)
+endif
 
 # Pipes
 
@@ -1449,6 +1507,10 @@ module_combine_sink_la_LIBADD = $(MODULE_LIBADD)
 module_switch_on_connect_la_SOURCES = modules/module-switch-on-connect.c
 module_switch_on_connect_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_switch_on_connect_la_LIBADD = $(MODULE_LIBADD)
+
+module_switch_on_port_available_la_SOURCES = modules/module-switch-on-port-available.c
+module_switch_on_port_available_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_switch_on_port_available_la_LIBADD = $(MODULE_LIBADD)
 
 module_filter_apply_la_SOURCES = modules/module-filter-apply.c
 module_filter_apply_la_LDFLAGS = $(MODULE_LDFLAGS)
@@ -1498,6 +1560,11 @@ module_virtual_source_la_SOURCES = modules/module-virtual-source.c
 module_virtual_source_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
 module_virtual_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_virtual_source_la_LIBADD = $(MODULE_LIBADD)
+
+module_virtual_surround_sink_la_SOURCES = modules/module-virtual-surround-sink.c
+module_virtual_surround_sink_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
+module_virtual_surround_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_virtual_surround_sink_la_LIBADD = $(MODULE_LIBADD)
 
 # X11
 
@@ -1622,6 +1689,15 @@ module_lirc_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_lirc_la_LIBADD = $(MODULE_LIBADD) $(LIRC_LIBS)
 module_lirc_la_CFLAGS = $(AM_CFLAGS) $(LIRC_CFLAGS)
 
+
+# Xen PV driver
+
+module_xenpv_sink_la_SOURCES = modules/xen/module-xenpv-sink.c modules/xen/gntalloc.h modules/xen/gntdev.h
+module_xenpv_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_xenpv_sink_la_LIBADD = $(MODULE_LIBADD) $(XEN_LIBS)
+module_xenpv_sink_la_CFLAGS = $(AM_CFLAGS) $(XEN_CFLAGS) -I$(top_srcdir)/src/modules/xen
+
+
 # Linux evdev
 
 module_mmkbd_evdev_la_SOURCES = modules/module-mmkbd-evdev.c
@@ -1660,11 +1736,11 @@ module_augment_properties_la_LIBADD = $(MODULE_LIBADD)
 #module_augment_properties_la_CFLAGS = $(AM_CFLAGS) -DDESKTOPFILEDIR=\"$(datadir)/applications\"
 module_augment_properties_la_CFLAGS = $(AM_CFLAGS) -DDESKTOPFILEDIR=\"/usr/share/applications\"
 
-# Cork music streams while a phone stream is active
-module_cork_music_on_phone_la_SOURCES = modules/module-cork-music-on-phone.c
-module_cork_music_on_phone_la_LDFLAGS = $(MODULE_LDFLAGS)
-module_cork_music_on_phone_la_LIBADD = $(MODULE_LIBADD)
-module_cork_music_on_phone_la_CFLAGS = $(AM_CFLAGS)
+# Cork certain streams while others are active (e.g. cork music when phone streams appear)
+module_role_cork_la_SOURCES = modules/module-role-cork.c
+module_role_cork_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_role_cork_la_LIBADD = $(MODULE_LIBADD)
+module_role_cork_la_CFLAGS = $(AM_CFLAGS)
 
 # Device description restore module
 module_device_manager_la_SOURCES = modules/module-device-manager.c
@@ -1732,13 +1808,15 @@ module_suspend_on_idle_la_CFLAGS = $(AM_CFLAGS)
 
 # echo-cancel module
 module_echo_cancel_la_SOURCES = \
-		modules/echo-cancel/module-echo-cancel.c modules/echo-cancel/echo-cancel.h \
-		modules/echo-cancel/speex.c \
-		modules/echo-cancel/adrian-aec.c modules/echo-cancel/adrian-aec.h \
-		modules/echo-cancel/adrian.c modules/echo-cancel/adrian.h
+		modules/echo-cancel/module-echo-cancel.c modules/echo-cancel/echo-cancel.h
 module_echo_cancel_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_echo_cancel_la_LIBADD = $(MODULE_LIBADD) $(LIBSPEEX_LIBS)
 module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(LIBSPEEX_CFLAGS)
+if HAVE_ADRIAN_EC
+module_echo_cancel_la_SOURCES += \
+		modules/echo-cancel/adrian-aec.c modules/echo-cancel/adrian-aec.h \
+		modules/echo-cancel/adrian.c modules/echo-cancel/adrian.h
+module_echo_cancel_la_CFLAGS += -DHAVE_ADRIAN_EC=1
 if HAVE_ORC
 ORC_SOURCE += modules/echo-cancel/adrian-aec
 nodist_module_echo_cancel_la_SOURCES = \
@@ -1746,6 +1824,16 @@ nodist_module_echo_cancel_la_SOURCES = \
 		modules/echo-cancel/adrian-aec-orc-gen.h
 module_echo_cancel_la_LIBADD += $(ORC_LIBS)
 module_echo_cancel_la_CFLAGS += $(ORC_CFLAGS) -I$(top_builddir)/src/modules/echo-cancel
+endif
+endif
+if HAVE_SPEEX
+module_echo_cancel_la_SOURCES += modules/echo-cancel/speex.c
+endif
+if HAVE_WEBRTC
+module_echo_cancel_la_SOURCES += modules/echo-cancel/webrtc.cc
+module_echo_cancel_la_CFLAGS += -DHAVE_WEBRTC=1
+module_echo_cancel_la_CXXFLAGS = $(AM_CXXFLAGS) $(SERVER_CFLAGS) $(WEBRTC_CFLAGS) -DHAVE_WEBRTC=1
+module_echo_cancel_la_LIBADD += $(WEBRTC_LIBS)
 endif
 
 # RTP modules
@@ -1794,8 +1882,13 @@ module_udev_detect_la_CFLAGS = $(AM_CFLAGS) $(UDEV_CFLAGS)
 
 module_console_kit_la_SOURCES = modules/module-console-kit.c
 module_console_kit_la_LDFLAGS = $(MODULE_LDFLAGS)
-module_console_kit_la_LIBADD = $(MODULE_LIBADD) $(DBUS_LIBS)
-module_console_kit_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
+module_console_kit_la_LIBADD = $(MODULE_LIBADD) $(DBUS_LIBS) $(SYSTEMD_LIBS)
+module_console_kit_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) $(SYSTEMD_CFLAGS)
+
+module_systemd_login_la_SOURCES = modules/module-systemd-login.c
+module_systemd_login_la_LDFLAGS = $(MODULE_LDFLAGS)
+module_systemd_login_la_LIBADD = $(MODULE_LIBADD) $(SYSTEMD_LIBS)
+module_systemd_login_la_CFLAGS = $(AM_CFLAGS) $(SYSTEMD_CFLAGS)
 
 # GConf support
 module_gconf_la_SOURCES = modules/gconf/module-gconf.c
@@ -1944,4 +2037,23 @@ update-map-file:
 
 update-all: update-ffmpeg update-sbc update-map-file
 
-.PHONY: utils/padsp massif update-all update-ffmpeg update-sbc update-map-file
+# Force installation order of libraries. libtool relinks on install time, in
+# which case libpulsecommon has to be installed before others, but the padsp
+# preload library has to be done after the normal libraries (e.g. libpulse)
+# ...
+# Unfortunately automake behaviour means that rules without commands also
+# override build-in rules, so it's not trivial to add dependencies.
+# See http://debbugs.gnu.org/cgi/bugreport.cgi?bug=7328 for the workaround
+# ...
+# Isn't libtool/autotools fun!
+
+installlibLTLIBRARIES = install-libLTLIBRARIES
+$(installlibLTLIBRARIES): install-pkglibLTLIBRARIES
+
+installmodlibexecLTLIBRARIES = install-modlibexecLTLIBRARIES
+$(installmodlibexecLTLIBRARIES): install-pkglibLTLIBRARIES
+
+installpadsplibLTLIBRARIES = install-padsplibLTLIBRARIES
+$(installpadsplibLTLIBRARIES): install-libLTLIBRARIES
+
+.PHONY: massif update-all update-ffmpeg update-sbc update-map-file

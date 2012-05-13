@@ -212,6 +212,15 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
     complete_action();
 }
 
+static const char* get_available_str_ynonly(int available)
+{
+    switch (available) {
+        case PA_PORT_AVAILABLE_YES: return ", available";
+        case PA_PORT_AVAILABLE_NO: return ", not available";
+    }
+    return "";
+}
+
 static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_last, void *userdata) {
 
     static const char *state_table[] = {
@@ -308,7 +317,8 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
 
         printf(_("\tPorts:\n"));
         for (p = i->ports; *p; p++)
-            printf("\t\t%s: %s (priority. %u)\n", (*p)->name, (*p)->description, (*p)->priority);
+            printf("\t\t%s: %s (priority: %u%s)\n", (*p)->name, (*p)->description, (*p)->priority,
+                get_available_str_ynonly((*p)->available));
     }
 
     if (i->active_port)
@@ -419,7 +429,8 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
 
         printf(_("\tPorts:\n"));
         for (p = i->ports; *p; p++)
-            printf("\t\t%s: %s (priority. %u)\n", (*p)->name, (*p)->description, (*p)->priority);
+            printf("\t\t%s: %s (priority: %u%s)\n", (*p)->name, (*p)->description, (*p)->priority,
+                get_available_str_ynonly((*p)->available));
     }
 
     if (i->active_port)
@@ -570,6 +581,27 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
     if (i->active_profile)
         printf(_("\tActive Profile: %s\n"),
                i->active_profile->name);
+
+    if (i->ports) {
+        pa_card_port_info **p;
+
+        printf(_("\tPorts:\n"));
+        for (p = i->ports; *p; p++) {
+            pa_card_profile_info **pr = (*p)->profiles;
+            printf(_("\t\t%s: %s (priority: %u%s)\n"), (*p)->name, (*p)->description, (*p)->priority,
+                get_available_str_ynonly((*p)->available));
+
+            if (pr) {
+                printf(_("\t\t\tPart of profile(s): %s"), pa_strnull((*pr)->name));
+                pr++;
+                while (*pr) {
+                    printf(", %s", pa_strnull((*pr)->name));
+                    pr++;
+                }
+                printf("\n");
+            }
+        }
+    }
 
     pa_xfree(pl);
 }
@@ -1350,7 +1382,9 @@ int main(int argc, char *argv[]) {
     };
 
     setlocale(LC_ALL, "");
+#ifdef ENABLE_NLS
     bindtextdomain(GETTEXT_PACKAGE, PULSE_LOCALEDIR);
+#endif
 
     bn = pa_path_get_filename(argv[0]);
 

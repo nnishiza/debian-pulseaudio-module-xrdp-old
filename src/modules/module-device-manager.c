@@ -576,7 +576,7 @@ static void update_highest_priority_device_indexes(struct userdata *u, const cha
             struct entry *e;
 
             name = pa_xstrndup(key.data, key.size);
-            device_name = get_name(name, prefix);
+            pa_assert_se(device_name = get_name(name, prefix));
 
             if ((e = entry_read(u, name))) {
                 for (uint32_t i = 0; i < NUM_ROLES; ++i) {
@@ -1442,6 +1442,8 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
             pa_xfree(devices[i]->device);
             pa_xfree(devices[i]);
         }
+
+        pa_xfree(devices);
 
         if (!first) {
             trigger_save(u);

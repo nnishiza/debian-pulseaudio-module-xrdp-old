@@ -51,6 +51,7 @@
 #include <pulsecore/pstream-util.h>
 #include <pulsecore/database.h>
 #include <pulsecore/tagstruct.h>
+#include <pulsecore/proplist-util.h>
 
 #ifdef HAVE_DBUS
 #include <pulsecore/dbus-util.h>
@@ -68,10 +69,16 @@ PA_MODULE_USAGE(
         "restore_volume=<Save/restore volumes?> "
         "restore_muted=<Save/restore muted states?> "
         "on_hotplug=<When new device becomes available, recheck streams?> "
-        "on_rescue=<When device becomes unavailable, recheck streams?>");
+        "on_rescue=<When device becomes unavailable, recheck streams?> "
+        "fallback_table=<filename>");
 
 #define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
 #define IDENTIFICATION_PROPERTY "module-stream-restore.id"
+
+#define DEFAULT_FALLBACK_FILE PA_DEFAULT_CONFIG_DIR"/stream-restore.table"
+#define DEFAULT_FALLBACK_FILE_USER "stream-restore.table"
+
+#define WHITESPACE "\n\r \t"
 
 static const char* const valid_modargs[] = {
     "restore_device",
@@ -79,6 +86,7 @@ static const char* const valid_modargs[] = {
     "restore_muted",
     "on_hotplug",
     "on_rescue",
+    "fallback_table",
     NULL
 };
 
@@ -964,31 +972,6 @@ static void save_time_callback(pa_mainloop_api*a, pa_time_event* e, const struct
     pa_log_info("Synced.");
 }
 
-static char *get_name(pa_proplist *p, const char *prefix) {
-    const char *r;
-    char *t;
-
-    if (!p)
-        return NULL;
-
-    if ((r = pa_proplist_gets(p, IDENTIFICATION_PROPERTY)))
-        return pa_xstrdup(r);
-
-    if ((r = pa_proplist_gets(p, PA_PROP_MEDIA_ROLE)))
-        t = pa_sprintf_malloc("%s-by-media-role:%s", prefix, r);
-    else if ((r = pa_proplist_gets(p, PA_PROP_APPLICATION_ID)))
-        t = pa_sprintf_malloc("%s-by-application-id:%s", prefix, r);
-    else if ((r = pa_proplist_gets(p, PA_PROP_APPLICATION_NAME)))
-        t = pa_sprintf_malloc("%s-by-application-name:%s", prefix, r);
-    else if ((r = pa_proplist_gets(p, PA_PROP_MEDIA_NAME)))
-        t = pa_sprintf_malloc("%s-by-media-name:%s", prefix, r);
-    else
-        t = pa_sprintf_malloc("%s-fallback:%s", prefix, r);
-
-    pa_proplist_sets(p, IDENTIFICATION_PROPERTY, t);
-    return t;
-}
-
 static struct entry* entry_new(void) {
     struct entry *r = pa_xnew0(struct entry, 1);
     r->version = ENTRY_VERSION;
@@ -1039,7 +1022,7 @@ static pa_bool_t entry_write(struct userdata *u, const char *name, const struct 
 #ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
 
 #define LEGACY_ENTRY_VERSION 3
-static struct entry* legacy_entry_read(struct userdata *u, pa_datum *data) {
+static struct entry *legacy_entry_read(struct userdata *u, const char *name) {
     struct legacy_entry {
         uint8_t version;
         pa_bool_t muted_valid:1, volume_valid:1, device_valid:1, card_valid:1;
@@ -1049,52 +1032,63 @@ static struct entry* legacy_entry_read(struct userdata *u, pa_datum *data) {
         char device[PA_NAME_MAX];
         char card[PA_NAME_MAX];
     } PA_GCC_PACKED;
+
+    pa_datum key;
+    pa_datum data;
     struct legacy_entry *le;
     struct entry *e;
 
     pa_assert(u);
-    pa_assert(data);
+    pa_assert(name);
 
-    if (data->size != sizeof(struct legacy_entry)) {
+    key.data = (char *) name;
+    key.size = strlen(name);
+
+    pa_zero(data);
+
+    if (!pa_database_get(u->database, &key, &data))
+        goto fail;
+
+    if (data.size != sizeof(struct legacy_entry)) {
         pa_log_debug("Size does not match.");
-        return NULL;
+        goto fail;
     }
 
-    le = (struct legacy_entry*)data->data;
+    le = (struct legacy_entry *) data.data;
 
     if (le->version != LEGACY_ENTRY_VERSION) {
         pa_log_debug("Version mismatch.");
-        return NULL;
+        goto fail;
     }
 
     if (!memchr(le->device, 0, sizeof(le->device))) {
         pa_log_warn("Device has missing NUL byte.");
-        return NULL;
+        goto fail;
     }
 
     if (!memchr(le->card, 0, sizeof(le->card))) {
         pa_log_warn("Card has missing NUL byte.");
-        return NULL;
+        goto fail;
     }
 
     if (le->device_valid && !pa_namereg_is_valid_name(le->device)) {
         pa_log_warn("Invalid device name stored in database for legacy stream");
-        return NULL;
+        goto fail;
     }
 
     if (le->card_valid && !pa_namereg_is_valid_name(le->card)) {
         pa_log_warn("Invalid card name stored in database for legacy stream");
-        return NULL;
+        goto fail;
     }
 
     if (le->volume_valid && !pa_channel_map_valid(&le->channel_map)) {
         pa_log_warn("Invalid channel map stored in database for legacy stream");
-        return NULL;
+        goto fail;
     }
 
     if (le->volume_valid && (!pa_cvolume_valid(&le->volume) || !pa_cvolume_compatible_with_channel_map(&le->volume, &le->channel_map))) {
         pa_log_warn("Invalid volume stored in database for legacy stream");
-        return NULL;
+        goto fail;
     }
 
     e = entry_new();
@@ -1108,6 +1102,11 @@ static struct entry* legacy_entry_read(struct userdata *u, pa_datum *data) {
     e->card_valid = le->card_valid;
     e->card = pa_xstrdup(le->card);
     return e;
+
+fail:
+    pa_datum_free(&data);
+
+    return NULL;
 }
 #endif
 
@@ -1178,25 +1177,10 @@ static struct entry *entry_read(struct userdata *u, const char *name) {
     return e;
 
 fail:
-
-    pa_log_debug("Database contains invalid data for key: %s (probably pre-v1.0 data)", name);
-
     if (e)
         entry_free(e);
     if (t)
         pa_tagstruct_free(t);
-
-#ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
-    pa_log_debug("Attempting to load legacy (pre-v1.0) data for key: %s", name);
-    if ((e = legacy_entry_read(u, &data))) {
-        pa_log_debug("Success. Saving new format for key: %s", name);
-        if (entry_write(u, name, e, TRUE))
-            trigger_save(u);
-        pa_datum_free(&data);
-        return e;
-    } else
-        pa_log_debug("Unable to load legacy (pre-v1.0) data for key: %s. Ignoring.", name);
-#endif
 
     pa_datum_free(&data);
     return NULL;
@@ -1293,7 +1277,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         if (!(sink_input = pa_idxset_get_by_index(c->sink_inputs, idx)))
             return;
 
-        if (!(name = get_name(sink_input->proplist, "sink-input")))
+        if (!(name = pa_proplist_get_stream_group(sink_input->proplist, "sink-input", IDENTIFICATION_PROPERTY)))
             return;
 
         if ((old = entry_read(u, name))) {
@@ -1343,7 +1327,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         if (!(source_output = pa_idxset_get_by_index(c->source_outputs, idx)))
             return;
 
-        if (!(name = get_name(source_output->proplist, "source-output")))
+        if (!(name = pa_proplist_get_stream_group(source_output->proplist, "source-output", IDENTIFICATION_PROPERTY)))
             return;
 
         if ((old = entry_read(u, name))) {
@@ -1436,7 +1420,7 @@ static pa_hook_result_t sink_input_new_hook_callback(pa_core *c, pa_sink_input_n
     pa_assert(u);
     pa_assert(u->restore_device);
 
-    if (!(name = get_name(new_data->proplist, "sink-input")))
+    if (!(name = pa_proplist_get_stream_group(new_data->proplist, "sink-input", IDENTIFICATION_PROPERTY)))
         return PA_HOOK_OK;
 
     if (new_data->sink)
@@ -1478,7 +1462,7 @@ static pa_hook_result_t sink_input_fixate_hook_callback(pa_core *c, pa_sink_inpu
     pa_assert(u);
     pa_assert(u->restore_volume || u->restore_muted);
 
-    if (!(name = get_name(new_data->proplist, "sink-input")))
+    if (!(name = pa_proplist_get_stream_group(new_data->proplist, "sink-input", IDENTIFICATION_PROPERTY)))
         return PA_HOOK_OK;
 
     if ((e = entry_read(u, name))) {
@@ -1532,7 +1516,7 @@ static pa_hook_result_t source_output_new_hook_callback(pa_core *c, pa_source_ou
     if (new_data->direct_on_input)
         return PA_HOOK_OK;
 
-    if (!(name = get_name(new_data->proplist, "source-output")))
+    if (!(name = pa_proplist_get_stream_group(new_data->proplist, "source-output", IDENTIFICATION_PROPERTY)))
         return PA_HOOK_OK;
 
     if (new_data->source)
@@ -1575,7 +1559,7 @@ static pa_hook_result_t source_output_fixate_hook_callback(pa_core *c, pa_source
     pa_assert(u);
     pa_assert(u->restore_volume || u->restore_muted);
 
-    if (!(name = get_name(new_data->proplist, "source-output")))
+    if (!(name = pa_proplist_get_stream_group(new_data->proplist, "source-output", IDENTIFICATION_PROPERTY)))
         return PA_HOOK_OK;
 
     if ((e = entry_read(u, name))) {
@@ -1647,7 +1631,7 @@ static pa_hook_result_t sink_put_hook_callback(pa_core *c, pa_sink *sink, struct
         if (!PA_SINK_INPUT_IS_LINKED(pa_sink_input_get_state(si)))
             continue;
 
-        if (!(name = get_name(si->proplist, "sink-input")))
+        if (!(name = pa_proplist_get_stream_group(si->proplist, "sink-input", IDENTIFICATION_PROPERTY)))
             continue;
 
         if ((e = entry_read(u, name))) {
@@ -1695,7 +1679,7 @@ static pa_hook_result_t source_put_hook_callback(pa_core *c, pa_source *source, 
         if (!PA_SOURCE_OUTPUT_IS_LINKED(pa_source_output_get_state(so)))
             continue;
 
-        if (!(name = get_name(so->proplist, "source-output")))
+        if (!(name = pa_proplist_get_stream_group(so->proplist, "source-output", IDENTIFICATION_PROPERTY)))
             continue;
 
         if ((e = entry_read(u, name))) {
@@ -1731,7 +1715,7 @@ static pa_hook_result_t sink_unlink_hook_callback(pa_core *c, pa_sink *sink, str
         if (!si->sink)
             continue;
 
-        if (!(name = get_name(si->proplist, "sink-input")))
+        if (!(name = pa_proplist_get_stream_group(si->proplist, "sink-input", IDENTIFICATION_PROPERTY)))
             continue;
 
         if ((e = entry_read(u, name))) {
@@ -1777,7 +1761,7 @@ static pa_hook_result_t source_unlink_hook_callback(pa_core *c, pa_source *sourc
         if (!so->source)
             continue;
 
-        if (!(name = get_name(so->proplist, "source-output")))
+        if (!(name = pa_proplist_get_stream_group(so->proplist, "source-output", IDENTIFICATION_PROPERTY)))
             continue;
 
         if ((e = entry_read(u, name))) {
@@ -1800,7 +1784,88 @@ static pa_hook_result_t source_unlink_hook_callback(pa_core *c, pa_source *sourc
     return PA_HOOK_OK;
 }
 
-#define EXT_VERSION 1
+static int fill_db(struct userdata *u, const char *filename) {
+    FILE *f;
+    int n = 0;
+    int ret = -1;
+    char *fn = NULL;
+
+    pa_assert(u);
+
+    if (filename)
+        f = fopen(fn = pa_xstrdup(filename), "r");
+    else
+        f = pa_open_config_file(DEFAULT_FALLBACK_FILE, DEFAULT_FALLBACK_FILE_USER, NULL, &fn);
+
+    if (!f) {
+        if (filename)
+            pa_log("Failed to open %s: %s", filename, pa_cstrerror(errno));
+        else
+            ret = 0;
+
+        goto finish;
+    }
+
+    while (!feof(f)) {
+        char ln[256];
+        char *d, *v;
+        double db;
+
+        if (!fgets(ln, sizeof(ln), f))
+            break;
+
+        n++;
+
+        pa_strip_nl(ln);
+
+        if (!*ln || ln[0] == '#' || ln[0] == ';')
+            continue;
+
+        d = ln+strcspn(ln, WHITESPACE);
+        v = d+strspn(d, WHITESPACE);
+
+        if (!*v) {
+            pa_log("[%s:%u] failed to parse line - too few words", fn, n);
+            goto finish;
+        }
+
+        *d = 0;
+        if (pa_atod(v, &db) >= 0) {
+            if (db <= 0.0) {
+                pa_datum key, data;
+                struct entry e;
+
+                pa_zero(e);
+                e.version = ENTRY_VERSION;
+                e.volume_valid = TRUE;
+                pa_cvolume_set(&e.volume, 1, pa_sw_volume_from_dB(db));
+                pa_channel_map_init_mono(&e.channel_map);
+
+                key.data = (void *) ln;
+                key.size = strlen(ln);
+
+                data.data = (void *) &e;
+                data.size = sizeof(e);
+
+                if (pa_database_set(u->database, &key, &data, FALSE) == 0)
+                    pa_log_debug("Setting %s to %0.2f dB.", ln, db);
+            } else
+                pa_log_warn("[%s:%u] Positive dB values are not allowed, not setting entry %s.", fn, n, ln);
+        } else
+            pa_log_warn("[%s:%u] Couldn't parse '%s' as a double, not setting entry %s.", fn, n, v, ln);
+    }
+
+    trigger_save(u);
+    ret = 0;
+
+finish:
+    if (f)
+        fclose(f);
+
+    pa_xfree(fn);
+
+    return ret;
+}
 
 static void entry_apply(struct userdata *u, const char *name, struct entry *e) {
     pa_sink_input *si;
@@ -1815,7 +1880,7 @@ static void entry_apply(struct userdata *u, const char *name, struct entry *e) {
         char *n;
         pa_sink *s;
 
-        if (!(n = get_name(si->proplist, "sink-input")))
+        if (!(n = pa_proplist_get_stream_group(si->proplist, "sink-input", IDENTIFICATION_PROPERTY)))
             continue;
 
         if (!pa_streq(name, n)) {
@@ -1863,7 +1928,7 @@ static void entry_apply(struct userdata *u, const char *name, struct entry *e) {
         char *n;
         pa_source *s;
 
-        if (!(n = get_name(so->proplist, "source-output")))
+        if (!(n = pa_proplist_get_stream_group(so->proplist, "source-output", IDENTIFICATION_PROPERTY)))
             continue;
 
         if (!pa_streq(name, n)) {
@@ -1941,6 +2006,8 @@ PA_GCC_UNUSED static void stream_restore_dump_database(struct userdata *u) {
     }
 }
 #endif
+
+#define EXT_VERSION 1
 
 static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connection *c, uint32_t tag, pa_tagstruct *t) {
     struct userdata *u;
@@ -2196,6 +2263,101 @@ static pa_hook_result_t connection_unlink_hook_cb(pa_native_protocol *p, pa_nati
     return PA_HOOK_OK;
 }
 
+static void clean_up_db(struct userdata *u) {
+    struct clean_up_item {
+        PA_LLIST_FIELDS(struct clean_up_item);
+        char *entry_name;
+        struct entry *entry;
+    };
+
+    PA_LLIST_HEAD(struct clean_up_item, to_be_removed);
+#ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
+    PA_LLIST_HEAD(struct clean_up_item, to_be_converted);
+#endif
+    pa_bool_t done = FALSE;
+    pa_datum key;
+    struct clean_up_item *item = NULL;
+    struct clean_up_item *next = NULL;
+
+    pa_assert(u);
+
+    /* It would be convenient to remove or replace the entries in the database
+     * in the same loop that iterates through the database, but modifying the
+     * database is not supported while iterating through it. That's why we
+     * collect the entries that need to be removed or replaced to these
+     * lists. */
+    PA_LLIST_HEAD_INIT(struct clean_up_item, to_be_removed);
+#ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
+    PA_LLIST_HEAD_INIT(struct clean_up_item, to_be_converted);
+#endif
+
+    done = !pa_database_first(u->database, &key, NULL);
+    while (!done) {
+        pa_datum next_key;
+        char *entry_name = NULL;
+        struct entry *e = NULL;
+
+        entry_name = pa_xstrndup(key.data, key.size);
+
+        /* Use entry_read() to check whether this entry is valid. */
+        if (!(e = entry_read(u, entry_name))) {
+            item = pa_xnew0(struct clean_up_item, 1);
+            PA_LLIST_INIT(struct clean_up_item, item);
+            item->entry_name = entry_name;
+
+#ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
+            /* entry_read() failed, but what about legacy_entry_read()? */
+            if (!(e = legacy_entry_read(u, entry_name)))
+                /* Not a legacy entry either, let's remove this. */
+                PA_LLIST_PREPEND(struct clean_up_item, to_be_removed, item);
+            else {
+                /* Yay, it's valid after all! Now let's convert the entry to the current format. */
+                item->entry = e;
+                PA_LLIST_PREPEND(struct clean_up_item, to_be_converted, item);
+            }
+#else
+            /* Invalid entry, let's remove this. */
+            PA_LLIST_PREPEND(struct clean_up_item, to_be_removed, item);
+#endif
+        } else {
+            pa_xfree(entry_name);
+            entry_free(e);
+        }
+
+        done = !pa_database_next(u->database, &key, &next_key, NULL);
+        pa_datum_free(&key);
+        key = next_key;
+    }
+
+    PA_LLIST_FOREACH_SAFE(item, next, to_be_removed) {
+        key.data = item->entry_name;
+        key.size = strlen(item->entry_name);
+
+        pa_log_debug("Removing an invalid entry: %s", item->entry_name);
+
+        pa_assert_se(pa_database_unset(u->database, &key) >= 0);
+        trigger_save(u);
+
+        PA_LLIST_REMOVE(struct clean_up_item, to_be_removed, item);
+        pa_xfree(item->entry_name);
+        pa_xfree(item);
+    }
+
+#ifdef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
+    PA_LLIST_FOREACH_SAFE(item, next, to_be_converted) {
+        pa_log_debug("Upgrading a legacy entry to the current format: %s", item->entry_name);
+
+        pa_assert_se(entry_write(u, item->entry_name, item->entry, TRUE) >= 0);
+        trigger_save(u);
+
+        PA_LLIST_REMOVE(struct clean_up_item, to_be_converted, item);
+        pa_xfree(item->entry_name);
+        entry_free(item->entry);
+        pa_xfree(item);
+    }
+#endif
+}
+
 int pa__init(pa_module*m) {
     pa_modargs *ma = NULL;
     struct userdata *u;
@@ -2280,6 +2442,11 @@ int pa__init(pa_module*m) {
     pa_log_info("Successfully opened database file '%s'.", fname);
     pa_xfree(fname);
 
+    clean_up_db(u);
+
+    if (fill_db(u, pa_modargs_get_value(ma, "fallback_table", NULL)) < 0)
+        goto fail;
+
 #ifdef HAVE_DBUS
     u->dbus_protocol = pa_dbus_protocol_get(u->core);
     u->dbus_entries = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
@@ -2293,22 +2460,14 @@ int pa__init(pa_module*m) {
         pa_datum next_key;
         char *name;
         struct dbus_entry *de;
-        struct entry *e;
-
-        done = !pa_database_next(u->database, &key, &next_key, NULL);
 
         name = pa_xstrndup(key.data, key.size);
-        pa_datum_free(&key);
-
-        /* Use entry_read() for checking that the entry is valid. */
-        if ((e = entry_read(u, name))) {
-            de = dbus_entry_new(u, name);
-            pa_assert_se(pa_hashmap_put(u->dbus_entries, de->entry_name, de) == 0);
-            entry_free(e);
-        }
-
+        de = dbus_entry_new(u, name);
+        pa_assert_se(pa_hashmap_put(u->dbus_entries, de->entry_name, de) == 0);
         pa_xfree(name);
 
+        done = !pa_database_next(u->database, &key, &next_key, NULL);
+        pa_datum_free(&key);
         key = next_key;
     }
 #endif

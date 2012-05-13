@@ -60,6 +60,8 @@
 
 #include "protocol-native.h"
 
+/* #define PROTOCOL_NATIVE_DEBUG */
+
 /* Kick a client if it doesn't authenticate within this time */
 #define AUTH_TIMEOUT (60 * PA_USEC_PER_SEC)
 
@@ -646,6 +648,7 @@ static record_stream* record_stream_new(
     record_stream *s;
     pa_source_output *source_output = NULL;
     pa_source_output_new_data data;
+    char *memblockq_name;
 
     pa_assert(c);
     pa_assert(ss);
@@ -708,15 +711,18 @@ static record_stream* record_stream_new(
 
     fix_record_buffer_attr_pre(s);
 
+    memblockq_name = pa_sprintf_malloc("native protocol record stream memblockq [%u]", s->source_output->index);
     s->memblockq = pa_memblockq_new(
+            memblockq_name,
             0,
             s->buffer_attr.maxlength,
             0,
-            pa_frame_size(&source_output->sample_spec),
+            &source_output->sample_spec,
             1,
             0,
             0,
             NULL);
+    pa_xfree(memblockq_name);
 
     pa_memblockq_get_attr(s->memblockq, &s->buffer_attr);
     fix_record_buffer_attr_post(s);
@@ -808,14 +814,18 @@ static int playback_stream_process_msg(pa_msgobject *o, int code, void*userdata,
             pa_tagstruct_putu32(t, (uint32_t) l);
             pa_pstream_send_tagstruct(s->connection->pstream, t);
 
-/*             pa_log("Requesting %lu bytes", (unsigned long) l); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+            pa_log("Requesting %lu bytes", (unsigned long) l);
+#endif
             break;
         }
 
         case PLAYBACK_STREAM_MESSAGE_UNDERFLOW: {
             pa_tagstruct *t;
 
-/*             pa_log("signalling underflow"); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+            pa_log("signalling underflow");
+#endif
 
             /* Report that we're empty */
             t = pa_tagstruct_new(NULL, 0);
@@ -891,17 +901,19 @@ static void fix_playback_buffer_attr(playback_stream *s) {
 
     pa_assert(s);
 
-    /* pa_log("Client requested: maxlength=%li bytes tlength=%li bytes minreq=%li bytes prebuf=%li bytes", */
-    /*        (long) s->buffer_attr.maxlength, */
-    /*        (long) s->buffer_attr.tlength, */
-    /*        (long) s->buffer_attr.minreq, */
-    /*        (long) s->buffer_attr.prebuf); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+    pa_log("Client requested: maxlength=%li bytes tlength=%li bytes minreq=%li bytes prebuf=%li bytes",
+           (long) s->buffer_attr.maxlength,
+           (long) s->buffer_attr.tlength,
+           (long) s->buffer_attr.minreq,
+           (long) s->buffer_attr.prebuf);
 
-    /* pa_log("Client requested: maxlength=%lu ms tlength=%lu ms minreq=%lu ms prebuf=%lu ms", */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.maxlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.tlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.minreq, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.prebuf, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC)); */
+    pa_log("Client requested: maxlength=%lu ms tlength=%lu ms minreq=%lu ms prebuf=%lu ms",
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.maxlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC),
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.tlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC),
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.minreq, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC),
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.prebuf, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC));
+#endif
 
     /* This function will be called from the main thread, before as
      * well as after the sink input has been activated using
@@ -1004,6 +1016,10 @@ static void fix_playback_buffer_attr(playback_stream *s) {
             tlength_usec -= s->configured_sink_latency;
     }
 
+    pa_log_debug("Requested latency=%0.2f ms, Received latency=%0.2f ms",
+                 (double) sink_usec / PA_USEC_PER_MSEC,
+                 (double) s->configured_sink_latency / PA_USEC_PER_MSEC);
+
     /* FIXME: This is actually larger than necessary, since not all of
      * the sink latency is actually rewritable. */
     if (tlength_usec < s->configured_sink_latency + 2*minreq_usec)
@@ -1031,11 +1047,13 @@ static void fix_playback_buffer_attr(playback_stream *s) {
         s->buffer_attr.prebuf > max_prebuf)
         s->buffer_attr.prebuf = max_prebuf;
 
-    /* pa_log("Client accepted: maxlength=%lu ms tlength=%lu ms minreq=%lu ms prebuf=%lu ms", */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.maxlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.tlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.minreq, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC), */
-    /*        (unsigned long) (pa_bytes_to_usec(s->buffer_attr.prebuf, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC)); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+    pa_log("Client accepted: maxlength=%lu ms tlength=%lu ms minreq=%lu ms prebuf=%lu ms",
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.maxlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC),
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.tlength, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC),
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.minreq, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC),
+           (unsigned long) (pa_bytes_to_usec(s->buffer_attr.prebuf, &s->sink_input->sample_spec) / PA_USEC_PER_MSEC));
+#endif
 }
 
 /* Called from main context */
@@ -1068,6 +1086,7 @@ static playback_stream* playback_stream_new(
     uint32_t idx;
     int64_t start_index;
     pa_sink_input_new_data data;
+    char *memblockq_name;
 
     pa_assert(c);
     pa_assert(ss);
@@ -1163,22 +1182,27 @@ static playback_stream* playback_stream_new(
     fix_playback_buffer_attr(s);
 
     pa_sink_input_get_silence(sink_input, &silence);
+    memblockq_name = pa_sprintf_malloc("native protocol playback stream memblockq [%u]", s->sink_input->index);
     s->memblockq = pa_memblockq_new(
+            memblockq_name,
             start_index,
             s->buffer_attr.maxlength,
             s->buffer_attr.tlength,
-            pa_frame_size(&sink_input->sample_spec),
+            &sink_input->sample_spec,
             s->buffer_attr.prebuf,
             s->buffer_attr.minreq,
             0,
             &silence);
+    pa_xfree(memblockq_name);
     pa_memblock_unref(silence.memblock);
 
     pa_memblockq_get_attr(s->memblockq, &s->buffer_attr);
 
     *missing = (uint32_t) pa_memblockq_pop_missing(s->memblockq);
 
-    /* pa_log("missing original: %li", (long int) *missing); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+    pa_log("missing original: %li", (long int) *missing);
+#endif
 
     *ss = s->sink_input->sample_spec;
     *map = s->sink_input->channel_map;
@@ -1219,7 +1243,9 @@ static void playback_stream_request_bytes(playback_stream *s) {
     if (m <= 0)
         return;
 
-/*     pa_log("request_bytes(%lu)", (unsigned long) m); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+    pa_log("request_bytes(%lu)", (unsigned long) m);
+#endif
 
     previous_missing = pa_atomic_add(&s->missing, (int) m);
     minreq = pa_memblockq_get_minreq(s->memblockq);
@@ -1553,7 +1579,9 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
     playback_stream_assert_ref(s);
     pa_assert(chunk);
 
-/*     pa_log("%s, pop(): %lu", pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME), (unsigned long) pa_memblockq_get_length(s->memblockq)); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+    pa_log("%s, pop(): %lu", pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME), (unsigned long) pa_memblockq_get_length(s->memblockq));
+#endif
 
     if (pa_memblockq_is_readable(s->memblockq))
         s->is_underrun = FALSE;
@@ -2115,7 +2143,9 @@ static void command_create_playback_stream(pa_pdispatch *pd, uint32_t command, u
     pa_tagstruct_putu32(reply, s->sink_input->index);
     pa_tagstruct_putu32(reply, missing);
 
-/*     pa_log("initial request is %u", missing); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+    pa_log("initial request is %u", missing);
+#endif
 
     if (c->version >= 9) {
         /* Since 0.9.0 we support sending the buffer metrics back to the client */
@@ -3094,6 +3124,8 @@ static void sink_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_sin
                 pa_tagstruct_puts(t, p->name);
                 pa_tagstruct_puts(t, p->description);
                 pa_tagstruct_putu32(t, p->priority);
+                if (c->version >= 24)
+                    pa_tagstruct_putu32(t, p->available);
             }
         }
 
@@ -3165,6 +3197,8 @@ static void source_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_s
                 pa_tagstruct_puts(t, p->name);
                 pa_tagstruct_puts(t, p->description);
                 pa_tagstruct_putu32(t, p->priority);
+                if (c->version >= 24)
+                    pa_tagstruct_putu32(t, p->available);
             }
         }
 
@@ -3224,6 +3258,36 @@ static void card_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_car
 
     pa_tagstruct_puts(t, card->active_profile ? card->active_profile->name : NULL);
     pa_tagstruct_put_proplist(t, card->proplist);
+
+    if (c->version < 26)
+        return;
+
+    if (card->ports) {
+        pa_device_port* port;
+        pa_proplist* proplist = pa_proplist_new(); /* For now - push an empty proplist */
+
+        pa_tagstruct_putu32(t, pa_hashmap_size(card->ports));
+
+        PA_HASHMAP_FOREACH(port, card->ports, state) {
+            pa_tagstruct_puts(t, port->name);
+            pa_tagstruct_puts(t, port->description);
+            pa_tagstruct_putu32(t, port->priority);
+            pa_tagstruct_putu32(t, port->available);
+            pa_tagstruct_putu8(t, /* FIXME: port->direction */ (port->is_input ? PA_DIRECTION_INPUT : 0) | (port->is_output ? PA_DIRECTION_OUTPUT : 0));
+            pa_tagstruct_put_proplist(t, proplist);
+
+            if (port->profiles) {
+                void* state2;
+                pa_tagstruct_putu32(t, pa_hashmap_size(port->profiles));
+                PA_HASHMAP_FOREACH(p, port->profiles, state2)
+                    pa_tagstruct_puts(t, p->name);
+            } else
+                pa_tagstruct_putu32(t, 0);
+        }
+
+        pa_proplist_free(proplist);
+    } else
+        pa_tagstruct_putu32(t, 0);
 }
 
 static void module_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_module *module) {
@@ -4633,9 +4697,8 @@ static void command_set_sink_or_source_port(pa_pdispatch *pd, uint32_t command, 
 
     CHECK_VALIDITY(c->pstream, c->authorized, tag, PA_ERR_ACCESS);
     CHECK_VALIDITY(c->pstream, !name || pa_namereg_is_valid_name_or_wildcard(name, command == PA_COMMAND_SET_SINK_PORT ? PA_NAMEREG_SINK : PA_NAMEREG_SOURCE), tag, PA_ERR_INVALID);
-    CHECK_VALIDITY(c->pstream, idx != PA_INVALID_INDEX || name, tag, PA_ERR_INVALID);
-    CHECK_VALIDITY(c->pstream, idx == PA_INVALID_INDEX || !name, tag, PA_ERR_INVALID);
-    CHECK_VALIDITY(c->pstream, !name || idx == PA_INVALID_INDEX, tag, PA_ERR_INVALID);
+    CHECK_VALIDITY(c->pstream, (idx != PA_INVALID_INDEX) ^ (name != NULL), tag, PA_ERR_INVALID);
+    CHECK_VALIDITY(c->pstream, port, tag, PA_ERR_INVALID);
 
     if (command == PA_COMMAND_SET_SINK_PORT) {
         pa_sink *sink;
@@ -4701,7 +4764,9 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
         return;
     }
 
-/*     pa_log("got %lu bytes", (unsigned long) chunk->length); */
+#ifdef PROTOCOL_NATIVE_DEBUG
+    pa_log("got %lu bytes from client", (unsigned long) chunk->length);
+#endif
 
     if (playback_stream_isinstance(stream)) {
         playback_stream *ps = PLAYBACK_STREAM(stream);
@@ -4901,8 +4966,8 @@ void pa_native_protocol_connect(pa_native_protocol *p, pa_iochannel *io, pa_nati
     c->client->userdata = c;
 
     c->pstream = pa_pstream_new(p->core->mainloop, io, p->core->mempool);
-    pa_pstream_set_recieve_packet_callback(c->pstream, pstream_packet_callback, c);
-    pa_pstream_set_recieve_memblock_callback(c->pstream, pstream_memblock_callback, c);
+    pa_pstream_set_receive_packet_callback(c->pstream, pstream_packet_callback, c);
+    pa_pstream_set_receive_memblock_callback(c->pstream, pstream_memblock_callback, c);
     pa_pstream_set_die_callback(c->pstream, pstream_die_callback, c);
     pa_pstream_set_drain_callback(c->pstream, pstream_drain_callback, c);
     pa_pstream_set_revoke_callback(c->pstream, pstream_revoke_callback, c);
@@ -5109,8 +5174,8 @@ int pa_native_options_parse(pa_native_options *o, pa_core *c, pa_modargs *ma) {
     }
 
     enabled = TRUE;
-    if (pa_modargs_get_value_boolean(ma, "auth-group-enabled", &enabled) < 0) {
-        pa_log("auth-group-enabled= expects a boolean argument.");
+    if (pa_modargs_get_value_boolean(ma, "auth-group-enable", &enabled) < 0) {
+        pa_log("auth-group-enable= expects a boolean argument.");
         return -1;
     }
 

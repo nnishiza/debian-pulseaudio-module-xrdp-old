@@ -150,12 +150,15 @@ load-module module-suspend-on-idle
 .ifexists module-console-kit@PA_SOEXT@
 load-module module-console-kit
 .endif
+.ifexists module-systemd-login@PA_SOEXT@
+load-module module-systemd-login
+.endif
 
 ### Enable positioned event sounds
 load-module module-position-event-sounds
 
-### Cork music streams when a phone stream is active
-load-module module-cork-music-on-phone
+### Cork music/video streams when a phone stream is active
+load-module module-role-cork
 
 ### Modules to allow autoloading of filters (such as echo cancellation)
 ### on demand. module-filter-heuristics tries to determine what filters
@@ -189,6 +192,8 @@ ifelse(@HAVE_X11@, 1, [dnl
 #.fail
 #.endif
 ])dnl
+
+load-module module-switch-on-port-available
 
 ### Make some devices default
 #set-default-sink output

@@ -136,6 +136,15 @@ static void teardown(struct userdata *u) {
     pa_assert(u);
     pa_assert_ctl_context();
 
+    if (u->asyncmsgq)
+        pa_asyncmsgq_flush(u->asyncmsgq, 0);
+
+    u->adjust_time = 0;
+    if (u->time_event) {
+        u->core->mainloop->time_free(u->time_event);
+        u->time_event = NULL;
+    }
+
     if (u->sink_input)
         pa_sink_input_unlink(u->sink_input);
 
@@ -143,11 +152,13 @@ static void teardown(struct userdata *u) {
         pa_source_output_unlink(u->source_output);
 
     if (u->sink_input) {
+        u->sink_input->parent.process_msg = pa_sink_input_process_msg;
         pa_sink_input_unref(u->sink_input);
         u->sink_input = NULL;
     }
 
     if (u->source_output) {
+        u->source_output->parent.process_msg = pa_source_output_process_msg;
         pa_source_output_unref(u->source_output);
         u->source_output = NULL;
     }
@@ -360,6 +371,9 @@ static void source_output_moving_cb(pa_source_output *o, pa_source *dest) {
     pa_proplist *p;
     const char *n;
     struct userdata *u;
+
+    if (!dest)
+        return;
 
     pa_source_output_assert_ref(o);
     pa_assert_ctl_context();
@@ -599,6 +613,9 @@ static void sink_input_moving_cb(pa_sink_input *i, pa_sink *dest) {
     pa_proplist *p;
     const char *n;
 
+    if (!dest)
+        return;
+
     pa_sink_input_assert_ref(i);
     pa_assert_ctl_context();
     pa_assert_se(u = i->userdata);
@@ -806,10 +823,11 @@ int pa__init(pa_module *m) {
 
     pa_sink_input_get_silence(u->sink_input, &silence);
     u->memblockq = pa_memblockq_new(
+            "module-loopback memblockq",
             0,                      /* idx */
             MEMBLOCKQ_MAXLENGTH,    /* maxlength */
             MEMBLOCKQ_MAXLENGTH,    /* tlength */
-            pa_frame_size(&ss),     /* base */
+            &ss,                    /* sample_spec */
             0,                      /* prebuf */
             0,                      /* minreq */
             0,                      /* maxrewind */
@@ -851,9 +869,6 @@ void pa__done(pa_module*m) {
 
     if (u->asyncmsgq)
         pa_asyncmsgq_unref(u->asyncmsgq);
-
-    if (u->time_event)
-        u->core->mainloop->time_free(u->time_event);
 
     pa_xfree(u);
 }

@@ -1980,28 +1980,41 @@ static char *get_path(const char *fn, pa_bool_t prependmid, pa_bool_t rt) {
     rtp = rt ? pa_get_runtime_dir() : pa_get_state_dir();
 
     if (fn) {
-        char *r;
+        char *r, *canonical_rtp;
 
-        if (pa_is_path_absolute(fn))
+        if (pa_is_path_absolute(fn)) {
+            pa_xfree(rtp);
             return pa_xstrdup(fn);
+        }
 
         if (!rtp)
             return NULL;
+
+        /* Hopefully make the path smaller to avoid 108 char limit (fdo#44680) */
+        if ((canonical_rtp = pa_realpath(rtp))) {
+            if (strlen(rtp) >= strlen(canonical_rtp))
+                pa_xfree(rtp);
+            else {
+                pa_xfree(canonical_rtp);
+                canonical_rtp = rtp;
+            }
+        } else
+            canonical_rtp = rtp;
 
         if (prependmid) {
             char *mid;
 
             if (!(mid = pa_machine_id())) {
-                pa_xfree(rtp);
+                pa_xfree(canonical_rtp);
                 return NULL;
             }
 
-            r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s-%s", rtp, mid, fn);
+            r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s-%s", canonical_rtp, mid, fn);
             pa_xfree(mid);
         } else
-            r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", rtp, fn);
+            r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", canonical_rtp, fn);
 
-        pa_xfree(rtp);
+        pa_xfree(canonical_rtp);
         return r;
     } else
         return rtp;
@@ -2627,6 +2640,26 @@ pa_bool_t pa_in_system_mode(void) {
     return !!atoi(e);
 }
 
+/* Checks a whitespace-separated list of words in haystack for needle */
+pa_bool_t pa_str_in_list_spaces(const char *haystack, const char *needle) {
+    char *s;
+    const char *state = NULL;
+
+    if (!haystack || !needle)
+        return FALSE;
+
+    while ((s = pa_split_spaces(haystack, &state))) {
+        if (pa_streq(needle, s)) {
+            pa_xfree(s);
+            return TRUE;
+        }
+
+        pa_xfree(s);
+    }
+
+    return FALSE;
+}
+
 char *pa_get_user_name_malloc(void) {
     ssize_t k;
     char *u;
@@ -2697,7 +2730,8 @@ char *pa_machine_id(void) {
      * since it fits perfectly our needs and is not as volatile as the
      * hostname which might be set from dhcp. */
 
-    if ((f = pa_fopen_cloexec(PA_MACHINE_ID, "r"))) {
+    if ((f = pa_fopen_cloexec(PA_MACHINE_ID, "r")) ||
+        (f = pa_fopen_cloexec(PA_MACHINE_ID_FALLBACK, "r"))) {
         char ln[34] = "", *r;
 
         r = fgets(ln, sizeof(ln)-1, f);

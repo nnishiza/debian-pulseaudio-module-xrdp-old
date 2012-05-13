@@ -218,21 +218,45 @@ pa_format_info* pa_format_info_from_sample_spec(pa_sample_spec *ss, pa_channel_m
     return f;
 }
 
-/* For PCM streams */
-pa_bool_t pa_format_info_to_sample_spec(pa_format_info *f, pa_sample_spec *ss, pa_channel_map *map) {
-    char *sf = NULL, *m = NULL;
-    int rate, channels;
-    pa_bool_t ret = FALSE;
+/* For compressed streams */
+static int pa_format_info_to_sample_spec_fake(pa_format_info *f, pa_sample_spec *ss) {
+    int rate;
 
     pa_assert(f);
     pa_assert(ss);
-    pa_return_val_if_fail(f->encoding == PA_ENCODING_PCM, FALSE);
 
-    if (!pa_format_info_get_prop_string(f, PA_PROP_FORMAT_SAMPLE_FORMAT, &sf))
+    /* Note: When we add support for non-IEC61937 encapsulated compressed
+     * formats, this function should return a non-zero values for these. */
+
+    ss->format = PA_SAMPLE_S16LE;
+    ss->channels = 2;
+
+    pa_return_val_if_fail(pa_format_info_get_prop_int(f, PA_PROP_FORMAT_RATE, &rate) == 0, -PA_ERR_INVALID);
+    ss->rate = (uint32_t) rate;
+
+    if (f->encoding == PA_ENCODING_EAC3_IEC61937)
+        ss->rate *= 4;
+
+    return 0;
+}
+
+/* For PCM streams */
+int pa_format_info_to_sample_spec(pa_format_info *f, pa_sample_spec *ss, pa_channel_map *map) {
+    char *sf = NULL, *m = NULL;
+    int rate, channels;
+    int ret = -PA_ERR_INVALID;
+
+    pa_assert(f);
+    pa_assert(ss);
+
+    if (!pa_format_info_is_pcm(f))
+        return pa_format_info_to_sample_spec_fake(f, ss);
+
+    if (pa_format_info_get_prop_string(f, PA_PROP_FORMAT_SAMPLE_FORMAT, &sf))
         goto out;
-    if (!pa_format_info_get_prop_int(f, PA_PROP_FORMAT_RATE, &rate))
+    if (pa_format_info_get_prop_int(f, PA_PROP_FORMAT_RATE, &rate))
         goto out;
-    if (!pa_format_info_get_prop_int(f, PA_PROP_FORMAT_CHANNELS, &channels))
+    if (pa_format_info_get_prop_int(f, PA_PROP_FORMAT_CHANNELS, &channels))
         goto out;
 
     if ((ss->format = pa_parse_sample_format(sf)) == PA_SAMPLE_INVALID)
@@ -244,12 +268,12 @@ pa_bool_t pa_format_info_to_sample_spec(pa_format_info *f, pa_sample_spec *ss, p
     if (map) {
         pa_channel_map_init(map);
 
-        if (pa_format_info_get_prop_string(f, PA_PROP_FORMAT_CHANNEL_MAP, &m))
+        if (pa_format_info_get_prop_string(f, PA_PROP_FORMAT_CHANNEL_MAP, &m) == 0)
             if (pa_channel_map_parse(map, m) == NULL)
                 goto out;
     }
 
-    ret = TRUE;
+    ret = 0;
 
 out:
     if (sf)
@@ -260,24 +284,269 @@ out:
     return ret;
 }
 
-/* For compressed streams */
-pa_bool_t pa_format_info_to_sample_spec_fake(pa_format_info *f, pa_sample_spec *ss) {
-    int rate;
+pa_prop_type_t pa_format_info_get_prop_type(pa_format_info *f, const char *key) {
+    const char *str;
+    json_object *o, *o1;
+    pa_prop_type_t type;
 
     pa_assert(f);
-    pa_assert(ss);
-    pa_return_val_if_fail(f->encoding != PA_ENCODING_PCM, FALSE);
+    pa_assert(key);
 
-    ss->format = PA_SAMPLE_S16LE;
-    ss->channels = 2;
+    str = pa_proplist_gets(f->plist, key);
+    if (!str)
+        return PA_PROP_TYPE_INVALID;
 
-    pa_return_val_if_fail(pa_format_info_get_prop_int(f, PA_PROP_FORMAT_RATE, &rate), FALSE);
-    ss->rate = (uint32_t) rate;
+    o = json_tokener_parse(str);
+    if (is_error(o))
+        return PA_PROP_TYPE_INVALID;
 
-    if (f->encoding == PA_ENCODING_EAC3_IEC61937)
-        ss->rate *= 4;
+    switch (json_object_get_type(o)) {
+        case json_type_int:
+            type = PA_PROP_TYPE_INT;
+            break;
 
-    return TRUE;
+        case json_type_string:
+            type = PA_PROP_TYPE_STRING;
+            break;
+
+        case json_type_array:
+            if (json_object_array_length(o) == 0) {
+                /* Unlikely, but let's account for this anyway. We need at
+                 * least one element to figure out the array type. */
+                type = PA_PROP_TYPE_INVALID;
+                break;
+            }
+
+            o1 = json_object_array_get_idx(o, 1);
+
+            if (json_object_get_type(o1) == json_type_int)
+                type = PA_PROP_TYPE_INT_ARRAY;
+            else if (json_object_get_type(o1) == json_type_string)
+                type = PA_PROP_TYPE_STRING_ARRAY;
+            else
+                type = PA_PROP_TYPE_INVALID;
+
+            json_object_put(o1);
+            break;
+
+        case json_type_object:
+            /* We actually know at this point that it's a int range, but let's
+             * confirm. */
+            o1 = json_object_object_get(o, PA_JSON_MIN_KEY);
+            if (!o1) {
+                type = PA_PROP_TYPE_INVALID;
+                break;
+            }
+            json_object_put(o1);
+
+            o1 = json_object_object_get(o, PA_JSON_MAX_KEY);
+            if (!o1) {
+                type = PA_PROP_TYPE_INVALID;
+                break;
+            }
+            json_object_put(o1);
+
+            type = PA_PROP_TYPE_INT_RANGE;
+            break;
+
+        default:
+            type = PA_PROP_TYPE_INVALID;
+            break;
+    }
+
+    json_object_put(o);
+    return type;
+}
+
+int pa_format_info_get_prop_int(pa_format_info *f, const char *key, int *v) {
+    const char *str;
+    json_object *o;
+
+    pa_assert(f);
+    pa_assert(key);
+    pa_assert(v);
+
+    str = pa_proplist_gets(f->plist, key);
+    if (!str)
+        return -PA_ERR_NOENTITY;
+
+    o = json_tokener_parse(str);
+    if (is_error(o))
+        return -PA_ERR_INVALID;
+
+    if (json_object_get_type(o) != json_type_int) {
+        json_object_put(o);
+        return -PA_ERR_INVALID;
+    }
+
+    *v = json_object_get_int(o);
+    json_object_put(o);
+
+    return 0;
+}
+
+int pa_format_info_get_prop_int_range(pa_format_info *f, const char *key, int *min, int *max) {
+    const char *str;
+    json_object *o, *o1;
+    int ret = -PA_ERR_INVALID;
+
+    pa_assert(f);
+    pa_assert(key);
+    pa_assert(min);
+    pa_assert(max);
+
+    str = pa_proplist_gets(f->plist, key);
+    if (!str)
+        return -PA_ERR_NOENTITY;
+
+    o = json_tokener_parse(str);
+    if (is_error(o))
+        return -PA_ERR_INVALID;
+
+    if (json_object_get_type(o) != json_type_object)
+        goto out;
+
+    if (!(o1 = json_object_object_get(o, PA_JSON_MIN_KEY)))
+        goto out;
+
+    *min = json_object_get_int(o1);
+    json_object_put(o1);
+
+    if (!(o1 = json_object_object_get(o, PA_JSON_MAX_KEY)))
+        goto out;
+
+    *max = json_object_get_int(o1);
+    json_object_put(o1);
+
+    ret = 0;
+
+out:
+    json_object_put(o);
+    return ret;
+}
+
+int pa_format_info_get_prop_int_array(pa_format_info *f, const char *key, int **values, int *n_values)
+{
+    const char *str;
+    json_object *o, *o1;
+    int i, ret = -PA_ERR_INVALID;
+
+    pa_assert(f);
+    pa_assert(key);
+    pa_assert(values);
+    pa_assert(n_values);
+
+    str = pa_proplist_gets(f->plist, key);
+    if (!str)
+        return -PA_ERR_NOENTITY;
+
+    o = json_tokener_parse(str);
+    if (is_error(o))
+        return -PA_ERR_INVALID;
+
+    if (json_object_get_type(o) != json_type_array)
+        goto out;
+
+    *n_values = json_object_array_length(o);
+    *values = pa_xnew(int, *n_values);
+
+    for (i = 0; i < *n_values; i++) {
+        o1 = json_object_array_get_idx(o, i);
+
+        if (json_object_get_type(o1) != json_type_int) {
+            json_object_put(o1);
+            goto out;
+        }
+
+        (*values)[i] = json_object_get_int(o1);
+        json_object_put(o1);
+    }
+
+    ret = 0;
+
+out:
+    json_object_put(o);
+    return ret;
+}
+
+int pa_format_info_get_prop_string(pa_format_info *f, const char *key, char **v) {
+    const char *str = NULL;
+    json_object *o;
+
+    pa_assert(f);
+    pa_assert(key);
+    pa_assert(v);
+
+    str = pa_proplist_gets(f->plist, key);
+    if (!str)
+        return -PA_ERR_NOENTITY;
+
+    o = json_tokener_parse(str);
+    if (is_error(o))
+        return -PA_ERR_INVALID;
+
+    if (json_object_get_type(o) != json_type_string) {
+        json_object_put(o);
+        return -PA_ERR_INVALID;
+    }
+
+    *v = pa_xstrdup(json_object_get_string(o));
+    json_object_put(o);
+
+    return 0;
+}
+
+int pa_format_info_get_prop_string_array(pa_format_info *f, const char *key, char ***values, int *n_values)
+{
+    const char *str;
+    json_object *o, *o1;
+    int i, ret = -PA_ERR_INVALID;
+
+    pa_assert(f);
+    pa_assert(key);
+    pa_assert(values);
+    pa_assert(n_values);
+
+    str = pa_proplist_gets(f->plist, key);
+    if (!str)
+        return -PA_ERR_NOENTITY;
+
+    o = json_tokener_parse(str);
+    if (is_error(o))
+        return -PA_ERR_INVALID;
+
+    if (json_object_get_type(o) != json_type_array)
+        goto out;
+
+    *n_values = json_object_array_length(o);
+    *values = pa_xnew(char *, *n_values);
+
+    for (i = 0; i < *n_values; i++) {
+        o1 = json_object_array_get_idx(o, i);
+
+        if (json_object_get_type(o1) != json_type_string) {
+            json_object_put(o1);
+            goto out;
+        }
+
+        (*values)[i] = pa_xstrdup(json_object_get_string(o1));
+        json_object_put(o1);
+    }
+
+    ret = 0;
+
+out:
+    json_object_put(o);
+    return ret;
+}
+
+void pa_format_info_free_string_array(char **values, int n_values) {
+    int i;
+
+    for (i = 0; i < n_values; i++)
+        pa_xfree(values[i]);
+
+    pa_xfree(values);
 }
 
 void pa_format_info_set_sample_format(pa_format_info *f, pa_sample_format_t sf) {
@@ -298,53 +567,6 @@ void pa_format_info_set_channel_map(pa_format_info *f, const pa_channel_map *map
     pa_channel_map_snprint(map_str, sizeof(map_str), map);
 
     pa_format_info_set_prop_string(f, PA_PROP_FORMAT_CHANNEL_MAP, map_str);
-}
-
-pa_bool_t pa_format_info_get_prop_int(pa_format_info *f, const char *key, int *v) {
-    const char *str;
-    json_object *o;
-
-    pa_assert(f);
-    pa_assert(key);
-    pa_assert(v);
-
-    pa_return_val_if_fail(str = pa_proplist_gets(f->plist, key), FALSE);
-    o = json_tokener_parse(str);
-    pa_return_val_if_fail(!is_error(o), FALSE);
-    if (json_object_get_type(o) != json_type_int) {
-        json_object_put(o);
-        return FALSE;
-    }
-
-    *v = json_object_get_int(o);
-    json_object_put(o);
-
-    return TRUE;
-}
-
-pa_bool_t pa_format_info_get_prop_string(pa_format_info *f, const char *key, char **v) {
-    const char *str = NULL;
-    json_object *o;
-
-    pa_assert(f);
-    pa_assert(key);
-    pa_assert(v);
-
-    str = pa_proplist_gets(f->plist, key);
-    if (!str)
-        return FALSE;
-
-    o = json_tokener_parse(str);
-    pa_return_val_if_fail(!is_error(o), FALSE);
-    if (json_object_get_type(o) != json_type_string) {
-        json_object_put(o);
-        return FALSE;
-    }
-
-    *v = pa_xstrdup(json_object_get_string(o));
-    json_object_put(o);
-
-    return TRUE;
 }
 
 void pa_format_info_set_prop_int(pa_format_info *f, const char *key, int value) {

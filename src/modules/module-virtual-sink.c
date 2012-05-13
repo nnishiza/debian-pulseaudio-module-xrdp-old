@@ -20,9 +20,6 @@
     USA.
 ***/
 
-/* TODO: Some plugins cause latency, and some even report it by using a control
-   out port. We don't currently use the latency information. */
-
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
@@ -614,7 +611,7 @@ int pa__init(pa_module*m) {
     u->sink->input_to_master = u->sink_input;
 
     pa_sink_input_get_silence(u->sink_input, &silence);
-    u->memblockq = pa_memblockq_new(0, MEMBLOCKQ_MAXLENGTH, 0, pa_frame_size(&ss), 1, 1, 0, &silence);
+    u->memblockq = pa_memblockq_new("module-virtual-sink memblockq", 0, MEMBLOCKQ_MAXLENGTH, 0, &ss, 1, 1, 0, &silence);
     pa_memblock_unref(silence.memblock);
 
     /* (9) INITIALIZE ANYTHING ELSE YOU NEED HERE */
