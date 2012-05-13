@@ -175,8 +175,15 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_format_info_copy@PULSE_0 0.99.4
  pa_format_info_free2@PULSE_0 0.99.4
  pa_format_info_free@PULSE_0 0.99.4
+ pa_format_info_free_string_array@PULSE_0 2.0
  pa_format_info_from_sample_spec@PULSE_0 0.99.4
  pa_format_info_from_string@PULSE_0 0.99.4
+ pa_format_info_get_prop_int@PULSE_0 2.0
+ pa_format_info_get_prop_int_array@PULSE_0 2.0
+ pa_format_info_get_prop_int_range@PULSE_0 2.0
+ pa_format_info_get_prop_string@PULSE_0 2.0
+ pa_format_info_get_prop_string_array@PULSE_0 2.0
+ pa_format_info_get_prop_type@PULSE_0 2.0
  pa_format_info_is_compatible@PULSE_0 0.99.4
  pa_format_info_is_pcm@PULSE_0 0.99.4
  pa_format_info_new@PULSE_0 0.99.4
@@ -191,7 +198,6 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_format_info_set_sample_format@PULSE_0 0.99.4
  pa_format_info_snprint@PULSE_0 0.99.4
  pa_format_info_to_sample_spec@PULSE_0 0.99.4
- pa_format_info_to_sample_spec_fake@PULSE_0 0.99.4
  pa_format_info_valid@PULSE_0 0.99.4
  pa_frame_size@PULSE_0 0.99.1
  pa_get_binary_name@PULSE_0 0.99.1

@@ -61,7 +61,7 @@ usr/lib/pulse-*/modules/module-volume-restore.so
 usr/lib/pulse-*/modules/module-alsa-card.so
 usr/lib/pulse-*/modules/module-augment-properties.so
 usr/lib/pulse-*/modules/module-card-restore.so
-usr/lib/pulse-*/modules/module-cork-music-on-phone.so
+usr/lib/pulse-*/modules/module-role-cork.so
 usr/lib/pulse-*/modules/module-sine-source.so
 usr/lib/pulse-*/modules/module-rygel-media-server.so
 usr/lib/pulse-*/modules/module-device-manager.so
