@@ -1,3 +1,4 @@
 0001-Move-libpulsecommon-into-pkglib.patch
 0002-Move-the-padsp-helper-lib-into-a-private-library.patch
 0003-Force-order-of-library-installation.patch
+0004-hurd.patch

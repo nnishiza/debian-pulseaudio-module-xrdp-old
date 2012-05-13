@@ -1,3 +1,10 @@
+pulseaudio (1.1-3.2) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Apply upstream patches to fix build on hurd-i386 (Closes: 573339).
+
+ -- Samuel Thibault <sthibault@debian.org>  Wed, 25 Apr 2012 12:33:21 +0200
+
 pulseaudio (1.1-3) unstable; urgency=low
 
   * Tighten dependencies for packages that uses the internal helper library
