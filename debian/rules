@@ -6,11 +6,11 @@ include /usr/share/cdbs/1/rules/utils.mk
 include /usr/share/cdbs/1/rules/autoreconf.mk
 
 common-build-arch::
-	grep -v -e alsa -e evdev -e udev -e share/pulseaudio \
+	grep -v -e alsa -e evdev -e udev -e share/pulseaudio -e systemd \
 	  debian/pulseaudio.install > debian/pulseaudio.install.kfreebsd-i386
-	grep -v -e alsa -e evdev -e udev -e share/pulseaudio \
+	grep -v -e alsa -e evdev -e udev -e share/pulseaudio -e systemd \
 	  debian/pulseaudio.install >  debian/pulseaudio.install.kfreebsd-amd64
-	grep -v -e alsa -e evdev -e udev -e share/pulseaudio \
+	grep -v -e alsa -e evdev -e udev -e share/pulseaudio -e systemd \
 	  debian/pulseaudio.install > debian/pulseaudio.install.hurd-i386
 
 common-install-arch::
