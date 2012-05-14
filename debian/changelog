@@ -1,13 +1,15 @@
 pulseaudio (2.0-2) UNRELEASED; urgency=low
 
   [Martin-Éric Racine]
+  * Added myself to Uploaders.
+  * Added patch 0001_man_page_typos.patch
+  * control: pulseaudio: no longer Recommends pulseaudio-esound-compat.
+  * control: Lintian: fixed duplicate short descriptions for -dbg.
+  * control: Lintian: change versioned Conflicts to Breaks.
+  * rules: correctly generate versioned library paths.
   * pulseaudio.init: LSB: NetworkManager to network-manager.
   * pulseaudio.init: LSB: added missing Stop levels 0 and 6.
-  * debian/control: pulseaudio: no longer Recommends pulseaudio-esound-compat.
-  * debian/control: Lintian: fixed duplicate short descriptions for -dbg packages.
-  * debian/control: Lintian: change versioned Conflicts to Breaks.
-  * Added patch 0001_man_page_typos.patch
-  * Added myself to Uploaders.
+  * pulseaudio-esound-compat.links: added man page link for esd.1.gz 
 
  -- Martin-Éric Racine <martin-eric.racine@iki.fi>  Mon, 14 May 2012 19:22:50 +0300
 
