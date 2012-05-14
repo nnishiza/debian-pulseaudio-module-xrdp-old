@@ -3,8 +3,8 @@
 # Provides:          pulseaudio esound
 # Required-Start:    $remote_fs $syslog
 # Required-Stop:     $remote_fs $syslog
-# Should-Start:      udev NetworkManager
-# Should-Stop:       udev NetworkManager
+# Should-Start:      udev network-manager
+# Should-Stop:       udev network-manager
 # Default-Start:     2 3 4 5
 # Default-Stop:      1
 # Short-Description: Start the PulseAudio sound server
