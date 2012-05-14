@@ -31,7 +31,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   lsb-base (>= 3.2-13), consolekit,
   udev (>= 143) [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386],
   libasound2-plugins [!kfreebsd-i386 !kfreebsd-amd64 !hurd-i386]
-Conflicts: libltdl3 (<< 1.5.24-1)
+Breaks: libltdl3 (<< 1.5.24-1)
 Recommends: pulseaudio-module-x11, gstreamer0.10-pulseaudio, rtkit
 Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman, paprefs
 Description: PulseAudio sound server
@@ -110,7 +110,8 @@ Description: PulseAudio command line tools (debugging symbols)
 Package: pulseaudio-esound-compat
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: esound, pulseaudio (<< 0.9.7)
+Breaks: pulseaudio (<< 0.9.7)
+Conflicts: esound
 Replaces: esound
 Provides: esound
 Description: PulseAudio ESD compatibility layer
@@ -260,7 +261,7 @@ Package: pulseaudio-module-bluetooth
 Architecture: alpha amd64 arm armel hppa i386 ia64 mips mipsel powerpc s390 sparc
 Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}, bluez (>= 4.40)
-Conflicts: pulseaudio (<< 0.9.14-2)
+Breaks: pulseaudio (<< 0.9.14-2)
 Description: Bluetooth module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
