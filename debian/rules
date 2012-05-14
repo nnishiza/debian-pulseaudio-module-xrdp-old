@@ -56,7 +56,7 @@ DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal \
   --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
   --with-module-dir=\$${prefix}/lib/pulse-\$${PA_MAJORMINOR}/modules
 
-DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-*/modules
+DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-${DEB_UPSTREAM_VERSION}/modules
 
 LDFLAGS += -Wl,--no-as-needed
 
