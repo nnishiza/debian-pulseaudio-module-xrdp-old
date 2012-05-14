@@ -36,7 +36,7 @@ pulseaudio_start () {
 		mkdir -p $PIDDIR
 		chown $DAEMONUSER:$DAEMONUSER $PIDDIR
 	fi
-	start-stop-daemon -x $DAEMON -p $PIDFILE --start -- --system --daemonize --high-priority --log-target=syslog --disallow-module-loading=$DISALLOW_MODULE_LOADING
+	start-stop-daemon -x $DAEMON -p $PIDFILE --start -- --system --disallow-exit --disallow-module-loading=$DISALLOW_MODULE_LOADIN --daemonize --log-target=syslog --high-priority
 	status=$?
 	if [ -e /var/run/pulse/.esd_auth ]; then
 		chown pulse:pulse-access /var/run/pulse/.esd_auth
