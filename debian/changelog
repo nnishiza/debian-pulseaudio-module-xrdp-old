@@ -13,6 +13,7 @@ pulseaudio (2.0-2) UNRELEASED; urgency=low
     - LSB: added missing Stop levels 0 and 6.
     - Added --disallow-exit option (Closes: #671470).
   * pulseaudio-esound-compat.links: added man page link for esd.1.gz 
+  * watch: updated to point to FreeDesktop.org XZ tarball archive.
 
  -- Martin-Éric Racine <martin-eric.racine@iki.fi>  Mon, 14 May 2012 19:22:50 +0300
 
