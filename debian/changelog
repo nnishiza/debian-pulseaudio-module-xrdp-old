@@ -1,9 +1,10 @@
-pulseaudio (2.0-2) UNRELEASED; urgency=low
+pulseaudio (2.0-2) unstable; urgency=low
 
+  [ Martin-Éric Racine ]
   [Martin-Éric Racine]
   * Added myself to Uploaders.
   * Added patch 0001_man_page_typos.patch
-  * control: 
+  * control:
     - pulseaudio: no longer Recommends pulseaudio-esound-compat (Closes: #671304).
     - Lintian: fixed duplicate short descriptions for -dbg.
     - Lintian: change versioned Conflicts to Breaks.
@@ -15,7 +16,7 @@ pulseaudio (2.0-2) UNRELEASED; urgency=low
   * pulseaudio-esound-compat.links: added man page link for esd.1.gz 
   * watch: updated to point to FreeDesktop.org XZ tarball archive.
 
- -- Martin-Éric Racine <martin-eric.racine@iki.fi>  Mon, 14 May 2012 19:22:50 +0300
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 18 May 2012 20:54:08 +0200
 
 pulseaudio (2.0-1) unstable; urgency=low
 
