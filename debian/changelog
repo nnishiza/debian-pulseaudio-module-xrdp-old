@@ -1,4 +1,4 @@
-pulseaudio (2.0-3) UNRELEASED; urgency=low
+pulseaudio (2.0-3) unstable; urgency=low
 
   [ Martin-Éric Racine ]
   * ChangeLog cleanup.
@@ -7,7 +7,7 @@ pulseaudio (2.0-3) UNRELEASED; urgency=low
   [ Sjoerd Simons ]
   * Add webrtc echo cancellation support
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 19 May 2012 20:48:28 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 19 May 2012 22:05:13 +0200
 
 pulseaudio (2.0-2) unstable; urgency=low
 
