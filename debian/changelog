@@ -1,7 +1,6 @@
 pulseaudio (2.0-2) unstable; urgency=low
 
   [ Martin-Éric Racine ]
-  [Martin-Éric Racine]
   * Added myself to Uploaders.
   * Added patch 0001_man_page_typos.patch
   * control:
