@@ -15,7 +15,7 @@ pulseaudio (2.0-2) unstable; urgency=low
   * Added myself to Uploaders.
   * Added patch 0001_man_page_typos.patch
   * control:
-    - pulseaudio: no longer Recommends pulseaudio-esound-compat (Closes: #671304).
+    - pulseaudio: don't Recommends pulseaudio-esound-compat (Closes: #671304).
     - Lintian: fixed duplicate short descriptions for -dbg.
     - Lintian: change versioned Conflicts to Breaks.
   * rules: correctly generate versioned library paths.
