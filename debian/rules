@@ -25,7 +25,7 @@ common-install-arch::
 
 common-configure-arch::
 ifneq (,$(findstring $(DEB_HOST_ARCH), "arm armel"))
-	make -C src libpulsecore_2.0_la-svolume_arm.lo CFLAGS+=-march=armv6
+	make -C src libpulsecore_2.1_la-svolume_arm.lo CFLAGS+=-march=armv6
 endif
 
 pulseaudio-install-arch::
