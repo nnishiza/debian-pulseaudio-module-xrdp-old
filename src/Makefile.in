@@ -386,9 +386,12 @@ pulselibexec_PROGRAMS = $(am__EXEEXT_13) $(am__EXEEXT_14)
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__append_108 = $(ORC_LIBS)
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__append_109 = $(ORC_CFLAGS) -I$(top_builddir)/src/modules/echo-cancel
 @HAVE_SPEEX_TRUE@am__append_110 = modules/echo-cancel/speex.c
-@HAVE_WEBRTC_TRUE@am__append_111 = modules/echo-cancel/webrtc.cc
+# The webrtc code is split off into a helper library to avoid having automake
+# link module-echo-cancel with C++ (which it does if there are any C++ deps,
+# even conditional ones).
+@HAVE_WEBRTC_TRUE@am__append_111 = libwebrtc-util.la
 @HAVE_WEBRTC_TRUE@am__append_112 = -DHAVE_WEBRTC=1
-@HAVE_WEBRTC_TRUE@am__append_113 = $(WEBRTC_LIBS)
+@HAVE_WEBRTC_TRUE@am__append_113 = libwebrtc-util.la
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
@@ -946,6 +949,17 @@ librtp_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(librtp_la_LDFLAGS) $(LDFLAGS) -o $@
 @OS_IS_WIN32_FALSE@am_librtp_la_rpath = -rpath $(modlibexecdir)
+@HAVE_WEBRTC_TRUE@libwebrtc_util_la_DEPENDENCIES =  \
+@HAVE_WEBRTC_TRUE@	$(am__DEPENDENCIES_1)
+am__libwebrtc_util_la_SOURCES_DIST = modules/echo-cancel/webrtc.cc
+@HAVE_WEBRTC_TRUE@am_libwebrtc_util_la_OBJECTS =  \
+@HAVE_WEBRTC_TRUE@	libwebrtc_util_la-webrtc.lo
+libwebrtc_util_la_OBJECTS = $(am_libwebrtc_util_la_OBJECTS)
+libwebrtc_util_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
+	$(libwebrtc_util_la_CXXFLAGS) $(CXXFLAGS) \
+	$(libwebrtc_util_la_LDFLAGS) $(LDFLAGS) -o $@
+@HAVE_WEBRTC_TRUE@am_libwebrtc_util_la_rpath = -rpath $(modlibexecdir)
 module_alsa_card_la_DEPENDENCIES = $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_1) libalsa-util.la
 am_module_alsa_card_la_OBJECTS =  \
@@ -1182,31 +1196,27 @@ module_device_restore_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(module_device_restore_la_LDFLAGS) $(LDFLAGS) -o $@
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__DEPENDENCIES_11 =  \
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@	$(am__DEPENDENCIES_1)
-@HAVE_WEBRTC_TRUE@am__DEPENDENCIES_12 = $(am__DEPENDENCIES_1)
 module_echo_cancel_la_DEPENDENCIES = $(am__DEPENDENCIES_3) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_11) \
-	$(am__DEPENDENCIES_12)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_11) $(am__append_113)
 am__module_echo_cancel_la_SOURCES_DIST =  \
 	modules/echo-cancel/module-echo-cancel.c \
 	modules/echo-cancel/echo-cancel.h \
 	modules/echo-cancel/adrian-aec.c \
 	modules/echo-cancel/adrian-aec.h modules/echo-cancel/adrian.c \
-	modules/echo-cancel/adrian.h modules/echo-cancel/speex.c \
-	modules/echo-cancel/webrtc.cc
+	modules/echo-cancel/adrian.h modules/echo-cancel/speex.c
 @HAVE_ADRIAN_EC_TRUE@am__objects_16 =  \
 @HAVE_ADRIAN_EC_TRUE@	module_echo_cancel_la-adrian-aec.lo \
 @HAVE_ADRIAN_EC_TRUE@	module_echo_cancel_la-adrian.lo
 @HAVE_SPEEX_TRUE@am__objects_17 = module_echo_cancel_la-speex.lo
-@HAVE_WEBRTC_TRUE@am__objects_18 = module_echo_cancel_la-webrtc.lo
 am_module_echo_cancel_la_OBJECTS =  \
 	module_echo_cancel_la-module-echo-cancel.lo $(am__objects_16) \
-	$(am__objects_17) $(am__objects_18)
+	$(am__objects_17)
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@nodist_module_echo_cancel_la_OBJECTS = module_echo_cancel_la-adrian-aec-orc-gen.lo
 module_echo_cancel_la_OBJECTS = $(am_module_echo_cancel_la_OBJECTS) \
 	$(nodist_module_echo_cancel_la_OBJECTS)
-module_echo_cancel_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(module_echo_cancel_la_CXXFLAGS) $(CXXFLAGS) \
+module_echo_cancel_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(module_echo_cancel_la_CFLAGS) $(CFLAGS) \
 	$(module_echo_cancel_la_LDFLAGS) $(LDFLAGS) -o $@
 module_equalizer_sink_la_DEPENDENCIES = $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
@@ -1933,26 +1943,24 @@ am__echo_cancel_test_SOURCES_DIST =  \
 	modules/echo-cancel/echo-cancel.h \
 	modules/echo-cancel/adrian-aec.c \
 	modules/echo-cancel/adrian-aec.h modules/echo-cancel/adrian.c \
-	modules/echo-cancel/adrian.h modules/echo-cancel/speex.c \
-	modules/echo-cancel/webrtc.cc
-@HAVE_ADRIAN_EC_TRUE@am__objects_19 =  \
+	modules/echo-cancel/adrian.h modules/echo-cancel/speex.c
+@HAVE_ADRIAN_EC_TRUE@am__objects_18 =  \
 @HAVE_ADRIAN_EC_TRUE@	echo_cancel_test-adrian-aec.$(OBJEXT) \
 @HAVE_ADRIAN_EC_TRUE@	echo_cancel_test-adrian.$(OBJEXT)
-@HAVE_SPEEX_TRUE@am__objects_20 = echo_cancel_test-speex.$(OBJEXT)
-@HAVE_WEBRTC_TRUE@am__objects_21 = echo_cancel_test-webrtc.$(OBJEXT)
-am__objects_22 = echo_cancel_test-module-echo-cancel.$(OBJEXT) \
-	$(am__objects_19) $(am__objects_20) $(am__objects_21)
-am_echo_cancel_test_OBJECTS = $(am__objects_22)
-@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__objects_23 = echo_cancel_test-adrian-aec-orc-gen.$(OBJEXT)
-nodist_echo_cancel_test_OBJECTS = $(am__objects_23)
+@HAVE_SPEEX_TRUE@am__objects_19 = echo_cancel_test-speex.$(OBJEXT)
+am__objects_20 = echo_cancel_test-module-echo-cancel.$(OBJEXT) \
+	$(am__objects_18) $(am__objects_19)
+am_echo_cancel_test_OBJECTS = $(am__objects_20)
+@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__objects_21 = echo_cancel_test-adrian-aec-orc-gen.$(OBJEXT)
+nodist_echo_cancel_test_OBJECTS = $(am__objects_21)
 echo_cancel_test_OBJECTS = $(am_echo_cancel_test_OBJECTS) \
 	$(nodist_echo_cancel_test_OBJECTS)
-am__DEPENDENCIES_13 = $(am__DEPENDENCIES_3) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_11) $(am__DEPENDENCIES_12)
-echo_cancel_test_DEPENDENCIES = $(am__DEPENDENCIES_13)
-echo_cancel_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CXX \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CXXLD) \
-	$(echo_cancel_test_CXXFLAGS) $(CXXFLAGS) \
+am__DEPENDENCIES_12 = $(am__DEPENDENCIES_3) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_11) $(am__append_113)
+echo_cancel_test_DEPENDENCIES = $(am__DEPENDENCIES_12)
+echo_cancel_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(echo_cancel_test_CFLAGS) $(CFLAGS) \
 	$(echo_cancel_test_LDFLAGS) $(LDFLAGS) -o $@
 am_extended_test_OBJECTS = extended_test-extended-test.$(OBJEXT)
 extended_test_OBJECTS = $(am_extended_test_OBJECTS)
@@ -2043,12 +2051,12 @@ mainloop_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 mainloop_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(mainloop_test_CFLAGS) \
 	$(CFLAGS) $(mainloop_test_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_24 = mainloop_test_glib-mainloop-test.$(OBJEXT)
-am_mainloop_test_glib_OBJECTS = $(am__objects_24)
+am__objects_22 = mainloop_test_glib-mainloop-test.$(OBJEXT)
+am_mainloop_test_glib_OBJECTS = $(am__objects_22)
 mainloop_test_glib_OBJECTS = $(am_mainloop_test_glib_OBJECTS)
-am__DEPENDENCIES_14 = $(am__DEPENDENCIES_2) libpulse.la \
+am__DEPENDENCIES_13 = $(am__DEPENDENCIES_2) libpulse.la \
 	libpulsecommon-@PA_MAJORMINOR@.la
-mainloop_test_glib_DEPENDENCIES = $(am__DEPENDENCIES_14) \
+mainloop_test_glib_DEPENDENCIES = $(am__DEPENDENCIES_13) \
 	$(am__DEPENDENCIES_1) libpulse-mainloop-glib.la
 mainloop_test_glib_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -2167,13 +2175,13 @@ am__pulseaudio_SOURCES_DIST = daemon/caps.c daemon/caps.h \
 	daemon/dumpmodules.c daemon/dumpmodules.h \
 	daemon/ltdl-bind-now.c daemon/ltdl-bind-now.h daemon/main.c \
 	daemon/server-lookup.c daemon/server-lookup.h
-@HAVE_DBUS_TRUE@am__objects_25 = pulseaudio-server-lookup.$(OBJEXT)
+@HAVE_DBUS_TRUE@am__objects_23 = pulseaudio-server-lookup.$(OBJEXT)
 am_pulseaudio_OBJECTS = pulseaudio-caps.$(OBJEXT) \
 	pulseaudio-cmdline.$(OBJEXT) pulseaudio-cpulimit.$(OBJEXT) \
 	pulseaudio-daemon-conf.$(OBJEXT) \
 	pulseaudio-dumpmodules.$(OBJEXT) \
 	pulseaudio-ltdl-bind-now.$(OBJEXT) pulseaudio-main.$(OBJEXT) \
-	$(am__objects_25)
+	$(am__objects_23)
 pulseaudio_OBJECTS = $(am_pulseaudio_OBJECTS)
 pulseaudio_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(pulseaudio_CFLAGS) \
@@ -2363,7 +2371,8 @@ SOURCES = $(libalsa_util_la_SOURCES) $(libavahi_wrap_la_SOURCES) \
 	$(nodist_libpulsecore_@PA_MAJORMINOR@_la_SOURCES) \
 	$(libpulsecore_foreign_la_SOURCES) $(libpulsedsp_la_SOURCES) \
 	$(libraop_la_SOURCES) $(librtp_la_SOURCES) \
-	$(module_alsa_card_la_SOURCES) $(module_alsa_sink_la_SOURCES) \
+	$(libwebrtc_util_la_SOURCES) $(module_alsa_card_la_SOURCES) \
+	$(module_alsa_sink_la_SOURCES) \
 	$(module_alsa_source_la_SOURCES) \
 	$(module_always_sink_la_SOURCES) \
 	$(module_augment_properties_la_SOURCES) \
@@ -2480,6 +2489,7 @@ DIST_SOURCES = $(am__libalsa_util_la_SOURCES_DIST) \
 	$(am__libpulsecore_@PA_MAJORMINOR@_la_SOURCES_DIST) \
 	$(libpulsecore_foreign_la_SOURCES) $(libpulsedsp_la_SOURCES) \
 	$(libraop_la_SOURCES) $(librtp_la_SOURCES) \
+	$(am__libwebrtc_util_la_SOURCES_DIST) \
 	$(module_alsa_card_la_SOURCES) $(module_alsa_sink_la_SOURCES) \
 	$(module_alsa_source_la_SOURCES) \
 	$(module_always_sink_la_SOURCES) \
@@ -2596,6 +2606,7 @@ am__dist_alsapaths_DATA_DIST =  \
 	modules/alsa/mixer/paths/analog-input-dock-mic.conf \
 	modules/alsa/mixer/paths/analog-input-front-mic.conf \
 	modules/alsa/mixer/paths/analog-input-internal-mic.conf \
+	modules/alsa/mixer/paths/analog-input-internal-mic-always.conf \
 	modules/alsa/mixer/paths/analog-input-rear-mic.conf \
 	modules/alsa/mixer/paths/analog-input-mic.conf.common \
 	modules/alsa/mixer/paths/analog-input-mic-line.conf \
@@ -2603,6 +2614,7 @@ am__dist_alsapaths_DATA_DIST =  \
 	modules/alsa/mixer/paths/analog-input-video.conf \
 	modules/alsa/mixer/paths/analog-output.conf \
 	modules/alsa/mixer/paths/analog-output-speaker.conf \
+	modules/alsa/mixer/paths/analog-output-speaker-always.conf \
 	modules/alsa/mixer/paths/analog-output.conf.common \
 	modules/alsa/mixer/paths/analog-output-desktop-speaker.conf \
 	modules/alsa/mixer/paths/analog-output-headphones.conf \
@@ -2617,6 +2629,8 @@ am__dist_alsapaths_DATA_DIST =  \
 am__dist_alsaprofilesets_DATA_DIST =  \
 	modules/alsa/mixer/profile-sets/default.conf \
 	modules/alsa/mixer/profile-sets/extra-hdmi.conf \
+	modules/alsa/mixer/profile-sets/force-speaker.conf \
+	modules/alsa/mixer/profile-sets/force-speaker-and-int-mic.conf \
 	modules/alsa/mixer/profile-sets/maudio-fasttrack-pro.conf \
 	modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
 	modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf \
@@ -3496,7 +3510,8 @@ modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	$(am__append_76) $(am__append_77) $(am__append_79) \
 	$(am__append_80) $(am__append_81) $(am__append_82) \
 	$(am__append_83) $(am__append_84) $(am__append_85) \
-	$(am__append_87) $(am__append_88) $(am__append_89)
+	$(am__append_87) $(am__append_88) $(am__append_89) \
+	$(am__append_111)
 libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
 libprotocol_simple_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
 libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
@@ -3544,6 +3559,8 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMIN
 @HAVE_ALSA_TRUE@dist_alsaprofilesets_DATA = \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/default.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/extra-hdmi.conf \
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/force-speaker.conf \
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/force-speaker-and-int-mic.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/maudio-fasttrack-pro.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-audio4dj.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-audio8dj.conf \
@@ -3566,6 +3583,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMIN
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-dock-mic.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-front-mic.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-internal-mic.conf \
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-internal-mic-always.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-rear-mic.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-mic.conf.common \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-mic-line.conf \
@@ -3573,6 +3591,7 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMIN
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-input-video.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output-speaker.conf \
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output-speaker-always.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output.conf.common \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output-desktop-speaker.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/paths/analog-output-headphones.conf \
@@ -4004,7 +4023,7 @@ module_suspend_on_idle_la_CFLAGS = $(AM_CFLAGS)
 module_echo_cancel_la_SOURCES =  \
 	modules/echo-cancel/module-echo-cancel.c \
 	modules/echo-cancel/echo-cancel.h $(am__append_105) \
-	$(am__append_110) $(am__append_111)
+	$(am__append_110)
 module_echo_cancel_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_echo_cancel_la_LIBADD = $(MODULE_LIBADD) $(LIBSPEEX_LIBS) \
 	$(am__append_108) $(am__append_113)
@@ -4015,7 +4034,10 @@ module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@		modules/echo-cancel/adrian-aec-orc-gen.c \
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@		modules/echo-cancel/adrian-aec-orc-gen.h
 
-@HAVE_WEBRTC_TRUE@module_echo_cancel_la_CXXFLAGS = $(AM_CXXFLAGS) $(SERVER_CFLAGS) $(WEBRTC_CFLAGS) -DHAVE_WEBRTC=1
+@HAVE_WEBRTC_TRUE@libwebrtc_util_la_SOURCES = modules/echo-cancel/webrtc.cc
+@HAVE_WEBRTC_TRUE@libwebrtc_util_la_CXXFLAGS = $(AM_CXXFLAGS) $(SERVER_CFLAGS) $(WEBRTC_CFLAGS) -DHAVE_WEBRTC=1
+@HAVE_WEBRTC_TRUE@libwebrtc_util_la_LIBADD = $(WEBRTC_LIBS)
+@HAVE_WEBRTC_TRUE@libwebrtc_util_la_LDFLAGS = -avoid-version
 
 # RTP modules
 module_rtp_send_la_SOURCES = modules/rtp/module-rtp-send.c
@@ -4376,6 +4398,8 @@ libraop.la: $(libraop_la_OBJECTS) $(libraop_la_DEPENDENCIES) $(EXTRA_libraop_la_
 	$(AM_V_CCLD)$(libraop_la_LINK) $(am_libraop_la_rpath) $(libraop_la_OBJECTS) $(libraop_la_LIBADD) $(LIBS)
 librtp.la: $(librtp_la_OBJECTS) $(librtp_la_DEPENDENCIES) $(EXTRA_librtp_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(librtp_la_LINK) $(am_librtp_la_rpath) $(librtp_la_OBJECTS) $(librtp_la_LIBADD) $(LIBS)
+libwebrtc-util.la: $(libwebrtc_util_la_OBJECTS) $(libwebrtc_util_la_DEPENDENCIES) $(EXTRA_libwebrtc_util_la_DEPENDENCIES) 
+	$(AM_V_CXXLD)$(libwebrtc_util_la_LINK) $(am_libwebrtc_util_la_rpath) $(libwebrtc_util_la_OBJECTS) $(libwebrtc_util_la_LIBADD) $(LIBS)
 module-alsa-card.la: $(module_alsa_card_la_OBJECTS) $(module_alsa_card_la_DEPENDENCIES) $(EXTRA_module_alsa_card_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_alsa_card_la_LINK) $(am_module_alsa_card_la_rpath) $(module_alsa_card_la_OBJECTS) $(module_alsa_card_la_LIBADD) $(LIBS)
 module-alsa-sink.la: $(module_alsa_sink_la_OBJECTS) $(module_alsa_sink_la_DEPENDENCIES) $(EXTRA_module_alsa_sink_la_DEPENDENCIES) 
@@ -4423,7 +4447,7 @@ module-device-manager.la: $(module_device_manager_la_OBJECTS) $(module_device_ma
 module-device-restore.la: $(module_device_restore_la_OBJECTS) $(module_device_restore_la_DEPENDENCIES) $(EXTRA_module_device_restore_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_device_restore_la_LINK) -rpath $(modlibexecdir) $(module_device_restore_la_OBJECTS) $(module_device_restore_la_LIBADD) $(LIBS)
 module-echo-cancel.la: $(module_echo_cancel_la_OBJECTS) $(module_echo_cancel_la_DEPENDENCIES) $(EXTRA_module_echo_cancel_la_DEPENDENCIES) 
-	$(AM_V_CXXLD)$(module_echo_cancel_la_LINK) -rpath $(modlibexecdir) $(module_echo_cancel_la_OBJECTS) $(module_echo_cancel_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(module_echo_cancel_la_LINK) -rpath $(modlibexecdir) $(module_echo_cancel_la_OBJECTS) $(module_echo_cancel_la_LIBADD) $(LIBS)
 module-equalizer-sink.la: $(module_equalizer_sink_la_OBJECTS) $(module_equalizer_sink_la_DEPENDENCIES) $(EXTRA_module_equalizer_sink_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_equalizer_sink_la_LINK) $(am_module_equalizer_sink_la_rpath) $(module_equalizer_sink_la_OBJECTS) $(module_equalizer_sink_la_LIBADD) $(LIBS)
 module-esound-compat-spawnfd.la: $(module_esound_compat_spawnfd_la_OBJECTS) $(module_esound_compat_spawnfd_la_DEPENDENCIES) $(EXTRA_module_esound_compat_spawnfd_la_DEPENDENCIES) 
@@ -4686,7 +4710,7 @@ cpulimit-test2$(EXEEXT): $(cpulimit_test2_OBJECTS) $(cpulimit_test2_DEPENDENCIES
 	$(AM_V_CCLD)$(cpulimit_test2_LINK) $(cpulimit_test2_OBJECTS) $(cpulimit_test2_LDADD) $(LIBS)
 echo-cancel-test$(EXEEXT): $(echo_cancel_test_OBJECTS) $(echo_cancel_test_DEPENDENCIES) $(EXTRA_echo_cancel_test_DEPENDENCIES) 
 	@rm -f echo-cancel-test$(EXEEXT)
-	$(AM_V_CXXLD)$(echo_cancel_test_LINK) $(echo_cancel_test_OBJECTS) $(echo_cancel_test_LDADD) $(LIBS)
+	$(AM_V_CCLD)$(echo_cancel_test_LINK) $(echo_cancel_test_OBJECTS) $(echo_cancel_test_LDADD) $(LIBS)
 extended-test$(EXEEXT): $(extended_test_OBJECTS) $(extended_test_DEPENDENCIES) $(EXTRA_extended_test_DEPENDENCIES) 
 	@rm -f extended-test$(EXEEXT)
 	$(AM_V_CCLD)$(extended_test_LINK) $(extended_test_OBJECTS) $(extended_test_LDADD) $(LIBS)
@@ -4874,7 +4898,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/echo_cancel_test-adrian.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/echo_cancel_test-module-echo-cancel.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/echo_cancel_test-speex.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/echo_cancel_test-webrtc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/extended_test-extended-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/flist_test-flist-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/format_test-format-test.Po@am__quote@
@@ -5061,6 +5084,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpulsedsp_la-padsp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libraop_la-base64.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libraop_la-raop_client.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libwebrtc_util_la-webrtc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/lock_autospawn_test-lock-autospawn-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mainloop_test-mainloop-test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mainloop_test_glib-mainloop-test.Po@am__quote@
@@ -5126,7 +5150,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_echo_cancel_la-adrian.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_echo_cancel_la-module-echo-cancel.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_echo_cancel_la-speex.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_echo_cancel_la-webrtc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_equalizer_sink_la-module-equalizer-sink.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_esound_protocol_tcp_la-module-protocol-stub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/module_esound_protocol_unix_la-module-protocol-stub.Plo@am__quote@
@@ -8198,26 +8221,12 @@ volume_test-volume-test.obj: tests/volume-test.c
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LTCXXCOMPILE) -c -o $@ $<
 
-module_echo_cancel_la-webrtc.lo: modules/echo-cancel/webrtc.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_echo_cancel_la_CXXFLAGS) $(CXXFLAGS) -MT module_echo_cancel_la-webrtc.lo -MD -MP -MF $(DEPDIR)/module_echo_cancel_la-webrtc.Tpo -c -o module_echo_cancel_la-webrtc.lo `test -f 'modules/echo-cancel/webrtc.cc' || echo '$(srcdir)/'`modules/echo-cancel/webrtc.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/module_echo_cancel_la-webrtc.Tpo $(DEPDIR)/module_echo_cancel_la-webrtc.Plo
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='modules/echo-cancel/webrtc.cc' object='module_echo_cancel_la-webrtc.lo' libtool=yes @AMDEPBACKSLASH@
+libwebrtc_util_la-webrtc.lo: modules/echo-cancel/webrtc.cc
+@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwebrtc_util_la_CXXFLAGS) $(CXXFLAGS) -MT libwebrtc_util_la-webrtc.lo -MD -MP -MF $(DEPDIR)/libwebrtc_util_la-webrtc.Tpo -c -o libwebrtc_util_la-webrtc.lo `test -f 'modules/echo-cancel/webrtc.cc' || echo '$(srcdir)/'`modules/echo-cancel/webrtc.cc
+@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libwebrtc_util_la-webrtc.Tpo $(DEPDIR)/libwebrtc_util_la-webrtc.Plo
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='modules/echo-cancel/webrtc.cc' object='libwebrtc_util_la-webrtc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_echo_cancel_la_CXXFLAGS) $(CXXFLAGS) -c -o module_echo_cancel_la-webrtc.lo `test -f 'modules/echo-cancel/webrtc.cc' || echo '$(srcdir)/'`modules/echo-cancel/webrtc.cc
-
-echo_cancel_test-webrtc.o: modules/echo-cancel/webrtc.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(echo_cancel_test_CXXFLAGS) $(CXXFLAGS) -MT echo_cancel_test-webrtc.o -MD -MP -MF $(DEPDIR)/echo_cancel_test-webrtc.Tpo -c -o echo_cancel_test-webrtc.o `test -f 'modules/echo-cancel/webrtc.cc' || echo '$(srcdir)/'`modules/echo-cancel/webrtc.cc
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/echo_cancel_test-webrtc.Tpo $(DEPDIR)/echo_cancel_test-webrtc.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='modules/echo-cancel/webrtc.cc' object='echo_cancel_test-webrtc.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(echo_cancel_test_CXXFLAGS) $(CXXFLAGS) -c -o echo_cancel_test-webrtc.o `test -f 'modules/echo-cancel/webrtc.cc' || echo '$(srcdir)/'`modules/echo-cancel/webrtc.cc
-
-echo_cancel_test-webrtc.obj: modules/echo-cancel/webrtc.cc
-@am__fastdepCXX_TRUE@	$(AM_V_CXX)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(echo_cancel_test_CXXFLAGS) $(CXXFLAGS) -MT echo_cancel_test-webrtc.obj -MD -MP -MF $(DEPDIR)/echo_cancel_test-webrtc.Tpo -c -o echo_cancel_test-webrtc.obj `if test -f 'modules/echo-cancel/webrtc.cc'; then $(CYGPATH_W) 'modules/echo-cancel/webrtc.cc'; else $(CYGPATH_W) '$(srcdir)/modules/echo-cancel/webrtc.cc'; fi`
-@am__fastdepCXX_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/echo_cancel_test-webrtc.Tpo $(DEPDIR)/echo_cancel_test-webrtc.Po
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	$(AM_V_CXX)source='modules/echo-cancel/webrtc.cc' object='echo_cancel_test-webrtc.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(echo_cancel_test_CXXFLAGS) $(CXXFLAGS) -c -o echo_cancel_test-webrtc.obj `if test -f 'modules/echo-cancel/webrtc.cc'; then $(CYGPATH_W) 'modules/echo-cancel/webrtc.cc'; else $(CYGPATH_W) '$(srcdir)/modules/echo-cancel/webrtc.cc'; fi`
+@am__fastdepCXX_FALSE@	$(AM_V_CXX@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CXX $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libwebrtc_util_la_CXXFLAGS) $(CXXFLAGS) -c -o libwebrtc_util_la-webrtc.lo `test -f 'modules/echo-cancel/webrtc.cc' || echo '$(srcdir)/'`modules/echo-cancel/webrtc.cc
 
 mostlyclean-libtool:
 	-rm -f *.lo
