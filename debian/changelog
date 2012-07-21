@@ -1,8 +1,10 @@
 pulseaudio (2.1-1) UNRELEASED; urgency=low
 
   * New upstream stable release
+  * debian/patches/webrtc-utils-needs-to-be-installed-before-module-ech.patch:
+    - Added. Fix build
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 20 Jul 2012 19:44:08 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Jul 2012 17:11:01 +0200
 
 pulseaudio (2.0-3) unstable; urgency=low
 
