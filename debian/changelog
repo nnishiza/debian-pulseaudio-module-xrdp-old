@@ -1,3 +1,14 @@
+pulseaudio (2.0-4) UNRELEASED; urgency=low
+
+  * debian/patches/remove-analog-mono.patch:
+    - Added. Remove analog-output-lfe-on-mono mixer path, although in principle
+      Ac '97 hardware has a seperate mono LFE pin nothing seems to use it. To
+      make matters worse it does confused pulseaudios port selection slightly
+      which causes audio in virtualbox not to work out of the box
+      (Closes: #673847)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Jul 2012 17:50:17 +0200
+
 pulseaudio (2.0-3) unstable; urgency=low
 
   [ Martin-Éric Racine ]
