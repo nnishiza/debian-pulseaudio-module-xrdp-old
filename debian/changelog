@@ -1,4 +1,4 @@
-pulseaudio (2.1-1) UNRELEASED; urgency=low
+pulseaudio (2.1-1) experimental; urgency=low
 
   * New upstream stable release
   * debian/patches/webrtc-utils-needs-to-be-installed-before-module-ech.patch:
@@ -10,7 +10,7 @@ pulseaudio (2.1-1) UNRELEASED; urgency=low
       which causes audio in virtualbox not to work out of the box
       (Closes: #673847)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Jul 2012 17:23:28 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Jul 2012 17:38:52 +0200
 
 pulseaudio (2.0-3) unstable; urgency=low
 
