@@ -3,8 +3,14 @@ pulseaudio (2.1-1) UNRELEASED; urgency=low
   * New upstream stable release
   * debian/patches/webrtc-utils-needs-to-be-installed-before-module-ech.patch:
     - Added. Fix build
+  * debian/patches/remove-analog-mono.patch:
+    - Added. Remove analog-output-lfe-on-mono mixer path, although in principle
+      Ac '97 hardware has a seperate mono LFE pin nothing seems to use it. To
+      make matters worse it does confused pulseaudios port selection slightly
+      which causes audio in virtualbox not to work out of the box
+      (Closes: #673847)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Jul 2012 17:11:01 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 21 Jul 2012 17:23:28 +0200
 
 pulseaudio (2.0-3) unstable; urgency=low
 

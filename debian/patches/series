@@ -1,2 +1,3 @@
 0001_man_page_typos.patch
 webrtc-utils-needs-to-be-installed-before-module-ech.patch
+remove-analog-mono.patch
