@@ -1,9 +1,9 @@
-pulseaudio (2.1-2) UNRELEASED; urgency=low
+pulseaudio (2.1-2) experimental; urgency=low
 
   * debian/control: Use linux-any where applicable instead of specifying
     architectures by hand. (Closes: #682738)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 09 Aug 2012 10:29:27 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 09 Aug 2012 10:37:07 +0200
 
 pulseaudio (2.1-1) experimental; urgency=low
 
