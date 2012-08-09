@@ -1,5 +1,11 @@
-pulseaudio (2.0-4) unstable; urgency=low
+pulseaudio (2.0-5) UNRELEASED; urgency=low
 
+  * debian/control: Use linux-any where applicable instead of specifying
+    architectures by hand. (Closes: #682738)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 09 Aug 2012 13:19:27 +0200
+
+pulseaudio (2.0-4) unstable; urgency=low
   * debian/patches/remove-analog-mono.patch:
     - Added. Remove analog-output-lfe-on-mono mixer path, although in principle
       Ac '97 hardware has a seperate mono LFE pin nothing seems to use it. To
