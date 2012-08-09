@@ -1,9 +1,9 @@
-pulseaudio (2.0-5) UNRELEASED; urgency=low
+pulseaudio (2.0-5) unstable; urgency=low
 
   * debian/control: Use linux-any where applicable instead of specifying
     architectures by hand. (Closes: #682738)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Thu, 09 Aug 2012 13:19:27 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Thu, 09 Aug 2012 13:20:06 +0200
 
 pulseaudio (2.0-4) unstable; urgency=low
   * debian/patches/remove-analog-mono.patch:
