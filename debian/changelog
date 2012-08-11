@@ -1,9 +1,9 @@
-pulseaudio (2.0-6) UNRELEASED; urgency=low
+pulseaudio (2.0-6) unstable; urgency=low
 
-  * debian/rules: se xz compression for binary packages. (Patch by Ansgar
+  * debian/rules: use xz compression for binary packages. (Patch by Ansgar
     Burchardt) (Closes: #683905)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 11 Aug 2012 14:36:13 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 11 Aug 2012 16:43:56 +0200
 
 pulseaudio (2.0-5) unstable; urgency=low
 
