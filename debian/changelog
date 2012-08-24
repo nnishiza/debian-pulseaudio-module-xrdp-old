@@ -2,8 +2,9 @@ pulseaudio (2.1-3) UNRELEASED; urgency=low
 
   * debian/rules: use xz compression for binary packages. (Patch by Ansgar
     Burchardt) (Closes: #683905)
+  * debian/pulseaudio.install: Install libwebrtc-util helper library
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 11 Aug 2012 14:36:13 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 24 Aug 2012 14:03:32 +0200
 
 pulseaudio (2.1-2) experimental; urgency=low
 
