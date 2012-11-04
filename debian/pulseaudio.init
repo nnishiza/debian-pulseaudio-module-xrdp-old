@@ -26,7 +26,7 @@ PULSEAUDIO_SYSTEM_START=0
 DISALLOW_MODULE_LOADING=1
 test -f /etc/default/pulseaudio && . /etc/default/pulseaudio
 if [ "$PULSEAUDIO_SYSTEM_START" != "1" ]; then
-	log_warning_msg "PulseAudio configured for per-user sessions"
+	log_action_msg "PulseAudio not started: Configured for per-user sessions"
 	exit 0
 fi
 
