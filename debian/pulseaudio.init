@@ -59,7 +59,7 @@ case "$1" in
 	start|stop)
 		pulseaudio_${1}
 		;;
-	restart|reload|force-reload)
+	restart|force-reload)
 		if [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
 			pulseaudio_stop
 			pulseaudio_start
@@ -75,7 +75,7 @@ case "$1" in
 		status_of_proc -p $PIDFILE "$DAEMON" "system-wide PulseAudio" && exit 0 || exit $?
 		;;
 	*)
-		echo "Usage: /etc/init.d/pulseaudio {start|stop|force-stop|restart|reload|force-reload|status}"
+		echo "Usage: /etc/init.d/pulseaudio {start|stop|force-stop|restart|force-reload|status}"
 		exit 1
 		;;
 esac
