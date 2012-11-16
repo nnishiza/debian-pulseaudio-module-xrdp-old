@@ -63,6 +63,13 @@ enum profile {
     PROFILE_OFF
 };
 
+/* Hook data: pa_bluetooth_transport pointer. */
+typedef enum pa_bluetooth_transport_hook {
+    PA_BLUETOOTH_TRANSPORT_HOOK_NREC_CHANGED, /* Call data: NULL. */
+    PA_BLUETOOTH_TRANSPORT_HOOK_REMOVED, /* Call data: NULL. */
+    PA_BLUETOOTH_TRANSPORT_HOOK_MAX
+} pa_bluetooth_transport_hook_t;
+
 struct pa_bluetooth_transport {
     pa_bluetooth_discovery *y;
     char *path;
@@ -71,6 +78,8 @@ struct pa_bluetooth_transport {
     uint8_t *config;
     int config_size;
     pa_bool_t nrec;
+
+    pa_hook hooks[PA_BLUETOOTH_TRANSPORT_HOOK_MAX];
 };
 
 /* This enum is shared among Audio, Headset, AudioSink, and AudioSource, although not all values are acceptable in all profiles */
@@ -81,6 +90,13 @@ typedef enum pa_bt_audio_state {
     PA_BT_AUDIO_STATE_CONNECTED,
     PA_BT_AUDIO_STATE_PLAYING
 } pa_bt_audio_state_t;
+
+/* Hook data: pa_bluetooth_device pointer. */
+typedef enum pa_bluetooth_device_hook {
+    PA_BLUETOOTH_DEVICE_HOOK_REMOVED, /* Call data: NULL. */
+    PA_BLUETOOTH_DEVICE_HOOK_UUID_ADDED, /* Call data: const char *uuid. */
+    PA_BLUETOOTH_DEVICE_HOOK_MAX
+} pa_bluetooth_device_hook_t;
 
 struct pa_bluetooth_device {
     pa_bool_t dead;
@@ -113,6 +129,8 @@ struct pa_bluetooth_device {
 
     /* HandsfreeGateway state */
     pa_bt_audio_state_t hfgw_state;
+
+    pa_hook hooks[PA_BLUETOOTH_DEVICE_HOOK_MAX];
 };
 
 pa_bluetooth_discovery* pa_bluetooth_discovery_get(pa_core *core);
@@ -121,14 +139,14 @@ void pa_bluetooth_discovery_unref(pa_bluetooth_discovery *d);
 
 void pa_bluetooth_discovery_sync(pa_bluetooth_discovery *d);
 
-const pa_bluetooth_device* pa_bluetooth_discovery_get_by_path(pa_bluetooth_discovery *d, const char* path);
-const pa_bluetooth_device* pa_bluetooth_discovery_get_by_address(pa_bluetooth_discovery *d, const char* address);
+pa_bluetooth_device* pa_bluetooth_discovery_get_by_path(pa_bluetooth_discovery *d, const char* path);
+pa_bluetooth_device* pa_bluetooth_discovery_get_by_address(pa_bluetooth_discovery *d, const char* address);
 
-const pa_bluetooth_transport* pa_bluetooth_discovery_get_transport(pa_bluetooth_discovery *y, const char *path);
-const pa_bluetooth_transport* pa_bluetooth_device_get_transport(const pa_bluetooth_device *d, enum profile profile);
+pa_bluetooth_transport* pa_bluetooth_discovery_get_transport(pa_bluetooth_discovery *y, const char *path);
+pa_bluetooth_transport* pa_bluetooth_device_get_transport(pa_bluetooth_device *d, enum profile profile);
 
-int pa_bluetooth_transport_acquire(const pa_bluetooth_transport *t, const char *accesstype, size_t *imtu, size_t *omtu);
-void pa_bluetooth_transport_release(const pa_bluetooth_transport *t, const char *accesstype);
+int pa_bluetooth_transport_acquire(pa_bluetooth_transport *t, const char *accesstype, size_t *imtu, size_t *omtu);
+void pa_bluetooth_transport_release(pa_bluetooth_transport *t, const char *accesstype);
 int pa_bluetooth_transport_parse_property(pa_bluetooth_transport *t, DBusMessageIter *i);
 
 pa_hook* pa_bluetooth_discovery_hook(pa_bluetooth_discovery *d);

@@ -2,12 +2,12 @@
 .SH NAME
 pulse-daemon.conf \- PulseAudio daemon configuration file
 .SH SYNOPSIS
-\fB\fI~/.pulse/daemon.conf\fB
+\fB\fI~/.config/pulse/daemon.conf\fB
 
 \fI/home/arun/local/pulseaudio/etc/pulse/daemon.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a file \fI~/.pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/home/arun/local/pulseaudio/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
+The PulseAudio sound server reads configuration directives from a file \fI~/.config/pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/home/arun/local/pulseaudio/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -28,7 +28,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBenable-lfe-remixing=\f1 if disabeld when upmixing or downmixing ignore LFE channels. When this option is dsabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fBno\f1.
 .TP
-\fBuse-pid-file=\f1 Create a PID file in the runtime directory (\fI$HOME/.pulse/*-runtime/pid\f1). If this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--use-pid-file\f1 command line option takes precedence.
+\fBuse-pid-file=\f1 Create a PID file in the runtime directory (\fI$XDG_RUNTIMEDIR/pulse/pid\f1). If this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--use-pid-file\f1 command line option takes precedence.
 .TP
 \fBcpu-limit=\f1 If disabled do not install the CPU load limiter, even on platforms where it is supported. This option is useful when debugging/profiling PulseAudio to disable disturbing SIGXCPU signals. Takes a boolean argument, defaults to \fBno\f1. The \fB--no-cpu-limit\f1 command line argument takes precedence.
 .TP
@@ -59,9 +59,9 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 \fBscache-idle-time=\f1 Unload autoloaded sample cache entries after being idle for this time in seconds. Defaults to 20. The \fB--scache-idle-time\f1 command line option takes precedence.
 .SH PATHS
 .TP
-\fBdl-search-path=\f1 The path were to look for dynamic shared objects (DSOs/plugins). You may specify more than one path seperated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
+\fBdl-search-path=\f1 The path were to look for dynamic shared objects (DSOs/plugins). You may specify more than one path separated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
 .TP
-\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/home/arun/local/pulseaudio/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/home/arun/local/pulseaudio/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
+\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.config/pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/home/arun/local/pulseaudio/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/home/arun/local/pulseaudio/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
 .TP
 \fBload-default-script-file=\f1 Load the default configuration script file as specified in \fBdefault-script-file=\f1. Defaults to \fByes\f1.
 .SH LOGGING
@@ -110,7 +110,7 @@ See \fBgetrlimit(2)\f1 for more information. Set to -1 if PulseAudio shall not t
 .SH DEFAULT DEVICE SETTINGS
 Most drivers try to open the audio device with these settings and then fall back to lower settings. The default settings are CD quality: 16bit native endian, 2 channels, 44100 Hz sampling.
 .TP
-\fBdefault-sample-format=\f1 The default sampling format. Specify one of \fBu8\f1, \fBs16le\f1, \fBs16be\f1, \fBs24le\f1, \fBs24be\f1, \fBs24-32le\f1, \fBs24-32be\f1, \fBs32le\f1, \fBs32be\f1 \fBfloat32le\f1, \fBfloat32be\f1, \fBulaw\f1, \fBalaw\f1. Depending on the endianess of the CPU the formats \fBs16ne\f1, \fBs16re\f1, \fBs24ne\f1, \fBs24re\f1, \fBs24-32ne\f1, \fBs24-32re\f1, \fBs32ne\f1, \fBs32re\f1, \fBfloat32ne\f1, \fBfloat32re\f1 (for native, resp. reverse endian) are available as aliases.
+\fBdefault-sample-format=\f1 The default sampling format. Specify one of \fBu8\f1, \fBs16le\f1, \fBs16be\f1, \fBs24le\f1, \fBs24be\f1, \fBs24-32le\f1, \fBs24-32be\f1, \fBs32le\f1, \fBs32be\f1 \fBfloat32le\f1, \fBfloat32be\f1, \fBulaw\f1, \fBalaw\f1. Depending on the endianness of the CPU the formats \fBs16ne\f1, \fBs16re\f1, \fBs24ne\f1, \fBs24re\f1, \fBs24-32ne\f1, \fBs24-32re\f1, \fBs32ne\f1, \fBs32re\f1, \fBfloat32ne\f1, \fBfloat32re\f1 (for native, resp. reverse endian) are available as aliases.
 .TP
 \fBdefault-sample-rate=\f1 The default sample frequency.
 .TP

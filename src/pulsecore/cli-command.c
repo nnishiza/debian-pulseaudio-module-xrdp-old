@@ -33,6 +33,8 @@
 #include <sys/stat.h>
 #include <dirent.h>
 #include <time.h>
+#include <fcntl.h>
+#include <ctype.h>
 
 #include <pulse/xmalloc.h>
 #include <pulse/error.h>
@@ -121,6 +123,7 @@ static int pa_cli_command_vacuum(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa
 static int pa_cli_command_suspend_sink(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_suspend_source(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_suspend(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
+static int pa_cli_command_log_target(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_log_level(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_log_meta(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_log_time(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
@@ -132,6 +135,7 @@ static int pa_cli_command_update_source_output_proplist(pa_core *c, pa_tokenizer
 static int pa_cli_command_card_profile(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_sink_port(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_source_port(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
+static int pa_cli_command_port_offset(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 static int pa_cli_command_dump_volumes(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail);
 
 /* A method table for all available commands */
@@ -150,7 +154,7 @@ static const struct command commands[] = {
     { "ls",                      pa_cli_command_info,               NULL,                           1 },
     { "list",                    pa_cli_command_info,               NULL,                           1 },
     { "load-module",             pa_cli_command_load,               "Load a module (args: name, arguments)", 3},
-    { "unload-module",           pa_cli_command_unload,             "Unload a module (args: index)", 2},
+    { "unload-module",           pa_cli_command_unload,             "Unload a module (args: index|name)", 2},
     { "describe-module",         pa_cli_command_describe,           "Describe a module (arg: name)", 2},
     { "set-sink-volume",         pa_cli_command_sink_volume,        "Set the volume of a sink (args: index|name, volume)", 3},
     { "set-source-volume",       pa_cli_command_source_volume,      "Set the volume of a source (args: index|name, volume)", 3},
@@ -165,6 +169,7 @@ static const struct command commands[] = {
     { "set-card-profile",        pa_cli_command_card_profile,       "Change the profile of a card (args: index|name, profile-name)", 3},
     { "set-sink-port",           pa_cli_command_sink_port,          "Change the port of a sink (args: index|name, port-name)", 3},
     { "set-source-port",         pa_cli_command_source_port,        "Change the port of a source (args: index|name, port-name)", 3},
+    { "set-port-latency-offset", pa_cli_command_port_offset,        "Change the latency of a port (args: card-index|card-name, port-name, latency-offset)", 4},
     { "suspend-sink",            pa_cli_command_suspend_sink,       "Suspend sink (args: index|name, bool)", 3},
     { "suspend-source",          pa_cli_command_suspend_source,     "Suspend source (args: index|name, bool)", 3},
     { "suspend",                 pa_cli_command_suspend,            "Suspend all sinks and all sources (args: bool)", 2},
@@ -183,6 +188,7 @@ static const struct command commands[] = {
     { "kill-client",             pa_cli_command_kill_client,        "Kill a client (args: index)", 2},
     { "kill-sink-input",         pa_cli_command_kill_sink_input,    "Kill a sink input (args: index)", 2},
     { "kill-source-output",      pa_cli_command_kill_source_output, "Kill a source output (args: index)", 2},
+    { "set-log-target",          pa_cli_command_log_target,         "Change the log target (args: null,auto,syslog,stderr,file:PATH)", 2},
     { "set-log-level",           pa_cli_command_log_level,          "Change the log level (args: numeric level)", 2},
     { "set-log-meta",            pa_cli_command_log_meta,           "Show source code location in log messages (args: bool)", 2},
     { "set-log-time",            pa_cli_command_log_time,           "Show timestamps in log messages (args: bool)", 2},
@@ -444,7 +450,7 @@ static int pa_cli_command_unload(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa
     pa_module *m;
     uint32_t idx;
     const char *i;
-    char *e;
+    pa_bool_t unloaded = FALSE;
 
     pa_core_assert_ref(c);
     pa_assert(t);
@@ -452,17 +458,31 @@ static int pa_cli_command_unload(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa
     pa_assert(fail);
 
     if (!(i = pa_tokenizer_get(t, 1))) {
-        pa_strbuf_puts(buf, "You need to specify the module index.\n");
+        pa_strbuf_puts(buf, "You need to specify the module index or name.\n");
         return -1;
     }
 
-    idx = (uint32_t) strtoul(i, &e, 10);
-    if (*e || !(m = pa_idxset_get_by_index(c->modules, idx))) {
-        pa_strbuf_puts(buf, "Invalid module index.\n");
-        return -1;
+    if (pa_atou(i, &idx) >= 0) {
+        if (!(m = pa_idxset_get_by_index(c->modules, idx))) {
+            pa_strbuf_puts(buf, "Invalid module index.\n");
+            return -1;
+        }
+
+        pa_module_unload_request(m, FALSE);
+
+    } else {
+        PA_IDXSET_FOREACH(m, c->modules, idx)
+            if (pa_streq(i, m->name)) {
+                unloaded = TRUE;
+                pa_module_unload_request(m, FALSE);
+            }
+
+        if (unloaded == FALSE) {
+            pa_strbuf_printf(buf, "Module %s not loaded.\n", i);
+            return -1;
+        }
     }
 
-    pa_module_unload_request(m, FALSE);
     return 0;
 }
 
@@ -1473,6 +1493,46 @@ static int pa_cli_command_suspend(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, p
     return 0;
 }
 
+static int pa_cli_command_log_target(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
+    const char *m;
+
+    pa_core_assert_ref(c);
+    pa_assert(t);
+    pa_assert(buf);
+    pa_assert(fail);
+
+    if (!(m = pa_tokenizer_get(t, 1))) {
+        pa_strbuf_puts(buf, "You need to specify a log target (null,auto,syslog,stderr,file:PATH).\n");
+        return -1;
+    }
+
+    if (pa_streq(m, "null"))
+        pa_log_set_target(PA_LOG_NULL);
+    else if (pa_streq(m, "syslog"))
+        pa_log_set_target(PA_LOG_SYSLOG);
+    else if (pa_streq(m, "stderr") || pa_streq(m, "auto")) {
+        /* 'auto' is actually the effect with 'stderr' */
+        pa_log_set_target(PA_LOG_STDERR);
+    } else if (pa_startswith(m, "file:")) {
+        const char *file_path = m + 5;
+        int log_fd;
+
+        /* Open target file with user rights */
+        if ((log_fd = open(file_path, O_RDWR|O_TRUNC|O_CREAT, S_IRUSR | S_IWUSR)) >= 0) {
+            pa_log_set_target(PA_LOG_FD);
+            pa_log_set_fd(log_fd);
+        } else {
+            pa_strbuf_printf(buf, "Failed to open target file %s, error : %s\n", file_path, pa_cstrerror(errno));
+            return -1;
+        }
+    } else {
+        pa_strbuf_puts(buf, "You need to specify a log target (null,auto,syslog,stderr,file:PATH).\n");
+        return -1;
+    }
+
+    return 0;
+}
+
 static int pa_cli_command_log_level(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
     const char *m;
     uint32_t level;
@@ -1665,6 +1725,52 @@ static int pa_cli_command_source_port(pa_core *c, pa_tokenizer *t, pa_strbuf *bu
     return 0;
 }
 
+static int pa_cli_command_port_offset(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
+    const char *n, *p, *l;
+    pa_device_port *port;
+    pa_card *card;
+    int32_t offset;
+
+    pa_core_assert_ref(c);
+    pa_assert(t);
+    pa_assert(buf);
+    pa_assert(fail);
+
+    if (!(n = pa_tokenizer_get(t, 1))) {
+        pa_strbuf_puts(buf, "You need to specify a card either by its name or its index.\n");
+        return -1;
+    }
+
+    if (!(p = pa_tokenizer_get(t, 2))) {
+        pa_strbuf_puts(buf, "You need to specify a port by its name.\n");
+        return -1;
+    }
+
+    if (!(l = pa_tokenizer_get(t, 3))) {
+        pa_strbuf_puts(buf, "You need to specify a latency offset.\n");
+        return -1;
+    }
+
+    if (pa_atoi(l, &offset) < 0) {
+        pa_strbuf_puts(buf, "Failed to parse the latency offset.\n");
+        return -1;
+    }
+
+    if (!(card = pa_namereg_get(c, n, PA_NAMEREG_CARD))) {
+        pa_strbuf_puts(buf, "No card found by this name or index.\n");
+        return -1;
+    }
+
+    if (!(port = pa_hashmap_get(card->ports, p))) {
+        pa_strbuf_puts(buf, "No port found by this name.\n");
+        return -1;
+    }
+
+    pa_device_port_set_latency_offset(port, offset);
+
+    return 0;
+}
+
 static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_bool_t *fail) {
     pa_module *m;
     pa_sink *sink;
@@ -1734,8 +1840,7 @@ static int pa_cli_command_dump(pa_core *c, pa_tokenizer *t, pa_strbuf *buf, pa_b
             nl = TRUE;
         }
 
-        if (card->active_profile)
-            pa_strbuf_printf(buf, "set-card-profile %s %s\n", card->name, card->active_profile->name);
+        pa_strbuf_printf(buf, "set-card-profile %s %s\n", card->name, card->active_profile->name);
     }
 
     nl = FALSE;

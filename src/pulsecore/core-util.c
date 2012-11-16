@@ -150,6 +150,8 @@ static pa_strlist *recorded_env = NULL;
 
 #ifdef OS_IS_WIN32
 
+#include "poll.h"
+
 /* Returns the directory of the current DLL, with '/bin/' removed if it is the last component */
 char *pa_win32_get_toplevel(HANDLE handle) {
     static char *toplevel = NULL;
@@ -168,7 +170,7 @@ char *pa_win32_get_toplevel(HANDLE handle) {
             *p = '\0';
 
         p = strrchr(toplevel, PA_PATH_SEP_CHAR);
-        if (p && (strcmp(p + 1, "bin") == 0))
+        if (p && pa_streq(p + 1, "bin"))
             *p = '\0';
     }
 
@@ -216,13 +218,17 @@ void pa_make_fd_cloexec(int fd) {
 
 }
 
-/** Creates a directory securely */
-int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
+/** Creates a directory securely. Will create parent directories recursively if
+ * required. This will not update permissions on parent directories if they
+ * already exist, however. */
+int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid, pa_bool_t update_perms) {
     struct stat st;
     int r, saved_errno;
+    pa_bool_t retry = TRUE;
 
     pa_assert(dir);
 
+again:
 #ifdef OS_IS_WIN32
     r = mkdir(dir);
 #else
@@ -233,6 +239,14 @@ int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
     umask(u);
 }
 #endif
+
+    if (r < 0 && errno == ENOENT && retry) {
+        /* If a parent directory in the path doesn't exist, try to create that
+         * first, then try again. */
+        pa_make_secure_parent_dir(dir, m, uid, gid, FALSE);
+        retry = FALSE;
+        goto again;
+    }
 
     if (r < 0 && errno != EEXIST)
         return -1;
@@ -263,6 +277,9 @@ int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid) {
         errno = EEXIST;
         goto fail;
     }
+
+    if (!update_perms)
+        return 0;
 
 #ifdef HAVE_FCHOWN
     if (uid == (uid_t) -1)
@@ -325,14 +342,14 @@ char *pa_parent_dir(const char *fn) {
 }
 
 /* Creates a the parent directory of the specified path securely */
-int pa_make_secure_parent_dir(const char *fn, mode_t m, uid_t uid, gid_t gid) {
+int pa_make_secure_parent_dir(const char *fn, mode_t m, uid_t uid, gid_t gid, pa_bool_t update_perms) {
     int ret = -1;
     char *dir;
 
     if (!(dir = pa_parent_dir(fn)))
         goto finish;
 
-    if (pa_make_secure_dir(dir, m, uid, gid) < 0)
+    if (pa_make_secure_dir(dir, m, uid, gid, update_perms) < 0)
         goto finish;
 
     ret = 0;
@@ -353,13 +370,26 @@ ssize_t pa_read(int fd, void *buf, size_t count, int *type) {
 #ifdef OS_IS_WIN32
 
     if (!type || *type == 0) {
+        int err;
         ssize_t r;
 
+retry:
         if ((r = recv(fd, buf, count, 0)) >= 0)
             return r;
 
-        if (WSAGetLastError() != WSAENOTSOCK) {
-            errno = WSAGetLastError();
+        err = WSAGetLastError();
+        if (err != WSAENOTSOCK) {
+            /* transparently handle non-blocking sockets, by waiting
+             * for readiness */
+            if (err == WSAEWOULDBLOCK) {
+                struct pollfd pfd;
+                pfd.fd = fd;
+                pfd.events = POLLIN;
+                if (pa_poll(&pfd, 1, -1) >= 0) {
+                    goto retry;
+                }
+            }
+            errno = err;
             return r;
         }
 
@@ -385,7 +415,11 @@ ssize_t pa_write(int fd, const void *buf, size_t count, int *type) {
 
     if (!type || *type == 0) {
         ssize_t r;
+#ifdef OS_IS_WIN32
+        int err;
 
+retry:
+#endif
         for (;;) {
             if ((r = send(fd, buf, count, MSG_NOSIGNAL)) < 0) {
 
@@ -399,8 +433,19 @@ ssize_t pa_write(int fd, const void *buf, size_t count, int *type) {
         }
 
 #ifdef OS_IS_WIN32
-        if (WSAGetLastError() != WSAENOTSOCK) {
-            errno = WSAGetLastError();
+        err = WSAGetLastError();
+        if (err != WSAENOTSOCK) {
+            /* transparently handle non-blocking sockets, by waiting
+             * for readiness */
+            if (err == WSAEWOULDBLOCK) {
+                struct pollfd pfd;
+                pfd.fd = fd;
+                pfd.events = POLLOUT;
+                if (pa_poll(&pfd, 1, -1) >= 0) {
+                    goto retry;
+                }
+            }
+            errno = err;
             return r;
         }
 #else
@@ -892,9 +937,9 @@ int pa_parse_boolean(const char *v) {
     pa_assert(v);
 
     /* First we check language independent */
-    if (!strcmp(v, "1") || v[0] == 'y' || v[0] == 'Y' || v[0] == 't' || v[0] == 'T' || !strcasecmp(v, "on"))
+    if (pa_streq(v, "1") || v[0] == 'y' || v[0] == 'Y' || v[0] == 't' || v[0] == 'T' || !strcasecmp(v, "on"))
         return 1;
-    else if (!strcmp(v, "0") || v[0] == 'n' || v[0] == 'N' || v[0] == 'f' || v[0] == 'F' || !strcasecmp(v, "off"))
+    else if (pa_streq(v, "0") || v[0] == 'n' || v[0] == 'N' || v[0] == 'f' || v[0] == 'F' || !strcasecmp(v, "off"))
         return 0;
 
 #ifdef HAVE_LANGINFO_H
@@ -917,6 +962,48 @@ int pa_parse_boolean(const char *v) {
     return -1;
 }
 
+/* Try to parse a volume string to pa_volume_t. The allowed formats are:
+ * db, % and unsigned integer */
+int pa_parse_volume(const char *v, pa_volume_t *volume) {
+    int len, ret = -1;
+    uint32_t i;
+    double d;
+    char str[64];
+
+    pa_assert(v);
+    pa_assert(volume);
+
+    len = strlen(v);
+
+    if (len >= 64)
+        return -1;
+
+    memcpy(str, v, len + 1);
+
+    if (str[len - 1] == '%') {
+        str[len - 1] = '\0';
+        if (pa_atou(str, &i) == 0) {
+            *volume = PA_CLAMP_VOLUME((uint64_t) PA_VOLUME_NORM * i / 100);
+            ret = 0;
+        }
+    } else if (len > 2 && (str[len - 1] == 'b' || str[len - 1] == 'B') &&
+               (str[len - 2] == 'd' || str[len - 2] == 'D')) {
+        str[len - 2] = '\0';
+        if (pa_atod(str, &d) == 0) {
+            *volume = pa_sw_volume_from_dB(d);
+            ret = 0;
+        }
+    } else {
+        if (pa_atou(v, &i) == 0) {
+            *volume= PA_CLAMP_VOLUME(i);
+            ret = 0;
+        }
+
+    }
+
+    return ret;
+}
+
 /* Split the specified string wherever one of the strings in delimiter
  * occurs. Each time it is called returns a newly allocated string
  * with pa_xmalloc(). The variable state points to, should be
@@ -935,6 +1022,29 @@ char *pa_split(const char *c, const char *delimiter, const char**state) {
         (*state)++;
 
     return pa_xstrndup(current, l);
+}
+
+/* Split the specified string wherever one of the strings in delimiter
+ * occurs. Each time it is called returns a pointer to the substring within the
+ * string and the length in 'n'. Note that the resultant string cannot be used
+ * as-is without the length parameter, since it is merely pointing to a point
+ * within the original string. The variable state points to, should be
+ * initialized to NULL before the first call. */
+const char *pa_split_in_place(const char *c, const char *delimiter, int *n, const char**state) {
+    const char *current = *state ? *state : c;
+    size_t l;
+
+    if (!*current)
+        return NULL;
+
+    l = strcspn(current, delimiter);
+    *state = current+l;
+
+    if (**state)
+        (*state)++;
+
+    *n = l;
+    return current;
 }
 
 /* Split a string into words. Otherwise similar to pa_split(). */
@@ -1100,7 +1210,7 @@ static int is_group(gid_t gid, const char *name) {
         goto finish;
     }
 
-    r = strcmp(name, group->gr_name) == 0;
+    r = pa_streq(name, group->gr_name);
 
 finish:
     pa_getgrgid_free(group);
@@ -1396,33 +1506,62 @@ int pa_unlock_lockfile(const char *fn, int fd) {
     return r;
 }
 
-static char *get_pulse_home(void) {
-    char *h;
-    struct stat st;
-    char *ret = NULL;
+static char *get_config_home(char *home) {
+    char *t;
 
-    if (!(h = pa_get_home_dir_malloc())) {
+    t = getenv("XDG_CONFIG_HOME");
+    if (t)
+        return pa_xstrdup(t);
+
+    return pa_sprintf_malloc("%s" PA_PATH_SEP ".config", home);
+}
+
+static int check_ours(const char *p) {
+    struct stat st;
+
+    pa_assert(p);
+
+    if (stat(p, &st) < 0)
+        return -errno;
+
+#ifdef HAVE_GETUID
+    if (st.st_uid != getuid())
+        return -EACCES;
+#endif
+
+    return 0;
+}
+
+static char *get_pulse_home(void) {
+    char *h, *ret, *config_home;
+    int t;
+
+    h = pa_get_home_dir_malloc();
+    if (!h) {
         pa_log_error("Failed to get home directory.");
         return NULL;
     }
 
-    if (stat(h, &st) < 0) {
-        pa_log_error("Failed to stat home directory %s: %s", h, pa_cstrerror(errno));
-        goto finish;
+    t = check_ours(h);
+    if (t < 0 && t != -ENOENT) {
+        pa_log_error("Home directory not accessible: %s", pa_cstrerror(-t));
+        pa_xfree(h);
+        return NULL;
     }
 
-#ifdef HAVE_GETUID
-    if (st.st_uid != getuid()) {
-        pa_log_error("Home directory %s not ours.", h);
-        errno = EACCES;
-        goto finish;
-    }
-#endif
-
+    /* If the old directory exists, use it. */
     ret = pa_sprintf_malloc("%s" PA_PATH_SEP ".pulse", h);
+    if (access(ret, F_OK) >= 0) {
+        free(h);
+        return ret;
+    }
+    free(ret);
 
-finish:
-    pa_xfree(h);
+    /* Otherwise go for the XDG compliant directory. */
+    config_home = get_config_home(h);
+    free(h);
+    ret = pa_sprintf_malloc("%s" PA_PATH_SEP "pulse", config_home);
+    free(config_home);
 
     return ret;
 }
@@ -1440,8 +1579,8 @@ char *pa_get_state_dir(void) {
     /* If PULSE_STATE_PATH and PULSE_RUNTIME_PATH point to the same
      * dir then this will break. */
 
-    if (pa_make_secure_dir(d, 0700U, (uid_t) -1, (gid_t) -1) < 0) {
-        pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+    if (pa_make_secure_dir(d, 0700U, (uid_t) -1, (gid_t) -1, TRUE) < 0) {
+        pa_log_error("Failed to create secure directory (%s): %s", d, pa_cstrerror(errno));
         pa_xfree(d);
         return NULL;
     }
@@ -1572,31 +1711,51 @@ char *pa_get_runtime_dir(void) {
      * to be kept across reboots and is usually private to the user,
      * except in system mode, where it might be accessible by other
      * users, too. Since we need POSIX locking and UNIX sockets in
-     * this directory, we link it to a random subdir in /tmp, if it
-     * was not explicitly configured. */
+     * this directory, we try XDG_RUNTIME_DIR first, and if that isn't
+     * set create a directory in $HOME and link it to a random subdir
+     * in /tmp, if it was not explicitly configured. */
 
     m = pa_in_system_mode() ? 0755U : 0700U;
 
-    if ((d = getenv("PULSE_RUNTIME_PATH"))) {
+    /* Use the explicitly configured value if it is set */
+    d = getenv("PULSE_RUNTIME_PATH");
+    if (d) {
 
-        if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1) < 0) {
-            pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+        if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1, TRUE) < 0) {
+            pa_log_error("Failed to create secure directory (%s): %s", d, pa_cstrerror(errno));
             goto fail;
         }
 
         return pa_xstrdup(d);
     }
 
-    if (!(d = get_pulse_home()))
+    /* Use the XDG standard for the runtime directory. */
+    d = getenv("XDG_RUNTIME_DIR");
+    if (d) {
+        k = pa_sprintf_malloc("%s" PA_PATH_SEP "pulse", d);
+
+        if (pa_make_secure_dir(k, m, (uid_t) -1, (gid_t) -1, TRUE) < 0) {
+            free(k);
+            pa_log_error("Failed to create secure directory (%s): %s", k, pa_cstrerror(errno));
+            goto fail;
+        }
+
+        return k;
+    }
+
+    /* XDG_RUNTIME_DIR wasn't set, use the old legacy fallback */
+    d = get_pulse_home();
+    if (!d)
         goto fail;
 
-    if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1) < 0) {
-        pa_log_error("Failed to create secure directory: %s", pa_cstrerror(errno));
+    if (pa_make_secure_dir(d, m, (uid_t) -1, (gid_t) -1, TRUE) < 0) {
+        pa_log_error("Failed to create secure directory (%s): %s", d, pa_cstrerror(errno));
         pa_xfree(d);
         goto fail;
     }
 
-    if (!(mid = pa_machine_id())) {
+    mid = pa_machine_id();
+    if (!mid) {
         pa_xfree(d);
         goto fail;
     }
@@ -1608,7 +1767,8 @@ char *pa_get_runtime_dir(void) {
     for (;;) {
         /* OK, first let's check if the "runtime" symlink already exists */
 
-        if (!(p = pa_readlink(k))) {
+        p = pa_readlink(k);
+        if (!p) {
 
             if (errno != ENOENT) {
                 pa_log_error("Failed to stat runtime directory %s: %s", k, pa_cstrerror(errno));
@@ -1629,8 +1789,9 @@ char *pa_get_runtime_dir(void) {
                 goto fail;
             }
 #else
-            /* No symlink possible, so let's just create the runtime directly */
-            if (!mkdir(k))
+            /* No symlink possible, so let's just create the runtime directly
+             * Do not check again if it exists since it cannot be a symlink */
+            if (mkdir(k) < 0 && errno != EEXIST)
                 goto fail;
 #endif
 
@@ -1742,15 +1903,22 @@ FILE *pa_open_config_file(const char *global, const char *local, const char *env
         char *lfn;
         char *h;
 
-        if ((e = getenv("PULSE_CONFIG_PATH")))
+        if ((e = getenv("PULSE_CONFIG_PATH"))) {
             fn = lfn = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", e, local);
-        else if ((h = pa_get_home_dir_malloc())) {
+            f = pa_fopen_cloexec(fn, "r");
+        } else if ((h = pa_get_home_dir_malloc())) {
             fn = lfn = pa_sprintf_malloc("%s" PA_PATH_SEP ".pulse" PA_PATH_SEP "%s", h, local);
+            f = pa_fopen_cloexec(fn, "r");
+            if (!f) {
+                free(lfn);
+                fn = lfn = pa_sprintf_malloc("%s" PA_PATH_SEP ".config/pulse" PA_PATH_SEP "%s", h, local);
+                f = pa_fopen_cloexec(fn, "r");
+            }
             pa_xfree(h);
         } else
             return NULL;
 
-        if ((f = pa_fopen_cloexec(fn, "r"))) {
+        if (f) {
             if (result)
                 *result = pa_xstrdup(fn);
 
@@ -1941,7 +2109,7 @@ pa_bool_t pa_endswith(const char *s, const char *sfx) {
     l1 = strlen(s);
     l2 = strlen(sfx);
 
-    return l1 >= l2 && strcmp(s+l1-l2, sfx) == 0;
+    return l1 >= l2 && pa_streq(s + l1 - l2, sfx);
 }
 
 pa_bool_t pa_is_path_absolute(const char *fn) {
@@ -2726,9 +2894,9 @@ char *pa_machine_id(void) {
     /* The returned value is supposed be some kind of ascii identifier
      * that is unique and stable across reboots. */
 
-    /* First we try the D-Bus UUID, which is the best option we have,
-     * since it fits perfectly our needs and is not as volatile as the
-     * hostname which might be set from dhcp. */
+    /* First we try the /etc/machine-id, which is the best option we
+     * have, since it fits perfectly our needs and is not as volatile
+     * as the hostname which might be set from dhcp. */
 
     if ((f = pa_fopen_cloexec(PA_MACHINE_ID, "r")) ||
         (f = pa_fopen_cloexec(PA_MACHINE_ID_FALLBACK, "r"))) {
@@ -2758,7 +2926,8 @@ char *pa_machine_id(void) {
 char *pa_session_id(void) {
     const char *e;
 
-    if (!(e = getenv("XDG_SESSION_COOKIE")))
+    e = getenv("XDG_SESSION_ID");
+    if (!e)
         return NULL;
 
     return pa_utf8_filter(e);
@@ -2912,7 +3081,7 @@ char *pa_realpath(const char *path) {
         return NULL;
     }
 
-#if defined(__GLIBC__) || defined(__APPLE__)
+#if defined(__GLIBC__)
     {
         char *r;
 

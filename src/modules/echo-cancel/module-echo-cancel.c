@@ -82,6 +82,7 @@ PA_MODULE_USAGE(
 /* NOTE: Make sure the enum and ec_table are maintained in the correct order */
 typedef enum {
     PA_ECHO_CANCELLER_INVALID = -1,
+    PA_ECHO_CANCELLER_NULL,
 #ifdef HAVE_SPEEX
     PA_ECHO_CANCELLER_SPEEX,
 #endif
@@ -100,6 +101,12 @@ typedef enum {
 #endif
 
 static const pa_echo_canceller ec_table[] = {
+    {
+        /* Null, Dummy echo canceller (just copies data) */
+        .init                   = pa_null_ec_init,
+        .run                    = pa_null_ec_run,
+        .done                   = pa_null_ec_done,
+    },
 #ifdef HAVE_SPEEX
     {
         /* Speex */
@@ -1121,6 +1128,8 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
 
     pa_log_debug("Sink input update max rewind %lld", (long long) nbytes);
 
+    /* FIXME: Too small max_rewind:
+     * https://bugs.freedesktop.org/show_bug.cgi?id=53709 */
     pa_memblockq_set_maxrewind(u->sink_memblockq, nbytes);
     pa_sink_set_max_rewind_within_thread(u->sink, nbytes);
 }
@@ -1270,6 +1279,9 @@ static void sink_input_attach_cb(pa_sink_input *i) {
      * pa_sink_input_get_max_request(i) UP TO MULTIPLES OF IT
      * HERE. SEE (6) */
     pa_sink_set_max_request_within_thread(u->sink, pa_sink_input_get_max_request(i));
+
+    /* FIXME: Too small max_rewind:
+     * https://bugs.freedesktop.org/show_bug.cgi?id=53709 */
     pa_sink_set_max_rewind_within_thread(u->sink, pa_sink_input_get_max_rewind(i));
 
     pa_log_debug("Sink input %d attach", i->index);
@@ -1553,6 +1565,8 @@ void pa_echo_canceller_set_capture_volume(pa_echo_canceller *ec, pa_cvolume *v) 
 }
 
 static pa_echo_canceller_method_t get_ec_method_from_string(const char *method) {
+    if (pa_streq(method, "null"))
+        return PA_ECHO_CANCELLER_NULL;
 #ifdef HAVE_SPEEX
     if (pa_streq(method, "speex"))
         return PA_ECHO_CANCELLER_SPEEX;
@@ -1573,6 +1587,7 @@ static pa_echo_canceller_method_t get_ec_method_from_string(const char *method) 
  *
  * Called from main context. */
 static int init_common(pa_modargs *ma, struct userdata *u, pa_sample_spec *source_ss, pa_channel_map *source_map) {
+    const char *ec_string;
     pa_echo_canceller_method_t ec_method;
 
     if (pa_modargs_get_sample_spec_and_channel_map(ma, source_ss, source_map, PA_CHANNEL_MAP_DEFAULT) < 0) {
@@ -1586,10 +1601,13 @@ static int init_common(pa_modargs *ma, struct userdata *u, pa_sample_spec *sourc
         goto fail;
     }
 
-    if ((ec_method = get_ec_method_from_string(pa_modargs_get_value(ma, "aec_method", DEFAULT_ECHO_CANCELLER))) < 0) {
+    ec_string = pa_modargs_get_value(ma, "aec_method", DEFAULT_ECHO_CANCELLER);
+    if ((ec_method = get_ec_method_from_string(ec_string)) < 0) {
         pa_log("Invalid echo canceller implementation");
         goto fail;
     }
+
+    pa_log_info("Using AEC engine: %s", ec_string);
 
     u->ec->init = ec_table[ec_method].init;
     u->ec->play = ec_table[ec_method].play;

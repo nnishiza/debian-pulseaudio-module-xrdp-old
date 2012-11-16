@@ -40,106 +40,130 @@
 #define COMMENTS "#;\n"
 
 /* Run the user supplied parser for an assignment */
-static int next_assignment(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const pa_config_item *t,
-        const char *lvalue,
-        const char *rvalue,
-        void *userdata) {
+static int normal_assignment(pa_config_parser_state *state) {
+    const pa_config_item *item;
 
-    pa_assert(filename);
-    pa_assert(t);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
+    pa_assert(state);
 
-    for (; t->parse; t++) {
+    for (item = state->item_table; item->parse; item++) {
 
-        if (t->lvalue && !pa_streq(lvalue, t->lvalue))
+        if (item->lvalue && !pa_streq(state->lvalue, item->lvalue))
             continue;
 
-        if (t->section && !section)
+        if (item->section && !state->section)
             continue;
 
-        if (t->section && !pa_streq(section, t->section))
+        if (item->section && !pa_streq(state->section, item->section))
             continue;
 
-        return t->parse(filename, line, section, lvalue, rvalue, t->data, userdata);
+        state->data = item->data;
+
+        return item->parse(state);
     }
 
-    pa_log("[%s:%u] Unknown lvalue '%s' in section '%s'.", filename, line, lvalue, pa_strna(section));
+    pa_log("[%s:%u] Unknown lvalue '%s' in section '%s'.", state->filename, state->lineno, state->lvalue, pa_strna(state->section));
 
     return -1;
 }
 
+/* Parse a proplist entry. */
+static int proplist_assignment(pa_config_parser_state *state) {
+    pa_assert(state);
+    pa_assert(state->proplist);
+
+    if (pa_proplist_sets(state->proplist, state->lvalue, state->rvalue) < 0) {
+        pa_log("[%s:%u] Failed to parse a proplist entry: %s = %s", state->filename, state->lineno, state->lvalue, state->rvalue);
+        return -1;
+    }
+
+    return 0;
+}
+
 /* Parse a variable assignment line */
-static int parse_line(const char *filename, unsigned line, char **section, const pa_config_item *t, char *l, void *userdata) {
-    char *e, *c, *b;
+static int parse_line(pa_config_parser_state *state) {
+    char *c;
 
-    b = l+strspn(l, WHITESPACE);
+    state->lvalue = state->buf + strspn(state->buf, WHITESPACE);
 
-    if ((c = strpbrk(b, COMMENTS)))
+    if ((c = strpbrk(state->lvalue, COMMENTS)))
         *c = 0;
 
-    if (!*b)
+    if (!*state->lvalue)
         return 0;
 
-    if (pa_startswith(b, ".include ")) {
+    if (pa_startswith(state->lvalue, ".include ")) {
         char *path = NULL, *fn;
         int r;
 
-        fn = pa_strip(b+9);
+        fn = pa_strip(state->lvalue + 9);
         if (!pa_is_path_absolute(fn)) {
             const char *k;
-            if ((k = strrchr(filename, '/'))) {
-                char *dir = pa_xstrndup(filename, k-filename);
+            if ((k = strrchr(state->filename, '/'))) {
+                char *dir = pa_xstrndup(state->filename, k - state->filename);
                 fn = path = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", dir, fn);
                 pa_xfree(dir);
             }
         }
 
-        r = pa_config_parse(fn, NULL, t, userdata);
+        r = pa_config_parse(fn, NULL, state->item_table, state->proplist, state->userdata);
         pa_xfree(path);
         return r;
     }
 
-    if (*b == '[') {
+    if (*state->lvalue == '[') {
         size_t k;
 
-        k = strlen(b);
+        k = strlen(state->lvalue);
         pa_assert(k > 0);
 
-        if (b[k-1] != ']') {
-            pa_log("[%s:%u] Invalid section header.", filename, line);
+        if (state->lvalue[k-1] != ']') {
+            pa_log("[%s:%u] Invalid section header.", state->filename, state->lineno);
             return -1;
         }
 
-        pa_xfree(*section);
-        *section = pa_xstrndup(b+1, k-2);
+        pa_xfree(state->section);
+        state->section = pa_xstrndup(state->lvalue + 1, k-2);
+
+        if (pa_streq(state->section, "Properties")) {
+            if (!state->proplist) {
+                pa_log("[%s:%u] \"Properties\" section is not allowed in this file.", state->filename, state->lineno);
+                return -1;
+            }
+
+            state->in_proplist = TRUE;
+        } else
+            state->in_proplist = FALSE;
+
         return 0;
     }
 
-    if (!(e = strchr(b, '='))) {
-        pa_log("[%s:%u] Missing '='.", filename, line);
+    if (!(state->rvalue = strchr(state->lvalue, '='))) {
+        pa_log("[%s:%u] Missing '='.", state->filename, state->lineno);
         return -1;
     }
 
-    *e = 0;
-    e++;
+    *state->rvalue = 0;
+    state->rvalue++;
 
-    return next_assignment(filename, line, *section, t, pa_strip(b), pa_strip(e), userdata);
+    state->lvalue = pa_strip(state->lvalue);
+    state->rvalue = pa_strip(state->rvalue);
+
+    if (state->in_proplist)
+        return proplist_assignment(state);
+    else
+        return normal_assignment(state);
 }
 
 /* Go through the file and parse each line */
-int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void *userdata) {
+int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, pa_proplist *proplist, void *userdata) {
     int r = -1;
-    unsigned line = 0;
     pa_bool_t do_close = !f;
-    char *section = NULL;
+    pa_config_parser_state state;
 
     pa_assert(filename);
     pa_assert(t);
+
+    pa_zero(state);
 
     if (!f && !(f = pa_fopen_cloexec(filename, "r"))) {
         if (errno == ENOENT) {
@@ -152,10 +176,15 @@ int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void
         goto finish;
     }
 
-    while (!feof(f)) {
-        char l[4096];
+    state.filename = filename;
+    state.item_table = t;
+    state.userdata = userdata;
 
-        if (!fgets(l, sizeof(l), f)) {
+    if (proplist)
+        state.proplist = pa_proplist_new();
+
+    while (!feof(f)) {
+        if (!fgets(state.buf, sizeof(state.buf), f)) {
             if (feof(f))
                 break;
 
@@ -163,14 +192,22 @@ int pa_config_parse(const char *filename, FILE *f, const pa_config_item *t, void
             goto finish;
         }
 
-        if (parse_line(filename, ++line, &section, t, l, userdata) < 0)
+        state.lineno++;
+
+        if (parse_line(&state) < 0)
             goto finish;
     }
+
+    if (proplist)
+        pa_proplist_update(proplist, PA_UPDATE_REPLACE, state.proplist);
 
     r = 0;
 
 finish:
-    pa_xfree(section);
+    if (state.proplist)
+        pa_proplist_free(state.proplist);
+
+    pa_xfree(state.section);
 
     if (do_close && f)
         fclose(f);
@@ -178,17 +215,16 @@ finish:
     return r;
 }
 
-int pa_config_parse_int(const char *filename, unsigned line, const char *section, const char *lvalue, const char *rvalue, void *data, void *userdata) {
-    int *i = data;
+int pa_config_parse_int(pa_config_parser_state *state) {
+    int *i;
     int32_t k;
 
-    pa_assert(filename);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
-    pa_assert(data);
+    pa_assert(state);
 
-    if (pa_atoi(rvalue, &k) < 0) {
-        pa_log("[%s:%u] Failed to parse numeric value: %s", filename, line, rvalue);
+    i = state->data;
+
+    if (pa_atoi(state->rvalue, &k) < 0) {
+        pa_log("[%s:%u] Failed to parse numeric value: %s", state->filename, state->lineno, state->rvalue);
         return -1;
     }
 
@@ -196,17 +232,16 @@ int pa_config_parse_int(const char *filename, unsigned line, const char *section
     return 0;
 }
 
-int pa_config_parse_unsigned(const char *filename, unsigned line, const char *section, const char *lvalue, const char *rvalue, void *data, void *userdata) {
-    unsigned *u = data;
+int pa_config_parse_unsigned(pa_config_parser_state *state) {
+    unsigned *u;
     uint32_t k;
 
-    pa_assert(filename);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
-    pa_assert(data);
+    pa_assert(state);
 
-    if (pa_atou(rvalue, &k) < 0) {
-        pa_log("[%s:%u] Failed to parse numeric value: %s", filename, line, rvalue);
+    u = state->data;
+
+    if (pa_atou(state->rvalue, &k) < 0) {
+        pa_log("[%s:%u] Failed to parse numeric value: %s", state->filename, state->lineno, state->rvalue);
         return -1;
     }
 
@@ -214,17 +249,16 @@ int pa_config_parse_unsigned(const char *filename, unsigned line, const char *se
     return 0;
 }
 
-int pa_config_parse_size(const char *filename, unsigned line, const char *section, const char *lvalue, const char *rvalue, void *data, void *userdata) {
-    size_t *i = data;
+int pa_config_parse_size(pa_config_parser_state *state) {
+    size_t *i;
     uint32_t k;
 
-    pa_assert(filename);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
-    pa_assert(data);
+    pa_assert(state);
 
-    if (pa_atou(rvalue, &k) < 0) {
-        pa_log("[%s:%u] Failed to parse numeric value: %s", filename, line, rvalue);
+    i = state->data;
+
+    if (pa_atou(state->rvalue, &k) < 0) {
+        pa_log("[%s:%u] Failed to parse numeric value: %s", state->filename, state->lineno, state->rvalue);
         return -1;
     }
 
@@ -232,17 +266,16 @@ int pa_config_parse_size(const char *filename, unsigned line, const char *sectio
     return 0;
 }
 
-int pa_config_parse_bool(const char *filename, unsigned line, const char *section, const char *lvalue, const char *rvalue, void *data, void *userdata) {
+int pa_config_parse_bool(pa_config_parser_state *state) {
     int k;
-    pa_bool_t *b = data;
+    pa_bool_t *b;
 
-    pa_assert(filename);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
-    pa_assert(data);
+    pa_assert(state);
 
-    if ((k = pa_parse_boolean(rvalue)) < 0) {
-        pa_log("[%s:%u] Failed to parse boolean value: %s", filename, line, rvalue);
+    b = state->data;
+
+    if ((k = pa_parse_boolean(state->rvalue)) < 0) {
+        pa_log("[%s:%u] Failed to parse boolean value: %s", state->filename, state->lineno, state->rvalue);
         return -1;
     }
 
@@ -251,22 +284,16 @@ int pa_config_parse_bool(const char *filename, unsigned line, const char *sectio
     return 0;
 }
 
-int pa_config_parse_not_bool(
-        const char *filename, unsigned line,
-        const char *section,
-        const char *lvalue, const char *rvalue,
-        void *data, void *userdata) {
-
+int pa_config_parse_not_bool(pa_config_parser_state *state) {
     int k;
-    pa_bool_t *b = data;
+    pa_bool_t *b;
 
-    pa_assert(filename);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
-    pa_assert(data);
+    pa_assert(state);
 
-    if ((k = pa_parse_boolean(rvalue)) < 0) {
-        pa_log("[%s:%u] Failed to parse boolean value: %s", filename, line, rvalue);
+    b = state->data;
+
+    if ((k = pa_parse_boolean(state->rvalue)) < 0) {
+        pa_log("[%s:%u] Failed to parse boolean value: %s", state->filename, state->lineno, state->rvalue);
         return -1;
     }
 
@@ -275,15 +302,14 @@ int pa_config_parse_not_bool(
     return 0;
 }
 
-int pa_config_parse_string(const char *filename, unsigned line, const char *section, const char *lvalue, const char *rvalue, void *data, void *userdata) {
-    char **s = data;
+int pa_config_parse_string(pa_config_parser_state *state) {
+    char **s;
 
-    pa_assert(filename);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
-    pa_assert(data);
+    pa_assert(state);
+
+    s = state->data;
 
     pa_xfree(*s);
-    *s = *rvalue ? pa_xstrdup(rvalue) : NULL;
+    *s = *state->rvalue ? pa_xstrdup(state->rvalue) : NULL;
     return 0;
 }

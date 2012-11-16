@@ -79,7 +79,7 @@ static char *get_cpuinfo(void) {
 }
 #endif /* defined (__arm__) && defined (__linux__) */
 
-pa_bool_t pa_cpu_init_arm(pa_cpu_arm_flag_t *flags) {
+void pa_cpu_get_arm_flags(pa_cpu_arm_flag_t *flags) {
 #if defined (__arm__)
 #if defined (__linux__)
     char *cpuinfo, *line;
@@ -89,7 +89,7 @@ pa_bool_t pa_cpu_init_arm(pa_cpu_arm_flag_t *flags) {
      * space support to get the CPU features. This only works on linux AFAIK. */
     if (!(cpuinfo = get_cpuinfo())) {
         pa_log("Can't read cpuinfo");
-        return FALSE;
+        return;
     }
 
     *flags = 0;
@@ -110,13 +110,13 @@ pa_bool_t pa_cpu_init_arm(pa_cpu_arm_flag_t *flags) {
         char *current;
 
         while ((current = pa_split_spaces(line, &state))) {
-            if (!strcmp(current, "vfp"))
+            if (pa_streq(current, "vfp"))
                 *flags |= PA_CPU_ARM_VFP;
-            else if (!strcmp(current, "edsp"))
+            else if (pa_streq(current, "edsp"))
                 *flags |= PA_CPU_ARM_EDSP;
-            else if (!strcmp(current, "neon"))
+            else if (pa_streq(current, "neon"))
                 *flags |= PA_CPU_ARM_NEON;
-            else if (!strcmp(current, "vfpv3"))
+            else if (pa_streq(current, "vfpv3"))
                 *flags |= PA_CPU_ARM_VFPV3;
 
             pa_xfree(current);
@@ -131,9 +131,21 @@ pa_bool_t pa_cpu_init_arm(pa_cpu_arm_flag_t *flags) {
           (*flags & PA_CPU_ARM_EDSP) ? "EDSP " : "",
           (*flags & PA_CPU_ARM_NEON) ? "NEON " : "",
           (*flags & PA_CPU_ARM_VFPV3) ? "VFPV3 " : "");
+#endif
+#endif
+}
+
+pa_bool_t pa_cpu_init_arm(pa_cpu_arm_flag_t *flags) {
+#if defined (__arm__)
+#if defined (__linux__)
+    pa_cpu_get_arm_flags(flags);
 
     if (*flags & PA_CPU_ARM_V6)
         pa_volume_func_init_arm(*flags);
+#ifdef HAVE_NEON
+    if (*flags & PA_CPU_ARM_NEON)
+        pa_convert_func_init_neon(*flags);
+#endif
 
     return TRUE;
 

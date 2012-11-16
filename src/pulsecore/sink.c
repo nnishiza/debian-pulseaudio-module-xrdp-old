@@ -81,6 +81,7 @@ pa_sink_new_data* pa_sink_new_data_init(pa_sink_new_data *data) {
 
     pa_zero(*data);
     data->proplist = pa_proplist_new();
+    data->ports = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
 
     return data;
 }
@@ -247,7 +248,7 @@ pa_sink* pa_sink_new(
     s->state = PA_SINK_INIT;
     s->flags = flags;
     s->priority = 0;
-    s->suspend_cause = 0;
+    s->suspend_cause = data->suspend_cause;
     pa_sink_set_mixer_dirty(s, FALSE);
     s->name = pa_xstrdup(name);
     s->proplist = pa_proplist_copy(data->proplist);
@@ -295,11 +296,11 @@ pa_sink* pa_sink_new(
     s->active_port = NULL;
     s->save_port = FALSE;
 
-    if (data->active_port && s->ports)
+    if (data->active_port)
         if ((s->active_port = pa_hashmap_get(s->ports, data->active_port)))
             s->save_port = data->save_port;
 
-    if (!s->active_port && s->ports) {
+    if (!s->active_port) {
         void *state;
         pa_device_port *p;
 
@@ -307,6 +308,11 @@ pa_sink* pa_sink_new(
             if (!s->active_port || p->priority > s->active_port->priority)
                 s->active_port = p;
     }
+
+    if (s->active_port)
+        s->latency_offset = s->active_port->latency_offset;
+    else
+        s->latency_offset = 0;
 
     s->save_volume = data->save_volume;
     s->save_muted = data->save_muted;
@@ -338,6 +344,7 @@ pa_sink* pa_sink_new(
     pa_sw_cvolume_multiply(&s->thread_info.current_hw_volume, &s->soft_volume, &s->real_volume);
     s->thread_info.volume_change_safety_margin = core->deferred_volume_safety_margin_usec;
     s->thread_info.volume_change_extra_delay = core->deferred_volume_extra_delay_usec;
+    s->thread_info.latency_offset = s->latency_offset;
 
     /* FIXME: This should probably be moved to pa_sink_put() */
     pa_assert_se(pa_idxset_put(core->sinks, s, &s->index) >= 0);
@@ -643,7 +650,10 @@ void pa_sink_put(pa_sink* s) {
     pa_assert(s->monitor_source->thread_info.min_latency == s->thread_info.min_latency);
     pa_assert(s->monitor_source->thread_info.max_latency == s->thread_info.max_latency);
 
-    pa_assert_se(sink_set_state(s, PA_SINK_IDLE) == 0);
+    if (s->suspend_cause)
+        pa_assert_se(sink_set_state(s, PA_SINK_SUSPENDED) == 0);
+    else
+        pa_assert_se(sink_set_state(s, PA_SINK_IDLE) == 0);
 
     pa_source_put(s->monitor_source);
 
@@ -1422,6 +1432,13 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
 
     pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_GET_LATENCY, &usec, 0, NULL) == 0);
 
+    /* usec is unsigned, so check that the offset can be added to usec without
+     * underflowing. */
+    if (-s->latency_offset <= (int64_t) usec)
+        usec += s->latency_offset;
+    else
+        usec = 0;
+
     return usec;
 }
 
@@ -1448,6 +1465,13 @@ pa_usec_t pa_sink_get_latency_within_thread(pa_sink *s) {
 
     if (o->process_msg(o, PA_SINK_MESSAGE_GET_LATENCY, &usec, 0, NULL) < 0)
         return -1;
+
+    /* usec is unsigned, so check that the offset can be added to usec without
+     * underflowing. */
+    if (-s->thread_info.latency_offset <= (int64_t) usec)
+        usec += s->thread_info.latency_offset;
+    else
+        usec = 0;
 
     return usec;
 }
@@ -2405,8 +2429,16 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
 
             pa_sink_input_set_state_within_thread(i, i->state);
 
-            /* The requested latency of the sink input needs to be
-             * fixed up and then configured on the sink */
+            /* The requested latency of the sink input needs to be fixed up and
+             * then configured on the sink. If this causes the sink latency to
+             * go down, the sink implementor is responsible for doing a rewind
+             * in the update_requested_latency() callback to ensure that the
+             * sink buffer doesn't contain more data than what the new latency
+             * allows.
+             *
+             * XXX: Does it really make sense to push this responsibility to
+             * the sink implementors? Wouldn't it be better to do it once in
+             * the core than many times in the modules? */
 
             if (i->thread_info.requested_sink_latency != (pa_usec_t) -1)
                 pa_sink_input_set_requested_latency_within_thread(i, i->thread_info.requested_sink_latency);
@@ -2417,19 +2449,11 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
             /* We don't rewind here automatically. This is left to the
              * sink input implementor because some sink inputs need a
              * slow start, i.e. need some time to buffer client
-             * samples before beginning streaming. */
-
-            /* FIXME: Actually rewinding should be requested before
-             * updating the sink requested latency, because updating
-             * the requested latency updates also max_rewind of the
-             * sink. Now consider this: a sink has a 10 s buffer and
-             * nobody has requested anything less. Then a new stream
-             * appears while the sink buffer is full. The new stream
-             * requests e.g. 100 ms latency. That request is forwarded
-             * to the sink, so now max_rewind is 100 ms. When a rewind
-             * is requested, the sink will only rewind 100 ms, and the
-             * new stream will have to wait about 10 seconds before it
-             * becomes audible. */
+             * samples before beginning streaming.
+             *
+             * XXX: Does it really make sense to push this functionality to
+             * the sink implementors? Wouldn't it be better to do it once in
+             * the core than many times in the modules? */
 
             /* In flat volume mode we need to update the volume as
              * well */
@@ -2810,6 +2834,10 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
 
             pa_sink_get_volume(s, TRUE);
             pa_sink_get_mute(s, TRUE);
+            return 0;
+
+        case PA_SINK_MESSAGE_SET_LATENCY_OFFSET:
+            s->thread_info.latency_offset = offset;
             return 0;
 
         case PA_SINK_MESSAGE_GET_LATENCY:
@@ -3224,6 +3252,18 @@ void pa_sink_set_fixed_latency_within_thread(pa_sink *s, pa_usec_t latency) {
 }
 
 /* Called from main context */
+void pa_sink_set_latency_offset(pa_sink *s, int64_t offset) {
+    pa_sink_assert_ref(s);
+
+    s->latency_offset = offset;
+
+    if (PA_SINK_IS_LINKED(s->state))
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_LATENCY_OFFSET, NULL, offset, NULL) == 0);
+    else
+        s->thread_info.latency_offset = offset;
+}
+
+/* Called from main context */
 size_t pa_sink_get_max_rewind(pa_sink *s) {
     size_t r;
     pa_assert_ctl_context();
@@ -3264,7 +3304,7 @@ int pa_sink_set_port(pa_sink *s, const char *name, pa_bool_t save) {
         return -PA_ERR_NOTIMPLEMENTED;
     }
 
-    if (!s->ports || !name)
+    if (!name)
         return -PA_ERR_NOENTITY;
 
     if (!(port = pa_hashmap_get(s->ports, name)))
@@ -3292,6 +3332,8 @@ int pa_sink_set_port(pa_sink *s, const char *name, pa_bool_t save) {
 
     s->active_port = port;
     s->save_port = save;
+
+    pa_sink_set_latency_offset(s, s->active_port->latency_offset);
 
     pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_PORT_CHANGED], s);
 

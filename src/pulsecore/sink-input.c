@@ -783,6 +783,7 @@ void pa_sink_input_peek(pa_sink_input *i, size_t slength /* in sink frames */, p
     pa_bool_t volume_is_norm;
     size_t block_size_max_sink, block_size_max_sink_input;
     size_t ilength;
+    size_t ilength_full;
 
     pa_sink_input_assert_ref(i);
     pa_sink_input_assert_io_context(i);
@@ -816,6 +817,10 @@ void pa_sink_input_peek(pa_sink_input *i, size_t slength /* in sink frames */, p
     } else
         ilength = slength;
 
+    /* Length corresponding to slength (without limiting to
+     * block_size_max_sink_input). */
+    ilength_full = ilength;
+
     if (ilength > block_size_max_sink_input)
         ilength = block_size_max_sink_input;
 
@@ -843,7 +848,7 @@ void pa_sink_input_peek(pa_sink_input *i, size_t slength /* in sink frames */, p
             pa_memblockq_seek(i->thread_info.render_memblockq, (int64_t) slength, PA_SEEK_RELATIVE, TRUE);
             i->thread_info.playing_for = 0;
             if (i->thread_info.underrun_for != (uint64_t) -1)
-                i->thread_info.underrun_for += ilength;
+                i->thread_info.underrun_for += ilength_full;
             break;
         }
 
@@ -989,7 +994,7 @@ void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sam
     if (i->thread_info.rewrite_nbytes == (size_t) -1) {
 
         /* We were asked to drop all buffered data, and rerequest new
-         * data from implementor the next time push() is called */
+         * data from implementor the next time peek() is called */
 
         pa_memblockq_flush_write(i->thread_info.render_memblockq, TRUE);
 
@@ -1958,13 +1963,13 @@ void pa_sink_input_request_rewind(
     }
 
     i->thread_info.rewrite_flush =
-        i->thread_info.rewrite_flush ||
-        (flush && i->thread_info.rewrite_nbytes != 0);
+        i->thread_info.rewrite_flush || flush;
 
     i->thread_info.dont_rewind_render =
         i->thread_info.dont_rewind_render ||
         dont_rewind_render;
 
+    /* nbytes is -1 if some earlier rewind request had rewrite == false. */
     if (nbytes != (size_t) -1) {
 
         /* Transform to sink domain */

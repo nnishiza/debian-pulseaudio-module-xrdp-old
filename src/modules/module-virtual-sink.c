@@ -238,8 +238,8 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
 
     pa_memblockq_drop(u->memblockq, chunk->length);
 
-    src = (float*) ((uint8_t*) pa_memblock_acquire(tchunk.memblock) + tchunk.index);
-    dst = (float*) pa_memblock_acquire(chunk->memblock);
+    src = pa_memblock_acquire_chunk(&tchunk);
+    dst = pa_memblock_acquire(chunk->memblock);
 
     /* (3) PUT YOUR CODE HERE TO DO SOMETHING WITH THE DATA */
 
@@ -300,6 +300,8 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
+    /* FIXME: Too small max_rewind:
+     * https://bugs.freedesktop.org/show_bug.cgi?id=53709 */
     pa_memblockq_set_maxrewind(u->memblockq, nbytes);
     pa_sink_set_max_rewind_within_thread(u->sink, nbytes);
 }
@@ -371,6 +373,9 @@ static void sink_input_attach_cb(pa_sink_input *i) {
      * pa_sink_input_get_max_request(i) UP TO MULTIPLES OF IT
      * HERE. SEE (6) */
     pa_sink_set_max_request_within_thread(u->sink, pa_sink_input_get_max_request(i));
+
+    /* FIXME: Too small max_rewind:
+     * https://bugs.freedesktop.org/show_bug.cgi?id=53709 */
     pa_sink_set_max_rewind_within_thread(u->sink, pa_sink_input_get_max_rewind(i));
 
     pa_sink_attach_within_thread(u->sink);

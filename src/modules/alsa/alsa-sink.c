@@ -153,6 +153,9 @@ struct userdata {
     pa_hook_slot *reserve_slot;
     pa_reserve_monitor_wrapper *monitor;
     pa_hook_slot *monitor_slot;
+
+    /* ucm context */
+    pa_alsa_ucm_mapping_context *ucm_context;
 };
 
 static void userdata_free(struct userdata *u);
@@ -1450,6 +1453,16 @@ static void mixer_volume_init(struct userdata *u) {
     }
 }
 
+static int sink_set_port_ucm_cb(pa_sink *s, pa_device_port *p) {
+    struct userdata *u = s->userdata;
+
+    pa_assert(u);
+    pa_assert(p);
+    pa_assert(u->ucm_context);
+
+    return pa_alsa_ucm_set_port(u->ucm_context, p, TRUE);
+}
+
 static int sink_set_port_cb(pa_sink *s, pa_device_port *p) {
     struct userdata *u = s->userdata;
     pa_alsa_port_data *data;
@@ -1461,12 +1474,9 @@ static int sink_set_port_cb(pa_sink *s, pa_device_port *p) {
     data = PA_DEVICE_PORT_DATA(p);
 
     pa_assert_se(u->mixer_path = data->path);
-    pa_alsa_path_select(u->mixer_path, u->mixer_handle);
+    pa_alsa_path_select(u->mixer_path, data->setting, u->mixer_handle, s->muted);
 
     mixer_volume_init(u);
-
-    if (data->setting)
-        pa_alsa_setting_select(data->setting, u->mixer_handle);
 
     if (s->set_mute)
         s->set_mute(s);
@@ -1675,7 +1685,7 @@ static void thread_func(void *userdata) {
 
     for (;;) {
         int ret;
-        pa_usec_t rtpoll_sleep = 0;
+        pa_usec_t rtpoll_sleep = 0, real_sleep;
 
 #ifdef DEBUG_TIMING
         pa_log_debug("Loop");
@@ -1766,14 +1776,28 @@ static void thread_func(void *userdata) {
             }
         }
 
-        if (rtpoll_sleep > 0)
+        if (rtpoll_sleep > 0) {
             pa_rtpoll_set_timer_relative(u->rtpoll, rtpoll_sleep);
+            real_sleep = pa_rtclock_now();
+        }
         else
             pa_rtpoll_set_timer_disabled(u->rtpoll);
 
         /* Hmm, nothing to do. Let's sleep */
         if ((ret = pa_rtpoll_run(u->rtpoll, TRUE)) < 0)
             goto fail;
+
+        if (rtpoll_sleep > 0) {
+            real_sleep = pa_rtclock_now() - real_sleep;
+#ifdef DEBUG_TIMING
+            pa_log_debug("Expected sleep: %0.2fms, real sleep: %0.2fms (diff %0.2f ms)",
+                (double) rtpoll_sleep / PA_USEC_PER_MSEC, (double) real_sleep / PA_USEC_PER_MSEC,
+                (double) ((int64_t) real_sleep - (int64_t) rtpoll_sleep) / PA_USEC_PER_MSEC);
+#endif
+            if (u->use_tsched && real_sleep > rtpoll_sleep + u->tsched_watermark)
+                pa_log_info("Scheduling delay of %0.2fms, you might want to investigate this to improve latency...",
+                    (double) (real_sleep - rtpoll_sleep) / PA_USEC_PER_MSEC);
+        }
 
         if (u->sink->flags & PA_SINK_DEFERRED_VOLUME)
             pa_sink_volume_change_apply(u->sink, NULL);
@@ -1887,7 +1911,6 @@ fail:
     }
 }
 
-
 static int setup_mixer(struct userdata *u, pa_bool_t ignore_dB) {
     pa_bool_t need_mixer_callback = FALSE;
 
@@ -1905,10 +1928,7 @@ static int setup_mixer(struct userdata *u, pa_bool_t ignore_dB) {
         data = PA_DEVICE_PORT_DATA(u->sink->active_port);
         u->mixer_path = data->path;
 
-        pa_alsa_path_select(data->path, u->mixer_handle);
-
-        if (data->setting)
-            pa_alsa_setting_select(data->setting, u->mixer_handle);
+        pa_alsa_path_select(data->path, data->setting, u->mixer_handle, u->sink->muted);
 
     } else {
 
@@ -1918,10 +1938,8 @@ static int setup_mixer(struct userdata *u, pa_bool_t ignore_dB) {
         if (u->mixer_path) {
             /* Hmm, we have only a single path, then let's activate it */
 
-            pa_alsa_path_select(u->mixer_path, u->mixer_handle);
+            pa_alsa_path_select(u->mixer_path, u->mixer_path->settings, u->mixer_handle, u->sink->muted);
 
-            if (u->mixer_path->settings)
-                pa_alsa_setting_select(u->mixer_path->settings, u->mixer_handle);
         } else
             return 0;
     }
@@ -1973,7 +1991,7 @@ static int setup_mixer(struct userdata *u, pa_bool_t ignore_dB) {
 pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_card *card, pa_alsa_mapping *mapping) {
 
     struct userdata *u = NULL;
-    const char *dev_id = NULL;
+    const char *dev_id = NULL, *key, *mod_name;
     pa_sample_spec ss;
     uint32_t alternate_sample_rate;
     pa_channel_map map;
@@ -1983,6 +2001,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     pa_bool_t use_mmap = TRUE, b, use_tsched = TRUE, d, ignore_dB = FALSE, namereg_fail = FALSE, deferred_volume = FALSE, set_formats = FALSE, fixed_latency_range = FALSE;
     pa_sink_new_data data;
     pa_alsa_profile_set *profile_set = NULL;
+    void *state = NULL;
 
     pa_assert(m);
     pa_assert(ma);
@@ -2079,6 +2098,10 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
             TRUE);
     u->smoother_interval = SMOOTHER_MIN_INTERVAL;
 
+    /* use ucm */
+    if (mapping && mapping->ucm_context.ucm)
+        u->ucm_context = &mapping->ucm_context;
+
     dev_id = pa_modargs_get_value(
             ma, "device_id",
             pa_modargs_get_value(ma, "device", DEFAULT_DEVICE));
@@ -2099,6 +2122,13 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         if (!(dev_id = pa_modargs_get_value(ma, "device_id", NULL))) {
             pa_log("device_id= not set");
             goto fail;
+        }
+
+        if ((mod_name = pa_proplist_gets(mapping->proplist, PA_ALSA_PROP_UCM_MODIFIER))) {
+            if (snd_use_case_set(u->ucm_context->ucm->ucm_mgr, "_enamod", mod_name) < 0)
+                pa_log("Failed to enable ucm modifier %s", mod_name);
+            else
+                pa_log_debug("Enabled ucm modifier %s", mod_name);
         }
 
         if (!(u->pcm_handle = pa_alsa_open_by_device_id_mapping(
@@ -2179,7 +2209,8 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     /* ALSA might tweak the sample spec, so recalculate the frame size */
     frame_size = pa_frame_size(&ss);
 
-    find_mixer(u, mapping, pa_modargs_get_value(ma, "control", NULL), ignore_dB);
+    if (!u->ucm_context)
+        find_mixer(u, mapping, pa_modargs_get_value(ma, "control", NULL), ignore_dB);
 
     pa_sink_new_data_init(&data);
     data.driver = driver;
@@ -2212,6 +2243,9 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     if (mapping) {
         pa_proplist_sets(data.proplist, PA_PROP_DEVICE_PROFILE_NAME, mapping->name);
         pa_proplist_sets(data.proplist, PA_PROP_DEVICE_PROFILE_DESCRIPTION, mapping->description);
+
+        while ((key = pa_proplist_iterate(mapping->proplist, &state)))
+            pa_proplist_sets(data.proplist, key, pa_proplist_gets(mapping->proplist, key));
     }
 
     pa_alsa_init_description(data.proplist);
@@ -2225,8 +2259,10 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         goto fail;
     }
 
-    if (u->mixer_path_set)
-        pa_alsa_add_ports(&data.ports, u->mixer_path_set, card);
+    if (u->ucm_context)
+        pa_alsa_ucm_add_ports(&data.ports, data.proplist, u->ucm_context, TRUE, card);
+    else if (u->mixer_path_set)
+        pa_alsa_add_ports(&data, u->mixer_path_set, card);
 
     u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE | PA_SINK_LATENCY | (u->use_tsched ? PA_SINK_DYNAMIC_LATENCY : 0) |
                           (set_formats ? PA_SINK_SET_FORMATS : 0));
@@ -2253,7 +2289,10 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     if (u->use_tsched)
         u->sink->update_requested_latency = sink_update_requested_latency_cb;
     u->sink->set_state = sink_set_state_cb;
-    u->sink->set_port = sink_set_port_cb;
+    if (u->ucm_context)
+        u->sink->set_port = sink_set_port_ucm_cb;
+    else
+        u->sink->set_port = sink_set_port_cb;
     if (u->sink->alternate_sample_rate)
         u->sink->update_rate = sink_update_rate_cb;
     u->sink->userdata = u;
@@ -2292,7 +2331,10 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     if (update_sw_params(u) < 0)
         goto fail;
 
-    if (setup_mixer(u, ignore_dB) < 0)
+    if (u->ucm_context) {
+        if (u->sink->active_port && pa_alsa_ucm_set_port(u->ucm_context, u->sink->active_port, TRUE) < 0)
+            goto fail;
+    } else if (setup_mixer(u, ignore_dB) < 0)
         goto fail;
 
     pa_alsa_dump(PA_LOG_DEBUG, u->pcm_handle);

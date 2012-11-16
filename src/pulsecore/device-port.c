@@ -94,9 +94,10 @@ pa_device_port *pa_device_port_new(pa_core *c, const char *name, const char *des
     p->core = c;
     p->priority = 0;
     p->available = PA_PORT_AVAILABLE_UNKNOWN;
-    p->profiles = NULL;
+    p->profiles = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
     p->is_input = FALSE;
     p->is_output = FALSE;
+    p->latency_offset = 0;
     p->proplist = pa_proplist_new();
 
     return p;
@@ -111,4 +112,38 @@ void pa_device_port_hashmap_free(pa_hashmap *h) {
         pa_device_port_unref(p);
 
     pa_hashmap_free(h, NULL, NULL);
+}
+
+void pa_device_port_set_latency_offset(pa_device_port *p, int64_t offset) {
+    uint32_t state;
+    pa_core *core;
+    pa_card *card;
+
+    pa_assert(p);
+
+    p->latency_offset = offset;
+
+    if (p->is_output) {
+        pa_sink *sink;
+
+        PA_IDXSET_FOREACH(sink, p->core->sinks, state)
+            if (sink->active_port == p) {
+                pa_sink_set_latency_offset(sink, p->latency_offset);
+                break;
+            }
+
+    } else {
+        pa_source *source;
+
+        PA_IDXSET_FOREACH(source, p->core->sources, state)
+            if (source->active_port == p) {
+                pa_source_set_latency_offset(source, p->latency_offset);
+                break;
+            }
+    }
+
+    pa_assert_se(core = p->core);
+    PA_IDXSET_FOREACH(card, core->cards, state)
+        if (p == pa_hashmap_get(card->ports, p->name))
+            pa_subscription_post(core, PA_SUBSCRIPTION_EVENT_CARD|PA_SUBSCRIPTION_EVENT_CHANGE, card->index);
 }

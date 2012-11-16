@@ -88,7 +88,7 @@ int pa_rtp_send(pa_rtp_context *c, size_t size, pa_memblockq *q) {
 
             pa_assert(chunk.memblock);
 
-            iov[iov_idx].iov_base = ((uint8_t*) pa_memblock_acquire(chunk.memblock) + chunk.index);
+            iov[iov_idx].iov_base = pa_memblock_acquire_chunk(&chunk);
             iov[iov_idx].iov_len = k;
             mb[iov_idx] = chunk.memblock;
             iov_idx ++;
@@ -203,7 +203,7 @@ int pa_rtp_recv(pa_rtp_context *c, pa_memchunk *chunk, pa_mempool *pool, struct 
     chunk->memblock = pa_memblock_ref(c->memchunk.memblock);
     chunk->index = c->memchunk.index;
 
-    iov.iov_base = (uint8_t*) pa_memblock_acquire(chunk->memblock) + chunk->index;
+    iov.iov_base = pa_memblock_acquire_chunk(chunk);
     iov.iov_len = (size_t) size;
 
     m.msg_name = NULL;
@@ -398,13 +398,13 @@ const char* pa_rtp_format_to_string(pa_sample_format_t f) {
 pa_sample_format_t pa_rtp_string_to_format(const char *s) {
     pa_assert(s);
 
-    if (!(strcmp(s, "L16")))
+    if (pa_streq(s, "L16"))
         return PA_SAMPLE_S16BE;
-    else if (!strcmp(s, "L8"))
+    else if (pa_streq(s, "L8"))
         return PA_SAMPLE_U8;
-    else if (!strcmp(s, "PCMA"))
+    else if (pa_streq(s, "PCMA"))
         return PA_SAMPLE_ALAW;
-    else if (!strcmp(s, "PCMU"))
+    else if (pa_streq(s, "PCMU"))
         return PA_SAMPLE_ULAW;
     else
         return PA_SAMPLE_INVALID;

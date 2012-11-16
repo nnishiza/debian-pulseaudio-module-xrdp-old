@@ -24,7 +24,7 @@ USA.
 <manpage name="pulse-cli-syntax" section="5" desc="PulseAudio Command Line Interface Syntax">
 
   <synopsis>
-    <p><file>~/.pulse/default.pa</file></p>
+    <p><file>~/.config/pulse/default.pa</file></p>
     <p><file>@PA_DEFAULT_CONFIG_DIR@/default.pa</file></p>
     <p><file>@PA_DEFAULT_CONFIG_DIR@/system.pa</file></p>
   </synopsis>
@@ -161,6 +161,11 @@ USA.
     </option>
 
     <option>
+      <p><opt>set-port-latency-offset</opt> <arg>card-index|card-name</arg> <arg>port-name</arg> <arg>offset</arg> </p>
+      <optdesc><p>Change the latency offset of a port belonging to the specified card</p></optdesc>
+    </option>
+
+    <option>
       <p><opt>suspend-sink|suspend-source</opt> <arg>index|name</arg> <arg>boolean</arg></p>
       <optdesc><p>Suspend (i.e. disconnect from the underlying hardware) a sink
       (resp. source).</p></optdesc>
@@ -255,6 +260,11 @@ USA.
     <option>
       <p><opt>set-log-meta</opt> <arg>boolean</arg></p>
       <optdesc><p>Show source code location in log messages.</p></optdesc>
+    </option>
+
+    <option>
+      <p><opt>set-log-target</opt> <arg>target</arg></p>
+      <optdesc><p>Change the log target (null, auto, syslog, stderr, file:PATH).</p></optdesc>
     </option>
 
     <option>

@@ -46,10 +46,6 @@
 #include "alsa-util.h"
 #include "alsa-mixer.h"
 
-#ifdef HAVE_HAL
-#include "hal-util.h"
-#endif
-
 #ifdef HAVE_UDEV
 #include "udev-util.h"
 #endif
@@ -631,7 +627,7 @@ snd_pcm_t *pa_alsa_open_by_device_id_mapping(
             tsched_size,
             use_mmap,
             use_tsched,
-            TRUE);
+            pa_channel_map_valid(&m->channel_map) /* Query the channel count if we don't know what we want */);
 
     if (!pcm_handle)
         return NULL;
@@ -914,10 +910,6 @@ void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card) {
 
 #ifdef HAVE_UDEV
     pa_udev_get_info(card, p);
-#endif
-
-#ifdef HAVE_HAL
-    pa_hal_get_info(c, p, card);
 #endif
 }
 

@@ -79,8 +79,8 @@ pa_module* pa_module_load(pa_core *c, const char *name, const char *argument) {
             uint32_t idx;
             /* OK, the module only wants to be loaded once, let's make sure it is */
 
-            for (i = pa_idxset_first(c->modules, &idx); i; i = pa_idxset_next(c->modules, &idx)) {
-                if (strcmp(name, i->name) == 0) {
+            PA_IDXSET_FOREACH(i, c->modules, idx) {
+                if (pa_streq(name, i->name)) {
                     pa_log("Module \"%s\" should be loaded once at most. Refusing to load.", name);
                     goto fail;
                 }

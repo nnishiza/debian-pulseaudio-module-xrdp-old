@@ -29,7 +29,10 @@
 #include <grp.h>
 #include <errno.h>
 
+#include <check.h>
+
 #include <pulsecore/usergroup.h>
+#include <pulsecore/core-util.h>
 
 static int load_reference_structs(struct group **gr, struct passwd **pw) {
     setpwent();
@@ -46,12 +49,12 @@ static int load_reference_structs(struct group **gr, struct passwd **pw) {
 static int compare_group(const struct group *a, const struct group *b) {
     char **amem, **bmem;
 
-    if (strcmp(a->gr_name, b->gr_name)) {
+    if (!pa_streq(a->gr_name, b->gr_name)) {
         fprintf(stderr, "Group name mismatch: [%s] [%s]\n", a->gr_name, b->gr_name);
         return 1;
     }
 
-    if (strcmp(a->gr_passwd, b->gr_passwd)) {
+    if (!pa_streq(a->gr_passwd, b->gr_passwd)) {
         fprintf(stderr, "Group password mismatch: [%s] [%s]\n", a->gr_passwd, b->gr_passwd);
         return 1;
     }
@@ -63,7 +66,7 @@ static int compare_group(const struct group *a, const struct group *b) {
 
     /* XXX: Assuming the group ordering is identical. */
     for (amem = a->gr_mem, bmem = b->gr_mem; *amem && *bmem; ++amem, ++bmem) {
-        if (strcmp(*amem, *bmem)) {
+        if (!pa_streq(*amem, *bmem)) {
             fprintf(stderr, "Group member mismatch: [%s] [%s]\n", *amem, *bmem);
             return 1;
         }
@@ -78,12 +81,12 @@ static int compare_group(const struct group *a, const struct group *b) {
 }
 
 static int compare_passwd(const struct passwd *a, const struct passwd *b) {
-    if (strcmp(a->pw_name, b->pw_name)) {
+    if (!pa_streq(a->pw_name, b->pw_name)) {
         fprintf(stderr, "pw_name mismatch: [%s] [%s]\n", a->pw_name, b->pw_name);
         return 1;
     }
 
-    if (strcmp(a->pw_passwd, b->pw_passwd)) {
+    if (!pa_streq(a->pw_passwd, b->pw_passwd)) {
         fprintf(stderr, "pw_passwd mismatch: [%s] [%s]\n", a->pw_passwd, b->pw_passwd);
         return 1;
     }
@@ -98,17 +101,17 @@ static int compare_passwd(const struct passwd *a, const struct passwd *b) {
         return 1;
     }
 
-    if (strcmp(a->pw_gecos, b->pw_gecos)) {
+    if (!pa_streq(a->pw_gecos, b->pw_gecos)) {
         fprintf(stderr, "pw_gecos mismatch: [%s] [%s]\n", a->pw_gecos, b->pw_gecos);
         return 1;
     }
 
-    if (strcmp(a->pw_dir, b->pw_dir)) {
+    if (!pa_streq(a->pw_dir, b->pw_dir)) {
         fprintf(stderr, "pw_dir mismatch: [%s] [%s]\n", a->pw_dir, b->pw_dir);
         return 1;
     }
 
-    if (strcmp(a->pw_shell, b->pw_shell)) {
+    if (!pa_streq(a->pw_shell, b->pw_shell)) {
         fprintf(stderr, "pw_shell mismatch: [%s] [%s]\n", a->pw_shell, b->pw_shell);
         return 1;
     }
@@ -116,40 +119,51 @@ static int compare_passwd(const struct passwd *a, const struct passwd *b) {
     return 0;
 }
 
-int main(int argc, char *argv[]) {
+START_TEST (usergroup_test) {
     struct group *gr;
     struct passwd *pw;
-    int err;
     struct group *reference_group = NULL;
     struct passwd *reference_passwd = NULL;
 
-    err = load_reference_structs(&reference_group, &reference_passwd);
-    if (err)
-        return 77;
+    fail_if(load_reference_structs(&reference_group, &reference_passwd));
 
     errno = 0;
     gr = pa_getgrgid_malloc(reference_group->gr_gid);
-    if (compare_group(reference_group, gr))
-        return 1;
+    fail_if(compare_group(reference_group, gr));
     pa_getgrgid_free(gr);
 
     errno = 0;
     gr = pa_getgrnam_malloc(reference_group->gr_name);
-    if (compare_group(reference_group, gr))
-        return 1;
+    fail_if(compare_group(reference_group, gr));
     pa_getgrnam_free(gr);
 
     errno = 0;
     pw = pa_getpwuid_malloc(reference_passwd->pw_uid);
-    if (compare_passwd(reference_passwd, pw))
-        return 1;
+    fail_if(compare_passwd(reference_passwd, pw));
     pa_getpwuid_free(pw);
 
     errno = 0;
     pw = pa_getpwnam_malloc(reference_passwd->pw_name);
-    if (compare_passwd(reference_passwd, pw))
-        return 1;
+    fail_if(compare_passwd(reference_passwd, pw));
     pa_getpwnam_free(pw);
+}
+END_TEST
 
-    return 0;
+int main(int argc, char *argv[]) {
+    int failed = 0;
+    Suite *s;
+    TCase *tc;
+    SRunner *sr;
+
+    s = suite_create("Usergroup");
+    tc = tcase_create("usergroup");
+    tcase_add_test(tc, usergroup_test);
+    suite_add_tcase(s, tc);
+
+    sr = srunner_create(s);
+    srunner_run_all(sr, CK_NORMAL);
+    failed = srunner_ntests_failed(sr);
+    srunner_free(sr);
+
+    return (failed == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }
