@@ -40,178 +40,129 @@
     " addcs r0, %1                  \n\t" \
     " movcs r6, r0                  \n\t"
 
-static void pa_volume_s16ne_arm(int16_t *samples, int32_t *volumes, unsigned channels, unsigned length) {
-    int32_t *ve;
+static pa_do_volume_func_t _volume_ref;
 
+static void pa_volume_s16ne_arm(int16_t *samples, const int32_t *volumes, unsigned channels, unsigned length) {
     /* Channels must be at least 4, and always a multiple of the original number.
      * This is also the max amount we overread the volume array, which should
      * have enough padding. */
-    channels = channels == 3 ? 6 : PA_MAX (4U, channels);
-    ve = volumes + channels;
+    const int32_t *ve = volumes + (channels == 3 ? 6 : PA_MAX (4U, channels));
+    unsigned rem = PA_ALIGN((size_t) samples) - (size_t) samples;
+
+    /* Make sure we're word-aligned, else performance _really_ sucks */
+    if (rem) {
+        _volume_ref(samples, volumes, channels, rem < length ? rem : length);
+
+        if (rem < length) {
+            length -= rem;
+            samples += rem / sizeof(*samples);
+        } else
+            return; /* we're done */
+    }
 
     __asm__ __volatile__ (
-        " mov r6, %1                      \n\t"
+        " mov r6, %4                      \n\t" /* r6 = volumes + rem */
         " mov %3, %3, LSR #1              \n\t" /* length /= sizeof (int16_t) */
-        " tst %3, #1                      \n\t" /* check for odd samples */
-        " beq  2f                         \n\t"
+
+        " cmp %3, #4                      \n\t" /* check for 4+ samples */
+        " blt 2f                          \n\t"
+
+        /* See final case for how the multiplication works */
 
         "1:                               \n\t"
-        " ldr  r0, [r6], #4               \n\t" /* odd samples volumes */
-        " ldrh r2, [%0]                   \n\t"
-
-        " smulwb r0, r0, r2               \n\t"
-        " ssat r0, #16, r0                \n\t"
-
-        " strh r0, [%0], #2               \n\t"
-
-        MOD_INC()
-
-        "2:                               \n\t"
-        " mov %3, %3, LSR #1              \n\t"
-        " tst %3, #1                      \n\t" /* check for odd samples */
-        " beq  4f                         \n\t"
-
-        "3:                               \n\t"
-        " ldrd r2, [r6], #8               \n\t" /* 2 samples at a time */
-        " ldr  r0, [%0]                   \n\t"
-
-        " smulwt r2, r2, r0               \n\t"
-        " smulwb r3, r3, r0               \n\t"
-
-        " ssat r2, #16, r2                \n\t"
-        " ssat r3, #16, r3                \n\t"
-
-        " pkhbt r0, r3, r2, LSL #16       \n\t"
-        " str  r0, [%0], #4               \n\t"
-
-        MOD_INC()
-
-        "4:                               \n\t"
-        " movs %3, %3, LSR #1             \n\t"
-        " beq  6f                         \n\t"
-
-        "5:                               \n\t"
         " ldrd r2, [r6], #8               \n\t" /* 4 samples at a time */
         " ldrd r4, [r6], #8               \n\t"
         " ldrd r0, [%0]                   \n\t"
 
+#ifdef WORDS_BIGENDIAN
         " smulwt r2, r2, r0               \n\t"
         " smulwb r3, r3, r0               \n\t"
         " smulwt r4, r4, r1               \n\t"
         " smulwb r5, r5, r1               \n\t"
+#else
+        " smulwb r2, r2, r0               \n\t"
+        " smulwt r3, r3, r0               \n\t"
+        " smulwb r4, r4, r1               \n\t"
+        " smulwt r5, r5, r1               \n\t"
+#endif
 
         " ssat r2, #16, r2                \n\t"
         " ssat r3, #16, r3                \n\t"
         " ssat r4, #16, r4                \n\t"
         " ssat r5, #16, r5                \n\t"
 
+#ifdef WORDS_BIGENDIAN
         " pkhbt r0, r3, r2, LSL #16       \n\t"
         " pkhbt r1, r5, r4, LSL #16       \n\t"
+#else
+        " pkhbt r0, r2, r3, LSL #16       \n\t"
+        " pkhbt r1, r4, r5, LSL #16       \n\t"
+#endif
         " strd  r0, [%0], #8              \n\t"
 
         MOD_INC()
 
-        " subs %3, %3, #1                 \n\t"
-        " bne 5b                          \n\t"
-        "6:                               \n\t"
+        " subs %3, %3, #4                 \n\t"
+        " cmp %3, #4                      \n\t"
+        " bge 1b                          \n\t"
+
+        "2:                               \n\t"
+        " cmp %3, #2                      \n\t"
+        " blt 3f                          \n\t"
+
+        " ldrd r2, [r6], #8               \n\t" /* 2  samples at a time */
+        " ldr  r0, [%0]                   \n\t"
+
+#ifdef WORDS_BIGENDIAN
+        " smulwt r2, r2, r0               \n\t"
+        " smulwb r3, r3, r0               \n\t"
+#else
+        " smulwb r2, r2, r0               \n\t"
+        " smulwt r3, r3, r0               \n\t"
+#endif
+
+        " ssat r2, #16, r2                \n\t"
+        " ssat r3, #16, r3                \n\t"
+
+#ifdef WORDS_BIGENDIAN
+        " pkhbt r0, r3, r2, LSL #16       \n\t"
+#else
+        " pkhbt r0, r2, r3, LSL #16       \n\t"
+#endif
+        " str  r0, [%0], #4               \n\t"
+
+        MOD_INC()
+
+        " subs %3, %3, #2                 \n\t"
+
+        "3:                               \n\t" /* check for odd # of samples */
+        " cmp %3, #1                      \n\t"
+        " bne 4f                          \n\t"
+
+        " ldr  r0, [r6], #4               \n\t" /* r0 = volume */
+        " ldrh r2, [%0]                   \n\t" /* r2 = sample */
+
+        " smulwb r0, r0, r2               \n\t" /* r0 = (r0 * r2) >> 16 */
+        " ssat r0, #16, r0                \n\t" /* r0 = PA_CLAMP(r0, 0x7FFF) */
+
+        " strh r0, [%0], #2               \n\t" /* sample = r0 */
+
+        "4:                               \n\t"
 
         : "+r" (samples), "+r" (volumes), "+r" (ve), "+r" (length)
-        :
+        : "r" (volumes + ((rem / sizeof(*samples)) % channels))
         : "r6", "r5", "r4", "r3", "r2", "r1", "r0", "cc"
     );
 }
 
-#undef RUN_TEST
-
-#ifdef RUN_TEST
-#define CHANNELS 2
-#define SAMPLES 1022
-#define TIMES 1000
-#define TIMES2 100
-#define PADDING 16
-
-static void run_test(void) {
-    int16_t samples[SAMPLES];
-    int16_t samples_ref[SAMPLES];
-    int16_t samples_orig[SAMPLES];
-    int32_t volumes[CHANNELS + PADDING];
-    int i, j, padding;
-    pa_do_volume_func_t func;
-    pa_usec_t start, stop;
-    int k;
-    pa_usec_t min = INT_MAX, max = 0;
-    double s1 = 0, s2 = 0;
-
-    func = pa_get_volume_func(PA_SAMPLE_S16NE);
-
-    printf("checking ARM %zd\n", sizeof(samples));
-
-    pa_random(samples, sizeof(samples));
-    memcpy(samples_ref, samples, sizeof(samples));
-    memcpy(samples_orig, samples, sizeof(samples));
-
-    for (i = 0; i < CHANNELS; i++)
-        volumes[i] = PA_CLAMP_VOLUME(rand() >> 15);
-    for (padding = 0; padding < PADDING; padding++, i++)
-        volumes[i] = volumes[padding];
-
-    func(samples_ref, volumes, CHANNELS, sizeof(samples));
-    pa_volume_s16ne_arm(samples, volumes, CHANNELS, sizeof(samples));
-    for (i = 0; i < SAMPLES; i++) {
-        if (samples[i] != samples_ref[i]) {
-            printf ("%d: %04x != %04x (%04x * %04x)\n", i, samples[i], samples_ref[i],
-                      samples_orig[i], volumes[i % CHANNELS]);
-        }
-    }
-
-    for (k = 0; k < TIMES2; k++) {
-        start = pa_rtclock_now();
-        for (j = 0; j < TIMES; j++) {
-            memcpy(samples, samples_orig, sizeof(samples));
-            pa_volume_s16ne_arm(samples, volumes, CHANNELS, sizeof(samples));
-        }
-        stop = pa_rtclock_now();
-
-        if (min > (stop - start)) min = stop - start;
-        if (max < (stop - start)) max = stop - start;
-        s1 += stop - start;
-        s2 += (stop - start) * (stop - start);
-    }
-    pa_log_info("ARM: %llu usec (min = %llu, max = %llu, stddev = %g).", (long long unsigned int)s1,
-            (long long unsigned int)min, (long long unsigned int)max, sqrt(TIMES2 * s2 - s1 * s1) / TIMES2);
-
-    min = INT_MAX; max = 0;
-    s1 = s2 = 0;
-    for (k = 0; k < TIMES2; k++) {
-        start = pa_rtclock_now();
-        for (j = 0; j < TIMES; j++) {
-            memcpy(samples_ref, samples_orig, sizeof(samples));
-            func(samples_ref, volumes, CHANNELS, sizeof(samples));
-        }
-        stop = pa_rtclock_now();
-
-        if (min > (stop - start)) min = stop - start;
-        if (max < (stop - start)) max = stop - start;
-        s1 += stop - start;
-        s2 += (stop - start) * (stop - start);
-    }
-    pa_log_info("ref: %llu usec (min = %llu, max = %llu, stddev = %g).", (long long unsigned int)s1,
-            (long long unsigned int)min, (long long unsigned int)max, sqrt(TIMES2 * s2 - s1 * s1) / TIMES2);
-
-    pa_assert_se(memcmp(samples_ref, samples, sizeof(samples)) == 0);
-}
-#endif
-
 #endif /* defined (__arm__) && defined (HAVE_ARMV6) */
-
 
 void pa_volume_func_init_arm(pa_cpu_arm_flag_t flags) {
 #if defined (__arm__) && defined (HAVE_ARMV6)
     pa_log_info("Initialising ARM optimized volume functions.");
 
-#ifdef RUN_TEST
-    run_test();
-#endif
+    if (!_volume_ref)
+        _volume_ref = pa_get_volume_func(PA_SAMPLE_S16NE);
 
     pa_set_volume_func(PA_SAMPLE_S16NE, (pa_do_volume_func_t) pa_volume_s16ne_arm);
 #endif /* defined (__arm__) && defined (HAVE_ARMV6) */

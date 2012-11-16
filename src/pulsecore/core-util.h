@@ -34,6 +34,7 @@
 #endif
 
 #include <pulse/gccmacro.h>
+#include <pulse/volume.h>
 #include <pulsecore/macro.h>
 #include <pulsecore/socket.h>
 
@@ -58,8 +59,8 @@ struct timeval;
 void pa_make_fd_nonblock(int fd);
 void pa_make_fd_cloexec(int fd);
 
-int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid);
-int pa_make_secure_parent_dir(const char *fn, mode_t, uid_t uid, gid_t gid);
+int pa_make_secure_dir(const char* dir, mode_t m, uid_t uid, gid_t gid, pa_bool_t update_perms);
+int pa_make_secure_parent_dir(const char *fn, mode_t, uid_t uid, gid_t gid, pa_bool_t update_perms);
 
 ssize_t pa_read(int fd, void *buf, size_t count, int *type);
 ssize_t pa_write(int fd, const void *buf, size_t count, int *type);
@@ -83,6 +84,8 @@ void pa_reset_priority(void);
 
 int pa_parse_boolean(const char *s) PA_GCC_PURE;
 
+int pa_parse_volume(const char *s, pa_volume_t *volume);
+
 static inline const char *pa_yes_no(pa_bool_t b) {
     return b ? "yes" : "no";
 }
@@ -100,6 +103,7 @@ static inline const char *pa_strna(const char *x) {
 }
 
 char *pa_split(const char *c, const char*delimiters, const char **state);
+const char *pa_split_in_place(const char *c, const char*delimiters, int *n, const char **state);
 char *pa_split_spaces(const char *c, const char **state);
 
 char *pa_strip_nl(char *s);

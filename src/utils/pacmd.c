@@ -51,7 +51,7 @@ static void help(const char *argv0) {
     printf("%s %s\n",    argv0, "stat");
     printf("%s %s\n",    argv0, "info");
     printf("%s %s %s\n", argv0, "load-module", _("NAME [ARGS ...]"));
-    printf("%s %s %s\n", argv0, "unload-module", _("#N"));
+    printf("%s %s %s\n", argv0, "unload-module", _("NAME|#N"));
     printf("%s %s %s\n", argv0, "describe-module", _("NAME"));
     printf("%s %s %s\n", argv0, "set-(sink|source)-volume", _("NAME|#N VOLUME"));
     printf("%s %s %s\n", argv0, "set-(sink-input|source-output)-volume", _("#N VOLUME"));
@@ -73,6 +73,8 @@ static void help(const char *argv0) {
     printf("%s %s %s\n", argv0, "suspend", _("1|0"));
     printf("%s %s %s\n", argv0, "set-card-profile", _("CARD PROFILE"));
     printf("%s %s %s\n", argv0, "set-(sink|source)-port", _("NAME|#N PORT"));
+    printf("%s %s %s\n", argv0, "set-port-latency-offset", _("CARD-NAME|CARD-#N PORT OFFSET"));
+    printf("%s %s %s\n", argv0, "set-log-target", _("TARGET"));
     printf("%s %s %s\n", argv0, "set-log-level", _("NUMERIC LEVEL"));
     printf("%s %s %s\n", argv0, "set-log-meta", _("1|0"));
     printf("%s %s %s\n", argv0, "set-log-time", _("1|0"));

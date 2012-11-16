@@ -29,9 +29,6 @@
 /* Legacy database entry format */
 #undef ENABLE_LEGACY_DATABASE_ENTRY_FORMAT
 
-/* Legacy runtime dir */
-#undef ENABLE_LEGACY_RUNTIME_DIR
-
 /* always defined to indicate that i18n is enabled */
 #undef ENABLE_NLS
 
@@ -167,9 +164,6 @@
 /* Have GTK? */
 #undef HAVE_GTK
 
-/* Have HAL. */
-#undef HAVE_HAL
-
 /* Have HAL compatibility. */
 #undef HAVE_HAL_COMPAT
 
@@ -232,6 +226,9 @@
 
 /* Define to 1 if you have the `nanosleep' function. */
 #undef HAVE_NANOSLEEP
+
+/* Have NEON support? */
+#undef HAVE_NEON
 
 /* Define to 1 if you have the <netdb.h> header file. */
 #undef HAVE_NETDB_H

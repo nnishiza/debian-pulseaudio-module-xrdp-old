@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <getopt.h>
 #include <locale.h>
+#include <ctype.h>
 
 #include <sndfile.h>
 
@@ -66,6 +67,7 @@ static uint32_t
 
 static pa_bool_t short_list_format = FALSE;
 static uint32_t module_index;
+static int32_t latency_offset;
 static pa_bool_t suspend;
 static pa_bool_t mute;
 static pa_volume_t volume;
@@ -116,6 +118,7 @@ static enum {
     SET_SINK_INPUT_MUTE,
     SET_SOURCE_OUTPUT_MUTE,
     SET_SINK_FORMATS,
+    SET_PORT_LATENCY_OFFSET,
     SUBSCRIBE
 } action = NONE;
 
@@ -317,8 +320,8 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
 
         printf(_("\tPorts:\n"));
         for (p = i->ports; *p; p++)
-            printf("\t\t%s: %s (priority: %u%s)\n", (*p)->name, (*p)->description, (*p)->priority,
-                get_available_str_ynonly((*p)->available));
+            printf("\t\t%s: %s (priority: %u%s)\n", (*p)->name, (*p)->description,
+                    (*p)->priority, get_available_str_ynonly((*p)->available));
     }
 
     if (i->active_port)
@@ -429,8 +432,8 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
 
         printf(_("\tPorts:\n"));
         for (p = i->ports; *p; p++)
-            printf("\t\t%s: %s (priority: %u%s)\n", (*p)->name, (*p)->description, (*p)->priority,
-                get_available_str_ynonly((*p)->available));
+            printf("\t\t%s: %s (priority: %u%s)\n", (*p)->name, (*p)->description,
+                    (*p)->priority, get_available_str_ynonly((*p)->available));
     }
 
     if (i->active_port)
@@ -570,6 +573,8 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
            i->owner_module != PA_INVALID_INDEX ? t : _("n/a"),
            pl = pa_proplist_to_string_sep(i->proplist, "\n\t\t"));
 
+    pa_xfree(pl);
+
     if (i->profiles) {
         pa_card_profile_info *p;
 
@@ -588,8 +593,14 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
         printf(_("\tPorts:\n"));
         for (p = i->ports; *p; p++) {
             pa_card_profile_info **pr = (*p)->profiles;
-            printf(_("\t\t%s: %s (priority: %u%s)\n"), (*p)->name, (*p)->description, (*p)->priority,
+            printf("\t\t%s: %s (priority: %u, latency offset: %" PRId64 " usec%s)\n", (*p)->name,
+                (*p)->description, (*p)->priority, (*p)->latency_offset,
                 get_available_str_ynonly((*p)->available));
+
+            if (!pa_proplist_isempty((*p)->proplist)) {
+                printf(_("\t\t\tProperties:\n\t\t\t\t%s\n"), pl = pa_proplist_to_string_sep((*p)->proplist, "\n\t\t\t\t"));
+                pa_xfree(pl);
+            }
 
             if (pr) {
                 printf(_("\t\t\tPart of profile(s): %s"), pa_strnull((*pr)->name));
@@ -602,8 +613,6 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
             }
         }
     }
-
-    pa_xfree(pl);
 }
 
 static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info *i, int is_last, void *userdata) {
@@ -648,6 +657,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
              "\tSample Specification: %s\n"
              "\tChannel Map: %s\n"
              "\tFormat: %s\n"
+             "\tCorked: %s\n"
              "\tMute: %s\n"
              "\tVolume: %s\n"
              "\t        %s\n"
@@ -664,6 +674,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            pa_format_info_snprint(f, sizeof(f), i->format),
+           pa_yes_no(i->corked),
            pa_yes_no(i->mute),
            pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
            pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume),
@@ -719,6 +730,7 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
              "\tSample Specification: %s\n"
              "\tChannel Map: %s\n"
              "\tFormat: %s\n"
+             "\tCorked: %s\n"
              "\tMute: %s\n"
              "\tVolume: %s\n"
              "\t        %s\n"
@@ -735,6 +747,7 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            pa_format_info_snprint(f, sizeof(f), i->format),
+           pa_yes_no(i->corked),
            pa_yes_no(i->mute),
            pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
            pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume),
@@ -841,6 +854,31 @@ static void volume_relative_adjust(pa_cvolume *cv) {
     }
     if ((volume_flags & 0x0F) == VOL_LINEAR || (volume_flags & 0x0F) == VOL_DECIBEL) {
         pa_sw_cvolume_multiply_scalar(cv, cv, volume);
+    }
+}
+
+static void unload_module_by_name_callback(pa_context *c, const pa_module_info *i, int is_last, void *userdata) {
+    static pa_bool_t unloaded = FALSE;
+
+    if (is_last < 0) {
+        pa_log(_("Failed to get module information: %s"), pa_strerror(pa_context_errno(c)));
+        quit(1);
+        return;
+    }
+
+    if (is_last) {
+        if (unloaded == FALSE)
+            pa_log(_("Failed to unload module: Module %s not loaded"), module_name);
+        complete_action();
+        return;
+    }
+
+    pa_assert(i);
+
+    if (pa_streq(module_name, i->name)) {
+        unloaded = TRUE;
+        actions++;
+        pa_operation_unref(pa_context_unload_module(c, i->index, simple_callback, NULL));
     }
 }
 
@@ -1152,7 +1190,10 @@ static void context_state_callback(pa_context *c, void *userdata) {
                     break;
 
                 case UNLOAD_MODULE:
-                    pa_operation_unref(pa_context_unload_module(c, module_index, simple_callback, NULL));
+                    if (module_name)
+                        pa_operation_unref(pa_context_get_module_info_list(c, unload_module_by_name_callback, NULL));
+                    else
+                        pa_operation_unref(pa_context_unload_module(c, module_index, simple_callback, NULL));
                     break;
 
                 case SUSPEND_SINK:
@@ -1239,6 +1280,10 @@ static void context_state_callback(pa_context *c, void *userdata) {
 
                 case SET_SINK_FORMATS:
                     set_sink_formats(c, sink_idx, formats);
+                    break;
+
+                case SET_PORT_LATENCY_OFFSET:
+                    pa_operation_unref(pa_context_set_port_latency_offset(c, card_name, port_name, latency_offset, simple_callback, NULL));
                     break;
 
                 case SUBSCRIBE:
@@ -1345,7 +1390,7 @@ static void help(const char *argv0) {
     printf("%s %s %s %s\n", argv0, _("[options]"), "play-sample ", _("NAME [SINK]"));
     printf("%s %s %s %s\n", argv0, _("[options]"), "remove-sample ", _("NAME"));
     printf("%s %s %s %s\n", argv0, _("[options]"), "load-module ", _("NAME [ARGS ...]"));
-    printf("%s %s %s %s\n", argv0, _("[options]"), "unload-module ", _("#N"));
+    printf("%s %s %s %s\n", argv0, _("[options]"), "unload-module ", _("NAME|#N"));
     printf("%s %s %s %s\n", argv0, _("[options]"), "move-(sink-input|source-output)", _("#N SINK|SOURCE"));
     printf("%s %s %s %s\n", argv0, _("[options]"), "suspend-(sink|source)", _("NAME|#N 1|0"));
     printf("%s %s %s %s\n", argv0, _("[options]"), "set-card-profile ", _("CARD PROFILE"));
@@ -1355,6 +1400,7 @@ static void help(const char *argv0) {
     printf("%s %s %s %s\n", argv0, _("[options]"), "set-(sink|source)-mute", _("NAME|#N 1|0"));
     printf("%s %s %s %s\n", argv0, _("[options]"), "set-(sink-input|source-output)-mute", _("#N 1|0"));
     printf("%s %s %s %s\n", argv0, _("[options]"), "set-sink-formats", _("#N FORMATS"));
+    printf("%s %s %s %s\n", argv0, _("[options]"), "set-port-latency-offset", _("CARD-NAME|CARD-#N PORT OFFSET"));
     printf("%s %s %s\n",    argv0, _("[options]"), "subscribe");
 
     printf(_("\n"
@@ -1568,11 +1614,12 @@ int main(int argc, char *argv[]) {
             action = UNLOAD_MODULE;
 
             if (argc != optind+2) {
-                pa_log(_("You have to specify a module index"));
+                pa_log(_("You have to specify a module index or name"));
                 goto quit;
             }
 
-            module_index = (uint32_t) atoi(argv[optind+1]);
+            if (pa_atou(argv[optind + 1], &module_index) < 0)
+                module_name = argv[optind + 1];
 
         } else if (pa_streq(argv[optind], "suspend-sink")) {
             action = SUSPEND_SINK;
@@ -1781,6 +1828,21 @@ int main(int argc, char *argv[]) {
             sink_idx = tmp;
             action = SET_SINK_FORMATS;
             formats = pa_xstrdup(argv[optind+2]);
+
+        } else if (pa_streq(argv[optind], "set-port-latency-offset")) {
+            action = SET_PORT_LATENCY_OFFSET;
+
+            if (argc != optind+4) {
+                pa_log(_("You have to specify a card name/index, a port name and a latency offset"));
+                goto quit;
+            }
+
+            card_name = pa_xstrdup(argv[optind+1]);
+            port_name = pa_xstrdup(argv[optind+2]);
+            if (pa_atoi(argv[optind + 3], &latency_offset) < 0) {
+                pa_log(_("Could not parse latency offset"));
+                goto quit;
+            }
 
         } else if (pa_streq(argv[optind], "help")) {
             help(bn);

@@ -21,7 +21,6 @@ src/modules/bluetooth/module-bluetooth-proximity.c
 src/modules/module-detect.c
 src/modules/module-always-sink.c
 src/modules/module-lirc.c
-src/modules/module-hal-detect.c
 src/modules/module-sine.c
 src/modules/module-zeroconf-publish.c
 src/modules/jack/module-jack-source.c
@@ -115,7 +114,8 @@ src/pulsecore/hashmap.c
 src/pulsecore/avahi-wrap.c
 src/pulsecore/authkey.c
 src/pulsecore/namereg.c
-src/pulsecore/poll.c
+src/pulsecore/poll-posix.c
+src/pulsecore/poll-win32.c
 src/pulsecore/tokenizer.c
 src/pulsecore/semaphore-posix.c
 src/pulsecore/cli-text.c
@@ -196,3 +196,4 @@ src/modules/module-equalizer-sink.c
 src/modules/module-filter-apply.c
 src/tests/resampler-test.c
 src/modules/module-virtual-surround-sink.c
+src/modules/macosx/module-coreaudio-device.c

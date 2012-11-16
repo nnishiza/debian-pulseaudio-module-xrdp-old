@@ -2,7 +2,7 @@
 .SH NAME
 pulse-cli-syntax \- PulseAudio Command Line Interface Syntax
 .SH SYNOPSIS
-\fB\fI~/.pulse/default.pa\fB
+\fB\fI~/.config/pulse/default.pa\fB
 
 \fI/home/arun/local/pulseaudio/etc/pulse/default.pa\fB
 
@@ -74,6 +74,9 @@ Change the profile of a card.
 \fBset-sink-port|set-source-port\f1 \fIindex|name\f1 \fIport-name\f1
 Change the profile of a sink (resp. source).
 .TP
+\fBset-port-latency-offset\f1 \fIcard-index|card-name\f1 \fIport-name\f1 \fIoffset\f1
+Change the latency offset of a port belonging to the specified card
+.TP
 \fBsuspend-sink|suspend-source\f1 \fIindex|name\f1 \fIboolean\f1
 Suspend (i.e. disconnect from the underlying hardware) a sink (resp. source).
 .TP
@@ -123,6 +126,9 @@ Change the log level.
 .TP
 \fBset-log-meta\f1 \fIboolean\f1
 Show source code location in log messages.
+.TP
+\fBset-log-target\f1 \fItarget\f1
+Change the log target (null, auto, syslog, stderr, file:PATH).
 .TP
 \fBset-log-time\f1 \fIboolean\f1
 Show timestamps in log messages.

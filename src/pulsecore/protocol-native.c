@@ -292,6 +292,7 @@ static void command_remove_proplist(pa_pdispatch *pd, uint32_t command, uint32_t
 static void command_extension(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 static void command_set_card_profile(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 static void command_set_sink_or_source_port(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
+static void command_set_port_latency_offset(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 
 static const pa_pdispatch_cb_t command_table[PA_COMMAND_MAX] = {
     [PA_COMMAND_ERROR] = NULL,
@@ -392,6 +393,8 @@ static const pa_pdispatch_cb_t command_table[PA_COMMAND_MAX] = {
 
     [PA_COMMAND_SET_SINK_PORT] = command_set_sink_or_source_port,
     [PA_COMMAND_SET_SOURCE_PORT] = command_set_sink_or_source_port,
+
+    [PA_COMMAND_SET_PORT_LATENCY_OFFSET] = command_set_port_latency_offset,
 
     [PA_COMMAND_EXTENSION] = command_extension
 };
@@ -662,7 +665,7 @@ static record_stream* record_stream_new(
     data.module = c->options->module;
     data.client = c->client;
     if (source)
-        pa_source_output_new_data_set_source(&data, source, TRUE);
+        pa_source_output_new_data_set_source(&data, source, FALSE);
     if (pa_sample_spec_valid(ss))
         pa_source_output_new_data_set_sample_spec(&data, ss);
     if (pa_channel_map_valid(map))
@@ -673,11 +676,11 @@ static record_stream* record_stream_new(
     if (volume) {
         pa_source_output_new_data_set_volume(&data, volume);
         data.volume_is_absolute = !relative_volume;
-        data.save_volume = TRUE;
+        data.save_volume = FALSE;
     }
     if (muted_set) {
         pa_source_output_new_data_set_muted(&data, muted);
-        data.save_muted = TRUE;
+        data.save_muted = FALSE;
     }
     if (peak_detect)
         data.resample_method = PA_RESAMPLER_PEAKS;
@@ -1122,7 +1125,7 @@ static playback_stream* playback_stream_new(
     data.module = c->options->module;
     data.client = c->client;
     if (sink)
-        pa_sink_input_new_data_set_sink(&data, sink, TRUE);
+        pa_sink_input_new_data_set_sink(&data, sink, FALSE);
     if (pa_sample_spec_valid(ss))
         pa_sink_input_new_data_set_sample_spec(&data, ss);
     if (pa_channel_map_valid(map))
@@ -1135,11 +1138,11 @@ static playback_stream* playback_stream_new(
     if (volume) {
         pa_sink_input_new_data_set_volume(&data, volume);
         data.volume_is_absolute = !relative_volume;
-        data.save_volume = TRUE;
+        data.save_volume = FALSE;
     }
     if (muted_set) {
         pa_sink_input_new_data_set_muted(&data, muted);
-        data.save_muted = TRUE;
+        data.save_muted = FALSE;
     }
     data.sync_base = ssync ? ssync->sink_input : NULL;
     data.flags = flags;
@@ -3114,19 +3117,17 @@ static void sink_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_sin
     }
 
     if (c->version >= 16) {
-        pa_tagstruct_putu32(t, sink->ports ? pa_hashmap_size(sink->ports) : 0);
+        void *state;
+        pa_device_port *p;
 
-        if (sink->ports) {
-            void *state;
-            pa_device_port *p;
+        pa_tagstruct_putu32(t, pa_hashmap_size(sink->ports));
 
-            PA_HASHMAP_FOREACH(p, sink->ports, state) {
-                pa_tagstruct_puts(t, p->name);
-                pa_tagstruct_puts(t, p->description);
-                pa_tagstruct_putu32(t, p->priority);
-                if (c->version >= 24)
-                    pa_tagstruct_putu32(t, p->available);
-            }
+        PA_HASHMAP_FOREACH(p, sink->ports, state) {
+            pa_tagstruct_puts(t, p->name);
+            pa_tagstruct_puts(t, p->description);
+            pa_tagstruct_putu32(t, p->priority);
+            if (c->version >= 24)
+                pa_tagstruct_putu32(t, p->available);
         }
 
         pa_tagstruct_puts(t, sink->active_port ? sink->active_port->name : NULL);
@@ -3186,20 +3187,17 @@ static void source_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_s
     }
 
     if (c->version >= 16) {
+        void *state;
+        pa_device_port *p;
 
-        pa_tagstruct_putu32(t, source->ports ? pa_hashmap_size(source->ports) : 0);
+        pa_tagstruct_putu32(t, pa_hashmap_size(source->ports));
 
-        if (source->ports) {
-            void *state;
-            pa_device_port *p;
-
-            PA_HASHMAP_FOREACH(p, source->ports, state) {
-                pa_tagstruct_puts(t, p->name);
-                pa_tagstruct_puts(t, p->description);
-                pa_tagstruct_putu32(t, p->priority);
-                if (c->version >= 24)
-                    pa_tagstruct_putu32(t, p->available);
-            }
+        PA_HASHMAP_FOREACH(p, source->ports, state) {
+            pa_tagstruct_puts(t, p->name);
+            pa_tagstruct_puts(t, p->description);
+            pa_tagstruct_putu32(t, p->priority);
+            if (c->version >= 24)
+                pa_tagstruct_putu32(t, p->available);
         }
 
         pa_tagstruct_puts(t, source->active_port ? source->active_port->name : NULL);
@@ -3235,6 +3233,7 @@ static void client_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_c
 static void card_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_card *card) {
     void *state = NULL;
     pa_card_profile *p;
+    pa_device_port *port;
 
     pa_assert(t);
     pa_assert(card);
@@ -3244,50 +3243,42 @@ static void card_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_car
     pa_tagstruct_putu32(t, card->module ? card->module->index : PA_INVALID_INDEX);
     pa_tagstruct_puts(t, card->driver);
 
-    pa_tagstruct_putu32(t, card->profiles ? pa_hashmap_size(card->profiles) : 0);
+    pa_tagstruct_putu32(t, pa_hashmap_size(card->profiles));
 
-    if (card->profiles) {
-        while ((p = pa_hashmap_iterate(card->profiles, &state, NULL))) {
-            pa_tagstruct_puts(t, p->name);
-            pa_tagstruct_puts(t, p->description);
-            pa_tagstruct_putu32(t, p->n_sinks);
-            pa_tagstruct_putu32(t, p->n_sources);
-            pa_tagstruct_putu32(t, p->priority);
-        }
+    PA_HASHMAP_FOREACH(p, card->profiles, state) {
+        pa_tagstruct_puts(t, p->name);
+        pa_tagstruct_puts(t, p->description);
+        pa_tagstruct_putu32(t, p->n_sinks);
+        pa_tagstruct_putu32(t, p->n_sources);
+        pa_tagstruct_putu32(t, p->priority);
     }
 
-    pa_tagstruct_puts(t, card->active_profile ? card->active_profile->name : NULL);
+    pa_tagstruct_puts(t, card->active_profile->name);
     pa_tagstruct_put_proplist(t, card->proplist);
 
     if (c->version < 26)
         return;
 
-    if (card->ports) {
-        pa_device_port* port;
-        pa_proplist* proplist = pa_proplist_new(); /* For now - push an empty proplist */
+    pa_tagstruct_putu32(t, pa_hashmap_size(card->ports));
 
-        pa_tagstruct_putu32(t, pa_hashmap_size(card->ports));
+    PA_HASHMAP_FOREACH(port, card->ports, state) {
+        void *state2;
 
-        PA_HASHMAP_FOREACH(port, card->ports, state) {
-            pa_tagstruct_puts(t, port->name);
-            pa_tagstruct_puts(t, port->description);
-            pa_tagstruct_putu32(t, port->priority);
-            pa_tagstruct_putu32(t, port->available);
-            pa_tagstruct_putu8(t, /* FIXME: port->direction */ (port->is_input ? PA_DIRECTION_INPUT : 0) | (port->is_output ? PA_DIRECTION_OUTPUT : 0));
-            pa_tagstruct_put_proplist(t, proplist);
+        pa_tagstruct_puts(t, port->name);
+        pa_tagstruct_puts(t, port->description);
+        pa_tagstruct_putu32(t, port->priority);
+        pa_tagstruct_putu32(t, port->available);
+        pa_tagstruct_putu8(t, /* FIXME: port->direction */ (port->is_input ? PA_DIRECTION_INPUT : 0) | (port->is_output ? PA_DIRECTION_OUTPUT : 0));
+        pa_tagstruct_put_proplist(t, port->proplist);
 
-            if (port->profiles) {
-                void* state2;
-                pa_tagstruct_putu32(t, pa_hashmap_size(port->profiles));
-                PA_HASHMAP_FOREACH(p, port->profiles, state2)
-                    pa_tagstruct_puts(t, p->name);
-            } else
-                pa_tagstruct_putu32(t, 0);
-        }
+        pa_tagstruct_putu32(t, pa_hashmap_size(port->profiles));
 
-        pa_proplist_free(proplist);
-    } else
-        pa_tagstruct_putu32(t, 0);
+        PA_HASHMAP_FOREACH(p, port->profiles, state2)
+            pa_tagstruct_puts(t, p->name);
+
+        if (c->version >= 27)
+            pa_tagstruct_puts64(t, port->latency_offset);
+    }
 }
 
 static void module_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, pa_module *module) {
@@ -3558,7 +3549,7 @@ static void command_get_info_list(pa_pdispatch *pd, uint32_t command, uint32_t t
     }
 
     if (i) {
-        for (p = pa_idxset_first(i, &idx); p; p = pa_idxset_next(i, &idx)) {
+        PA_IDXSET_FOREACH(p, i, idx) {
             if (command == PA_COMMAND_GET_SINK_INFO_LIST)
                 sink_fill_tagstruct(c, reply, p);
             else if (command == PA_COMMAND_GET_SOURCE_INFO_LIST)
@@ -4623,11 +4614,10 @@ static void command_extension(pa_pdispatch *pd, uint32_t command, uint32_t tag, 
 
     if (idx != PA_INVALID_INDEX)
         m = pa_idxset_get_by_index(c->protocol->core->modules, idx);
-    else {
-        for (m = pa_idxset_first(c->protocol->core->modules, &idx); m; m = pa_idxset_next(c->protocol->core->modules, &idx))
-            if (strcmp(name, m->name) == 0)
+    else
+        PA_IDXSET_FOREACH(m, c->protocol->core->modules, idx)
+            if (pa_streq(name, m->name))
                 break;
-    }
 
     CHECK_VALIDITY(c->pstream, m, tag, PA_ERR_NOEXTENSION);
     CHECK_VALIDITY(c->pstream, m->load_once || idx != PA_INVALID_INDEX, tag, PA_ERR_INVALID);
@@ -4731,6 +4721,46 @@ static void command_set_sink_or_source_port(pa_pdispatch *pd, uint32_t command, 
             return;
         }
     }
+
+    pa_pstream_send_simple_ack(c->pstream, tag);
+}
+
+static void command_set_port_latency_offset(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
+    pa_native_connection *c = PA_NATIVE_CONNECTION(userdata);
+    const char *port_name, *card_name;
+    uint32_t idx = PA_INVALID_INDEX;
+    int64_t offset;
+    pa_card *card = NULL;
+    pa_device_port *port = NULL;
+
+    pa_native_connection_assert_ref(c);
+    pa_assert(t);
+
+    if (pa_tagstruct_getu32(t, &idx) < 0 ||
+        pa_tagstruct_gets(t, &card_name) < 0 ||
+        pa_tagstruct_gets(t, &port_name) < 0 ||
+        pa_tagstruct_gets64(t, &offset) < 0 ||
+        !pa_tagstruct_eof(t)) {
+        protocol_error(c);
+    }
+
+    CHECK_VALIDITY(c->pstream, c->authorized, tag, PA_ERR_ACCESS);
+    CHECK_VALIDITY(c->pstream, !card_name || pa_namereg_is_valid_name(card_name), tag, PA_ERR_INVALID);
+    CHECK_VALIDITY(c->pstream, idx != PA_INVALID_INDEX || card_name, tag, PA_ERR_INVALID);
+    CHECK_VALIDITY(c->pstream, idx == PA_INVALID_INDEX || !card_name, tag, PA_ERR_INVALID);
+    CHECK_VALIDITY(c->pstream, port_name, tag, PA_ERR_INVALID);
+
+    if (idx != PA_INVALID_INDEX)
+        card = pa_idxset_get_by_index(c->protocol->core->cards, idx);
+    else
+        card = pa_namereg_get(c->protocol->core, card_name, PA_NAMEREG_CARD);
+
+    CHECK_VALIDITY(c->pstream, card, tag, PA_ERR_NOENTITY);
+
+    port = pa_hashmap_get(card->ports, port_name);
+    CHECK_VALIDITY(c->pstream, port, tag, PA_ERR_NOENTITY);
+
+    pa_device_port_set_latency_offset(port, offset);
 
     pa_pstream_send_simple_ack(c->pstream, tag);
 }
@@ -5215,11 +5245,23 @@ int pa_native_options_parse(pa_native_options *o, pa_core *c, pa_modargs *ma) {
 
         /* The new name for this is 'auth-cookie', for compat reasons
          * we check the old name too */
-        if (!(cn = pa_modargs_get_value(ma, "auth-cookie", NULL)))
-            if (!(cn = pa_modargs_get_value(ma, "cookie", NULL)))
-                cn = PA_NATIVE_COOKIE_FILE;
+        cn = pa_modargs_get_value(ma, "auth-cookie", NULL);
+        if (!cn)
+            cn = pa_modargs_get_value(ma, "cookie", NULL);
 
-        if (!(o->auth_cookie = pa_auth_cookie_get(c, cn, PA_NATIVE_COOKIE_LENGTH)))
+        if (cn)
+            o->auth_cookie = pa_auth_cookie_get(c, cn, TRUE, PA_NATIVE_COOKIE_LENGTH);
+        else {
+            o->auth_cookie = pa_auth_cookie_get(c, PA_NATIVE_COOKIE_FILE, FALSE, PA_NATIVE_COOKIE_LENGTH);
+            if (!o->auth_cookie) {
+                o->auth_cookie = pa_auth_cookie_get(c, PA_NATIVE_COOKIE_FILE_FALLBACK, FALSE, PA_NATIVE_COOKIE_LENGTH);
+
+                if (!o->auth_cookie)
+                    o->auth_cookie = pa_auth_cookie_get(c, PA_NATIVE_COOKIE_FILE, TRUE, PA_NATIVE_COOKIE_LENGTH);
+            }
+        }
+
+        if (!o->auth_cookie)
             return -1;
 
     } else

@@ -2,12 +2,12 @@
 .SH NAME
 pulse-client.conf \- PulseAudio client configuration file
 .SH SYNOPSIS
-\fB\fI~/.pulse/client.conf\fB
+\fB\fI~/.config/pulse/client.conf\fB
 
 \fI/home/arun/local/pulseaudio/etc/pulse/client.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio client library reads configuration directives from a file \fI~/.pulse/client.conf\f1 on startup and when that file doesn't exist from \fI/home/arun/local/pulseaudio/etc/pulse/client.conf\f1.
+The PulseAudio client library reads configuration directives from a file \fI~/.config/pulse/client.conf\f1 on startup and when that file doesn't exist from \fI/home/arun/local/pulseaudio/etc/pulse/client.conf\f1.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -26,7 +26,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBextra-arguments=\f1 Extra arguments to pass to the PulseAudio daemon when autospawning. Defaults to \fB--log-target=syslog\f1
 .TP
-\fBcookie-file=\f1 Specify the path to the PulseAudio authentication cookie. Defaults to \fI~/.pulse-cookie\f1.
+\fBcookie-file=\f1 Specify the path to the PulseAudio authentication cookie. Defaults to \fI~/.config/pulse/cookie\f1.
 .TP
 \fBenable-shm=\f1 Enable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fByes\f1.
 .TP

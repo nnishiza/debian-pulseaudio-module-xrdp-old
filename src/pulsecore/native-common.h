@@ -173,11 +173,15 @@ enum {
     PA_COMMAND_SET_SOURCE_OUTPUT_VOLUME,
     PA_COMMAND_SET_SOURCE_OUTPUT_MUTE,
 
+    /* Supported since protocol v27 (3.0) */
+    PA_COMMAND_SET_PORT_LATENCY_OFFSET,
+
     PA_COMMAND_MAX
 };
 
 #define PA_NATIVE_COOKIE_LENGTH 256
-#define PA_NATIVE_COOKIE_FILE ".pulse-cookie"
+#define PA_NATIVE_COOKIE_FILE ".config/pulse/cookie"
+#define PA_NATIVE_COOKIE_FILE_FALLBACK ".pulse-cookie"
 
 #define PA_NATIVE_DEFAULT_PORT 4713
 

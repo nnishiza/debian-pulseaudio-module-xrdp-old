@@ -51,8 +51,8 @@ Remove the specified sample from the sample cache.
 \fBload-module\f1 \fINAME\f1 [\fIARGUMENTS ...\f1]
 Load the specified module with the specified arguments into the running sound server. Prints the numeric index of the module just loaded to STDOUT. You can use it to unload the module later.
 .TP
-\fBunload-module\f1 \fIID\f1
-Unload the module instance identified by the specified numeric index.
+\fBunload-module\f1 \fIID|NAME\f1
+Unload the module instance identified by the specified numeric index or unload all modules by the specified name.
 .TP
 \fBmove-sink-input\f1 \fIID\f1 \fISINK\f1
 Move the specified playback stream (identified by its numerical index) to the specified sink (identified by its symbolic name or numerical index).
@@ -74,6 +74,9 @@ Set the specified sink (identified by its symbolic name or numerical index) to t
 .TP
 \fBset-source-port\f1 \fISOURCE\f1 \fIPORT\f1
 Set the specified source (identified by its symbolic name or numerical index) to the specified port (identified by its symbolic name).
+.TP
+\fBset-port-latency-offset\f1 \fICARD\f1 \fIPORT\f1 \fIOFFSET\f1
+Set a latency offset to a specified port (identified by its symbolic name) that belongs to a card (identified by its symbolic name or numerical index). \fIOFFSET\f1 is a number which represents the latency offset in microseconds
 .TP
 \fBset-sink-volume\f1 \fISINK\f1 \fIVOLUME\f1
 Set the volume of the specified sink (identified by its symbolic name or numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current sink volume.

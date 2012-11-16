@@ -50,6 +50,8 @@
 #include "alsa-mixer.h"
 #include "alsa-util.h"
 
+static int setting_select(pa_alsa_setting *s, snd_mixer_t *m);
+
 struct description_map {
     const char *name;
     const char *description;
@@ -518,6 +520,7 @@ void pa_alsa_path_free(pa_alsa_path *p) {
         setting_free(s);
     }
 
+    pa_proplist_free(p->proplist);
     pa_xfree(p->name);
     pa_xfree(p->description);
     pa_xfree(p);
@@ -1195,7 +1198,7 @@ static int element_set_constant_volume(pa_alsa_element *e, snd_mixer_t *m) {
     return r;
 }
 
-int pa_alsa_path_select(pa_alsa_path *p, snd_mixer_t *m) {
+int pa_alsa_path_select(pa_alsa_path *p, pa_alsa_setting *s, snd_mixer_t *m, bool device_is_muted) {
     pa_alsa_element *e;
     int r = 0;
 
@@ -1204,6 +1207,19 @@ int pa_alsa_path_select(pa_alsa_path *p, snd_mixer_t *m) {
 
     pa_log_debug("Activating path %s", p->name);
     pa_alsa_path_dump(p);
+
+    /* First turn on hw mute if available, to avoid noise
+     * when setting the mixer controls. */
+    if (p->mute_during_activation) {
+        PA_LLIST_FOREACH(e, p->elements) {
+            if (e->switch_use == PA_ALSA_SWITCH_MUTE)
+                /* If the muting fails here, that's not a critical problem for
+                 * selecting a path, so we ignore the return value.
+                 * element_set_switch() will print a warning anyway, so this
+                 * won't be a silent failure either. */
+                (void) element_set_switch(e, m, FALSE);
+        }
+    }
 
     PA_LLIST_FOREACH(e, p->elements) {
 
@@ -1241,6 +1257,19 @@ int pa_alsa_path_select(pa_alsa_path *p, snd_mixer_t *m) {
 
         if (r < 0)
             return -1;
+    }
+
+    if (s)
+        setting_select(s, m);
+
+    /* Finally restore hw mute to the device mute status. */
+    if (p->mute_during_activation) {
+        PA_LLIST_FOREACH(e, p->elements) {
+            if (e->switch_use == PA_ALSA_SWITCH_MUTE) {
+                if (element_set_switch(e, m, !device_is_muted) < 0)
+                    return -1;
+            }
+        }
     }
 
     return 0;
@@ -1784,78 +1813,66 @@ finish:
     return o;
 }
 
-static int element_parse_switch(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_switch(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
 
-    pa_assert(p);
+    pa_assert(state);
 
-    if (!(e = element_get(p, section, TRUE))) {
-        pa_log("[%s:%u] Switch makes no sense in '%s'", filename, line, section);
+    p = state->userdata;
+
+    if (!(e = element_get(p, state->section, TRUE))) {
+        pa_log("[%s:%u] Switch makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_streq(rvalue, "ignore"))
+    if (pa_streq(state->rvalue, "ignore"))
         e->switch_use = PA_ALSA_SWITCH_IGNORE;
-    else if (pa_streq(rvalue, "mute"))
+    else if (pa_streq(state->rvalue, "mute"))
         e->switch_use = PA_ALSA_SWITCH_MUTE;
-    else if (pa_streq(rvalue, "off"))
+    else if (pa_streq(state->rvalue, "off"))
         e->switch_use = PA_ALSA_SWITCH_OFF;
-    else if (pa_streq(rvalue, "on"))
+    else if (pa_streq(state->rvalue, "on"))
         e->switch_use = PA_ALSA_SWITCH_ON;
-    else if (pa_streq(rvalue, "select"))
+    else if (pa_streq(state->rvalue, "select"))
         e->switch_use = PA_ALSA_SWITCH_SELECT;
     else {
-        pa_log("[%s:%u] Switch invalid of '%s'", filename, line, section);
+        pa_log("[%s:%u] Switch invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
     return 0;
 }
 
-static int element_parse_volume(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_volume(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
 
-    pa_assert(p);
+    pa_assert(state);
 
-    if (!(e = element_get(p, section, TRUE))) {
-        pa_log("[%s:%u] Volume makes no sense in '%s'", filename, line, section);
+    p = state->userdata;
+
+    if (!(e = element_get(p, state->section, TRUE))) {
+        pa_log("[%s:%u] Volume makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_streq(rvalue, "ignore"))
+    if (pa_streq(state->rvalue, "ignore"))
         e->volume_use = PA_ALSA_VOLUME_IGNORE;
-    else if (pa_streq(rvalue, "merge"))
+    else if (pa_streq(state->rvalue, "merge"))
         e->volume_use = PA_ALSA_VOLUME_MERGE;
-    else if (pa_streq(rvalue, "off"))
+    else if (pa_streq(state->rvalue, "off"))
         e->volume_use = PA_ALSA_VOLUME_OFF;
-    else if (pa_streq(rvalue, "zero"))
+    else if (pa_streq(state->rvalue, "zero"))
         e->volume_use = PA_ALSA_VOLUME_ZERO;
     else {
         uint32_t constant;
 
-        if (pa_atou(rvalue, &constant) >= 0) {
+        if (pa_atou(state->rvalue, &constant) >= 0) {
             e->volume_use = PA_ALSA_VOLUME_CONSTANT;
             e->constant_volume = constant;
         } else {
-            pa_log("[%s:%u] Volume invalid of '%s'", filename, line, section);
+            pa_log("[%s:%u] Volume invalid of '%s'", state->filename, state->lineno, state->section);
             return -1;
         }
     }
@@ -1863,59 +1880,47 @@ static int element_parse_volume(
     return 0;
 }
 
-static int element_parse_enumeration(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_enumeration(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
 
-    pa_assert(p);
+    pa_assert(state);
 
-    if (!(e = element_get(p, section, TRUE))) {
-        pa_log("[%s:%u] Enumeration makes no sense in '%s'", filename, line, section);
+    p = state->userdata;
+
+    if (!(e = element_get(p, state->section, TRUE))) {
+        pa_log("[%s:%u] Enumeration makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_streq(rvalue, "ignore"))
+    if (pa_streq(state->rvalue, "ignore"))
         e->enumeration_use = PA_ALSA_ENUMERATION_IGNORE;
-    else if (pa_streq(rvalue, "select"))
+    else if (pa_streq(state->rvalue, "select"))
         e->enumeration_use = PA_ALSA_ENUMERATION_SELECT;
     else {
-        pa_log("[%s:%u] Enumeration invalid of '%s'", filename, line, section);
+        pa_log("[%s:%u] Enumeration invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
     return 0;
 }
 
-static int option_parse_priority(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int option_parse_priority(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_option *o;
     uint32_t prio;
 
-    pa_assert(p);
+    pa_assert(state);
 
-    if (!(o = option_get(p, section))) {
-        pa_log("[%s:%u] Priority makes no sense in '%s'", filename, line, section);
+    p = state->userdata;
+
+    if (!(o = option_get(p, state->section))) {
+        pa_log("[%s:%u] Priority makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_atou(rvalue, &prio) < 0) {
-        pa_log("[%s:%u] Priority invalid of '%s'", filename, line, section);
+    if (pa_atou(state->rvalue, &prio) < 0) {
+        pa_log("[%s:%u] Priority invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
@@ -1923,72 +1928,60 @@ static int option_parse_priority(
     return 0;
 }
 
-static int option_parse_name(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int option_parse_name(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_option *o;
 
-    pa_assert(p);
+    pa_assert(state);
 
-    if (!(o = option_get(p, section))) {
-        pa_log("[%s:%u] Name makes no sense in '%s'", filename, line, section);
+    p = state->userdata;
+
+    if (!(o = option_get(p, state->section))) {
+        pa_log("[%s:%u] Name makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
     pa_xfree(o->name);
-    o->name = pa_xstrdup(rvalue);
+    o->name = pa_xstrdup(state->rvalue);
 
     return 0;
 }
 
-static int element_parse_required(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_required(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
     pa_alsa_option *o;
     pa_alsa_jack *j;
     pa_alsa_required_t req;
 
-    pa_assert(p);
+    pa_assert(state);
 
-    e = element_get(p, section, TRUE);
-    o = option_get(p, section);
-    j = jack_get(p, section);
+    p = state->userdata;
+
+    e = element_get(p, state->section, TRUE);
+    o = option_get(p, state->section);
+    j = jack_get(p, state->section);
     if (!e && !o && !j) {
-        pa_log("[%s:%u] Required makes no sense in '%s'", filename, line, section);
+        pa_log("[%s:%u] Required makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_streq(rvalue, "ignore"))
+    if (pa_streq(state->rvalue, "ignore"))
         req = PA_ALSA_REQUIRED_IGNORE;
-    else if (pa_streq(rvalue, "switch") && e)
+    else if (pa_streq(state->rvalue, "switch") && e)
         req = PA_ALSA_REQUIRED_SWITCH;
-    else if (pa_streq(rvalue, "volume") && e)
+    else if (pa_streq(state->rvalue, "volume") && e)
         req = PA_ALSA_REQUIRED_VOLUME;
-    else if (pa_streq(rvalue, "enumeration"))
+    else if (pa_streq(state->rvalue, "enumeration"))
         req = PA_ALSA_REQUIRED_ENUMERATION;
-    else if (pa_streq(rvalue, "any"))
+    else if (pa_streq(state->rvalue, "any"))
         req = PA_ALSA_REQUIRED_ANY;
     else {
-        pa_log("[%s:%u] Required invalid of '%s'", filename, line, section);
+        pa_log("[%s:%u] Required invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_streq(lvalue, "required-absent")) {
+    if (pa_streq(state->lvalue, "required-absent")) {
         if (e)
             e->required_absent = req;
         if (o)
@@ -1996,7 +1989,7 @@ static int element_parse_required(
         if (j)
             j->required_absent = req;
     }
-    else if (pa_streq(lvalue, "required-any")) {
+    else if (pa_streq(state->lvalue, "required-any")) {
         if (e) {
             e->required_any = req;
             e->path->has_req_any |= (req != PA_ALSA_REQUIRED_IGNORE);
@@ -2023,57 +2016,47 @@ static int element_parse_required(
     return 0;
 }
 
-static int element_parse_direction(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_direction(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
 
-    pa_assert(p);
+    pa_assert(state);
 
-    if (!(e = element_get(p, section, TRUE))) {
-        pa_log("[%s:%u] Direction makes no sense in '%s'", filename, line, section);
+    p = state->userdata;
+
+    if (!(e = element_get(p, state->section, TRUE))) {
+        pa_log("[%s:%u] Direction makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_streq(rvalue, "playback"))
+    if (pa_streq(state->rvalue, "playback"))
         e->direction = PA_ALSA_DIRECTION_OUTPUT;
-    else if (pa_streq(rvalue, "capture"))
+    else if (pa_streq(state->rvalue, "capture"))
         e->direction = PA_ALSA_DIRECTION_INPUT;
     else {
-        pa_log("[%s:%u] Direction invalid of '%s'", filename, line, section);
+        pa_log("[%s:%u] Direction invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
     return 0;
 }
 
-static int element_parse_direction_try_other(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_direction_try_other(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
     int yes;
 
-    if (!(e = element_get(p, section, TRUE))) {
-        pa_log("[%s:%u] Direction makes no sense in '%s'", filename, line, section);
+    pa_assert(state);
+
+    p = state->userdata;
+
+    if (!(e = element_get(p, state->section, TRUE))) {
+        pa_log("[%s:%u] Direction makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if ((yes = pa_parse_boolean(rvalue)) < 0) {
-        pa_log("[%s:%u] Direction invalid of '%s'", filename, line, section);
+    if ((yes = pa_parse_boolean(state->rvalue)) < 0) {
+        pa_log("[%s:%u] Direction invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
@@ -2081,26 +2064,22 @@ static int element_parse_direction_try_other(
     return 0;
 }
 
-static int element_parse_volume_limit(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_volume_limit(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
     long volume_limit;
 
-    if (!(e = element_get(p, section, TRUE))) {
-        pa_log("[%s:%u] volume-limit makes no sense in '%s'", filename, line, section);
+    pa_assert(state);
+
+    p = state->userdata;
+
+    if (!(e = element_get(p, state->section, TRUE))) {
+        pa_log("[%s:%u] volume-limit makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_atol(rvalue, &volume_limit) < 0 || volume_limit < 0) {
-        pa_log("[%s:%u] Invalid value for volume-limit", filename, line);
+    if (pa_atol(state->rvalue, &volume_limit) < 0 || volume_limit < 0) {
+        pa_log("[%s:%u] Invalid value for volume-limit", state->filename, state->lineno);
         return -1;
     }
 
@@ -2141,40 +2120,36 @@ static pa_channel_position_mask_t parse_mask(const char *m) {
     return v;
 }
 
-static int element_parse_override_map(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int element_parse_override_map(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_element *e;
-    const char *state = NULL;
+    const char *split_state = NULL;
     unsigned i = 0;
     char *n;
 
-    if (!(e = element_get(p, section, TRUE))) {
-        pa_log("[%s:%u] Override map makes no sense in '%s'", filename, line, section);
+    pa_assert(state);
+
+    p = state->userdata;
+
+    if (!(e = element_get(p, state->section, TRUE))) {
+        pa_log("[%s:%u] Override map makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    while ((n = pa_split(rvalue, ",", &state))) {
+    while ((n = pa_split(state->rvalue, ",", &split_state))) {
         pa_channel_position_mask_t m;
 
         if (!*n)
             m = 0;
         else {
             if ((m = parse_mask(n)) == 0) {
-                pa_log("[%s:%u] Override map '%s' invalid in '%s'", filename, line, n, section);
+                pa_log("[%s:%u] Override map '%s' invalid in '%s'", state->filename, state->lineno, n, state->section);
                 pa_xfree(n);
                 return -1;
             }
         }
 
-        if (pa_streq(lvalue, "override-map.1"))
+        if (pa_streq(state->lvalue, "override-map.1"))
             e->masks[i++][0] = m;
         else
             e->masks[i++][1] = m;
@@ -2189,40 +2164,36 @@ static int element_parse_override_map(
     return 0;
 }
 
-static int jack_parse_state(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_path *p = userdata;
+static int jack_parse_state(pa_config_parser_state *state) {
+    pa_alsa_path *p;
     pa_alsa_jack *j;
     pa_port_available_t pa;
 
-    if (!(j = jack_get(p, section))) {
-        pa_log("[%s:%u] state makes no sense in '%s'", filename, line, section);
+    pa_assert(state);
+
+    p = state->userdata;
+
+    if (!(j = jack_get(p, state->section))) {
+        pa_log("[%s:%u] state makes no sense in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (!strcmp(rvalue,"yes"))
+    if (pa_streq(state->rvalue, "yes"))
 	pa = PA_PORT_AVAILABLE_YES;
-    else if (!strcmp(rvalue,"no"))
+    else if (pa_streq(state->rvalue, "no"))
 	pa = PA_PORT_AVAILABLE_NO;
-    else if (!strcmp(rvalue,"unknown"))
+    else if (pa_streq(state->rvalue, "unknown"))
 	pa = PA_PORT_AVAILABLE_UNKNOWN;
     else {
-        pa_log("[%s:%u] state must be 'yes','no' or 'unknown' in '%s'", filename, line, section);
+        pa_log("[%s:%u] state must be 'yes', 'no' or 'unknown' in '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (!strcmp(lvalue, "state.unplugged"))
+    if (pa_streq(state->lvalue, "state.unplugged"))
         j->state_unplugged = pa;
     else {
         j->state_plugged = pa;
-        pa_assert(!strcmp(lvalue, "state.plugged"));
+        pa_assert(pa_streq(state->lvalue, "state.plugged"));
     }
 
     return 0;
@@ -2262,7 +2233,7 @@ static int element_set_option(pa_alsa_element *e, snd_mixer_t *m, int alsa_idx) 
     return r;
 }
 
-int pa_alsa_setting_select(pa_alsa_setting *s, snd_mixer_t *m) {
+static int setting_select(pa_alsa_setting *s, snd_mixer_t *m) {
     pa_alsa_option *o;
     uint32_t idx;
 
@@ -2376,6 +2347,7 @@ static int path_verify(pa_alsa_path *p) {
         { "analog-output-speaker",      N_("Speakers") },
         { "hdmi-output",                N_("HDMI / DisplayPort") },
         { "iec958-stereo-output",       N_("Digital Output (S/PDIF)") },
+        { "iec958-stereo-input",        N_("Digital Input (S/PDIF)") },
         { "iec958-passthrough-output",  N_("Digital Passthrough (S/PDIF)") }
     };
 
@@ -2410,12 +2382,14 @@ pa_alsa_path* pa_alsa_path_new(const char *paths_dir, const char *fname, pa_alsa
     char *fn;
     int r;
     const char *n;
+    bool mute_during_activation = false;
 
     pa_config_item items[] = {
         /* [General] */
         { "priority",            pa_config_parse_unsigned,          NULL, "General" },
         { "description",         pa_config_parse_string,            NULL, "General" },
         { "name",                pa_config_parse_string,            NULL, "General" },
+        { "mute-during-activation", pa_config_parse_bool,           NULL, "General" },
 
         /* [Option ...] */
         { "priority",            option_parse_priority,             NULL, NULL },
@@ -2446,22 +2420,26 @@ pa_alsa_path* pa_alsa_path_new(const char *paths_dir, const char *fname, pa_alsa
     p = pa_xnew0(pa_alsa_path, 1);
     n = pa_path_get_filename(fname);
     p->name = pa_xstrndup(n, strcspn(n, "."));
+    p->proplist = pa_proplist_new();
     p->direction = direction;
 
     items[0].data = &p->priority;
     items[1].data = &p->description;
     items[2].data = &p->name;
+    items[3].data = &mute_during_activation;
 
     if (!paths_dir)
         paths_dir = get_default_paths_dir();
 
     fn = pa_maybe_prefix_path(fname, paths_dir);
 
-    r = pa_config_parse(fn, NULL, items, p);
+    r = pa_config_parse(fn, NULL, items, p->proplist, p);
     pa_xfree(fn);
 
     if (r < 0)
         goto fail;
+
+    p->mute_during_activation = mute_during_activation;
 
     if (path_verify(p) < 0)
         goto fail;
@@ -3183,7 +3161,7 @@ static void path_set_condense(pa_alsa_path_set *ps, snd_mixer_t *m) {
                     continue;
 
                 PA_LLIST_FOREACH(jb, p2->jacks) {
-                    if (jb->has_control && !strcmp(jb->alsa_name, ja->alsa_name) &&
+                    if (jb->has_control && pa_streq(jb->alsa_name, ja->alsa_name) &&
                        (ja->state_plugged == jb->state_plugged) &&
                        (ja->state_unplugged == jb->state_unplugged)) {
                         exists = TRUE;
@@ -3281,6 +3259,8 @@ static void mapping_free(pa_alsa_mapping *m) {
     pa_xfree(m->name);
     pa_xfree(m->description);
 
+    pa_proplist_free(m->proplist);
+
     pa_xstrfreev(m->device_strings);
     pa_xstrfreev(m->input_path_names);
     pa_xstrfreev(m->output_path_names);
@@ -3293,6 +3273,8 @@ static void mapping_free(pa_alsa_mapping *m) {
 
     pa_assert(!m->input_pcm);
     pa_assert(!m->output_pcm);
+
+    pa_alsa_ucm_mapping_context_free(&m->ucm_context);
 
     pa_xfree(m);
 }
@@ -3366,7 +3348,7 @@ void pa_alsa_profile_set_free(pa_alsa_profile_set *ps) {
     pa_xfree(ps);
 }
 
-static pa_alsa_mapping *mapping_get(pa_alsa_profile_set *ps, const char *name) {
+pa_alsa_mapping *pa_alsa_mapping_get(pa_alsa_profile_set *ps, const char *name) {
     pa_alsa_mapping *m;
 
     if (!pa_startswith(name, "Mapping "))
@@ -3381,6 +3363,7 @@ static pa_alsa_mapping *mapping_get(pa_alsa_profile_set *ps, const char *name) {
     m->profile_set = ps;
     m->name = pa_xstrdup(name);
     pa_channel_map_init(&m->channel_map);
+    m->proplist = pa_proplist_new();
 
     pa_hashmap_put(ps->mappings, m->name, m);
 
@@ -3427,268 +3410,214 @@ static pa_alsa_decibel_fix *decibel_fix_get(pa_alsa_profile_set *ps, const char 
     return db_fix;
 }
 
-static int mapping_parse_device_strings(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int mapping_parse_device_strings(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_mapping *m;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(m = mapping_get(ps, section))) {
-        pa_log("[%s:%u] %s invalid in section %s", filename, line, lvalue, section);
+    ps = state->userdata;
+
+    if (!(m = pa_alsa_mapping_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
         return -1;
     }
 
     pa_xstrfreev(m->device_strings);
-    if (!(m->device_strings = pa_split_spaces_strv(rvalue))) {
-        pa_log("[%s:%u] Device string list empty of '%s'", filename, line, section);
+    if (!(m->device_strings = pa_split_spaces_strv(state->rvalue))) {
+        pa_log("[%s:%u] Device string list empty of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
     return 0;
 }
 
-static int mapping_parse_channel_map(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int mapping_parse_channel_map(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_mapping *m;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(m = mapping_get(ps, section))) {
-        pa_log("[%s:%u] %s invalid in section %s", filename, line, lvalue, section);
+    ps = state->userdata;
+
+    if (!(m = pa_alsa_mapping_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
         return -1;
     }
 
-    if (!(pa_channel_map_parse(&m->channel_map, rvalue))) {
-        pa_log("[%s:%u] Channel map invalid of '%s'", filename, line, section);
+    if (!(pa_channel_map_parse(&m->channel_map, state->rvalue))) {
+        pa_log("[%s:%u] Channel map invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
     return 0;
 }
 
-static int mapping_parse_paths(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int mapping_parse_paths(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_mapping *m;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(m = mapping_get(ps, section))) {
-        pa_log("[%s:%u] %s invalid in section %s", filename, line, lvalue, section);
+    ps = state->userdata;
+
+    if (!(m = pa_alsa_mapping_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
         return -1;
     }
 
-    if (pa_streq(lvalue, "paths-input")) {
+    if (pa_streq(state->lvalue, "paths-input")) {
         pa_xstrfreev(m->input_path_names);
-        m->input_path_names = pa_split_spaces_strv(rvalue);
+        m->input_path_names = pa_split_spaces_strv(state->rvalue);
     } else {
         pa_xstrfreev(m->output_path_names);
-        m->output_path_names = pa_split_spaces_strv(rvalue);
+        m->output_path_names = pa_split_spaces_strv(state->rvalue);
     }
 
     return 0;
 }
 
-static int mapping_parse_element(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int mapping_parse_element(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_mapping *m;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(m = mapping_get(ps, section))) {
-        pa_log("[%s:%u] %s invalid in section %s", filename, line, lvalue, section);
+    ps = state->userdata;
+
+    if (!(m = pa_alsa_mapping_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
         return -1;
     }
 
-    if (pa_streq(lvalue, "element-input")) {
+    if (pa_streq(state->lvalue, "element-input")) {
         pa_xstrfreev(m->input_element);
-        m->input_element = pa_split_spaces_strv(rvalue);
+        m->input_element = pa_split_spaces_strv(state->rvalue);
     } else {
         pa_xstrfreev(m->output_element);
-        m->output_element = pa_split_spaces_strv(rvalue);
+        m->output_element = pa_split_spaces_strv(state->rvalue);
     }
 
     return 0;
 }
 
-static int mapping_parse_direction(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int mapping_parse_direction(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_mapping *m;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(m = mapping_get(ps, section))) {
-        pa_log("[%s:%u] Section name %s invalid.", filename, line, section);
+    ps = state->userdata;
+
+    if (!(m = pa_alsa_mapping_get(ps, state->section))) {
+        pa_log("[%s:%u] Section name %s invalid.", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if (pa_streq(rvalue, "input"))
+    if (pa_streq(state->rvalue, "input"))
         m->direction = PA_ALSA_DIRECTION_INPUT;
-    else if (pa_streq(rvalue, "output"))
+    else if (pa_streq(state->rvalue, "output"))
         m->direction = PA_ALSA_DIRECTION_OUTPUT;
-    else if (pa_streq(rvalue, "any"))
+    else if (pa_streq(state->rvalue, "any"))
         m->direction = PA_ALSA_DIRECTION_ANY;
     else {
-        pa_log("[%s:%u] Direction %s invalid.", filename, line, rvalue);
+        pa_log("[%s:%u] Direction %s invalid.", state->filename, state->lineno, state->rvalue);
         return -1;
     }
 
     return 0;
 }
 
-static int mapping_parse_description(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int mapping_parse_description(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_profile *p;
     pa_alsa_mapping *m;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if ((m = mapping_get(ps, section))) {
+    ps = state->userdata;
+
+    if ((m = pa_alsa_mapping_get(ps, state->section))) {
         pa_xfree(m->description);
-        m->description = pa_xstrdup(rvalue);
-    } else if ((p = profile_get(ps, section))) {
+        m->description = pa_xstrdup(state->rvalue);
+    } else if ((p = profile_get(ps, state->section))) {
         pa_xfree(p->description);
-        p->description = pa_xstrdup(rvalue);
+        p->description = pa_xstrdup(state->rvalue);
     } else {
-        pa_log("[%s:%u] Section name %s invalid.", filename, line, section);
+        pa_log("[%s:%u] Section name %s invalid.", state->filename, state->lineno, state->section);
         return -1;
     }
 
     return 0;
 }
 
-static int mapping_parse_priority(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int mapping_parse_priority(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_profile *p;
     pa_alsa_mapping *m;
     uint32_t prio;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (pa_atou(rvalue, &prio) < 0) {
-        pa_log("[%s:%u] Priority invalid of '%s'", filename, line, section);
+    ps = state->userdata;
+
+    if (pa_atou(state->rvalue, &prio) < 0) {
+        pa_log("[%s:%u] Priority invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
-    if ((m = mapping_get(ps, section)))
+    if ((m = pa_alsa_mapping_get(ps, state->section)))
         m->priority = prio;
-    else if ((p = profile_get(ps, section)))
+    else if ((p = profile_get(ps, state->section)))
         p->priority = prio;
     else {
-        pa_log("[%s:%u] Section name %s invalid.", filename, line, section);
+        pa_log("[%s:%u] Section name %s invalid.", state->filename, state->lineno, state->section);
         return -1;
     }
 
     return 0;
 }
 
-static int profile_parse_mappings(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int profile_parse_mappings(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_profile *p;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(p = profile_get(ps, section))) {
-        pa_log("[%s:%u] %s invalid in section %s", filename, line, lvalue, section);
+    ps = state->userdata;
+
+    if (!(p = profile_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
         return -1;
     }
 
-    if (pa_streq(lvalue, "input-mappings")) {
+    if (pa_streq(state->lvalue, "input-mappings")) {
         pa_xstrfreev(p->input_mapping_names);
-        p->input_mapping_names = pa_split_spaces_strv(rvalue);
+        p->input_mapping_names = pa_split_spaces_strv(state->rvalue);
     } else {
         pa_xstrfreev(p->output_mapping_names);
-        p->output_mapping_names = pa_split_spaces_strv(rvalue);
+        p->output_mapping_names = pa_split_spaces_strv(state->rvalue);
     }
 
     return 0;
 }
 
-static int profile_parse_skip_probe(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int profile_parse_skip_probe(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_profile *p;
     int b;
 
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(p = profile_get(ps, section))) {
-        pa_log("[%s:%u] %s invalid in section %s", filename, line, lvalue, section);
+    ps = state->userdata;
+
+    if (!(p = profile_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
         return -1;
     }
 
-    if ((b = pa_parse_boolean(rvalue)) < 0) {
-        pa_log("[%s:%u] Skip probe invalid of '%s'", filename, line, section);
+    if ((b = pa_parse_boolean(state->rvalue)) < 0) {
+        pa_log("[%s:%u] Skip probe invalid of '%s'", state->filename, state->lineno, state->section);
         return -1;
     }
 
@@ -3697,16 +3626,8 @@ static int profile_parse_skip_probe(
     return 0;
 }
 
-static int decibel_fix_parse_db_values(
-        const char *filename,
-        unsigned line,
-        const char *section,
-        const char *lvalue,
-        const char *rvalue,
-        void *data,
-        void *userdata) {
-
-    pa_alsa_profile_set *ps = userdata;
+static int decibel_fix_parse_db_values(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
     pa_alsa_decibel_fix *db_fix;
     char **items;
     char *item;
@@ -3718,19 +3639,17 @@ static int decibel_fix_parse_db_values(
     unsigned prev_step = 0;
     double prev_db = 0;
 
-    pa_assert(filename);
-    pa_assert(section);
-    pa_assert(lvalue);
-    pa_assert(rvalue);
-    pa_assert(ps);
+    pa_assert(state);
 
-    if (!(db_fix = decibel_fix_get(ps, section))) {
-        pa_log("[%s:%u] %s invalid in section %s", filename, line, lvalue, section);
+    ps = state->userdata;
+
+    if (!(db_fix = decibel_fix_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
         return -1;
     }
 
-    if (!(items = pa_split_spaces_strv(rvalue))) {
-        pa_log("[%s:%u] Value missing", pa_strnull(filename), line);
+    if (!(items = pa_split_spaces_strv(state->rvalue))) {
+        pa_log("[%s:%u] Value missing", state->filename, state->lineno);
         return -1;
     }
 
@@ -3747,13 +3666,13 @@ static int decibel_fix_parse_db_values(
 
         if (d == s) {
             /* item started with colon. */
-            pa_log("[%s:%u] No step value found in %s", filename, line, item);
+            pa_log("[%s:%u] No step value found in %s", state->filename, state->lineno, item);
             goto fail;
         }
 
         if (!*d || !*(d + 1)) {
             /* No colon found, or it was the last character in item. */
-            pa_log("[%s:%u] No dB value found in %s", filename, line, item);
+            pa_log("[%s:%u] No dB value found in %s", state->filename, state->lineno, item);
             goto fail;
         }
 
@@ -3762,22 +3681,22 @@ static int decibel_fix_parse_db_values(
         *d++ = '\0';
 
         if (pa_atou(s, &step) < 0) {
-            pa_log("[%s:%u] Invalid step value: %s", filename, line, s);
+            pa_log("[%s:%u] Invalid step value: %s", state->filename, state->lineno, s);
             goto fail;
         }
 
         if (pa_atod(d, &db) < 0) {
-            pa_log("[%s:%u] Invalid dB value: %s", filename, line, d);
+            pa_log("[%s:%u] Invalid dB value: %s", state->filename, state->lineno, d);
             goto fail;
         }
 
         if (step <= prev_step && i != 1) {
-            pa_log("[%s:%u] Step value %u not greater than the previous value %u", filename, line, step, prev_step);
+            pa_log("[%s:%u] Step value %u not greater than the previous value %u", state->filename, state->lineno, step, prev_step);
             goto fail;
         }
 
         if (db < prev_db && i != 1) {
-            pa_log("[%s:%u] Decibel value %0.2f less than the previous value %0.2f", filename, line, db, prev_db);
+            pa_log("[%s:%u] Decibel value %0.2f less than the previous value %0.2f", state->filename, state->lineno, db, prev_db);
             goto fail;
         }
 
@@ -4002,6 +3921,16 @@ static void profile_set_add_auto(pa_alsa_profile_set *ps) {
 
     pa_assert(ps);
 
+    /* The order is important here:
+       1) try single inputs and outputs before trying their
+          combination, because if the half-duplex test failed, we don't have
+          to try full duplex.
+       2) try the output right before the input combinations with
+          that output, because then the output_pcm is not closed between tests.
+    */
+    PA_HASHMAP_FOREACH(n, ps->mappings, n_state)
+        profile_set_add_auto_pair(ps, NULL, n);
+
     PA_HASHMAP_FOREACH(m, ps->mappings, m_state) {
         profile_set_add_auto_pair(ps, m, NULL);
 
@@ -4009,8 +3938,6 @@ static void profile_set_add_auto(pa_alsa_profile_set *ps) {
             profile_set_add_auto_pair(ps, m, n);
     }
 
-    PA_HASHMAP_FOREACH(n, ps->mappings, n_state)
-        profile_set_add_auto_pair(ps, NULL, n);
 }
 
 static int profile_verify(pa_alsa_profile *p) {
@@ -4250,7 +4177,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
                               pa_run_from_build_tree() ? PA_BUILDDIR "/modules/alsa/mixer/profile-sets/" :
                               PA_ALSA_PROFILE_SETS_DIR);
 
-    r = pa_config_parse(fn, NULL, items, ps);
+    r = pa_config_parse(fn, NULL, items, NULL, ps);
     pa_xfree(fn);
 
     if (r < 0)
@@ -4375,6 +4302,7 @@ void pa_alsa_profile_set_probe(
     void *state;
     pa_alsa_profile *p, *last = NULL;
     pa_alsa_mapping *m;
+    pa_hashmap *broken_inputs, *broken_outputs;
 
     pa_assert(ps);
     pa_assert(dev_id);
@@ -4383,18 +4311,43 @@ void pa_alsa_profile_set_probe(
     if (ps->probed)
         return;
 
+    broken_inputs = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
+    broken_outputs = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
+
     PA_HASHMAP_FOREACH(p, ps->profiles, state) {
         uint32_t idx;
 
         /* Skip if this is already marked that it is supported (i.e. from the config file) */
         if (!p->supported) {
 
-            pa_log_debug("Looking at profile %s", p->name);
             profile_finalize_probing(last, p);
             p->supported = TRUE;
 
+            if (p->output_mappings) {
+                PA_IDXSET_FOREACH(m, p->output_mappings, idx) {
+                    if (pa_hashmap_get(broken_outputs, m) == m) {
+                        pa_log_debug("Skipping profile %s - will not be able to open output:%s", p->name, m->name);
+                        p->supported = FALSE;
+                        break;
+                    }
+                }
+            }
+
+            if (p->input_mappings && p->supported) {
+                PA_IDXSET_FOREACH(m, p->input_mappings, idx) {
+                    if (pa_hashmap_get(broken_inputs, m) == m) {
+                        pa_log_debug("Skipping profile %s - will not be able to open input:%s", p->name, m->name);
+                        p->supported = FALSE;
+                        break;
+                    }
+                }
+            }
+
+            if (p->supported)
+                pa_log_debug("Looking at profile %s", p->name);
+
             /* Check if we can open all new ones */
-            if (p->output_mappings)
+            if (p->output_mappings && p->supported)
                 PA_IDXSET_FOREACH(m, p->output_mappings, idx) {
 
                     if (m->output_pcm)
@@ -4406,6 +4359,11 @@ void pa_alsa_profile_set_probe(
                                                            default_n_fragments,
                                                            default_fragment_size_msec))) {
                         p->supported = FALSE;
+                        if (pa_idxset_size(p->output_mappings) == 1 &&
+                            ((!p->input_mappings) || pa_idxset_size(p->input_mappings) == 0)) {
+                            pa_log_debug("Caching failure to open output:%s", m->name);
+                            pa_hashmap_put(broken_outputs, m, m);
+                        }
                         break;
                     }
                 }
@@ -4422,6 +4380,11 @@ void pa_alsa_profile_set_probe(
                                                           default_n_fragments,
                                                           default_fragment_size_msec))) {
                         p->supported = FALSE;
+                        if (pa_idxset_size(p->input_mappings) == 1 &&
+                            ((!p->output_mappings) || pa_idxset_size(p->output_mappings) == 0)) {
+                            pa_log_debug("Caching failure to open input:%s", m->name);
+                            pa_hashmap_put(broken_inputs, m, m);
+                        }
                         break;
                     }
                 }
@@ -4448,20 +4411,12 @@ void pa_alsa_profile_set_probe(
     /* Clean up */
     profile_finalize_probing(last, NULL);
 
-    PA_HASHMAP_FOREACH(p, ps->profiles, state)
-        if (!p->supported) {
-            pa_hashmap_remove(ps->profiles, p->name);
-            profile_free(p);
-        }
-
-    PA_HASHMAP_FOREACH(m, ps->mappings, state)
-        if (m->supported <= 0) {
-            pa_hashmap_remove(ps->mappings, m->name);
-            mapping_free(m);
-        }
+    pa_alsa_profile_set_drop_unsupported(ps);
 
     paths_drop_unsupported(ps->input_paths);
     paths_drop_unsupported(ps->output_paths);
+    pa_hashmap_free(broken_inputs, NULL, NULL);
+    pa_hashmap_free(broken_outputs, NULL, NULL);
 
     ps->probed = TRUE;
 }
@@ -4493,6 +4448,26 @@ void pa_alsa_profile_set_dump(pa_alsa_profile_set *ps) {
         pa_alsa_decibel_fix_dump(db_fix);
 }
 
+void pa_alsa_profile_set_drop_unsupported(pa_alsa_profile_set *ps) {
+    pa_alsa_profile *p;
+    pa_alsa_mapping *m;
+    void *state;
+
+    PA_HASHMAP_FOREACH(p, ps->profiles, state) {
+        if (!p->supported) {
+            pa_hashmap_remove(ps->profiles, p->name);
+            profile_free(p);
+        }
+    }
+
+    PA_HASHMAP_FOREACH(m, ps->mappings, state) {
+        if (m->supported <= 0) {
+            pa_hashmap_remove(ps->mappings, m->name);
+            mapping_free(m);
+        }
+    }
+}
+
 static pa_device_port* device_port_alsa_init(pa_hashmap *ports,
     const char* name,
     const char* description,
@@ -4502,14 +4477,19 @@ static pa_device_port* device_port_alsa_init(pa_hashmap *ports,
     pa_hashmap *extra,
     pa_core *core) {
 
-    pa_device_port * p = pa_hashmap_get(ports, name);
+    pa_device_port *p;
+
+    pa_assert(path);
+
+    p = pa_hashmap_get(ports, name);
+
     if (!p) {
         pa_alsa_port_data *data;
 
         p = pa_device_port_new(core, name, description, sizeof(pa_alsa_port_data));
         pa_assert(p);
         pa_hashmap_put(ports, p->name, p);
-        p->profiles = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
+        pa_proplist_update(p->proplist, PA_UPDATE_REPLACE, path->proplist);
 
         data = PA_DEVICE_PORT_DATA(p);
         data->path = path;
@@ -4577,17 +4557,21 @@ void pa_alsa_path_set_add_ports(
     }
 }
 
-void pa_alsa_add_ports(pa_hashmap **p, pa_alsa_path_set *ps, pa_card *card) {
+void pa_alsa_add_ports(void *sink_or_source_new_data, pa_alsa_path_set *ps, pa_card *card) {
+    pa_hashmap *ports;
 
-    pa_assert(p);
-    pa_assert(!*p);
+    pa_assert(sink_or_source_new_data);
     pa_assert(ps);
+
+    if (ps->direction == PA_ALSA_DIRECTION_OUTPUT)
+        ports = ((pa_sink_new_data *) sink_or_source_new_data)->ports;
+    else
+        ports = ((pa_source_new_data *) sink_or_source_new_data)->ports;
 
     if (ps->paths && pa_hashmap_size(ps->paths) > 0) {
         pa_assert(card);
-        *p = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
-        pa_alsa_path_set_add_ports(ps, NULL, card->ports, *p, card->core);
+        pa_alsa_path_set_add_ports(ps, NULL, card->ports, ports, card->core);
     }
 
-    pa_log_debug("Added %u ports", *p ? pa_hashmap_size(*p) : 0);
+    pa_log_debug("Added %u ports", pa_hashmap_size(ports));
 }

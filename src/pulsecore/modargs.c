@@ -64,7 +64,7 @@ static int add_key_value(pa_modargs *ma, char *key, char *value, const char* con
     if (valid_keys) {
         const char*const* v;
         for (v = valid_keys; *v; v++)
-            if (strcmp(*v, key) == 0)
+            if (pa_streq(*v, key))
                 break;
 
         if (!*v) {
@@ -333,6 +333,20 @@ int pa_modargs_get_value_boolean(pa_modargs *ma, const char *key, pa_bool_t *val
         return -1;
 
     *value = r;
+    return 0;
+}
+
+int pa_modargs_get_value_double(pa_modargs *ma, const char *key, double *value) {
+    const char *v;
+
+    pa_assert(value);
+
+    if (!(v = pa_modargs_get_value(ma, key, NULL)))
+        return 0;
+
+    if (pa_atod(v, value) < 0)
+        return -1;
+
     return 0;
 }
 

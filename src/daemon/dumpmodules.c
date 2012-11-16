@@ -89,10 +89,6 @@ static void show_info(const char *name, const char *path, void (*info)(const cha
     }
 }
 
-#ifndef OS_IS_WIN32
-extern const lt_dlsymlist lt_preloaded_symbols[];
-#endif
-
 static int is_preloaded(const char *name) {
     const lt_dlsymlist *l;
 
@@ -106,7 +102,7 @@ static int is_preloaded(const char *name) {
         if ((e = strrchr(buf, '.')))
             *e = 0;
 
-        if (!strcmp(name, buf))
+        if (pa_streq(name, buf))
             return 1;
     }
 

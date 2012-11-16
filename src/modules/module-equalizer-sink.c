@@ -575,7 +575,7 @@ static void process_samples(struct userdata *u){
 static void input_buffer(struct userdata *u, pa_memchunk *in){
     size_t fs = pa_frame_size(&(u->sink->sample_spec));
     size_t samples = in->length/fs;
-    float *src = (float*) ((uint8_t*) pa_memblock_acquire(in->memblock) + in->index);
+    float *src = pa_memblock_acquire_chunk(in);
     pa_assert(u->samples_gathered + samples <= u->input_buffer_max);
     for(size_t c = 0; c < u->channels; c++) {
         //buffer with an offset after the overlap from previous
@@ -757,6 +757,8 @@ static void sink_input_update_max_rewind_cb(pa_sink_input *i, size_t nbytes) {
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
 
+    /* FIXME: Too small max_rewind:
+     * https://bugs.freedesktop.org/show_bug.cgi?id=53709 */
     pa_memblockq_set_maxrewind(u->input_q, nbytes);
     pa_sink_set_max_rewind_within_thread(u->sink, nbytes);
 }
@@ -823,6 +825,9 @@ static void sink_input_attach_cb(pa_sink_input *i) {
     max_request = PA_MAX(max_request, u->window_size);
 
     pa_sink_set_max_request_within_thread(u->sink, max_request * fs);
+
+    /* FIXME: Too small max_rewind:
+     * https://bugs.freedesktop.org/show_bug.cgi?id=53709 */
     pa_sink_set_max_rewind_within_thread(u->sink, pa_sink_input_get_max_rewind(i));
 
     pa_sink_attach_within_thread(u->sink);
@@ -844,8 +849,8 @@ static void sink_input_kill_cb(pa_sink_input *i) {
     pa_sink_input_unref(u->sink_input);
     u->sink_input = NULL;
 
-    pa_sink_unref(u->sink);
-    u->sink = NULL;
+    /* Leave u->sink alone for now, it will be cleaned up on module
+     * unload (and it is needed during unload as well). */
 
     pa_module_unload_request(u->module, TRUE);
 }

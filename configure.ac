@@ -28,6 +28,10 @@ AC_CONFIG_MACRO_DIR([m4])
 AC_CONFIG_HEADERS([config.h])
 AM_INIT_AUTOMAKE([foreign 1.11 -Wall -Wno-portability silent-rules color-tests dist-xz tar-ustar])
 
+AS_IF([! test -n "$VERSION"], [
+   AC_MSG_ERROR([git-version-gen failed])
+])
+
 m4_define(pa_major, `echo $VERSION | cut -d. -f1 | cut -d- -f1`)
 m4_define(pa_minor, `echo $VERSION | cut -d. -f2 | cut -d- -f1`)
 
@@ -36,11 +40,11 @@ AC_SUBST(PA_MINOR, pa_minor)
 AC_SUBST(PA_MAJORMINOR, pa_major.pa_minor)
 
 AC_SUBST(PA_API_VERSION, 12)
-AC_SUBST(PA_PROTOCOL_VERSION, 26)
+AC_SUBST(PA_PROTOCOL_VERSION, 27)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [14:3:14])
+AC_SUBST(LIBPULSE_VERSION_INFO, [15:0:15])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -161,7 +165,7 @@ esac
 #### Compiler flags ####
 
 AX_APPEND_COMPILE_FLAGS(
-    [-Wall -W -Wextra -pipe -Wno-long-long -Wvla -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option],
+    [-Wall -W -Wextra -pipe -Wno-long-long -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -Wp,-D_FORTIFY_SOURCE=2 -fno-common -fdiagnostics-show-option],
     [], [-pedantic -Werror])
 
 # Only enable fastpath asserts when doing a debug build, e.g. from bootstrap.sh.
@@ -313,17 +317,40 @@ case $host in
   ;;
 esac
 
+#### NEON optimisations ####
+AC_ARG_ENABLE([neon-opt],
+    AS_HELP_STRING([--enable-neon-opt], [Enable NEON optimisations on ARM CPUs that support it]))
+
+AS_IF([test "x$enable_neon_opt" != "xno"],
+    [save_CFLAGS="$CFLAGS"; CFLAGS="$CFLAGS -mfpu=neon"
+     AC_COMPILE_IFELSE(
+        AC_LANG_PROGRAM([], []),
+        [
+         HAVE_NEON=1
+         NEON_CFLAGS="-mfpu=neon"
+        ],
+        [
+         HAVE_NEON=0
+         NEON_CFLAGS=
+        ])
+     CFLAGS="$save_CFLAGS"
+    ],
+    [HAVE_NEON=0])
+
+AS_IF([test "x$enable_neon_opt" = "xyes" && test "x$HAVE_NEON" = "x0"],
+      [AC_MSG_ERROR([*** Compiler does not support -mfpu=neon])])
+
+AC_SUBST(HAVE_NEON)
+AC_SUBST(NEON_CFLAGS)
+AM_CONDITIONAL([HAVE_NEON], [test "x$HAVE_NEON" = x1])
+AS_IF([test "x$HAVE_NEON" = "x1"], AC_DEFINE([HAVE_NEON], 1, [Have NEON support?]))
+
 
 #### libtool stuff ####
 
-LT_PREREQ(2.2)
+LT_PREREQ(2.4)
 LT_INIT([dlopen win32-dll disable-static])
 
-dnl Unfortunately, even up to libtool 2.2.6a there is no way to know
-dnl exactly which version of libltdl is present in the system, so we
-dnl just assume that it's a working version as long as we have the
-dnl library and the header files.
-dnl
 dnl As an extra safety device, check for lt_dladvise_init() which is
 dnl only implemented in libtool 2.x, and refine as we go if we have
 dnl refined requirements.
@@ -341,7 +368,7 @@ AC_CHECK_HEADER([ltdl.h],
     [LIBLTDL=])
 
 AS_IF([test "x$LIBLTDL" = "x"],
-    [AC_MSG_ERROR([Unable to find libltdl version 2. Makes sure you have libtool 2.2 or later installed.])])
+    [AC_MSG_ERROR([Unable to find libltdl version 2. Makes sure you have libtool 2.4 or later installed.])])
 AC_SUBST([LIBLTDL])
 
 
@@ -578,6 +605,23 @@ fi
 #### Valgrind (optional) ####
 
 AC_CHECK_HEADERS_ONCE([valgrind/memcheck.h])
+
+#### check unit tests ####
+
+AC_ARG_ENABLE([tests],
+    AS_HELP_STRING([--disable-tests],[Disable unit tests]))
+
+AS_IF([test "x$enable_tests" != "xno"],
+    [PKG_CHECK_MODULES(LIBCHECK, [ check ], HAVE_LIBCHECK=1, HAVE_LIBCHECK=0)],
+    HAVE_LIBCHECK=0)
+
+AC_SUBST(LIBCHECK_CFLAGS)
+AC_SUBST(LIBCHECK_LIBS)
+
+AS_IF([test "x$enable_tests" = "xyes" && test "x$HAVE_LIBCHECK" = "x0"],
+    [AC_MSG_ERROR([*** check library not found])])
+
+AM_CONDITIONAL([HAVE_TESTS], [test "x$HAVE_LIBCHECK" = x1])
 
 #### json parsing ####
 
@@ -945,30 +989,11 @@ AC_SUBST(HAVE_DBUS)
 AM_CONDITIONAL([HAVE_DBUS], [test "x$HAVE_DBUS" = x1])
 AS_IF([test "x$HAVE_DBUS" = "x1"], AC_DEFINE([HAVE_DBUS], 1, [Have D-Bus.]))
 
-PA_MACHINE_ID="${localstatedir}/lib/dbus/machine-id"
+PA_MACHINE_ID="${sysconfdir}/machine-id"
 AX_DEFINE_DIR(PA_MACHINE_ID, PA_MACHINE_ID, [D-Bus machine-id file])
-PA_MACHINE_ID_FALLBACK="${sysconfdir}/machine-id"
+PA_MACHINE_ID_FALLBACK="${localstatedir}/lib/dbus/machine-id"
 AX_DEFINE_DIR(PA_MACHINE_ID_FALLBACK, PA_MACHINE_ID_FALLBACK,
 	      [Fallback machine-id file])
-
-#### HAL support (optional), dependant on D-Bus ####
-
-AC_ARG_ENABLE([hal],
-    AS_HELP_STRING([--disable-hal],[Disable optional HAL support]))
-
-AS_IF([test "x$enable_hal" != "xno" -a \( "x$HAVE_OSS" = "x1" -o "x$HAVE_ALSA" = "x1" \)],
-    [PKG_CHECK_MODULES(HAL, [ hal >= 0.5.11 ], HAVE_HAL=1, HAVE_HAL=0)],
-    HAVE_HAL=0)
-AS_IF([test "x$HAVE_DBUS" != "x1"], HAVE_HAL=0)
-
-AS_IF([test "x$enable_hal" = "xyes" && test "x$HAVE_HAL" = "x0"],
-    [AC_MSG_ERROR([*** HAL support not found (requires D-Bus)])])
-
-AC_SUBST(HAL_CFLAGS)
-AC_SUBST(HAL_LIBS)
-AC_SUBST(HAVE_HAL)
-AM_CONDITIONAL([HAVE_HAL], [test "x$HAVE_HAL" = x1])
-AS_IF([test "x$HAVE_HAL" = "x1"], AC_DEFINE([HAVE_HAL], 1, [Have HAL.]))
 
 #### BlueZ support (optional, dependant on D-Bus) ####
 
@@ -977,6 +1002,9 @@ AC_ARG_ENABLE([bluez],
 
 AS_IF([test "x$enable_bluez" != "xno"],
     [PKG_CHECK_MODULES(BLUEZ, [ bluez >= 3.0 ], HAVE_BLUEZ=1, HAVE_BLUEZ=0)],
+    HAVE_BLUEZ=0)
+AS_IF([test "x$enable_bluez" != "xno"],
+    [PKG_CHECK_MODULES(SBC, [ sbc >= 1.0 ], HAVE_BLUEZ=1, HAVE_BLUEZ=0)],
     HAVE_BLUEZ=0)
 AS_IF([test "x$HAVE_DBUS" != "x1"], HAVE_BLUEZ=0)
 
@@ -1012,11 +1040,8 @@ AC_ARG_ENABLE([hal-compat],
     AS_HELP_STRING([--disable-hal-compat],[Disable optional HAL->udev transition compatibility support]))
 
 AS_IF([test "x$enable_hal_compat" != "xno"],
-    [AS_IF([test "x$HAVE_HAL" = "x0" -a "x$HAVE_UDEV" = "x1"], HAVE_HAL_COMPAT=1, HAVE_HAL_COMPAT=0)],
+    [AS_IF([test "x$HAVE_UDEV" = "x1"], HAVE_HAL_COMPAT=1, HAVE_HAL_COMPAT=0)],
     HAVE_HAL_COMPAT=0)
-
-AS_IF([test "x$enable_hal_compat" = "xyes" && test "x$HAVE_HAL_COMPAT" = "x0"],
-    [AC_MSG_ERROR([*** HAL-compat support requires UDEV and no HAL])])
 
 AM_CONDITIONAL([HAVE_HAL_COMPAT], [test "x$HAVE_HAL_COMPAT" = x1])
 AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], AC_DEFINE([HAVE_HAL_COMPAT], 1, [Have HAL compatibility.]))
@@ -1103,6 +1128,26 @@ AS_IF([test "x$enable_xen" = "xyes" && test "x$HAVE_XEN" = "x0"],
 AC_SUBST(XEN_CFLAGS)
 AC_SUBST(XEN_LIBS)
 AM_CONDITIONAL([HAVE_XEN], [test "x$HAVE_XEN" = x1])
+
+#### gcov support (optional) #####
+
+AC_ARG_ENABLE([gcov],
+    AS_HELP_STRING([--enable-gcov],[Enable optional gcov coverage analysis]))
+
+GCOV_CFLAGS=
+GCOV_LIBS=" -lgcov"
+
+AS_IF([test "x$enable_gcov" = "xyes"],
+    [
+        HAVE_GCOV=1
+        GCOV_CFLAGS="$GCOV_CFLAGS -fprofile-arcs -ftest-coverage"
+        GCOV_LIBS="$GCOV_LIBS -fprofile-arcs"
+    ],
+    HAVE_GCOV=0)
+
+AC_SUBST(GCOV_CFLAGS)
+AC_SUBST(GCOV_LIBS)
+AM_CONDITIONAL([HAVE_GCOV], [test "x$HAVE_GCOV" = x1])
 
 #### ORC (optional) ####
 
@@ -1250,12 +1295,6 @@ AC_ARG_ENABLE([default-build-tests],
     AS_HELP_STRING([--disable-default-build-tests], [Build test programs only during make check]))
 AM_CONDITIONAL([BUILD_TESTS_DEFAULT], [test "x$enable_default_build_tests" != "xno"])
 
-AC_ARG_ENABLE([legacy-runtime-dir],
-        AS_HELP_STRING([--disable-legacy-runtime-dir], [Try to connect on legacy (< 0.9.12) socket paths.]))
-if test "x$enable_legacy_runtime_dir" != "xno" ; then
-        AC_DEFINE(ENABLE_LEGACY_RUNTIME_DIR, [1], [Legacy runtime dir])
-fi
-
 AC_ARG_ENABLE([legacy-database-entry-format],
         AS_HELP_STRING([--disable-legacy-database-entry-format], [Try to load legacy (< 1.0) database files (card, device and volume restore).]))
 if test "x$enable_legacy_database_entry_format" != "xno" ; then
@@ -1376,7 +1415,6 @@ AS_IF([test "x$HAVE_LIBASYNCNS" = "x1"], ENABLE_LIBASYNCNS=yes, ENABLE_LIBASYNCN
 AS_IF([test "x$HAVE_LIRC" = "x1"], ENABLE_LIRC=yes, ENABLE_LIRC=no)
 AS_IF([test "x$HAVE_XEN" = "x1"], ENABLE_XEN=yes, ENABLE_XEN=no)
 AS_IF([test "x$HAVE_DBUS" = "x1"], ENABLE_DBUS=yes, ENABLE_DBUS=no)
-AS_IF([test "x$HAVE_HAL" = "x1"], ENABLE_HAL=yes, ENABLE_HAL=no)
 AS_IF([test "x$HAVE_UDEV" = "x1"], ENABLE_UDEV=yes, ENABLE_UDEV=no)
 AS_IF([test "x$HAVE_SYSTEMD" = "x1"], ENABLE_SYSTEMD=yes, ENABLE_SYSTEMD=no)
 AS_IF([test "x$HAVE_BLUEZ" = "x1"], ENABLE_BLUEZ=yes, ENABLE_BLUEZ=no)
@@ -1395,7 +1433,8 @@ AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
 AS_IF([test "x$HAVE_SIMPLEDB" = "x1"], ENABLE_SIMPLEDB=yes, ENABLE_SIMPLEDB=no)
 AS_IF([test "x$HAVE_ESOUND" = "x1"], ENABLE_ESOUND=yes, ENABLE_ESOUND=no)
 AS_IF([test "x$HAVE_ESOUND" = "x1" -a "x$USE_PER_USER_ESOUND_SOCKET" = "x1"], ENABLE_PER_USER_ESOUND_SOCKET=yes, ENABLE_PER_USER_ESOUND_SOCKET=no)
-AS_IF([test "x$enable_legacy_runtime_dir" != "xno"], ENABLE_LEGACY_RUNTIME_DIR=yes, ENABLE_LEGACY_RUNTIME_DIR=no)
+AS_IF([test "x$HAVE_GCOV" = "x1"], ENABLE_GCOV=yes, ENABLE_GCOV=no)
+AS_IF([test "x$HAVE_LIBCHECK" = "x1"], ENABLE_TESTS=yes, ENABLE_TESTS=no)
 AS_IF([test "x$enable_legacy_database_entry_format" != "xno"], ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=yes, ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=no)
 
 echo "
@@ -1429,7 +1468,6 @@ echo "
     Enable LIRC:                   ${ENABLE_LIRC}
     Enable Xen PV driver:          ${ENABLE_XEN}
     Enable D-Bus:                  ${ENABLE_DBUS}
-      Enable HAL:                  ${ENABLE_HAL}
       Enable BlueZ:                ${ENABLE_BLUEZ}
     Enable udev:                   ${ENABLE_UDEV}
       Enable HAL->udev compat:     ${ENABLE_HAL_COMPAT}
@@ -1443,6 +1481,8 @@ echo "
     Enable Adrian echo canceller:  ${ENABLE_ADRIAN_EC}
     Enable speex (resampler, AEC): ${ENABLE_SPEEX}
     Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
+    Enable gcov coverage:          ${ENABLE_GCOV}
+    Enable unit tests:             ${ENABLE_TESTS}
     Database
       tdb:                         ${ENABLE_TDB}
       gdbm:                        ${ENABLE_GDBM}
@@ -1455,7 +1495,6 @@ echo "
     Force preopen:                 ${FORCE_PREOPEN}
     Preopened modules:             ${PREOPEN_MODS}
 
-    Legacy Runtime Dir Support:    ${ENABLE_LEGACY_RUNTIME_DIR}
     Legacy Database Entry Support: ${ENABLE_LEGACY_DATABASE_ENTRY_FORMAT}
 "
 

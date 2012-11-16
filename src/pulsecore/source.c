@@ -73,6 +73,7 @@ pa_source_new_data* pa_source_new_data_init(pa_source_new_data *data) {
 
     pa_zero(*data);
     data->proplist = pa_proplist_new();
+    data->ports = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
 
     return data;
 }
@@ -234,7 +235,7 @@ pa_source* pa_source_new(
     s->state = PA_SOURCE_INIT;
     s->flags = flags;
     s->priority = 0;
-    s->suspend_cause = 0;
+    s->suspend_cause = data->suspend_cause;
     pa_source_set_mixer_dirty(s, FALSE);
     s->name = pa_xstrdup(name);
     s->proplist = pa_proplist_copy(data->proplist);
@@ -283,11 +284,11 @@ pa_source* pa_source_new(
     s->active_port = NULL;
     s->save_port = FALSE;
 
-    if (data->active_port && s->ports)
+    if (data->active_port)
         if ((s->active_port = pa_hashmap_get(s->ports, data->active_port)))
             s->save_port = data->save_port;
 
-    if (!s->active_port && s->ports) {
+    if (!s->active_port) {
         void *state;
         pa_device_port *p;
 
@@ -295,6 +296,11 @@ pa_source* pa_source_new(
             if (!s->active_port || p->priority > s->active_port->priority)
                 s->active_port = p;
     }
+
+    if (s->active_port)
+        s->latency_offset = s->active_port->latency_offset;
+    else
+        s->latency_offset = 0;
 
     s->save_volume = data->save_volume;
     s->save_muted = data->save_muted;
@@ -323,6 +329,7 @@ pa_source* pa_source_new(
     pa_sw_cvolume_multiply(&s->thread_info.current_hw_volume, &s->soft_volume, &s->real_volume);
     s->thread_info.volume_change_safety_margin = core->deferred_volume_safety_margin_usec;
     s->thread_info.volume_change_extra_delay = core->deferred_volume_extra_delay_usec;
+    s->thread_info.latency_offset = s->latency_offset;
 
     /* FIXME: This should probably be moved to pa_source_put() */
     pa_assert_se(pa_idxset_put(core->sources, s, &s->index) >= 0);
@@ -588,7 +595,10 @@ void pa_source_put(pa_source *s) {
     pa_assert(!(s->flags & PA_SOURCE_DECIBEL_VOLUME) || s->n_volume_steps == PA_VOLUME_NORM+1);
     pa_assert(!(s->flags & PA_SOURCE_DYNAMIC_LATENCY) == (s->thread_info.fixed_latency != 0));
 
-    pa_assert_se(source_set_state(s, PA_SOURCE_IDLE) == 0);
+    if (s->suspend_cause)
+        pa_assert_se(source_set_state(s, PA_SOURCE_SUSPENDED) == 0);
+    else
+        pa_assert_se(source_set_state(s, PA_SOURCE_IDLE) == 0);
 
     pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SOURCE | PA_SUBSCRIPTION_EVENT_NEW, s->index);
     pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SOURCE_PUT], s);
@@ -1024,6 +1034,13 @@ pa_usec_t pa_source_get_latency(pa_source *s) {
 
     pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_GET_LATENCY, &usec, 0, NULL) == 0);
 
+    /* usec is unsigned, so check that the offset can be added to usec without
+     * underflowing. */
+    if (-s->latency_offset <= (int64_t) usec)
+        usec += s->latency_offset;
+    else
+        usec = 0;
+
     return usec;
 }
 
@@ -1050,6 +1067,13 @@ pa_usec_t pa_source_get_latency_within_thread(pa_source *s) {
 
     if (o->process_msg(o, PA_SOURCE_MESSAGE_GET_LATENCY, &usec, 0, NULL) < 0)
         return -1;
+
+    /* usec is unsigned, so check that the offset can be added to usec without
+     * underflowing. */
+    if (-s->thread_info.latency_offset <= (int64_t) usec)
+        usec += s->thread_info.latency_offset;
+    else
+        usec = 0;
 
     return usec;
 }
@@ -2168,6 +2192,10 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
             pa_source_get_mute(s, TRUE);
             return 0;
 
+        case PA_SOURCE_MESSAGE_SET_LATENCY_OFFSET:
+            s->thread_info.latency_offset = offset;
+            return 0;
+
         case PA_SOURCE_MESSAGE_MAX:
             ;
     }
@@ -2508,6 +2536,18 @@ void pa_source_set_fixed_latency_within_thread(pa_source *s, pa_usec_t latency) 
 }
 
 /* Called from main thread */
+void pa_source_set_latency_offset(pa_source *s, int64_t offset) {
+    pa_source_assert_ref(s);
+
+    s->latency_offset = offset;
+
+    if (PA_SOURCE_IS_LINKED(s->state))
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_LATENCY_OFFSET, NULL, offset, NULL) == 0);
+    else
+        s->thread_info.latency_offset = offset;
+}
+
+/* Called from main thread */
 size_t pa_source_get_max_rewind(pa_source *s) {
     size_t r;
     pa_assert_ctl_context();
@@ -2534,7 +2574,7 @@ int pa_source_set_port(pa_source *s, const char *name, pa_bool_t save) {
         return -PA_ERR_NOTIMPLEMENTED;
     }
 
-    if (!s->ports || !name)
+    if (!name)
         return -PA_ERR_NOENTITY;
 
     if (!(port = pa_hashmap_get(s->ports, name)))
