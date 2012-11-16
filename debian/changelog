@@ -16,9 +16,12 @@ pulseaudio (2.99.1-1) UNRELEASED; urgency=low
 
   [ Sjoerd Simons ]
   * debian/README.Debian: Updated & cleaned up
-  * debian/copyright: Update, taken from the ubuntu packaging
+  * Sync with Ubuntu:
+    * debian/copyright: Updated
+    * debian/pulse-alsa.conf: set "show on" such that the default devices is
+      displayed as an option
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2012 21:24:06 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2012 21:55:46 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
