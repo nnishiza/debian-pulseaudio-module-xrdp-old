@@ -14,7 +14,10 @@ pulseaudio (2.99.1-1) UNRELEASED; urgency=low
   * LSB headers: Should-Start: Avahi (Closes: #687890)
 
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2012 20:51:07 +0100
+  [ Sjoerd Simons ]
+  * debian/README.Debian: Updated & cleaned up
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2012 21:13:45 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
