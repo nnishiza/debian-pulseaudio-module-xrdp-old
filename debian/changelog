@@ -1,19 +1,20 @@
-pulseaudio (2.1-3) UNRELEASED; urgency=low
+pulseaudio (2.99.1-1) UNRELEASED; urgency=low
 
   [ Sjoerd Simons ]
   * debian/rules: use xz compression for binary packages. (Patch by Ansgar
     Burchardt) (Closes: #683905)
   * debian/pulseaudio.install: Install libwebrtc-util helper library
+  * Clarify init script message indicating the use of system
+    sessions (Closes: #644809)
+  * Don't claim to support reload from the init script (Closes: #690736)
+  * Set back to unreleased
+  * New upstream RC release (2.99.1)
 
   [ Martin-Éric Racine ]
   * LSB headers: Should-Start: Avahi (Closes: #687890)
 
-  [ Sjoerd Simons ]
-  * Clarify init script message indicating the use of system sessions (Closes: #644809)
-  * Don't claim to support reload from the init script (Closes: #690736)
-  * Set back to unreleased
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2012 20:49:25 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2012 20:51:07 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
