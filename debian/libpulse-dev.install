@@ -1,3 +1,4 @@
+usr/lib/*/cmake
 usr/lib/*/libpulse.so
 usr/lib/*/libpulse-simple.so
 usr/lib/*/libpulse-mainloop-glib.so

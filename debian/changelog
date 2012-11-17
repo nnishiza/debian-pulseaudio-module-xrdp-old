@@ -20,8 +20,9 @@ pulseaudio (2.99.1-1) UNRELEASED; urgency=low
     * debian/copyright: Updated
     * debian/pulse-alsa.conf: set "show on" such that the default devices is
       displayed as an option
+    * debian/libpulse-dev.install: Install cmake files
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 16 Nov 2012 21:55:46 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 17 Nov 2012 14:28:29 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
