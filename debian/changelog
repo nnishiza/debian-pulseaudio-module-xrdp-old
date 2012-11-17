@@ -22,6 +22,7 @@ pulseaudio (2.99.1-1) UNRELEASED; urgency=low
       displayed as an option
     * debian/libpulse-dev.install: Install cmake files
     * debian/pulseaudio-module-bluetooth.install: Updated
+    * debian/pulseaudio.install: Install module-switch-on-port-available
 
  -- Sjoerd Simons <sjoerd@debian.org>  Sat, 17 Nov 2012 14:30:00 +0100
 

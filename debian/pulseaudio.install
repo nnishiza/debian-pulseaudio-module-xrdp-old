@@ -72,6 +72,7 @@ usr/lib/pulse-*/modules/module-filter-apply.so
 usr/lib/pulse-*/modules/module-filter-heuristics.so
 usr/lib/pulse-*/modules/module-null-source.so
 usr/lib/pulse-*/modules/module-switch-on-connect.so
+usr/lib/pulse-*/modules/module-switch-on-port-available.so
 usr/lib/pulse-*/modules/module-virtual-sink.so
 usr/lib/pulse-*/modules/module-virtual-source.so
 usr/lib/pulse-*/modules/module-switch-on-port-available.so
