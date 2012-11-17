@@ -41,6 +41,7 @@ usr/lib/pulse-*/modules/module-native-protocol-tcp.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
 usr/lib/pulse-*/modules/module-udev-detect.so
 usr/lib/pulse-*/modules/module-loopback.so
+usr/share/apport
 usr/share/lintian/overrides/pulseaudio
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-oss.so
