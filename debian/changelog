@@ -1,4 +1,4 @@
-pulseaudio (2.99.1-1) UNRELEASED; urgency=low
+pulseaudio (2.99.2-1) UNRELEASED; urgency=low
 
   [ Sjoerd Simons ]
   * debian/rules: use xz compression for binary packages. (Patch by Ansgar
@@ -39,7 +39,7 @@ pulseaudio (2.99.1-1) UNRELEASED; urgency=low
   * debian/patches/0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
     * Added, Use fix point resampler on ARM
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Nov 2012 22:48:30 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Nov 2012 23:02:56 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
