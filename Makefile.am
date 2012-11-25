@@ -26,12 +26,21 @@ EXTRA_DIST = \
 	doxygen/Makefile.am \
 	doxygen/Makefile.in \
 	doxygen/doxygen.conf.in \
+	PROTOCOL \
 	README \
 	todo \
 	vala/libpulse.deps \
 	vala/libpulse.vapi \
 	vala/libpulse-mainloop-glib.deps \
-	vala/libpulse-mainloop-glib.vapi
+	vala/libpulse-mainloop-glib.vapi \
+	.gitignore \
+	doxygen/.gitignore \
+	m4/.gitignore \
+	man/.gitignore \
+	po/.gitignore \
+	src/.gitignore \
+	src/daemon/.gitignore \
+	src/pulse/.gitignore
 
 SUBDIRS = src doxygen man po
 
@@ -74,11 +83,6 @@ fedora-snapshot: dist
 	cp $(distdir).tar.gz $$HOME/git.fedora/pulseaudio/$(distdir).tar.gz
 
 dist-hook:
-	if test -d .git ; then \
-		test -z $$USE_GIT || git pull ; \
-		test -f ${distdir}/ChangeLog && chmod u+w ${distdir}/ChangeLog ; \
-		( git-changelog.perl || echo "git-changelog.perl failed." ) > ${distdir}/ChangeLog 2>&1 ; \
-	fi
 	echo $(VERSION) > $(distdir)/.tarball-version
 	echo $(VERSION) > $(distdir)/.version
 
