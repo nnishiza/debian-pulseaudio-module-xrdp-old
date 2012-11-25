@@ -1,0 +1,78 @@
+From 00fbfcc27ffa179eb88c8a9627c1e928b0593d0e Mon Sep 17 00:00:00 2001
+From: Sjoerd Simons <sjoerd@luon.net>
+Date: Sun, 25 Nov 2012 21:46:38 +0100
+Subject: [PATCH 2/2] Use the fixed point speex resampler on ARM
+
+Switch to use the speex fixed point resampler method by default on ARM.
+Traditionately there wasn't any standard floating point hardware, so for
+those machines it's an obvious choise. On machine using the hardfloat
+ABI floating point still isn't an obvious win over integer performance,
+it's of equal performance on some machines, but slower on others.
+---
+ man/pulse-daemon.conf.5.xml.in |    2 ++
+ src/daemon/daemon.conf.in      |    2 ++
+ src/pulsecore/core.c           |    4 ++++
+ src/pulsecore/resampler.c      |    4 ++++
+ 4 files changed, 12 insertions(+)
+
+diff --git a/man/pulse-daemon.conf.5.xml.in b/man/pulse-daemon.conf.5.xml.in
+index 43257a6..3eccd77 100644
+--- a/man/pulse-daemon.conf.5.xml.in
++++ b/man/pulse-daemon.conf.5.xml.in
+@@ -101,6 +101,8 @@ USA.
+       also offers slightly better quality. See the output of
+       <opt>dump-resample-methods</opt> for a complete list of all
+       available resamplers. Defaults to <opt>speex-float-1</opt>. The
++      available resamplers. Defaults to <opt>speex-float-1</opt> on most
++      achitectures and <opt>speex-fixed-1</opt> on ARM. The
+       <opt>--resample-method</opt> command line option takes precedence.
+       Note that some modules overwrite or allow overwriting of the
+       resampler to use.</p>
+diff --git a/src/daemon/daemon.conf.in b/src/daemon/daemon.conf.in
+index 2089058..7c43cee 100644
+--- a/src/daemon/daemon.conf.in
++++ b/src/daemon/daemon.conf.in
+@@ -54,6 +54,8 @@ ifelse(@HAVE_DBUS@, 1, [dnl
+ ; log-time = no
+ ; log-backtrace = 0
+ 
++# resample-method defaults to  speex-float-1 on most architectures,
++# speex-fixed-1 on ARM
+ ; resample-method = speex-float-1
+ ; enable-remixing = yes
+ ; enable-lfe-remixing = no
+diff --git a/src/pulsecore/core.c b/src/pulsecore/core.c
+index a9f1b7d..38f0d9b 100644
+--- a/src/pulsecore/core.c
++++ b/src/pulsecore/core.c
+@@ -141,7 +141,11 @@ pa_core* pa_core_new(pa_mainloop_api *m, pa_bool_t shared, size_t shm_size) {
+     c->disable_remixing = FALSE;
+     c->disable_lfe_remixing = FALSE;
+     c->deferred_volume = TRUE;
++#ifdef __arm__
++    c->resample_method = PA_RESAMPLER_SPEEX_FIXED_BASE + 1;
++#else
+     c->resample_method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 1;
++#endif
+ 
+     for (j = 0; j < PA_CORE_HOOK_MAX; j++)
+         pa_hook_init(&c->hooks[j], c);
+diff --git a/src/pulsecore/resampler.c b/src/pulsecore/resampler.c
+index 5f8e9bd..30817cb 100644
+--- a/src/pulsecore/resampler.c
++++ b/src/pulsecore/resampler.c
+@@ -235,7 +235,11 @@ pa_resampler* pa_resampler_new(
+ 
+     if (method == PA_RESAMPLER_AUTO) {
+ #ifdef HAVE_SPEEX
++#  ifdef __arm__
++        method = PA_RESAMPLER_SPEEX_FIXED_BASE + 1;
++#  else
+         method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 1;
++#  endif
+ #else
+         if (flags & PA_RESAMPLER_VARIABLE_RATE)
+             method = PA_RESAMPLER_TRIVIAL;
+-- 
+1.7.10.4
+

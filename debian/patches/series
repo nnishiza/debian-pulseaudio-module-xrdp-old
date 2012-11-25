@@ -1,1 +1,2 @@
-
+0001-Switch-the-default-resample-quality-to-1.patch
+0002-Use-the-fixed-point-speex-resampler-on-ARM.patch

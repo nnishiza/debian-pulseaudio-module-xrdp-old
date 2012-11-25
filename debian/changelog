@@ -34,8 +34,12 @@ pulseaudio (2.99.1-1) UNRELEASED; urgency=low
     debian/patches/webrtc-utils-needs-to-be-installed-before-module-ech.patch:
     * Removed. All fixed upstream
   * debian/shlibs.local: Add libpulsecore to shlibs & update versions
+  * debian/patches/0001-Switch-the-default-resample-quality-to-1.patch:
+    * Added, Switch to a lower speex resampler quality level
+  * debian/patches/0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
+    * Added, Use fix point resampler on ARM
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Nov 2012 20:41:58 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Nov 2012 22:48:30 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
