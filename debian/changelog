@@ -33,8 +33,9 @@ pulseaudio (2.99.1-1) UNRELEASED; urgency=low
     debian/patches/remove-analog-mono.patch
     debian/patches/webrtc-utils-needs-to-be-installed-before-module-ech.patch:
     * Removed. All fixed upstream
+  * debian/shlibs.local: Add libpulsecore to shlibs & update versions
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Nov 2012 20:23:21 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 25 Nov 2012 20:41:58 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
