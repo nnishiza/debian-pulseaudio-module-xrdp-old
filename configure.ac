@@ -44,7 +44,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 27)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [15:0:15])
+AC_SUBST(LIBPULSE_VERSION_INFO, [15:1:15])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -500,7 +500,10 @@ if test "x$os_is_darwin" = "x1" ; then
     # How do I check a framework "library" - AC_CHECK_LIB prob. won't work??, just assign LIBS & hope
     AC_CHECK_HEADER([/Developer/Headers/FlatCarbon/CoreServices.h],
         [LIBS="$LIBS -framework CoreServices"],
-        [AC_MSG_ERROR([CoreServices.h header file not found])]
+        [AC_CHECK_HEADERS([/System/Library/Frameworks/CoreServices.framework/Headers/CoreServices.h],
+            [LIBS="$LIBS -framework CoreServices"],
+            [AC_MSG_ERROR([CoreServices.h header file not found])]
+        )]
     )
 
     AC_MSG_RESULT([ok])
@@ -1001,7 +1004,7 @@ AC_ARG_ENABLE([bluez],
     AS_HELP_STRING([--disable-bluez],[Disable optional BlueZ support]))
 
 AS_IF([test "x$enable_bluez" != "xno"],
-    [PKG_CHECK_MODULES(BLUEZ, [ bluez >= 3.0 ], HAVE_BLUEZ=1, HAVE_BLUEZ=0)],
+    [PKG_CHECK_MODULES(BLUEZ, [ bluez >= 4.99 ], HAVE_BLUEZ=1, HAVE_BLUEZ=0)],
     HAVE_BLUEZ=0)
 AS_IF([test "x$enable_bluez" != "xno"],
     [PKG_CHECK_MODULES(SBC, [ sbc >= 1.0 ], HAVE_BLUEZ=1, HAVE_BLUEZ=0)],
@@ -1009,7 +1012,7 @@ AS_IF([test "x$enable_bluez" != "xno"],
 AS_IF([test "x$HAVE_DBUS" != "x1"], HAVE_BLUEZ=0)
 
 AS_IF([test "x$enable_bluez" = "xyes" && test "x$HAVE_BLUEZ" = "x0"],
-    [AC_MSG_ERROR([*** BLUEZ support not found (requires D-Bus)])])
+    [AC_MSG_ERROR([*** BLUEZ support not found (requires BlueZ, sbc, and D-Bus)])])
 
 AC_SUBST(BLUEZ_CFLAGS)
 AC_SUBST(BLUEZ_LIBS)

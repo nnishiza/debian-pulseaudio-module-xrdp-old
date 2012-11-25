@@ -113,8 +113,8 @@ USA.
     </option>
 
     <option>
-      <p><opt>enable-lfe-remixing=</opt> if disabeld when upmixing or
-      downmixing ignore LFE channels. When this option is dsabled the
+      <p><opt>enable-lfe-remixing=</opt> If disabled when upmixing or
+      downmixing ignore LFE channels. When this option is disabled the
       output LFE channel will only get a signal when an input LFE
       channel is available as well. If no input LFE channel is
       available the output LFE channel will always be 0. If no output
@@ -437,7 +437,8 @@ USA.
       or 48kHz. Switching between default and alternate values is
       enabled only when the sinks/sources are suspended. This option
       is ignored in passthrough mode where the stream rate will be used.
-      If set to zero, this feature is disabled.</p>
+      If set to the same as the default sample rate, this feature is
+      disabled.</p>
     </option>
 
   </section>

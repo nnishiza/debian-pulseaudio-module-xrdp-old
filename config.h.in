@@ -506,6 +506,11 @@
 /* Have X11? */
 #undef HAVE_X11
 
+/* Define to 1 if you have the
+   </System/Library/Frameworks/CoreServices.framework/Headers/CoreServices.h>
+   header file. */
+#undef HAVE__SYSTEM_LIBRARY_FRAMEWORKS_CORESERVICES_FRAMEWORK_HEADERS_CORESERVICES_H
+
 /* Define as const if the declaration of iconv() needs const. */
 #undef ICONV_CONST
 
