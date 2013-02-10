@@ -99,6 +99,7 @@ typedef enum pa_bluetooth_device_hook {
 } pa_bluetooth_device_hook_t;
 
 struct pa_bluetooth_device {
+    pa_bluetooth_discovery *discovery;
     pa_bool_t dead;
 
     int device_info_valid;      /* 0: no results yet; 1: good results; -1: bad results ... */
@@ -109,7 +110,6 @@ struct pa_bluetooth_device {
     pa_hashmap *transports;
     int paired;
     char *alias;
-    int device_connected;
     PA_LLIST_HEAD(pa_bluetooth_uuid, uuids);
     char *address;
     int class;
@@ -144,6 +144,7 @@ pa_bluetooth_device* pa_bluetooth_discovery_get_by_address(pa_bluetooth_discover
 
 pa_bluetooth_transport* pa_bluetooth_discovery_get_transport(pa_bluetooth_discovery *y, const char *path);
 pa_bluetooth_transport* pa_bluetooth_device_get_transport(pa_bluetooth_device *d, enum profile profile);
+bool pa_bluetooth_device_any_audio_connected(const pa_bluetooth_device *d);
 
 int pa_bluetooth_transport_acquire(pa_bluetooth_transport *t, const char *accesstype, size_t *imtu, size_t *omtu);
 void pa_bluetooth_transport_release(pa_bluetooth_transport *t, const char *accesstype);
