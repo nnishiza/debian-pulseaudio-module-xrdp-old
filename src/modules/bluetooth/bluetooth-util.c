@@ -109,12 +109,16 @@ static void uuid_free(pa_bluetooth_uuid *u) {
     pa_xfree(u);
 }
 
-static pa_bluetooth_device* device_new(const char *path) {
+static pa_bluetooth_device* device_new(pa_bluetooth_discovery *discovery, const char *path) {
     pa_bluetooth_device *d;
     unsigned i;
 
+    pa_assert(discovery);
+    pa_assert(path);
+
     d = pa_xnew(pa_bluetooth_device, 1);
 
+    d->discovery = discovery;
     d->dead = FALSE;
 
     d->device_info_valid = 0;
@@ -124,7 +128,6 @@ static pa_bluetooth_device* device_new(const char *path) {
     d->transports = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
     d->paired = -1;
     d->alias = NULL;
-    d->device_connected = -1;
     PA_LLIST_HEAD_INIT(pa_bluetooth_uuid, d->uuids);
     d->address = NULL;
     d->class = -1;
@@ -184,7 +187,7 @@ static void device_free(pa_bluetooth_device *d) {
     pa_xfree(d);
 }
 
-static pa_bool_t device_is_audio(pa_bluetooth_device *d) {
+static pa_bool_t device_is_audio_ready(const pa_bluetooth_device *d) {
     pa_assert(d);
 
     return
@@ -300,11 +303,10 @@ static int parse_adapter_property(pa_bluetooth_discovery *y, DBusMessageIter *i)
     return 0;
 }
 
-static int parse_device_property(pa_bluetooth_discovery *y, pa_bluetooth_device *d, DBusMessageIter *i) {
+static int parse_device_property(pa_bluetooth_device *d, DBusMessageIter *i) {
     const char *key;
     DBusMessageIter variant_i;
 
-    pa_assert(y);
     pa_assert(d);
 
     key = check_variant_property(i);
@@ -345,8 +347,6 @@ static int parse_device_property(pa_bluetooth_discovery *y, pa_bluetooth_device 
 
             if (pa_streq(key, "Paired"))
                 d->paired = !!value;
-            else if (pa_streq(key, "Connected"))
-                d->device_connected = !!value;
             else if (pa_streq(key, "Trusted"))
                 d->trusted = !!value;
 
@@ -397,19 +397,19 @@ static int parse_device_property(pa_bluetooth_discovery *y, pa_bluetooth_device 
                     /* Vudentz said the interfaces are here when the UUIDs are announced */
                     if (strcasecmp(HSP_AG_UUID, value) == 0 || strcasecmp(HFP_AG_UUID, value) == 0) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.HandsfreeGateway", "GetProperties"));
-                        send_and_add_to_pending(y, m, get_properties_reply, d);
+                        send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                         has_audio = TRUE;
                     } else if (strcasecmp(HSP_HS_UUID, value) == 0 || strcasecmp(HFP_HS_UUID, value) == 0) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.Headset", "GetProperties"));
-                        send_and_add_to_pending(y, m, get_properties_reply, d);
+                        send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                         has_audio = TRUE;
                     } else if (strcasecmp(A2DP_SINK_UUID, value) == 0) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.AudioSink", "GetProperties"));
-                        send_and_add_to_pending(y, m, get_properties_reply, d);
+                        send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                         has_audio = TRUE;
                     } else if (strcasecmp(A2DP_SOURCE_UUID, value) == 0) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.AudioSource", "GetProperties"));
-                        send_and_add_to_pending(y, m, get_properties_reply, d);
+                        send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                         has_audio = TRUE;
                     }
 
@@ -419,7 +419,7 @@ static int parse_device_property(pa_bluetooth_discovery *y, pa_bluetooth_device 
                 /* this might eventually be racy if .Audio is not there yet, but the State change will come anyway later, so this call is for cold-detection mostly */
                 if (has_audio) {
                     pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.Audio", "GetProperties"));
-                    send_and_add_to_pending(y, m, get_properties_reply, d);
+                    send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                 }
             }
 
@@ -464,15 +464,14 @@ static int parse_audio_property(pa_bluetooth_discovery *u, int *state, DBusMessa
     return 0;
 }
 
-static void run_callback(pa_bluetooth_discovery *y, pa_bluetooth_device *d, pa_bool_t dead) {
-    pa_assert(y);
+static void run_callback(pa_bluetooth_device *d, pa_bool_t dead) {
     pa_assert(d);
 
-    if (!device_is_audio(d))
+    if (!device_is_audio_ready(d))
         return;
 
     d->dead = dead;
-    pa_hook_fire(&y->hook, d);
+    pa_hook_fire(&d->discovery->hook, d);
 }
 
 static void remove_all_devices(pa_bluetooth_discovery *y) {
@@ -482,7 +481,7 @@ static void remove_all_devices(pa_bluetooth_discovery *y) {
 
     while ((d = pa_hashmap_steal_first(y->devices))) {
         pa_hook_fire(&d->hooks[PA_BLUETOOTH_DEVICE_HOOK_REMOVED], NULL);
-        run_callback(y, d, TRUE);
+        run_callback(d, TRUE);
         device_free(d);
     }
 }
@@ -498,7 +497,7 @@ static pa_bluetooth_device *found_device(pa_bluetooth_discovery *y, const char* 
     if (d)
         return d;
 
-    d = device_new(path);
+    d = device_new(y, path);
 
     pa_hashmap_put(y->devices, d->path, d);
 
@@ -517,6 +516,7 @@ static void get_properties_reply(DBusPendingCall *pending, void *userdata) {
     pa_bluetooth_device *d;
     pa_bluetooth_discovery *y;
     int valid;
+    bool old_any_connected;
 
     pa_assert_se(p = userdata);
     pa_assert_se(y = p->context_data);
@@ -536,6 +536,9 @@ static void get_properties_reply(DBusPendingCall *pending, void *userdata) {
         d = pa_hashmap_get(y->devices, dbus_message_get_path(p->message));
 
     pa_assert(p->call_data == d);
+
+    if (d != NULL)
+        old_any_connected = pa_bluetooth_device_any_audio_connected(d);
 
     valid = dbus_message_get_type(r) == DBUS_MESSAGE_TYPE_ERROR ? -1 : 1;
 
@@ -580,7 +583,7 @@ static void get_properties_reply(DBusPendingCall *pending, void *userdata) {
                     goto finish;
 
             } else if (dbus_message_has_interface(p->message, "org.bluez.Device")) {
-                if (parse_device_property(y, d, &dict_i) < 0)
+                if (parse_device_property(d, &dict_i) < 0)
                     goto finish;
 
             } else if (dbus_message_has_interface(p->message, "org.bluez.Audio")) {
@@ -610,8 +613,8 @@ static void get_properties_reply(DBusPendingCall *pending, void *userdata) {
     }
 
 finish:
-    if (d != NULL)
-        run_callback(y, d, FALSE);
+    if (d != NULL && old_any_connected != pa_bluetooth_device_any_audio_connected(d))
+        run_callback(d, FALSE);
 
 finish2:
     dbus_message_unref(r);
@@ -803,7 +806,7 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
 
         if ((d = pa_hashmap_remove(y->devices, path))) {
             pa_hook_fire(&d->hooks[PA_BLUETOOTH_DEVICE_HOOK_REMOVED], NULL);
-            run_callback(y, d, TRUE);
+            run_callback(d, TRUE);
             device_free(d);
         }
 
@@ -846,6 +849,7 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
 
         if ((d = pa_hashmap_get(y->devices, dbus_message_get_path(m)))) {
             DBusMessageIter arg_i;
+            bool old_any_connected = pa_bluetooth_device_any_audio_connected(d);
 
             if (!dbus_message_iter_init(m, &arg_i)) {
                 pa_log("Failed to parse PropertyChanged: %s", err.message);
@@ -853,7 +857,7 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
             }
 
             if (dbus_message_has_interface(m, "org.bluez.Device")) {
-                if (parse_device_property(y, d, &arg_i) < 0)
+                if (parse_device_property(d, &arg_i) < 0)
                     goto fail;
 
             } else if (dbus_message_has_interface(m, "org.bluez.Audio")) {
@@ -877,7 +881,8 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
                     goto fail;
             }
 
-            run_callback(y, d, FALSE);
+            if (old_any_connected != pa_bluetooth_device_any_audio_connected(d))
+                run_callback(d, FALSE);
         }
 
         return DBUS_HANDLER_RESULT_NOT_YET_HANDLED;
@@ -950,7 +955,7 @@ pa_bluetooth_device* pa_bluetooth_discovery_get_by_address(pa_bluetooth_discover
 
     while ((d = pa_hashmap_iterate(y->devices, &state, NULL)))
         if (pa_streq(d->address, address))
-            return device_is_audio(d) ? d : NULL;
+            return device_is_audio_ready(d) ? d : NULL;
 
     return NULL;
 }
@@ -966,7 +971,7 @@ pa_bluetooth_device* pa_bluetooth_discovery_get_by_path(pa_bluetooth_discovery *
         pa_bluetooth_discovery_sync(y);
 
     if ((d = pa_hashmap_get(y->devices, path)))
-        if (device_is_audio(d))
+        if (device_is_audio_ready(d))
             return d;
 
     return NULL;
@@ -999,6 +1004,31 @@ pa_bluetooth_transport* pa_bluetooth_device_get_transport(pa_bluetooth_device *d
             return t;
 
     return NULL;
+}
+
+bool pa_bluetooth_device_any_audio_connected(const pa_bluetooth_device *d) {
+    pa_assert(d);
+
+    if (d->dead || !device_is_audio_ready(d))
+        return false;
+
+    /* Deliberately ignore audio_sink_state and headset_state since they are
+     * reflected in audio_state. This is actually very important in order to
+     * make module-card-restore work well with headsets: if the headset
+     * supports both HSP and A2DP, one of those profiles is connected first and
+     * then the other, and lastly the Audio interface becomes connected.
+     * Checking only audio_state means that this function will return false at
+     * the time when only the first connection has been made. This is good,
+     * because otherwise, if the first connection is for HSP and we would
+     * already load a new device module instance, and module-card-restore tries
+     * to restore the A2DP profile, that would fail because A2DP is not yet
+     * connected. Waiting until the Audio interface gets connected means that
+     * both headset profiles will be connected when the device module is
+     * loaded. */
+    return
+        d->audio_state >= PA_BT_AUDIO_STATE_CONNECTED ||
+        d->audio_source_state >= PA_BT_AUDIO_STATE_CONNECTED ||
+        d->hfgw_state >= PA_BT_AUDIO_STATE_CONNECTED;
 }
 
 int pa_bluetooth_transport_acquire(pa_bluetooth_transport *t, const char *accesstype, size_t *imtu, size_t *omtu) {
