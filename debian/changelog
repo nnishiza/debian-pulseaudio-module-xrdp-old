@@ -39,8 +39,9 @@ pulseaudio (3.0-1) UNRELEASED; urgency=low
   * debian/patches/0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
     * Added, Use fix point resampler on ARM
   * New upstream release (3.0)
+  * debian/control: Add conflicts & replaces for old pulseaudio-utils
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 10 Feb 2013 17:12:39 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 10 Feb 2013 17:33:05 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
