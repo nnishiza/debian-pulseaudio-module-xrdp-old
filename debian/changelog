@@ -1,4 +1,4 @@
-pulseaudio (3.0-1) UNRELEASED; urgency=low
+pulseaudio (3.0-1) experimental; urgency=low
 
   [ Sjoerd Simons ]
   * debian/rules: use xz compression for binary packages. (Patch by Ansgar
@@ -12,7 +12,6 @@ pulseaudio (3.0-1) UNRELEASED; urgency=low
 
   [ Martin-Éric Racine ]
   * LSB headers: Should-Start: Avahi (Closes: #687890)
-
 
   [ Sjoerd Simons ]
   * debian/README.Debian: Updated & cleaned up
@@ -41,7 +40,7 @@ pulseaudio (3.0-1) UNRELEASED; urgency=low
   * New upstream release (3.0)
   * debian/control: Add conflicts & replaces for old pulseaudio-utils
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 10 Feb 2013 17:33:05 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Mon, 11 Feb 2013 19:33:15 +0100
 
 pulseaudio (2.1-2) experimental; urgency=low
 
