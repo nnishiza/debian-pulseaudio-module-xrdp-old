@@ -1,0 +1,57 @@
+From e02e290d7cccd0cfbc89bacf5c0be7934ee58ece Mon Sep 17 00:00:00 2001
+From: Tanu Kaskinen <tanuk@iki.fi>
+Date: Wed, 16 Jan 2013 03:36:03 +0200
+Subject: [PATCH 6/7] Call change_cb() only when there's an actual change.
+
+Calling change_cb() whenever anything happens in the ownership of the
+bus name caused trouble in PulseAudio in this scenario:
+
+1. PulseAudio is using a device and owns the corresponding service
+   name.
+2. Another application requests device release.
+3. PulseAudio releases the device.
+4. Change in the bus name ownership: PulseAudio gives up the
+   ownership, and nobody owns the name.
+5. reserve-monitor notices that, and notifies PulseAudio.
+6. Since reserve-monitor reports the device as "not busy", PulseAudio
+   decides to reserve the bus name immediately back to itself and
+   opens the device again.
+
+The other application will forcibly take the bus name to itself, as
+it should according to the protocol, but the other application may
+have trouble opening the device if it tries to do that before
+PulseAudio has had time to react to the NameLost signal.
+
+This can be solved by not calling change_cb() if there are no changes
+in the device busy status. In this scenario the device is considered
+"not busy" while PulseAudio is owning the bus name, so PulseAudio gets
+no notification when the ownership changes from PulseAudio to nobody.
+---
+ src/modules/reserve-monitor.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
+
+diff --git a/src/modules/reserve-monitor.c b/src/modules/reserve-monitor.c
+index ab453e6..4097a6f 100644
+--- a/src/modules/reserve-monitor.c
++++ b/src/modules/reserve-monitor.c
+@@ -85,6 +85,8 @@ static DBusHandlerResult filter_handler(
+ 			goto invalid;
+ 
+ 		if (strcmp(name, m->service_name) == 0) {
++			unsigned old_busy = m->busy;
++
+ 			m->busy = !!(new && *new);
+ 
+ 			/* If we ourselves own the device, then don't consider this 'busy' */
+@@ -96,7 +98,7 @@ static DBusHandlerResult filter_handler(
+ 						m->busy = FALSE;
+ 			}
+ 
+-			if (m->change_cb) {
++			if (m->busy != old_busy && m->change_cb) {
+ 				m->ref++;
+ 				m->change_cb(m);
+ 				rm_release(m);
+-- 
+1.7.10.4
+

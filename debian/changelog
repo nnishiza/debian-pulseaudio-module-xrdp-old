@@ -39,6 +39,12 @@ pulseaudio (3.0-1) experimental; urgency=low
     * Added, Use fix point resampler on ARM
   * New upstream release (3.0)
   * debian/control: Add conflicts & replaces for old pulseaudio-utils
+  * Added Patches from the 3.0-stable branch:
+    * d/patches/0003-alsa-mixer-Fix-the-analog-output-speaker-always-path.patch
+    * d/patches/0004-man-Update-log-target-documentation.patch
+    * d/patches/0005-build-Don-t-enable-BlueZ-if-libbluetooth-is-not-foun.patch
+    * d/patches/0006-Call-change_cb-only-when-there-s-an-actual-change.patch
+    * d/patches/0007-Initialize-monitor-s-busy-status-to-false-if-we-own-.patch
 
  -- Sjoerd Simons <sjoerd@debian.org>  Mon, 11 Feb 2013 19:33:15 +0100
 

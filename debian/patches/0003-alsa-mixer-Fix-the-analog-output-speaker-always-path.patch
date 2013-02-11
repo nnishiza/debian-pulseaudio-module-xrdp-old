@@ -1,0 +1,41 @@
+From 299e32b767ac60ddbaa747cd03c09b780e364637 Mon Sep 17 00:00:00 2001
+From: David Henningsson <david.henningsson@canonical.com>
+Date: Wed, 19 Dec 2012 11:24:33 +0100
+Subject: [PATCH 3/7] alsa-mixer: Fix the analog-output-speaker-always path
+
+A left over "required-any" made this path useless for most people.
+While we're at it, also add "Front Headphone" like for the normal
+speaker path.
+
+Tested-by: Colin Guthrie <gmane@colin.guthr.ie>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+---
+ src/modules/alsa/mixer/paths/analog-output-speaker-always.conf |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/modules/alsa/mixer/paths/analog-output-speaker-always.conf b/src/modules/alsa/mixer/paths/analog-output-speaker-always.conf
+index 3ebdc4a..8a2b3df 100644
+--- a/src/modules/alsa/mixer/paths/analog-output-speaker-always.conf
++++ b/src/modules/alsa/mixer/paths/analog-output-speaker-always.conf
+@@ -30,6 +30,10 @@ device.icon_name = audio-speakers
+ state.plugged = no
+ state.unplugged = unknown
+ 
++[Jack Front Headphone]
++state.plugged = no
++state.unplugged = unknown
++
+ [Element Hardware Master]
+ switch = mute
+ volume = merge
+@@ -132,7 +136,6 @@ switch = mute
+ volume = merge
+ override-map.1 = lfe
+ override-map.2 = lfe,lfe
+-required-any = any
+ 
+ [Element CLFE]
+ switch = mute
+-- 
+1.7.10.4
+
