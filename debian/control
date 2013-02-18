@@ -49,7 +49,8 @@ Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   lsb-base (>= 3.2-13), consolekit,
   udev (>= 143) [linux-any],
-  libasound2-plugins [linux-any]
+  libasound2-plugins [linux-any],
+  libpulse0 (= ${binary:Version})
 Breaks: libltdl3 (<< 1.5.24-1)
 Recommends: pulseaudio-module-x11, gstreamer0.10-pulseaudio, rtkit
 Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman, paprefs

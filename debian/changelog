@@ -1,3 +1,10 @@
+pulseaudio (3.0-2) UNRELEASED; urgency=low
+
+  * Pulseaudio should depend on the binary version of libpulse0
+    (Closes: #700693)
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Mon, 18 Feb 2013 09:56:02 +0000
+
 pulseaudio (3.0-1) experimental; urgency=low
 
   [ Sjoerd Simons ]
