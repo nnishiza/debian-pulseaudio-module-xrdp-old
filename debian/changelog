@@ -22,8 +22,9 @@ pulseaudio (4.0-1) UNRELEASED; urgency=low
       + d/p/0007-Initialize-monitor-s-busy-status-to-false-if-we-own-.patch
     - Refresh remaining patches
   * debian/control: Update build-depends
+  * debian/libpulse0.symbols: Update
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 15 Jun 2013 12:21:53 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 15 Jun 2013 12:38:09 +0200
 
 pulseaudio (3.0-1) experimental; urgency=low
 
