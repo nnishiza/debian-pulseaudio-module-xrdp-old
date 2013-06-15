@@ -69,8 +69,14 @@ Suspend or resume the specified source (which my be specified either by its symb
 \fBset-card-profile\f1 \fICARD\f1 \fIPROFILE\f1
 Set the specified card (identified by its symbolic name or numerical index) to the specified profile (identified by its symbolic name).
 .TP
+\fBset-default-sink\f1 \fISINK\f1
+Make the specified sink (identified by its symbolic name) the default sink.
+.TP
 \fBset-sink-port\f1 \fISINK\f1 \fIPORT\f1
 Set the specified sink (identified by its symbolic name or numerical index) to the specified port (identified by its symbolic name).
+.TP
+\fBset-default-source\f1 \fISOURCE\f1
+Make the specified source (identified by its symbolic name) the default source.
 .TP
 \fBset-source-port\f1 \fISOURCE\f1 \fIPORT\f1
 Set the specified source (identified by its symbolic name or numerical index) to the specified port (identified by its symbolic name).
@@ -90,16 +96,16 @@ Set the volume of the specified sink input (identified by its numerical index). 
 \fBset-source-output-volume\f1 \fIOUTPUT\f1 \fIVOLUME\f1
 Set the volume of the specified source output (identified by its numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current source output volume.
 .TP
-\fBset-sink-mute\f1 \fISINK\f1 \fI1|0\f1
+\fBset-sink-mute\f1 \fISINK\f1 \fI1|0|toggle\f1
 Set the mute status of the specified sink (identified by its symbolic name or numerical index).
 .TP
-\fBset-source-mute\f1 \fISOURCE\f1 \fI1|0\f1
+\fBset-source-mute\f1 \fISOURCE\f1 \fI1|0|toggle\f1
 Set the mute status of the specified source (identified by its symbolic name or numerical index).
 .TP
-\fBset-sink-input-mute\f1 \fIINPUT\f1 \fI1|0\f1
+\fBset-sink-input-mute\f1 \fIINPUT\f1 \fI1|0|toggle\f1
 Set the mute status of the specified sink input (identified by its numerical index).
 .TP
-\fBset-source-output-mute\f1 \fIINPUT\f1 \fI1|0\f1
+\fBset-source-output-mute\f1 \fIINPUT\f1 \fI1|0|toggle\f1
 Set the mute status of the specified source output (identified by its numerical index).
 .TP
 \fBset-sink-formats\f1 \fISINK\f1 \fIFORMATS\f1

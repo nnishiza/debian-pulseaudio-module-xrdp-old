@@ -148,6 +148,8 @@ static pa_hook_result_t reserve_cb(pa_reserve_wrapper *r, void *forced, struct u
     pa_assert(r);
     pa_assert(u);
 
+    pa_log_debug("Suspending source %s, because another application requested us to release the device.", u->source->name);
+
     if (pa_source_suspend(u->source, TRUE, PA_SUSPEND_APPLICATION) < 0)
         return PA_HOOK_CANCEL;
 
@@ -210,14 +212,17 @@ static int reserve_init(struct userdata *u, const char *dname) {
 }
 
 static pa_hook_result_t monitor_cb(pa_reserve_monitor_wrapper *w, void* busy, struct userdata *u) {
-    pa_bool_t b;
-
     pa_assert(w);
     pa_assert(u);
 
-    b = PA_PTR_TO_UINT(busy) && !u->reserve;
+    if (PA_PTR_TO_UINT(busy) && !u->reserve) {
+        pa_log_debug("Suspending source %s, because another application is blocking the access to the device.", u->source->name);
+        pa_source_suspend(u->source, true, PA_SUSPEND_APPLICATION);
+    } else {
+        pa_log_debug("Resuming source %s, because other applications aren't blocking access to the device any more.", u->source->name);
+        pa_source_suspend(u->source, false, PA_SUSPEND_APPLICATION);
+    }
 
-    pa_source_suspend(u->source, b, PA_SUSPEND_APPLICATION);
     return PA_HOOK_OK;
 }
 
@@ -1419,7 +1424,7 @@ static pa_bool_t source_update_rate_cb(pa_source *s, uint32_t rate)
     }
 
     if (!supported) {
-        pa_log_info("Sink does not support sample rate of %d Hz", rate);
+        pa_log_info("Source does not support sample rate of %d Hz", rate);
         return FALSE;
     }
 
@@ -1726,6 +1731,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     struct userdata *u = NULL;
     const char *dev_id = NULL, *key, *mod_name;
     pa_sample_spec ss;
+    char *thread_name = NULL;
     uint32_t alternate_sample_rate;
     pa_channel_map map;
     uint32_t nfrags, frag_size, buffer_size, tsched_size, tsched_watermark;
@@ -2053,10 +2059,13 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
 
     pa_alsa_dump(PA_LOG_DEBUG, u->pcm_handle);
 
-    if (!(u->thread = pa_thread_new("alsa-source", thread_func, u))) {
+    thread_name = pa_sprintf_malloc("alsa-source-%s", pa_strnull(pa_proplist_gets(u->source->proplist, "alsa.id")));
+    if (!(u->thread = pa_thread_new(thread_name, thread_func, u))) {
         pa_log("Failed to create thread.");
         goto fail;
     }
+    pa_xfree(thread_name);
+    thread_name = NULL;
 
     /* Get initial mixer settings */
     if (data.volume_is_set) {
@@ -2086,6 +2095,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     return u->source;
 
 fail:
+    pa_xfree(thread_name);
 
     if (u)
         userdata_free(u);
