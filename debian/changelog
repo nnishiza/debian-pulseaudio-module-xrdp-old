@@ -12,8 +12,16 @@ pulseaudio (4.0-1) UNRELEASED; urgency=low
       sessions on these architectures.
   * New upstream release (4.0)
     - Various bugfixes breaking audio playbacks since 3.0 (Closes: #701591)
+    - Drop patches applied upstream:
+      + d/p/0001-Switch-the-default-resample-quality-to-1.patch
+      + d/p/0003-alsa-mixer-Fix-the-analog-output-speaker-always-path.patch
+      + d/p/0004-man-Update-log-target-documentation.patch
+      + d/p/0005-build-Don-t-enable-BlueZ-if-libbluetooth-is-not-foun.patch
+      + d/p/0006-Call-change_cb-only-when-there-s-an-actual-change.patch
+      + d/p/0007-Initialize-monitor-s-busy-status-to-false-if-we-own-.patch
+    - Refresh remaining patches
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 15 Jun 2013 11:57:11 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 15 Jun 2013 12:15:52 +0200
 
 pulseaudio (3.0-1) experimental; urgency=low
 

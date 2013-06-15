@@ -1,8 +1,2 @@
-0001-Switch-the-default-resample-quality-to-1.patch
 0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
-0003-alsa-mixer-Fix-the-analog-output-speaker-always-path.patch
-0004-man-Update-log-target-documentation.patch
-0005-build-Don-t-enable-BlueZ-if-libbluetooth-is-not-foun.patch
-0006-Call-change_cb-only-when-there-s-an-actual-change.patch
-0007-Initialize-monitor-s-busy-status-to-false-if-we-own-.patch
-debian/patches/kfreebsd_no_lock_and_threads_synchro.patch
+kfreebsd_no_lock_and_threads_synchro.patch
