@@ -2138,9 +2138,9 @@ char *pa_make_path_absolute(const char *p) {
     return r;
 }
 
-/* if fn is null return the PulseAudio run time path in s (~/.pulse)
- * if fn is non-null and starts with / return fn
- * otherwise append fn to the run time path and return it */
+/* If fn is NULL, return the PulseAudio runtime or state dir (depending on the
+ * rt parameter). If fn is non-NULL and starts with /, return fn. Otherwise,
+ * append fn to the runtime/state dir and return it. */
 static char *get_path(const char *fn, pa_bool_t prependmid, pa_bool_t rt) {
     char *rtp;
 
@@ -3207,21 +3207,19 @@ void pa_reset_personality(void) {
 
 }
 
-#if defined(__linux__) && !defined(__OPTIMIZE__)
-
 pa_bool_t pa_run_from_build_tree(void) {
     char *rp;
-    pa_bool_t b = FALSE;
+    static pa_bool_t b = FALSE;
 
-    if ((rp = pa_readlink("/proc/self/exe"))) {
-        b = pa_startswith(rp, PA_BUILDDIR);
-        pa_xfree(rp);
-    }
+    PA_ONCE_BEGIN {
+        if ((rp = pa_readlink("/proc/self/exe"))) {
+            b = pa_startswith(rp, PA_BUILDDIR);
+            pa_xfree(rp);
+        }
+    } PA_ONCE_END;
 
     return b;
 }
-
-#endif
 
 const char *pa_get_temp_dir(void) {
     const char *t;

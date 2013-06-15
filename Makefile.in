@@ -72,13 +72,14 @@ host_triplet = @host@
 @HAVE_GLIB20_TRUE@	 libpulse-mainloop-glib.pc
 
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/Makefile.am \
-	$(srcdir)/Makefile.in $(srcdir)/PulseAudioConfig.cmake.in \
+DIST_COMMON = README $(am__configure_deps) $(dist_bashcompletion_DATA) \
+	$(dist_vapi_DATA) $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
+	$(srcdir)/PulseAudioConfig.cmake.in \
 	$(srcdir)/PulseAudioConfigVersion.cmake.in \
 	$(srcdir)/config.h.in $(srcdir)/libpulse-mainloop-glib.pc.in \
 	$(srcdir)/libpulse-simple.pc.in $(srcdir)/libpulse.pc.in \
 	$(top_srcdir)/configure $(top_srcdir)/src/pulse/version.h.in \
-	compile config.guess config.rpath config.sub depcomp \
+	NEWS compile config.guess config.rpath config.sub depcomp \
 	install-sh ltmain.sh missing mkinstalldirs
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
@@ -147,9 +148,11 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(cmakedir)" "$(DESTDIR)$(pkgconfigdir)" \
-	"$(DESTDIR)$(vapidir)"
-DATA = $(cmake_DATA) $(noinst_DATA) $(pkgconfig_DATA) $(vapi_DATA)
+am__installdirs = "$(DESTDIR)$(cmakedir)" \
+	"$(DESTDIR)$(bashcompletiondir)" "$(DESTDIR)$(vapidir)" \
+	"$(DESTDIR)$(pkgconfigdir)"
+DATA = $(cmake_DATA) $(dist_bashcompletion_DATA) $(dist_vapi_DATA) \
+	$(noinst_DATA) $(pkgconfig_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
@@ -255,8 +258,8 @@ GLIB20_LIBS = @GLIB20_LIBS@
 GMOFILES = @GMOFILES@
 GMSGFMT = @GMSGFMT@
 GREP = @GREP@
-GTK20_CFLAGS = @GTK20_CFLAGS@
-GTK20_LIBS = @GTK20_LIBS@
+GTK30_CFLAGS = @GTK30_CFLAGS@
+GTK30_LIBS = @GTK30_LIBS@
 HAVE_AF_UNIX = @HAVE_AF_UNIX@
 HAVE_ALSA = @HAVE_ALSA@
 HAVE_AVAHI = @HAVE_AVAHI@
@@ -300,7 +303,6 @@ LIBJSON_CFLAGS = @LIBJSON_CFLAGS@
 LIBJSON_LIBS = @LIBJSON_LIBS@
 LIBLTDL = @LIBLTDL@
 LIBOBJS = @LIBOBJS@
-LIBPULSE_BROWSE_VERSION_INFO = @LIBPULSE_BROWSE_VERSION_INFO@
 LIBPULSE_MAINLOOP_GLIB_VERSION_INFO = @LIBPULSE_MAINLOOP_GLIB_VERSION_INFO@
 LIBPULSE_SIMPLE_VERSION_INFO = @LIBPULSE_SIMPLE_VERSION_INFO@
 LIBPULSE_VERSION_INFO = @LIBPULSE_VERSION_INFO@
@@ -479,10 +481,7 @@ EXTRA_DIST = \
 	PROTOCOL \
 	README \
 	todo \
-	vala/libpulse.deps \
-	vala/libpulse.vapi \
-	vala/libpulse-mainloop-glib.deps \
-	vala/libpulse-mainloop-glib.vapi \
+	shell-completion/pulseaudio-zsh-completion.zsh \
 	.gitignore \
 	doxygen/.gitignore \
 	m4/.gitignore \
@@ -496,7 +495,7 @@ SUBDIRS = src doxygen man po
 MAINTAINERCLEANFILES = 
 noinst_DATA = 
 vapidir = $(datadir)/vala/vapi
-vapi_DATA = \
+dist_vapi_DATA = \
 		vala/libpulse.deps vala/libpulse.vapi \
 		vala/libpulse-mainloop-glib.deps vala/libpulse-mainloop-glib.vapi
 
@@ -504,6 +503,8 @@ pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libpulse.pc libpulse-simple.pc $(am__append_1)
 cmakedir = $(libdir)/cmake/PulseAudio
 cmake_DATA = PulseAudioConfig.cmake PulseAudioConfigVersion.cmake
+bashcompletiondir = $(sysconfdir)/bash_completion.d
+dist_bashcompletion_DATA = shell-completion/pulseaudio-bash-completion.sh
 
 # see git-version-gen
 BUILT_SOURCES = $(top_srcdir)/.version
@@ -606,6 +607,48 @@ uninstall-cmakeDATA:
 	@list='$(cmake_DATA)'; test -n "$(cmakedir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(cmakedir)'; $(am__uninstall_files_from_dir)
+install-dist_bashcompletionDATA: $(dist_bashcompletion_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_bashcompletion_DATA)'; test -n "$(bashcompletiondir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(bashcompletiondir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(bashcompletiondir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(bashcompletiondir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(bashcompletiondir)" || exit $$?; \
+	done
+
+uninstall-dist_bashcompletionDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_bashcompletion_DATA)'; test -n "$(bashcompletiondir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(bashcompletiondir)'; $(am__uninstall_files_from_dir)
+install-dist_vapiDATA: $(dist_vapi_DATA)
+	@$(NORMAL_INSTALL)
+	@list='$(dist_vapi_DATA)'; test -n "$(vapidir)" || list=; \
+	if test -n "$$list"; then \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(vapidir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(vapidir)" || exit 1; \
+	fi; \
+	for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  echo "$$d$$p"; \
+	done | $(am__base_list) | \
+	while read files; do \
+	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(vapidir)'"; \
+	  $(INSTALL_DATA) $$files "$(DESTDIR)$(vapidir)" || exit $$?; \
+	done
+
+uninstall-dist_vapiDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_vapi_DATA)'; test -n "$(vapidir)" || list=; \
+	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
+	dir='$(DESTDIR)$(vapidir)'; $(am__uninstall_files_from_dir)
 install-pkgconfigDATA: $(pkgconfig_DATA)
 	@$(NORMAL_INSTALL)
 	@list='$(pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
@@ -627,27 +670,6 @@ uninstall-pkgconfigDATA:
 	@list='$(pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(pkgconfigdir)'; $(am__uninstall_files_from_dir)
-install-vapiDATA: $(vapi_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(vapi_DATA)'; test -n "$(vapidir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(vapidir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(vapidir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(vapidir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(vapidir)" || exit $$?; \
-	done
-
-uninstall-vapiDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(vapi_DATA)'; test -n "$(vapidir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(vapidir)'; $(am__uninstall_files_from_dir)
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -980,7 +1002,7 @@ check: $(BUILT_SOURCES)
 all-am: Makefile $(DATA) config.h
 installdirs: installdirs-recursive
 installdirs-am:
-	for dir in "$(DESTDIR)$(cmakedir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(vapidir)"; do \
+	for dir in "$(DESTDIR)$(cmakedir)" "$(DESTDIR)$(bashcompletiondir)" "$(DESTDIR)$(vapidir)" "$(DESTDIR)$(pkgconfigdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -1039,8 +1061,8 @@ info: info-recursive
 
 info-am:
 
-install-data-am: install-cmakeDATA install-pkgconfigDATA \
-	install-vapiDATA
+install-data-am: install-cmakeDATA install-dist_bashcompletionDATA \
+	install-dist_vapiDATA install-pkgconfigDATA
 
 install-dvi: install-dvi-recursive
 
@@ -1086,8 +1108,8 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-cmakeDATA uninstall-pkgconfigDATA \
-	uninstall-vapiDATA
+uninstall-am: uninstall-cmakeDATA uninstall-dist_bashcompletionDATA \
+	uninstall-dist_vapiDATA uninstall-pkgconfigDATA
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) all check \
 	ctags-recursive install install-am install-strip \
@@ -1101,15 +1123,17 @@ uninstall-am: uninstall-cmakeDATA uninstall-pkgconfigDATA \
 	distclean-hdr distclean-libtool distclean-tags distcleancheck \
 	distdir distuninstallcheck dvi dvi-am html html-am info \
 	info-am install install-am install-cmakeDATA install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
+	install-data-am install-dist_bashcompletionDATA \
+	install-dist_vapiDATA install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
 	install-info-am install-man install-pdf install-pdf-am \
 	install-pkgconfigDATA install-ps install-ps-am install-strip \
-	install-vapiDATA installcheck installcheck-am installdirs \
-	installdirs-am maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-generic mostlyclean-libtool pdf pdf-am \
-	ps ps-am tags tags-recursive uninstall uninstall-am \
-	uninstall-cmakeDATA uninstall-pkgconfigDATA uninstall-vapiDATA
+	installcheck installcheck-am installdirs installdirs-am \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-recursive uninstall uninstall-am uninstall-cmakeDATA \
+	uninstall-dist_bashcompletionDATA uninstall-dist_vapiDATA \
+	uninstall-pkgconfigDATA
 
 
 homepage: all dist doxygen
@@ -1134,6 +1158,9 @@ fedora-snapshot: dist
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 	echo $(VERSION) > $(distdir)/.version
+
+check-daemon:
+	$(MAKE) -C src check-daemon
 
 .PHONY: homepage distcleancheck doxygen
 $(top_srcdir)/.version:

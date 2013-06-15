@@ -163,7 +163,10 @@ static uint64_t get_playback_buffered_bytes(struct userdata *u) {
 
     pa_smoother_put(u->smoother, pa_rtclock_now(), pa_bytes_to_usec(played_bytes, &u->sink->sample_spec));
 
-    return u->written_bytes - played_bytes;
+    if (u->written_bytes > played_bytes)
+        return u->written_bytes - played_bytes;
+    else
+        return 0;
 }
 
 static pa_usec_t sink_get_latency(struct userdata *u, pa_sample_spec *ss) {
@@ -348,7 +351,7 @@ static int suspend(struct userdata *u) {
 
     pa_log_info("Suspending...");
 
-    ioctl(u->fd, AUDIO_DRAIN, NULL);
+    ioctl(u->fd, I_FLUSH, FLUSHRW);
     pa_close(u->fd);
     u->fd = -1;
 

@@ -208,6 +208,15 @@ void pa_unset_env_recorded(void);
 pa_bool_t pa_in_system_mode(void);
 
 #define pa_streq(a,b) (!strcmp((a),(b)))
+
+/* Like pa_streq, but does not blow up on NULL pointers. */
+static inline bool pa_safe_streq(const char *a, const char *b)
+{
+    if (a == NULL || b == NULL)
+        return a == b;
+    return pa_streq(a, b);
+}
+
 pa_bool_t pa_str_in_list_spaces(const char *needle, const char *haystack);
 
 char *pa_get_host_name_malloc(void);
@@ -260,14 +269,7 @@ size_t pa_pipe_buf(int fd);
 
 void pa_reset_personality(void);
 
-/* We abuse __OPTIMIZE__ as a check whether we are a debug build
- * or not. If we are and are run from the build tree then we
- * override the search path to point to our build tree */
-#if defined(__linux__) && !defined(__OPTIMIZE__)
-pa_bool_t pa_run_from_build_tree(void);
-#else
-static inline pa_bool_t pa_run_from_build_tree(void) {return FALSE;}
-#endif
+pa_bool_t pa_run_from_build_tree(void) PA_GCC_CONST;
 
 const char *pa_get_temp_dir(void);
 

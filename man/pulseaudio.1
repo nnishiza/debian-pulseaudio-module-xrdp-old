@@ -83,8 +83,8 @@ If an argument is passed, set the log level to the specified value, otherwise in
 \fB-v\f1
 Increase the configured verbosity level by one (see \fB--log-level\f1 above). Specify multiple times to increase log level multiple times.
 .TP
-\fB--log-target\f1\fI={auto,syslog,stderr,file:PATH}\f1
-Specify the log target. If set to \fIauto\f1 (which is the default), then logging is directed to syslog when \fB--daemonize\f1 is passed, otherwise to STDERR. If set to \fIfile:PATH\f1, logging is directed to the file indicated by PATH.
+\fB--log-target\f1\fI={auto,syslog,stderr,file:PATH,newfile:PATH}\f1
+Specify the log target. If set to \fIauto\f1 (which is the default), then logging is directed to syslog when \fB--daemonize\f1 is passed, otherwise to STDERR. If set to \fIfile:PATH\f1, logging is directed to the file indicated by PATH. \fInewfile:PATH\f1 is otherwise the same as file:PATH, but existing files are never overwritten. If the specified file already exists, a suffix is added to the file name to avoid overwriting.
 .TP
 \fB--log-meta\f1\fI[=BOOL]\f1
 Show source code location in log messages.
@@ -105,7 +105,7 @@ Use the specified resampler by default (See \fB--dump-resample-methods\f1 above 
 Create a PID file. If this options is disabled it is possible to run multiple sound servers per user.
 .TP
 \fB--no-cpu-limit\f1\fI[=BOOL]\f1
-Do not install CPU load limiter on platforms that support it. By default, PulseAudio will terminate itself when it notices that it takes up too much CPU time. This is useful as a protection against system lockups when real-time scheduling is used (see below). Disabling this meachnism is useful when debugging PulseAudio with tools like \fBvalgrind(1)\f1 which slow down execution.
+Do not install CPU load limiter on platforms that support it. By default, PulseAudio will terminate itself when it notices that it takes up too much CPU time. This is useful as a protection against system lockups when real-time scheduling is used (see below). Disabling this mechanism is useful when debugging PulseAudio with tools like \fBvalgrind(1)\f1 which slow down execution.
 .TP
 \fB--disable-shm\f1\fI[=BOOL]\f1
 PulseAudio clients and the server can exchange audio data via POSIX shared memory segments (on systems that support this). If disabled PulseAudio will communicate exclusively over sockets. Please note that data transfer via shared memory segments is always disabled when PulseAudio is running with \fB--system\f1 enabled (see above).
@@ -140,21 +140,21 @@ Group \fIpulse-rt\f1: if the PulseAudio binary is marked SUID root, then members
 
 Group \fIpulse-access\f1: if PulseAudio is running as a system daemon (see \fB--system\f1 above) access is granted to members of this group when they connect via AF_UNIX sockets. If PulseAudio is running as a user daemon this group has no meaning.
 
-User \fIpulse\f1, group \fIpulse\f1: if PulseAudio is running as a system daemon (see \fB--system\f1 above) and is started as root the daemon will drop priviliges and become a normal user process using this user and group. If PulseAudio is running as a user daemon this user and group has no meaning.
+User \fIpulse\f1, group \fIpulse\f1: if PulseAudio is running as a system daemon (see \fB--system\f1 above) and is started as root the daemon will drop privileges and become a normal user process using this user and group. If PulseAudio is running as a user daemon this user and group has no meaning.
 .SH REAL-TIME AND HIGH-PRIORITY SCHEDULING
-To minimize the risk of drop-outs during playback it is recommended to run PulseAudio with real-time scheduling if the underlying platform supports it. This decouples the scheduling latency of the PulseAudio daemon from the system load and is thus the best way to make sure that PulseAudio always gets CPU time when it needs it to refill the hardware playback buffers. Unfortunately this is a security risk on most systems, since PulseAudio runs as user process, and giving realtime scheduling priviliges to a user process always comes with the risk that the user misuses it to lock up the system -- which is possible since making a process real-time effectively disables preemption.
+To minimize the risk of drop-outs during playback it is recommended to run PulseAudio with real-time scheduling if the underlying platform supports it. This decouples the scheduling latency of the PulseAudio daemon from the system load and is thus the best way to make sure that PulseAudio always gets CPU time when it needs it to refill the hardware playback buffers. Unfortunately this is a security risk on most systems, since PulseAudio runs as user process, and giving realtime scheduling privileges to a user process always comes with the risk that the user misuses it to lock up the system -- which is possible since making a process real-time effectively disables preemption.
 
-To minimize the risk PulseAudio by default does not enable real-time scheduling. It is however recommended to enable it on trusted systems. To do that start PulseAudio with \fB--realtime\f1 (see above) or enabled the appropriate option in \fIdaemon.conf\f1. Since acquiring realtime scheduling is a priviliged operation on most systems, some special changes to the system configuration need to be made to allow them to the calling user. Two options are available:
+To minimize the risk PulseAudio by default does not enable real-time scheduling. It is however recommended to enable it on trusted systems. To do that start PulseAudio with \fB--realtime\f1 (see above) or enabled the appropriate option in \fIdaemon.conf\f1. Since acquiring realtime scheduling is a privileged operation on most systems, some special changes to the system configuration need to be made to allow them to the calling user. Two options are available:
 
 On newer Linux systems the system resource limit RLIMIT_RTPRIO (see \fBsetrlimit(2)\f1 for more information) can be used to allow specific users to acquire real-time scheduling. This can be configured in \fI/etc/security/limits.conf\f1, a resource limit of 9 is recommended.
 
-Alternatively, the SUID root bit can be set for the PulseAudio binary. Then, the daemon will drop root priviliges immediately on startup, however retain the CAP_NICE capability (on systems that support it), but only if the calling user is a member of the \fIpulse-rt\f1 group (see above). For all other users all capababilities are dropped immediately. The advantage of this solution is that the real-time priviliges are only granted to the PulseAudio daemon -- not to all the user's processes.
+Alternatively, the SUID root bit can be set for the PulseAudio binary. Then, the daemon will drop root privileges immediately on startup, however retain the CAP_NICE capability (on systems that support it), but only if the calling user is a member of the \fIpulse-rt\f1 group (see above). For all other users all capabilities are dropped immediately. The advantage of this solution is that the real-time privileges are only granted to the PulseAudio daemon -- not to all the user's processes.
 
-Alternatively, if the risk of locking up the machine is considered too big to enable real-time scheduling, high-priority scheduling can be enabled instead (i.e. negative nice level). This can be enabled by passing \fB--high-priority\f1 (see above) when starting PulseAudio and may also be enabled with the approriate option in \fIdaemon.conf\f1. Negative nice levels can only be enabled when the appropriate resource limit RLIMIT_NICE is set (see \fBsetrlimit(2)\f1 for more information), possibly configured in \fI/etc/security/limits.conf\f1. A resource limit of 31 (corresponding with nice level -11) is recommended.
+Alternatively, if the risk of locking up the machine is considered too big to enable real-time scheduling, high-priority scheduling can be enabled instead (i.e. negative nice level). This can be enabled by passing \fB--high-priority\f1 (see above) when starting PulseAudio and may also be enabled with the appropriate option in \fIdaemon.conf\f1. Negative nice levels can only be enabled when the appropriate resource limit RLIMIT_NICE is set (see \fBsetrlimit(2)\f1 for more information), possibly configured in \fI/etc/security/limits.conf\f1. A resource limit of 31 (corresponding with nice level -11) is recommended.
 .SH ENVIRONMENT VARIABLES
-The PulseAudio client libraries check for the existance of the following environment variables and change their local configuration accordingly:
+The PulseAudio client libraries check for the existence of the following environment variables and change their local configuration accordingly:
 
-\fI$PULSE_SERVER\f1: the server string specifying the server to connect to when a client asks for a sound server connection and doesn't explicitly ask for a specific server.
+\fI$PULSE_SERVER\f1: the server string specifying the server to connect to when a client asks for a sound server connection and doesn't explicitly ask for a specific server. The server string is a list of server addresses separated by whitespace which are tried in turn. A server address consists of an optional address type specifier (unix:, tcp:, tcp4:, tcp6:), followed by a path or host address. A host address may include an optional port number.
 
 \fI$PULSE_SINK\f1: the symbolic name of the sink to connect to when a client creates a playback stream and doesn't explicitly ask for a specific sink.
 
@@ -163,6 +163,8 @@ The PulseAudio client libraries check for the existance of the following environ
 \fI$PULSE_BINARY\f1: path of PulseAudio executable to run when server auto-spawning is used.
 
 \fI$PULSE_CLIENTCONFIG\f1: path of file that shall be read instead of \fIclient.conf\f1 (see above) for client configuration.
+
+\fI$PULSE_COOKIE\f1: path of file that contains the PulseAudio authentication cookie. Defaults to \fI~/.config/pulse/cookie\f1.
 
 These environment settings take precedence -- if set -- over the configuration settings from \fIclient.conf\f1 (see above).
 .SH AUTHORS

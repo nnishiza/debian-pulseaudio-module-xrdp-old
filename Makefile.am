@@ -29,10 +29,7 @@ EXTRA_DIST = \
 	PROTOCOL \
 	README \
 	todo \
-	vala/libpulse.deps \
-	vala/libpulse.vapi \
-	vala/libpulse-mainloop-glib.deps \
-	vala/libpulse-mainloop-glib.vapi \
+	shell-completion/pulseaudio-zsh-completion.zsh \
 	.gitignore \
 	doxygen/.gitignore \
 	m4/.gitignore \
@@ -48,7 +45,7 @@ MAINTAINERCLEANFILES =
 noinst_DATA =
 
 vapidir = $(datadir)/vala/vapi
-vapi_DATA = \
+dist_vapi_DATA = \
 		vala/libpulse.deps vala/libpulse.vapi \
 		vala/libpulse-mainloop-glib.deps vala/libpulse-mainloop-glib.vapi
 
@@ -62,6 +59,9 @@ endif
 
 cmakedir = $(libdir)/cmake/PulseAudio
 cmake_DATA = PulseAudioConfig.cmake PulseAudioConfigVersion.cmake
+
+bashcompletiondir=$(sysconfdir)/bash_completion.d
+dist_bashcompletion_DATA = shell-completion/pulseaudio-bash-completion.sh
 
 homepage: all dist doxygen
 	test -d $$HOME/homepage/private
@@ -85,6 +85,9 @@ fedora-snapshot: dist
 dist-hook:
 	echo $(VERSION) > $(distdir)/.tarball-version
 	echo $(VERSION) > $(distdir)/.version
+
+check-daemon:
+	$(MAKE) -C src check-daemon
 
 .PHONY: homepage distcleancheck doxygen
 

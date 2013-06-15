@@ -9,9 +9,9 @@ pulse-cli-syntax \- PulseAudio Command Line Interface Syntax
 \fI/home/arun/local/pulseaudio/etc/pulse/system.pa\fB
 \f1
 .SH DESCRIPTION
-PulseAudio provides a simple command line language used by configuration scripts and the pacmd interactive shell, and the modules module-cli and module-cli-protocol-{unix,tcp}. Empty lines and lines beginning with a hashmark (#) are silently ignored. Several commands are supported. 
+PulseAudio provides a simple command line language used by configuration scripts, the pacmd interactive shell, and the modules module-cli and module-cli-protocol-{unix,tcp}. Empty lines and lines beginning with a hashmark (#) are silently ignored. Several commands are supported. 
 
-Note that any boolean arguments can be given positively as '1', 'on' or any word starting with the letters 't' or 'y'. Likewise, negative values can be given as '0', 'off' or any word starting with the letters 'f' or 'n'. Case is ignored. 
+Note that any boolean arguments can be given positively as '1', 't', 'y', 'true', 'yes' or 'on'. Likewise, negative values can be given as '0', 'f', 'n', 'false', 'no' or 'off'. Case is ignored. 
 .SH GENERAL COMMANDS
 .TP
 \fBhelp\f1
@@ -43,8 +43,8 @@ A combination of all status commands described above (all three commands are syn
 \fBload-module\f1 \fIname\f1 [\fIarguments...\f1]
 Load a module specified by its name and arguments. For most modules it is OK to be loaded more than once.
 .TP
-\fBunload-module\f1 \fIindex\f1
-Unload a module specified by its index in the module list as returned by list-modules.
+\fBunload-module\f1 \fIindex|name\f1
+Unload a module, specified either by its index in the module list or its name.
 .TP
 \fBdescribe-module\f1 \fIname\f1
 Give information about a module specified by its name.
@@ -152,16 +152,13 @@ Debug: Show shared properties.
 \fBexit\f1
 Terminate the daemon. If you want to terminate a CLI connection ("log out") you might want to use ctrl+d
 .SH META COMMANDS
-In addition the the commands described above there a few meta directives supported by the command line interpreter. 
+In addition to the commands described above there are a few meta directives supported by the command line interpreter. 
 .TP
 \fB.include\f1 \fIfilename|folder\f1
 Executes the commands from the specified script file or in all of the *.pa file within the folder.
 .TP
 \fB.fail\f1 and \fB.nofail\f1
 Enable (resp. disable) that following failing commands will cancel the execution of the current script file. This is a ignored when used on the interactive command line.
-.TP
-\fB.verbose\f1 and \fB.noverbose\f1
-Enable (resp. disable) extra verbosity.
 .SH AUTHORS
 The PulseAudio Developers <pulseaudio-discuss (at) lists (dot) freedesktop (dot) org>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO

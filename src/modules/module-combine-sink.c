@@ -252,7 +252,11 @@ static void time_callback(pa_mainloop_api *a, pa_time_event *e, const struct tim
 
     adjust_rates(u);
 
-    pa_core_rttime_restart(u->core, e, pa_rtclock_now() + u->adjust_time);
+    if (pa_sink_get_state(u->sink) == PA_SINK_SUSPENDED) {
+        u->core->mainloop->time_free(e);
+        u->time_event = NULL;
+    } else
+        pa_core_rttime_restart(u->core, e, pa_rtclock_now() + u->adjust_time);
 }
 
 static void process_render_null(struct userdata *u, pa_usec_t now) {
@@ -546,6 +550,7 @@ static void sink_input_kill_cb(pa_sink_input *i) {
     pa_assert_se(o = i->userdata);
 
     pa_module_unload_request(o->userdata->module, TRUE);
+    pa_idxset_remove_by_data(o->userdata->outputs, o, NULL);
     output_free(o);
 }
 
@@ -602,6 +607,9 @@ static void unsuspend(struct userdata *u) {
     /* Let's resume */
     PA_IDXSET_FOREACH(o, u->outputs, idx)
         output_enable(o);
+
+    if (!u->time_event)
+        u->time_event = pa_core_rttime_new(u->core, pa_rtclock_now() + u->adjust_time, time_callback, u);
 
     pa_log_info("Resumed successfully...");
 }
@@ -1100,6 +1108,7 @@ static pa_hook_result_t sink_unlink_hook_cb(pa_core *c, pa_sink *s, struct userd
     if (!u->automatic)
         u->unlinked_slaves = pa_strlist_prepend(u->unlinked_slaves, s->name);
 
+    pa_idxset_remove_by_data(u->outputs, o, NULL);
     output_free(o);
 
     return PA_HOOK_OK;
@@ -1361,7 +1370,6 @@ fail:
 
 void pa__done(pa_module*m) {
     struct userdata *u;
-    struct output *o;
 
     pa_assert(m);
 
@@ -1379,12 +1387,8 @@ void pa__done(pa_module*m) {
     if (u->sink_state_changed_slot)
         pa_hook_slot_free(u->sink_state_changed_slot);
 
-    if (u->outputs) {
-        while ((o = pa_idxset_first(u->outputs, NULL)))
-            output_free(o);
-
-        pa_idxset_free(u->outputs, NULL, NULL);
-    }
+    if (u->outputs)
+        pa_idxset_free(u->outputs, (pa_free_cb_t) output_free);
 
     if (u->sink)
         pa_sink_unlink(u->sink);

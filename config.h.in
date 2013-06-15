@@ -560,9 +560,6 @@
 /* Location of pulseaudio binary */
 #undef PA_BINARY
 
-/* Location of uninstalled binaries */
-#undef PA_BUILDDIR
-
 /* The CFLAGS used during compilation */
 #undef PA_CFLAGS
 
