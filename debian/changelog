@@ -11,6 +11,7 @@ pulseaudio (4.0-1) UNRELEASED; urgency=low
       synchronisation on kFreeBSD. This fixes the opening of Gnome 3
       sessions on these architectures.
   * New upstream release (4.0)
+    - No longer uses deprecated udev symbols (Closes: #705520)
     - Various bugfixes breaking audio playbacks since 3.0 (Closes: #701591)
     - Drop patches applied upstream:
       + d/p/0001-Switch-the-default-resample-quality-to-1.patch
