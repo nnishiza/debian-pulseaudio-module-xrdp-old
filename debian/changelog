@@ -1,9 +1,17 @@
 pulseaudio (3.0-2) UNRELEASED; urgency=low
 
+  [ Luke Yelavich ]
   * Pulseaudio should depend on the binary version of libpulse0
     (Closes: #700693)
 
- -- Luke Yelavich <themuso@ubuntu.com>  Mon, 18 Feb 2013 09:56:02 +0000
+  [ Sjoerd Simons ]
+  * Acknowledge 2.0-6.1 NMU (Closes: #705435)
+    - debian/patches/kfreebsd_no_lock_and_threads_synchro.patch
+      Import patch from FreeBSD to disable threads locking and
+      synchronisation on kFreeBSD. This fixes the opening of Gnome 3
+      sessions on these architectures.
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 15 Jun 2013 11:46:03 +0200
 
 pulseaudio (3.0-1) experimental; urgency=low
 

@@ -5,3 +5,4 @@
 0005-build-Don-t-enable-BlueZ-if-libbluetooth-is-not-foun.patch
 0006-Call-change_cb-only-when-there-s-an-actual-change.patch
 0007-Initialize-monitor-s-busy-status-to-false-if-we-own-.patch
+debian/patches/kfreebsd_no_lock_and_threads_synchro.patch
