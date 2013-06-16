@@ -1,3 +1,9 @@
+pulseaudio (4.0-3) unstable; urgency=low
+
+  * Fix build on arm
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 16 Jun 2013 22:36:43 +0200
+
 pulseaudio (4.0-2) unstable; urgency=low
 
   * Only b-d on libsbc-dev on linux, it's only used when bluetooth support is
