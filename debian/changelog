@@ -1,4 +1,4 @@
-pulseaudio (4.0-1) UNRELEASED; urgency=low
+pulseaudio (4.0-1) unstable; urgency=low
 
   [ Luke Yelavich ]
   * Pulseaudio should depend on the binary version of libpulse0
@@ -24,7 +24,7 @@ pulseaudio (4.0-1) UNRELEASED; urgency=low
   * debian/control: Update build-depends
   * debian/libpulse0.symbols: Update
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 15 Jun 2013 12:38:09 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 16 Jun 2013 17:20:36 +0200
 
 pulseaudio (3.0-1) experimental; urgency=low
 
