@@ -1,3 +1,10 @@
+pulseaudio (4.0-2) UNRELEASED; urgency=low
+
+  * Only b-d on libsbc-dev on linux, it's only used when bluetooth support is
+    enabled which is linux only (Closes: #710029)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 16 Jun 2013 19:25:44 +0200
+
 pulseaudio (4.0-1) unstable; urgency=low
 
   [ Luke Yelavich ]
