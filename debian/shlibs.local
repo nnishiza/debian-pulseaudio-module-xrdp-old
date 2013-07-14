@@ -1,2 +1,2 @@
-libpulsecommon 2.99 libpulse0 (= ${binary:Version})
-libpulsecore 2.99 pulseaudio (= ${binary:Version})
+libpulsecommon 4.0 libpulse0 (= ${binary:Version})
+libpulsecore 4.0 pulseaudio (= ${binary:Version})

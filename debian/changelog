@@ -1,3 +1,9 @@
+pulseaudio (4.0-4) UNRELEASED; urgency=low
+
+  * debian/shlibs.local: Update to new soname versions (Closes: #714381)
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 14 Jul 2013 14:44:59 +0200
+
 pulseaudio (4.0-3) unstable; urgency=low
 
   * Fix build on arm
