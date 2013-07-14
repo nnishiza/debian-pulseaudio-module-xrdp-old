@@ -1,8 +1,11 @@
-pulseaudio (4.0-4) UNRELEASED; urgency=low
+pulseaudio (4.0-4) unstable; urgency=low
 
-  * debian/shlibs.local: Update to new soname versions (Closes: #714381)
+  * debian/shlibs.local: Update to new soname versions
+    (Closes: #714381, #712919)
+  * debian/rules: svolume moved to libpulse-common, adjust accordingly to fix
+    build on armel
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 14 Jul 2013 14:44:59 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 14 Jul 2013 15:09:04 +0200
 
 pulseaudio (4.0-3) unstable; urgency=low
 

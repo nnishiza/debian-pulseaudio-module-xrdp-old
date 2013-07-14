@@ -28,7 +28,7 @@ common-install-arch::
 
 common-configure-arch::
 ifneq (,$(findstring $(DEB_HOST_ARCH), "arm armel"))
-	make -C src libpulsecore_4.0_la-svolume_arm.lo CFLAGS+=-march=armv6
+	make -C src libpulsecommon_4.0_la-svolume_arm.lo CFLAGS+=-march=armv6
 endif
 
 common-binary-post-install-arch:: list-missing
