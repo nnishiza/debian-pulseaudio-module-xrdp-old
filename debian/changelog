@@ -1,3 +1,10 @@
+pulseaudio (4.0-5) UNRELEASED; urgency=low
+
+  * Add lintian overrides for rpaths in the modules to prive pulseaudio
+    library directories
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 19 Jul 2013 20:05:22 +0200
+
 pulseaudio (4.0-4) unstable; urgency=low
 
   * debian/shlibs.local: Update to new soname versions

@@ -1,3 +1,4 @@
 usr/lib/pulse-*/modules/libavahi-wrap.so
 usr/lib/pulse-*/modules/module-zeroconf-discover.so
 usr/lib/pulse-*/modules/module-zeroconf-publish.so
+usr/share/lintian/overrides/pulseaudio-module-zeroconf
