@@ -1,10 +1,10 @@
-pulseaudio (4.0-6) UNRELEASED; urgency=low
+pulseaudio (4.0-6) unstable; urgency=low
 
   * debian/patches/build-make-ARM-NEON-check-in-configure.ac-more-stric.patch
     + Added. Be more strict about the neon compiler flag ordering, fixes FBTS
       on ARM (Closes: #717444) (From upstream git)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 21 Jul 2013 11:32:36 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Sun, 21 Jul 2013 11:36:41 +0200
 
 pulseaudio (4.0-5) unstable; urgency=low
 
