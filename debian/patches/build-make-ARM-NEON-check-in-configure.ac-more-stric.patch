@@ -1,0 +1,48 @@
+From 0af05213be59e54934c79d7be77b5d2dfb6fe6e7 Mon Sep 17 00:00:00 2001
+From: Peter Meerwald <p.meerwald@bct-electronic.com>
+Date: Thu, 28 Mar 2013 14:46:48 +0100
+Subject: [PATCH] build: make ARM NEON check in configure.ac more strict
+
+the check for NEON so far only checked if -mfpu=neon is understood by the compiler,
+however, this is not enough:
+
+(i) #include <arm_neon.h> should be checked
+(ii) -mfpu=neon must be passed before CFLAGS because eventually the per-library CFLAGS
+for NEON code in src/Makefile.am are passed to the compiler before the global CFLAGS
+
+in case the build environment passes CFLAGS to configure and we try to set conflicting
+CFLAGS option, the former take precedence; CFLAGS cannot be overridden
+
+this does not fix
+http://lists.freedesktop.org/archives/pulseaudio-discuss/2012-December/015570.html
+but at least makes the build fail in configure (and not while compiling stuff)
+and gives better diagnostics
+
+Signed-off-by: Peter Meerwald <p.meerwald@bct-electronic.com>
+---
+ configure.ac | 6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -318,9 +318,9 @@
+     AS_HELP_STRING([--enable-neon-opt], [Enable NEON optimisations on ARM CPUs that support it]))
+ 
+ AS_IF([test "x$enable_neon_opt" != "xno"],
+-    [save_CFLAGS="$CFLAGS"; CFLAGS="$CFLAGS -mfpu=neon"
++    [save_CFLAGS="$CFLAGS"; CFLAGS="-mfpu=neon $CFLAGS"
+      AC_COMPILE_IFELSE(
+-        AC_LANG_PROGRAM([], []),
++        AC_LANG_PROGRAM([[#include <arm_neon.h>]], []),
+         [
+          HAVE_NEON=1
+          NEON_CFLAGS="-mfpu=neon"
+@@ -334,7 +334,7 @@
+     [HAVE_NEON=0])
+ 
+ AS_IF([test "x$enable_neon_opt" = "xyes" && test "x$HAVE_NEON" = "x0"],
+-      [AC_MSG_ERROR([*** Compiler does not support -mfpu=neon])])
++      [AC_MSG_ERROR([*** Compiler does not support -mfpu=neon or CFLAGS override -mfpu])])
+ 
+ AC_SUBST(HAVE_NEON)
+ AC_SUBST(NEON_CFLAGS)
