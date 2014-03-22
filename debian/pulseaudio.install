@@ -1,3 +1,4 @@
+etc/pulse/alsa-mixer
 etc/pulse/default.pa
 etc/pulse/system.pa
 etc/pulse/daemon.conf
