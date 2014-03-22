@@ -1,3 +1,4 @@
+0001-raop-sink-channels.patch
 0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
 kfreebsd_no_lock_and_threads_synchro.patch
 build-make-ARM-NEON-check-in-configure.ac-more-stric.patch
