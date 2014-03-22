@@ -12,3 +12,15 @@ that may be overly CPU intensive. If PulseAudio's CPU usage is unacceptable on
 your hardware, please change the resample-method option in
 /etc/pulse/daemon.conf to either src-linear or trivial. See daemon.conf for
 more details.
+
+Configuration for chroot usage
+==============================
+
+If you want to use PulseAudio from within a chroot, you need to mount
+the host /run/udev and /run/dbus folders for the PulseAudio automatic
+soundcards feature to work.  Please see the following bug report for a
+complete explanation:
+
+  https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=649884
+
+ -- Luca Capello <luca@pca.it>, Thu, 24 Nov 2011 16:07:04 +0100
