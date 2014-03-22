@@ -5,6 +5,8 @@ Maintainer: Pulseaudio maintenance team <pkg-pulseaudio-devel@lists.alioth.debia
 Uploaders: Sjoerd Simons <sjoerd@debian.org>, 
     Martin-Éric Racine <martin-eric.racine@iki.fi>,
     Balint Reczey <balint@balintreczey.hu>
+# The following packages can be omitted for bootstrapping (DEB_BUILD_PROFILES=stage1):
+#  libbluetooth-dev
 Build-Depends: debhelper (>= 8.1.3),
     cdbs (>= 0.4.93),
     dh-autoreconf,

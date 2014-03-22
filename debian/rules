@@ -5,6 +5,13 @@ include /usr/share/cdbs/1/class/autotools.mk
 include /usr/share/cdbs/1/rules/utils.mk
 include /usr/share/cdbs/1/rules/autoreconf.mk
 
+#Don't build all the modules packages when bootstrapping
+ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
+  $(warning Bootstrap profile build)
+  export DH_OPTIONS += -Npulseaudio-module-bluetooth -Npulseaudio-module-bluetooth-dbg
+  DEB_CONFIGURE_EXTRA_FLAGS += --disable-bluez
+endif
+
 common-build-arch::
 	grep -v -e alsa -e evdev -e udev -e share/pulseaudio -e systemd \
 	  debian/pulseaudio.install > debian/pulseaudio.install.kfreebsd-i386
@@ -55,6 +62,11 @@ update-patch-series:
 DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal \
   --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
   --with-module-dir=\$${prefix}/lib/pulse-$(DEB_UPSTREAM_VERSION)/modules
+
+ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
+  DEB_CONFIGURE_EXTRA_FLAGS += --disable-bluez
+endif
+
 
 DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-$(DEB_UPSTREAM_VERSION)/modules
 
