@@ -24,18 +24,35 @@ _devices() {
         esac
 
     elif [[ $service == (pacat|paplay|parecord) ]]; then
-        if [[ $words == *-r[[:space:]]* ]]; then
-            cmd=('sources')
-        elif [[ $words == *-p[[:space:]]* ]]; then
-            cmd=('sinks')
-        else
-            cmd=('sinks' 'sources')
-        fi
+        case $words[$((CURRENT))] in
+            --device=*)
+                if [[ $words == *(--playback|-p)[[:space:]]* ||
+                    $service == paplay ]]; then
+                    cmd=('sinks')
+                elif [[ $words == *(--record|-r)[[:space:]]* ||
+                    $service == parecord ]]; then
+                    cmd=('sources')
+                else
+                    cmd=('sinks' 'sources')
+                fi
+                ;;
+            --monitor-stream=*) cmd=('sink-inputs');;
+        esac
 
-    elif [[ $service == paplay ]]; then
-        cmd=('sinks')
-    elif [[ $service == parecord ]]; then
-        cmd=('sources')
+        case $words[$((CURRENT - 1))] in
+            -d)
+                if [[ $words == *(--playback|-p)[[:space:]]* ||
+                    $service == paplay ]]; then
+                    cmd=('sinks')
+                elif [[ $words == *(--record|-r)[[:space:]]* ||
+                    $service == parecord ]]; then
+                    cmd=('sources')
+                else
+                    cmd=('sinks' 'sources')
+                fi
+                ;;
+        esac
+
     fi
 
     for (( i = 0; i < ${#words[@]}; i++ )) do
@@ -329,6 +346,7 @@ _pacmd_completion() {
         _pacmd_commands=(
             'help: show help and exit'
             'list-modules: list modules'
+            'list-cards: list cards'
             'list-sinks: list sinks'
             'list-sources: list sources'
             'list-clients: list clients'
@@ -451,6 +469,7 @@ _pacat_completion() {
         {-p,--playback}'[create a connection for playback]' \
         {-s,--server=}'[name of server to connect to]:host:_hosts' \
         {-d,--device=}'[name of sink/source to connect to]:device:_devices' \
+        '--monitor-stream=[index of the sink input to record from]:device:_devices' \
         {-n,--client-name=}'[client name to use]:name' \
         '--stream-name=[how to call this stream]:name' \
         '--volume=[initial volume to use]:volume' \

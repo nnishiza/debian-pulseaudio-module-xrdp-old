@@ -107,7 +107,7 @@ static const char *command_names[PA_COMMAND_MAX] = {
 
     [PA_COMMAND_KILL_CLIENT] = "KILL_CLIENT",
     [PA_COMMAND_KILL_SINK_INPUT] = "KILL_SINK_INPUT",
-    [PA_COMMAND_KILL_SOURCE_OUTPUT] = "SOURCE_OUTPUT",
+    [PA_COMMAND_KILL_SOURCE_OUTPUT] = "KILL_SOURCE_OUTPUT",
 
     [PA_COMMAND_LOAD_MODULE] = "LOAD_MODULE",
     [PA_COMMAND_UNLOAD_MODULE] = "UNLOAD_MODULE",
@@ -157,7 +157,7 @@ static const char *command_names[PA_COMMAND_MAX] = {
 
     /* Supported since protocol v13 (0.9.11) */
     [PA_COMMAND_UPDATE_RECORD_STREAM_PROPLIST] = "UPDATE_RECORD_STREAM_PROPLIST",
-    [PA_COMMAND_UPDATE_PLAYBACK_STREAM_PROPLIST] = "UPDATE_RECORD_STREAM_PROPLIST",
+    [PA_COMMAND_UPDATE_PLAYBACK_STREAM_PROPLIST] = "UPDATE_PLAYBACK_STREAM_PROPLIST",
     [PA_COMMAND_UPDATE_CLIENT_PROPLIST] = "UPDATE_CLIENT_PROPLIST",
     [PA_COMMAND_REMOVE_RECORD_STREAM_PROPLIST] = "REMOVE_RECORD_STREAM_PROPLIST",
     [PA_COMMAND_REMOVE_PLAYBACK_STREAM_PROPLIST] = "REMOVE_PLAYBACK_STREAM_PROPLIST",
@@ -174,7 +174,7 @@ static const char *command_names[PA_COMMAND_MAX] = {
     [PA_COMMAND_GET_CARD_INFO_LIST] = "GET_CARD_INFO_LIST",
     [PA_COMMAND_SET_CARD_PROFILE] = "SET_CARD_PROFILE",
 
-    [PA_COMMAND_CLIENT_EVENT] = "GET_CLIENT_EVENT",
+    [PA_COMMAND_CLIENT_EVENT] = "CLIENT_EVENT",
     [PA_COMMAND_PLAYBACK_STREAM_EVENT] = "PLAYBACK_STREAM_EVENT",
     [PA_COMMAND_RECORD_STREAM_EVENT] = "RECORD_STREAM_EVENT",
 
@@ -215,7 +215,7 @@ struct pa_pdispatch {
     pa_pdispatch_drain_cb_t drain_callback;
     void *drain_userdata;
     const pa_creds *creds;
-    pa_bool_t use_rtclock;
+    bool use_rtclock;
 };
 
 static void reply_info_free(struct reply_info *r) {
@@ -232,7 +232,7 @@ static void reply_info_free(struct reply_info *r) {
         pa_xfree(r);
 }
 
-pa_pdispatch* pa_pdispatch_new(pa_mainloop_api *mainloop, pa_bool_t use_rtclock, const pa_pdispatch_cb_t *table, unsigned entries) {
+pa_pdispatch* pa_pdispatch_new(pa_mainloop_api *mainloop, bool use_rtclock, const pa_pdispatch_cb_t *table, unsigned entries) {
     pa_pdispatch *pd;
 
     pa_assert(mainloop);

@@ -40,7 +40,6 @@
 #include <pulsecore/native-common.h>
 #include <pulsecore/x11prop.h>
 
-
 int main(int argc, char *argv[]) {
     const char *dname = NULL, *sink = NULL, *source = NULL, *server = NULL, *cookie_file = PA_NATIVE_COOKIE_FILE;
     int c, ret = 1, screen = 0;
@@ -195,7 +194,7 @@ int main(int argc, char *argv[]) {
 
             pa_client_conf_free(conf);
 
-            if (pa_authkey_load_auto(cookie_file, TRUE, cookie, sizeof(cookie)) < 0) {
+            if (pa_authkey_load_auto(cookie_file, true, cookie, sizeof(cookie)) < 0) {
                 fprintf(stderr, _("Failed to load cookie data\n"));
                 goto finish;
             }
