@@ -50,12 +50,12 @@ Package: pulseaudio
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
-  lsb-base (>= 3.2-13), consolekit,
+  lsb-base (>= 3.2-13)
   udev (>= 143) [linux-any],
   libasound2-plugins [linux-any],
   libpulse0 (= ${binary:Version})
 Breaks: libltdl3 (<< 1.5.24-1)
-Recommends: pulseaudio-module-x11, gstreamer0.10-pulseaudio, rtkit
+Recommends: pulseaudio-module-x11, gstreamer0.10-pulseaudio, rtkit, consolekit
 Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman, paprefs
 Description: PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
