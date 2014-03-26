@@ -27,6 +27,11 @@ case "$1" in
     if ! getent group pulse-access >/dev/null; then
       addgroup --quiet --system pulse-access
     fi
+    # fix upgrade not creating the symlink due to existing dir
+    if test -d /usr/share/pulseaudio/alsa-mixer; then
+	rm -r /usr/share/pulseaudio/alsa-mixer
+	ln -s /etc/pulse/alsa-mixer /usr/share/pulseaudio/alsa-mixer
+    fi
   ;;
   abort-upgrade|abort-remove|abort-deconfigure)
   ;;
