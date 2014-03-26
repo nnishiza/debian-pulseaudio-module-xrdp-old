@@ -50,7 +50,7 @@ Package: pulseaudio
 Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
-  lsb-base (>= 3.2-13)
+  lsb-base (>= 3.2-13),
   udev (>= 143) [linux-any],
   libasound2-plugins [linux-any],
   libpulse0 (= ${binary:Version})
