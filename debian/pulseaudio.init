@@ -62,8 +62,8 @@ case "$1" in
 	restart|force-reload)
 		if [ -s $PIDFILE ] && kill -0 $(cat $PIDFILE) >/dev/null 2>&1; then
 			pulseaudio_stop
-			pulseaudio_start
 		fi
+		pulseaudio_start
 		;;
 	force-stop)
 		pulseaudio_stop
