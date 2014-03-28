@@ -1,4 +1,4 @@
-pulseaudio (5.0-1) UNRELEASED; urgency=medium
+pulseaudio (5.0-1) unstable; urgency=medium
 
   [ Balint Reczey ]
   * Add myself to uploaders
@@ -53,7 +53,7 @@ pulseaudio (5.0-1) UNRELEASED; urgency=medium
   * debian/control: Drop recommends on gstreamer0.10-pulseaudio as
     gstreamer0.10 has been obsolete for some time
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sat, 29 Mar 2014 00:11:43 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 29 Mar 2014 00:20:59 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 
