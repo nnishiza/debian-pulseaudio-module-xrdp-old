@@ -27,7 +27,12 @@ pulseaudio (5.0-1) UNRELEASED; urgency=medium
   * Recommend consolekit instead of depending on it (Closes: #611491)
   * Fix typo in debian/control
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 21:11:21 +0100
+  [ Sjoerd Simons ]
+  * Refresh patches:
+    + d/p/0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
+    + d/p/kfreebsd_no_lock_and_threads_synchro.patch
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 21:30:35 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 

@@ -7,7 +7,7 @@ Last-Update: 2013-04-24
 
 --- a/src/daemon/main.c
 +++ b/src/daemon/main.c
-@@ -737,6 +737,10 @@
+@@ -743,6 +743,10 @@
           * first take the autospawn lock to make things
           * synchronous. */
  
@@ -18,10 +18,10 @@ Last-Update: 2013-04-24
          if ((autospawn_fd = pa_autospawn_lock_init()) < 0) {
              pa_log("Failed to initialize autospawn lock");
              goto finish;
-@@ -748,6 +752,7 @@
+@@ -754,6 +758,7 @@
          }
  
-         autospawn_locked = TRUE;
+         autospawn_locked = true;
 +#endif
      }
  

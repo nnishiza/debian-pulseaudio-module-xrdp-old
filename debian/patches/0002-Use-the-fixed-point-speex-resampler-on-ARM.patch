@@ -28,42 +28,43 @@ it's of equal performance on some machines, but slower on others.
        resampler to use.</p>
 --- a/src/daemon/daemon.conf.in
 +++ b/src/daemon/daemon.conf.in
-@@ -54,7 +54,9 @@
+@@ -54,6 +54,8 @@
  ; log-time = no
  ; log-backtrace = 0
  
--; resample-method = speex-float-3
 +# resample-method defaults to  speex-float-1 on most architectures,
 +# speex-fixed-1 on ARM
-+; resample-method = speex-float-1
+ ; resample-method = speex-float-1
  ; enable-remixing = yes
  ; enable-lfe-remixing = no
- 
 --- a/src/pulsecore/core.c
 +++ b/src/pulsecore/core.c
 @@ -141,7 +141,11 @@
-     c->disable_remixing = FALSE;
-     c->disable_lfe_remixing = FALSE;
-     c->deferred_volume = TRUE;
+     c->disable_remixing = false;
+     c->disable_lfe_remixing = false;
+     c->deferred_volume = true;
+-    c->resample_method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 1;
 +#ifdef __arm__
 +    c->resample_method = PA_RESAMPLER_SPEEX_FIXED_BASE + 1;
 +#else
-     c->resample_method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 1;
++   c->resample_method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 1;
 +#endif
  
      for (j = 0; j < PA_CORE_HOOK_MAX; j++)
          pa_hook_init(&c->hooks[j], c);
 --- a/src/pulsecore/resampler.c
 +++ b/src/pulsecore/resampler.c
-@@ -236,7 +236,11 @@
+@@ -187,8 +187,13 @@
+ static pa_resample_method_t choose_auto_resampler(pa_resample_flags_t flags) {
+     pa_resample_method_t method;
  
-     if (method == PA_RESAMPLER_AUTO) {
- #ifdef HAVE_SPEEX
 +#  ifdef __arm__
++    if (pa_resample_method_supported(PA_RESAMPLER_SPEEX_FIXED_BASE + 1))
 +        method = PA_RESAMPLER_SPEEX_FIXED_BASE + 1;
-+#  else
++#else
+     if (pa_resample_method_supported(PA_RESAMPLER_SPEEX_FLOAT_BASE + 1))
          method = PA_RESAMPLER_SPEEX_FLOAT_BASE + 1;
-+#  endif
- #else
-         if (flags & PA_RESAMPLER_VARIABLE_RATE)
-             method = PA_RESAMPLER_TRIVIAL;
++#endif
+     else if (flags & PA_RESAMPLER_VARIABLE_RATE)
+         method = PA_RESAMPLER_TRIVIAL;
+     else
