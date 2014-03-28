@@ -1,8 +1,33 @@
-pulseaudio (4.0-7) UNRELEASED; urgency=low
+pulseaudio (5.0-1) UNRELEASED; urgency=medium
 
-  * Start working on new upload
+  [ Balint Reczey ]
+  * Add myself to uploaders
 
- -- Balint Reczey <balint@balintreczey.hu>  Fri, 21 Mar 2014 21:39:44 -0100
+  [ Wookey ]
+  * Add stage1 DEB_BUILD_PROFILES initial bootstrap support (Closes: #735485)
+
+  [ Jonas Eriksson ]
+  * Use channel 2 for raop sink (Closes: #658733)
+
+  [ Alexander Kurtz ]
+  * Exit PA with X session closing when PA is started by the session (Closes: 594001)
+
+  [ Balint Reczey ]
+  * Don't pass --disable-hal to ./configure (Closes: #729494)
+
+  [ Justin B Rye ]
+  * Make pulseaudio-utils suggest pulseaudio
+
+  [ Luca Capello ]
+  * Explain how to set up PulseAudio in a chroot (Closes: #649884)
+
+  [ Balint Reczey ]
+  * Imported Upstream version 5.0
+  * Make PA init script start PA unconditionally upon restart (Closes: #738143)
+  * Recommend consolekit instead of depending on it (Closes: #611491)
+  * Fix typo in debian/control
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 21:11:21 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 
@@ -10,7 +35,7 @@ pulseaudio (4.0-6) unstable; urgency=low
     + Added. Be more strict about the neon compiler flag ordering, fixes FBTS
       on ARM (Closes: #717444) (From upstream git)
 
- -- Sjoerd Simons <sjoerd@debian.org>  Sun, 21 Jul 2013 11:36:41 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 21:09:12 +0100
 
 pulseaudio (4.0-5) unstable; urgency=low
 
