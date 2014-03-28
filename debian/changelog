@@ -45,8 +45,10 @@ pulseaudio (5.0-1) UNRELEASED; urgency=medium
     + module-role-ducking
     + module-tunnel-{sink,source}-new
     + module-remap-source
+  * debian/control: Add build-dependency on libsystemd-journal-dev to enable
+    systemd journal support
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 22:50:54 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 23:35:24 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 
