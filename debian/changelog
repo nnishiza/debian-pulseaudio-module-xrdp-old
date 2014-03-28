@@ -33,8 +33,10 @@ pulseaudio (5.0-1) UNRELEASED; urgency=medium
     + d/p/kfreebsd_no_lock_and_threads_synchro.patch
   * d/p/build-make-ARM-NEON-check-in-configure.ac-more-stric.patch:
     + Dropped, fixed upstream
+  * Drop versioned dependency on libjack-dev (new enough version was available
+    in squeeze) to allow libjack-jackd2-dev to furfill the dependency.
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 21:30:35 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 21:55:40 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 
