@@ -36,8 +36,11 @@ pulseaudio (5.0-1) UNRELEASED; urgency=medium
   * Drop versioned dependency on libjack-dev (new enough version was available
     in squeeze) to allow libjack-jackd2-dev to furfill the dependency.
   * debian/rules: Use intltoolize when running autoreconf
+  * debian/pulseaudio-module-bluetooth.install:
+    + Update for new bluetooth module naming
+    + No longer install the proximity module as it has been removed upstream
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 22:04:29 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 22:28:10 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 
