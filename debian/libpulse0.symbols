@@ -34,6 +34,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_channel_position_from_string@PULSE_0 0.99.1
  pa_channel_position_to_pretty_string@PULSE_0 0.99.1
  pa_channel_position_to_string@PULSE_0 0.99.1
+ pa_channels_valid@PULSE_0 5.0
  pa_context_add_autoload@PULSE_0 0.99.1
  pa_context_connect@PULSE_0 0.99.1
  pa_context_disconnect@PULSE_0 0.99.1
@@ -75,6 +76,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_context_kill_client@PULSE_0 0.99.1
  pa_context_kill_sink_input@PULSE_0 0.99.1
  pa_context_kill_source_output@PULSE_0 0.99.1
+ pa_context_load_cookie_from_file@PULSE_0 5.0
  pa_context_load_module@PULSE_0 0.99.1
  pa_context_move_sink_input_by_index@PULSE_0 0.99.1
  pa_context_move_sink_input_by_name@PULSE_0 0.99.1
@@ -151,6 +153,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_cvolume_set_fade@PULSE_0 0.99.1
  pa_cvolume_set_position@PULSE_0 0.99.1
  pa_cvolume_snprint@PULSE_0 0.99.1
+ pa_cvolume_snprint_verbose@PULSE_0 5.0
  pa_cvolume_valid@PULSE_0 0.99.1
  pa_encoding_to_string@PULSE_0 0.99.4
  pa_ext_device_manager_delete@PULSE_0 0.99.1
@@ -255,6 +258,8 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_sample_format_is_be@PULSE_0 0.99.1
  pa_sample_format_is_le@PULSE_0 0.99.1
  pa_sample_format_to_string@PULSE_0 0.99.1
+ pa_sample_format_valid@PULSE_0 5.0
+ pa_sample_rate_valid@PULSE_0 5.0
  pa_sample_size@PULSE_0 0.99.1
  pa_sample_size_of_format@PULSE_0 0.99.1
  pa_sample_spec_equal@PULSE_0 0.99.1
@@ -342,6 +347,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_threaded_mainloop_in_thread@PULSE_0 0.99.1
  pa_threaded_mainloop_lock@PULSE_0 0.99.1
  pa_threaded_mainloop_new@PULSE_0 0.99.1
+ pa_threaded_mainloop_set_name@PULSE_0 5.0
  pa_threaded_mainloop_signal@PULSE_0 0.99.1
  pa_threaded_mainloop_start@PULSE_0 0.99.1
  pa_threaded_mainloop_stop@PULSE_0 0.99.1
@@ -359,6 +365,7 @@ libpulse.so.0 libpulse0 #MINVER#
  pa_utf8_to_locale@PULSE_0 0.99.1
  pa_utf8_valid@PULSE_0 0.99.1
  pa_volume_snprint@PULSE_0 0.99.1
+ pa_volume_snprint_verbose@PULSE_0 5.0
  pa_xfree@PULSE_0 0.99.1
  pa_xmalloc0@PULSE_0 0.99.1
  pa_xmalloc@PULSE_0 0.99.1
