@@ -40,8 +40,9 @@ pulseaudio (5.0-1) UNRELEASED; urgency=medium
     + Update for new bluetooth module naming
     + No longer install the proximity module as it has been removed upstream
   * debian/libpulse0.symbols: Updated
+  * debian/shlibs.local, debian/rules: Update to private library version to 5
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 22:40:50 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 22:44:10 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 
