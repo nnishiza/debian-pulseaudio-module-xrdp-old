@@ -47,8 +47,13 @@ pulseaudio (5.0-1) UNRELEASED; urgency=medium
     + module-remap-source
   * debian/control: Add build-dependency on libsystemd-journal-dev to enable
     systemd journal support
+  * debian/control: Drop even the recommends on consolekit as every desktop
+    session where it's useful will either have a dependency on consolekit or
+    systemd already.
+  * debian/control: Drop recommends on gstreamer0.10-pulseaudio as
+    gstreamer0.10 has been obsolete for some time
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 28 Mar 2014 23:35:24 +0100
+ -- Sjoerd Simons <sjoerd@debian.org>  Sat, 29 Mar 2014 00:11:43 +0100
 
 pulseaudio (4.0-6) unstable; urgency=low
 
