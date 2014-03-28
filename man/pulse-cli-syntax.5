@@ -4,9 +4,9 @@ pulse-cli-syntax \- PulseAudio Command Line Interface Syntax
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/default.pa\fB
 
-\fI/home/arun/local/pulseaudio/etc/pulse/default.pa\fB
+\fI/etc/pulse/default.pa\fB
 
-\fI/home/arun/local/pulseaudio/etc/pulse/system.pa\fB
+\fI/etc/pulse/system.pa\fB
 \f1
 .SH DESCRIPTION
 PulseAudio provides a simple command line language used by configuration scripts, the pacmd interactive shell, and the modules module-cli and module-cli-protocol-{unix,tcp}. Empty lines and lines beginning with a hashmark (#) are silently ignored. Several commands are supported. 
@@ -128,7 +128,7 @@ Change the log level.
 Show source code location in log messages.
 .TP
 \fBset-log-target\f1 \fItarget\f1
-Change the log target (null, auto, syslog, stderr, file:PATH).
+Change the log target (null, auto, journal, syslog, stderr, file:PATH, newfile:PATH).
 .TP
 \fBset-log-time\f1 \fIboolean\f1
 Show timestamps in log messages.

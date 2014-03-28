@@ -71,6 +71,9 @@ Try to acquire a real-time scheduling for PulseAudio's I/O threads. This will on
 \fB--disallow-module-loading\f1\fI[=BOOL]\f1
 Disallow module loading after startup. This is a security feature since it disallows additional module loading during runtime and on user request. It is highly recommended when \fI--system\f1 is used (see above). Note however, that this breaks certain features like automatic module loading on hot plug.
 .TP
+\fB--disallow-exit\f1\fI[=BOOL]\f1
+Disallow user requested exit
+.TP
 \fB--exit-idle-time\f1\fI=SECS\f1
 Terminate the daemon when idle and the specified number of seconds passed.
 .TP
@@ -80,11 +83,11 @@ Unload autoloaded samples from the cache when the haven't been used for the spec
 \fB--log-level\f1\fI[=LEVEL]\f1
 If an argument is passed, set the log level to the specified value, otherwise increase the configured verbosity level by one. The log levels are numerical from 0 to 4, corresponding to \fIerror\f1, \fIwarn\f1, \fInotice\f1, \fIinfo\f1, \fIdebug\f1. Default log level is \fInotice\f1, i.e. all log messages with lower log levels are printed: \fIerror\f1, \fIwarn\f1, \fInotice\f1.
 .TP
-\fB-v\f1
+\fB-v | --verbose\f1
 Increase the configured verbosity level by one (see \fB--log-level\f1 above). Specify multiple times to increase log level multiple times.
 .TP
-\fB--log-target\f1\fI={auto,syslog,stderr,file:PATH,newfile:PATH}\f1
-Specify the log target. If set to \fIauto\f1 (which is the default), then logging is directed to syslog when \fB--daemonize\f1 is passed, otherwise to STDERR. If set to \fIfile:PATH\f1, logging is directed to the file indicated by PATH. \fInewfile:PATH\f1 is otherwise the same as file:PATH, but existing files are never overwritten. If the specified file already exists, a suffix is added to the file name to avoid overwriting.
+\fB--log-target\f1\fI={auto,syslog,journal,stderr,file:PATH,newfile:PATH}\f1
+Specify the log target. If set to \fIauto\f1 (which is the default), then logging is directed to syslog when \fB--daemonize\f1 is passed, otherwise to STDERR. If set to \fIjournal\f1 logging is directed to the systemd journal. If set to \fIfile:PATH\f1, logging is directed to the file indicated by PATH. \fInewfile:PATH\f1 is otherwise the same as file:PATH, but existing files are never overwritten. If the specified file already exists, a suffix is added to the file name to avoid overwriting.
 .TP
 \fB--log-meta\f1\fI[=BOOL]\f1
 Show source code location in log messages.
@@ -95,7 +98,7 @@ Show timestamps in log messages.
 \fB--log-backtrace\f1\fI=FRAMES\f1
 When FRAMES is greater than 0, log for each message a stack trace up to the number of specified stack frames.
 .TP
-\fB--p | --dl-search-path\f1\fI=PATH\f1
+\fB-p | --dl-search-path\f1\fI=PATH\f1
 Set the search path for dynamic shared objects (plugins).
 .TP
 \fB--resample-method\f1\fI=METHOD\f1
@@ -122,11 +125,11 @@ Open a command interpreter on STDIN/STDOUT after startup. This may be used to co
 \fB-n\f1
 Don't load default script file \fIdefault.pa\f1 (see below) on startup. Useful in conjunction with \fB-C\f1 or \fB--file\f1.
 .SH FILES
-\fI~/.config/pulse/daemon.conf\f1, \fI/home/arun/local/pulseaudio/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
+\fI~/.config/pulse/daemon.conf\f1, \fI/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
 
-\fI~/.config/pulse/default.pa\f1, \fI/home/arun/local/pulseaudio/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
+\fI~/.config/pulse/default.pa\f1, \fI/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
 
-\fI~/.config/pulse/client.conf\f1, \fI/home/arun/local/pulseaudio/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
+\fI~/.config/pulse/client.conf\f1, \fI/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
 .SH SIGNALS
 \fISIGINT, SIGTERM\f1: the PulseAudio daemon will shut down (Same as \fB--kill\f1).
 

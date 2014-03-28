@@ -65,10 +65,10 @@ static uint32_t
     source_output_idx = PA_INVALID_INDEX,
     sink_idx = PA_INVALID_INDEX;
 
-static pa_bool_t short_list_format = FALSE;
+static bool short_list_format = false;
 static uint32_t module_index;
 static int32_t latency_offset;
-static pa_bool_t suspend;
+static bool suspend;
 static pa_volume_t volume;
 static enum volume_flags {
     VOL_UINT     = 0,
@@ -95,7 +95,7 @@ static pa_channel_map channel_map;
 static size_t sample_length = 0;
 static int actions = 1;
 
-static pa_bool_t nl = FALSE;
+static bool nl = false;
 
 static enum {
     NONE,
@@ -223,8 +223,7 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
     complete_action();
 }
 
-static const char* get_available_str_ynonly(int available)
-{
+static const char* get_available_str_ynonly(int available) {
     switch (available) {
         case PA_PORT_AVAILABLE_YES: return ", available";
         case PA_PORT_AVAILABLE_NO: return ", not available";
@@ -243,10 +242,8 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
 
     char
         s[PA_SAMPLE_SPEC_SNPRINT_MAX],
-        cv[PA_CVOLUME_SNPRINT_MAX],
-        cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX],
-        v[PA_VOLUME_SNPRINT_MAX],
-        vdb[PA_SW_VOLUME_SNPRINT_DB_MAX],
+        cv[PA_CVOLUME_SNPRINT_VERBOSE_MAX],
+        v[PA_VOLUME_SNPRINT_VERBOSE_MAX],
         cm[PA_CHANNEL_MAP_SNPRINT_MAX],
         f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
@@ -266,7 +263,7 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
+    nl = true;
 
     if (short_list_format) {
         printf("%u\t%s\t%s\t%s\t%s\n",
@@ -287,9 +284,9 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
              "\tChannel Map: %s\n"
              "\tOwner Module: %u\n"
              "\tMute: %s\n"
-             "\tVolume: %s%s%s\n"
+             "\tVolume: %s\n"
              "\t        balance %0.2f\n"
-             "\tBase Volume: %s%s%s\n"
+             "\tBase Volume: %s\n"
              "\tMonitor Source: %s\n"
              "\tLatency: %0.0f usec, configured %0.0f usec\n"
              "\tFlags: %s%s%s%s%s%s%s\n"
@@ -303,13 +300,9 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            i->owner_module,
            pa_yes_no(i->mute),
-           pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           i->flags & PA_SINK_DECIBEL_VOLUME ? "\n\t        " : "",
-           i->flags & PA_SINK_DECIBEL_VOLUME ? pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume) : "",
+           pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, i->flags & PA_SINK_DECIBEL_VOLUME),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
-           pa_volume_snprint(v, sizeof(v), i->base_volume),
-           i->flags & PA_SINK_DECIBEL_VOLUME ? "\n\t             " : "",
-           i->flags & PA_SINK_DECIBEL_VOLUME ? pa_sw_volume_snprint_dB(vdb, sizeof(vdb), i->base_volume) : "",
+           pa_volume_snprint_verbose(v, sizeof(v), i->base_volume, i->flags & PA_SINK_DECIBEL_VOLUME),
            pa_strnull(i->monitor_source_name),
            (double) i->latency, (double) i->configured_latency,
            i->flags & PA_SINK_HARDWARE ? "HARDWARE " : "",
@@ -356,10 +349,8 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
 
     char
         s[PA_SAMPLE_SPEC_SNPRINT_MAX],
-        cv[PA_CVOLUME_SNPRINT_MAX],
-        cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX],
-        v[PA_VOLUME_SNPRINT_MAX],
-        vdb[PA_SW_VOLUME_SNPRINT_DB_MAX],
+        cv[PA_CVOLUME_SNPRINT_VERBOSE_MAX],
+        v[PA_VOLUME_SNPRINT_VERBOSE_MAX],
         cm[PA_CHANNEL_MAP_SNPRINT_MAX],
         f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
@@ -379,7 +370,7 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
+    nl = true;
 
     if (short_list_format) {
         printf("%u\t%s\t%s\t%s\t%s\n",
@@ -400,9 +391,9 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
              "\tChannel Map: %s\n"
              "\tOwner Module: %u\n"
              "\tMute: %s\n"
-             "\tVolume: %s%s%s\n"
+             "\tVolume: %s\n"
              "\t        balance %0.2f\n"
-             "\tBase Volume: %s%s%s\n"
+             "\tBase Volume: %s\n"
              "\tMonitor of Sink: %s\n"
              "\tLatency: %0.0f usec, configured %0.0f usec\n"
              "\tFlags: %s%s%s%s%s%s\n"
@@ -416,13 +407,9 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            i->owner_module,
            pa_yes_no(i->mute),
-           pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           i->flags & PA_SOURCE_DECIBEL_VOLUME ? "\n\t        " : "",
-           i->flags & PA_SOURCE_DECIBEL_VOLUME ? pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume) : "",
+           pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, i->flags & PA_SOURCE_DECIBEL_VOLUME),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
-           pa_volume_snprint(v, sizeof(v), i->base_volume),
-           i->flags & PA_SOURCE_DECIBEL_VOLUME ? "\n\t             " : "",
-           i->flags & PA_SOURCE_DECIBEL_VOLUME ? pa_sw_volume_snprint_dB(vdb, sizeof(vdb), i->base_volume) : "",
+           pa_volume_snprint_verbose(v, sizeof(v), i->base_volume, i->flags & PA_SOURCE_DECIBEL_VOLUME),
            i->monitor_of_sink_name ? i->monitor_of_sink_name : _("n/a"),
            (double) i->latency, (double) i->configured_latency,
            i->flags & PA_SOURCE_HARDWARE ? "HARDWARE " : "",
@@ -476,7 +463,7 @@ static void get_module_info_callback(pa_context *c, const pa_module_info *i, int
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
+    nl = true;
 
     pa_snprintf(t, sizeof(t), "%u", i->n_used);
 
@@ -518,7 +505,7 @@ static void get_client_info_callback(pa_context *c, const pa_client_info *i, int
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
+    nl = true;
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
 
@@ -561,7 +548,7 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
+    nl = true;
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
 
@@ -583,12 +570,13 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
 
     pa_xfree(pl);
 
-    if (i->profiles) {
-        pa_card_profile_info *p;
+    if (i->n_profiles > 0) {
+        pa_card_profile_info2 **p;
 
         printf(_("\tProfiles:\n"));
-        for (p = i->profiles; p->name; p++)
-            printf("\t\t%s: %s (sinks: %u, sources: %u, priority. %u)\n", p->name, p->description, p->n_sinks, p->n_sources, p->priority);
+        for (p = i->profiles2; *p; p++)
+            printf("\t\t%s: %s (sinks: %u, sources: %u, priority: %u, available: %s)\n", (*p)->name,
+                (*p)->description, (*p)->n_sinks, (*p)->n_sources, (*p)->priority, pa_yes_no((*p)->available));
     }
 
     if (i->active_profile)
@@ -624,7 +612,7 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
 }
 
 static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info *i, int is_last, void *userdata) {
-    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX], f[PA_FORMAT_INFO_SNPRINT_MAX];
+    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_VERBOSE_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX], f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
 
     if (is_last < 0) {
@@ -642,7 +630,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
+    nl = true;
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
     pa_snprintf(k, sizeof(k), "%u", i->client);
@@ -668,7 +656,6 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
              "\tCorked: %s\n"
              "\tMute: %s\n"
              "\tVolume: %s\n"
-             "\t        %s\n"
              "\t        balance %0.2f\n"
              "\tBuffer Latency: %0.0f usec\n"
              "\tSink Latency: %0.0f usec\n"
@@ -684,8 +671,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
            pa_format_info_snprint(f, sizeof(f), i->format),
            pa_yes_no(i->corked),
            pa_yes_no(i->mute),
-           pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume),
+           pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, true),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            (double) i->buffer_usec,
            (double) i->sink_usec,
@@ -696,7 +682,7 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
 }
 
 static void get_source_output_info_callback(pa_context *c, const pa_source_output_info *i, int is_last, void *userdata) {
-    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX], f[PA_FORMAT_INFO_SNPRINT_MAX];
+    char t[32], k[32], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_VERBOSE_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX], f[PA_FORMAT_INFO_SNPRINT_MAX];
     char *pl;
 
     if (is_last < 0) {
@@ -714,8 +700,7 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
-
+    nl = true;
 
     pa_snprintf(t, sizeof(t), "%u", i->owner_module);
     pa_snprintf(k, sizeof(k), "%u", i->client);
@@ -741,7 +726,6 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
              "\tCorked: %s\n"
              "\tMute: %s\n"
              "\tVolume: %s\n"
-             "\t        %s\n"
              "\t        balance %0.2f\n"
              "\tBuffer Latency: %0.0f usec\n"
              "\tSource Latency: %0.0f usec\n"
@@ -757,8 +741,7 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
            pa_format_info_snprint(f, sizeof(f), i->format),
            pa_yes_no(i->corked),
            pa_yes_no(i->mute),
-           pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume),
+           pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, true),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            (double) i->buffer_usec,
            (double) i->source_usec,
@@ -769,7 +752,7 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
 }
 
 static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int is_last, void *userdata) {
-    char t[PA_BYTES_SNPRINT_MAX], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_MAX], cvdb[PA_SW_CVOLUME_SNPRINT_DB_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
+    char t[PA_BYTES_SNPRINT_MAX], s[PA_SAMPLE_SPEC_SNPRINT_MAX], cv[PA_CVOLUME_SNPRINT_VERBOSE_MAX], cm[PA_CHANNEL_MAP_SNPRINT_MAX];
     char *pl;
 
     if (is_last < 0) {
@@ -787,7 +770,7 @@ static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int
 
     if (nl && !short_list_format)
         printf("\n");
-    nl = TRUE;
+    nl = true;
 
     pa_bytes_snprint(t, sizeof(t), i->bytes);
 
@@ -805,7 +788,6 @@ static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int
              "\tSample Specification: %s\n"
              "\tChannel Map: %s\n"
              "\tVolume: %s\n"
-             "\t        %s\n"
              "\t        balance %0.2f\n"
              "\tDuration: %0.1fs\n"
              "\tSize: %s\n"
@@ -816,8 +798,7 @@ static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int
            i->name,
            pa_sample_spec_valid(&i->sample_spec) ? pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec) : _("n/a"),
            pa_sample_spec_valid(&i->sample_spec) ? pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map) : _("n/a"),
-           pa_cvolume_snprint(cv, sizeof(cv), &i->volume),
-           pa_sw_cvolume_snprint_dB(cvdb, sizeof(cvdb), &i->volume),
+           pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, true),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            (double) i->duration/1000000.0,
            t,
@@ -866,7 +847,7 @@ static void volume_relative_adjust(pa_cvolume *cv) {
 }
 
 static void unload_module_by_name_callback(pa_context *c, const pa_module_info *i, int is_last, void *userdata) {
-    static pa_bool_t unloaded = FALSE;
+    static bool unloaded = false;
 
     if (is_last < 0) {
         pa_log(_("Failed to get module information: %s"), pa_strerror(pa_context_errno(c)));
@@ -875,7 +856,7 @@ static void unload_module_by_name_callback(pa_context *c, const pa_module_info *
     }
 
     if (is_last) {
-        if (unloaded == FALSE)
+        if (unloaded == false)
             pa_log(_("Failed to unload module: Module %s not loaded"), module_name);
         complete_action();
         return;
@@ -884,7 +865,7 @@ static void unload_module_by_name_callback(pa_context *c, const pa_module_info *
     pa_assert(i);
 
     if (pa_streq(module_name, i->name)) {
-        unloaded = TRUE;
+        unloaded = true;
         actions++;
         pa_operation_unref(pa_context_unload_module(c, i->index, simple_callback, NULL));
     }
@@ -1169,6 +1150,7 @@ static void context_subscribe_callback(pa_context *c, pa_subscription_event_type
            subscription_event_type_to_string(t),
            subscription_event_facility_to_string(t),
            idx);
+    fflush(stdout);
 }
 
 static void context_state_callback(pa_context *c, void *userdata) {
@@ -1591,9 +1573,9 @@ int main(int argc, char *argv[]) {
     if (optind < argc) {
         if (pa_streq(argv[optind], "stat")) {
             action = STAT;
-            short_list_format = FALSE;
+            short_list_format = false;
             if (optind+1 < argc && pa_streq(argv[optind+1], "short"))
-                short_list_format = TRUE;
+                short_list_format = true;
 
         } else if (pa_streq(argv[optind], "info"))
             action = INFO;
@@ -1604,14 +1586,14 @@ int main(int argc, char *argv[]) {
         else if (pa_streq(argv[optind], "list")) {
             action = LIST;
 
-            for (int i = optind+1; i < argc; i++){
+            for (int i = optind+1; i < argc; i++) {
                 if (pa_streq(argv[i], "modules") || pa_streq(argv[i], "clients") ||
                     pa_streq(argv[i], "sinks")   || pa_streq(argv[i], "sink-inputs") ||
                     pa_streq(argv[i], "sources") || pa_streq(argv[i], "source-outputs") ||
                     pa_streq(argv[i], "samples") || pa_streq(argv[i], "cards")) {
                     list_type = pa_xstrdup(argv[i]);
                 } else if (pa_streq(argv[i], "short")) {
-                    short_list_format = TRUE;
+                    short_list_format = true;
                 } else {
                     pa_log(_("Specify nothing, or one of: %s"), "modules, sinks, sources, sink-inputs, source-outputs, clients, samples, cards");
                     goto quit;

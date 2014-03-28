@@ -57,14 +57,16 @@ static const pa_client_conf default_conf = {
     .default_source = NULL,
     .default_server = NULL,
     .default_dbus_server = NULL,
-    .autospawn = TRUE,
-    .disable_shm = FALSE,
+    .autospawn = true,
+    .disable_shm = false,
     .cookie_file = NULL,
-    .cookie_valid = FALSE,
+    .cookie_valid = false,
     .shm_size = 0,
-    .auto_connect_localhost = FALSE,
-    .auto_connect_display = FALSE
+    .auto_connect_localhost = false,
+    .auto_connect_display = false
 };
+
+static int parse_cookie_file(pa_client_conf* c);
 
 pa_client_conf *pa_client_conf_new(void) {
     pa_client_conf *c = pa_xmemdup(&default_conf, sizeof(default_conf));
@@ -130,7 +132,7 @@ int pa_client_conf_load(pa_client_conf *c, const char *filename) {
     r = f ? pa_config_parse(fn, f, table, NULL, NULL) : 0;
 
     if (!r)
-        r = pa_client_conf_load_cookie(c);
+        r = parse_cookie_file(c);
 
 finish:
     pa_xfree(fn);
@@ -159,7 +161,7 @@ int pa_client_conf_env(pa_client_conf *c) {
         c->default_server = pa_xstrdup(e);
 
         /* We disable autospawning automatically if a specific server was set */
-        c->autospawn = FALSE;
+        c->autospawn = false;
     }
 
     if ((e = getenv(ENV_DAEMON_BINARY))) {
@@ -168,38 +170,72 @@ int pa_client_conf_env(pa_client_conf *c) {
     }
 
     if ((e = getenv(ENV_COOKIE_FILE))) {
-        pa_xfree(c->cookie_file);
-        c->cookie_file = pa_xstrdup(e);
-
-        return pa_client_conf_load_cookie(c);
+        return pa_client_conf_load_cookie_from_file(c, e);
     }
 
     return 0;
 }
 
-int pa_client_conf_load_cookie(pa_client_conf* c) {
+static int parse_cookie_file(pa_client_conf* c) {
     int k;
 
     pa_assert(c);
 
-    c->cookie_valid = FALSE;
+    c->cookie_valid = false;
 
     if (c->cookie_file)
-        k = pa_authkey_load_auto(c->cookie_file, TRUE, c->cookie, sizeof(c->cookie));
+        k = pa_authkey_load_auto(c->cookie_file, true, c->cookie, sizeof(c->cookie));
     else {
-        k = pa_authkey_load_auto(PA_NATIVE_COOKIE_FILE, FALSE, c->cookie, sizeof(c->cookie));
+        k = pa_authkey_load_auto(PA_NATIVE_COOKIE_FILE, false, c->cookie, sizeof(c->cookie));
 
         if (k < 0) {
-            k = pa_authkey_load_auto(PA_NATIVE_COOKIE_FILE_FALLBACK, FALSE, c->cookie, sizeof(c->cookie));
+            k = pa_authkey_load_auto(PA_NATIVE_COOKIE_FILE_FALLBACK, false, c->cookie, sizeof(c->cookie));
 
             if (k < 0)
-                k = pa_authkey_load_auto(PA_NATIVE_COOKIE_FILE, TRUE, c->cookie, sizeof(c->cookie));
+                k = pa_authkey_load_auto(PA_NATIVE_COOKIE_FILE, true, c->cookie, sizeof(c->cookie));
         }
     }
 
     if (k < 0)
         return k;
 
-    c->cookie_valid = TRUE;
+    c->cookie_valid = true;
+    return 0;
+}
+
+int pa_client_conf_load_cookie_from_hex(pa_client_conf* c, const char *cookie_in_hex) {
+    uint8_t cookie[PA_NATIVE_COOKIE_LENGTH];
+
+    pa_assert(c);
+    pa_assert(cookie_in_hex);
+
+    if (pa_parsehex(cookie_in_hex, cookie, sizeof(cookie)) != sizeof(cookie)) {
+        pa_log(_("Failed to parse cookie data"));
+        return -PA_ERR_INVALID;
+    }
+
+    pa_xfree(c->cookie_file);
+    c->cookie_file = NULL;
+
+    return pa_client_conf_set_cookie(c, cookie, PA_NATIVE_COOKIE_LENGTH);
+}
+
+int pa_client_conf_load_cookie_from_file(pa_client_conf *c, const char *cookie_file_path) {
+    pa_assert(c);
+    pa_assert(cookie_file_path);
+
+    pa_xfree(c->cookie_file);
+    c->cookie_file = pa_xstrdup(cookie_file_path);
+    return parse_cookie_file(c);
+}
+
+int pa_client_conf_set_cookie(pa_client_conf *c, uint8_t *cookie, size_t cookie_size) {
+    pa_assert(c);
+    pa_assert(cookie);
+
+    if (cookie_size != PA_NATIVE_COOKIE_LENGTH)
+        return -PA_ERR_INVALID;
+    memcpy(c->cookie, cookie, cookie_size);
+    c->cookie_valid = true;
     return 0;
 }
