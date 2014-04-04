@@ -90,6 +90,7 @@ Architecture: any
 Priority: extra
 Section: debug
 Depends: ${misc:Depends}, pulseaudio (= ${binary:Version})
+Recommends: libpulse0-dbg
 Description: PulseAudio sound server (debugging symbols)
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
