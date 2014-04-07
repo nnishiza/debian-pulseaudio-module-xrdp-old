@@ -1,3 +1,9 @@
+pulseaudio (5.0-2) UNRELEASED; urgency=low
+
+  * Start working on next upload
+
+ -- Balint Reczey <balint@balintreczey.hu>  Mon, 07 Apr 2014 15:13:52 +0200
+
 pulseaudio (5.0-1) unstable; urgency=medium
 
   [ Balint Reczey ]
@@ -10,7 +16,8 @@ pulseaudio (5.0-1) unstable; urgency=medium
   * Use channel 2 for raop sink (Closes: #658733)
 
   [ Alexander Kurtz ]
-  * Exit PA with X session closing when PA is started by the session (Closes: 594001)
+  * Exit PA with X session closing when PA is started by the session
+    (Closes: #594001)
 
   [ Balint Reczey ]
   * Don't pass --disable-hal to ./configure (Closes: #729494)
