@@ -1,7 +1,6 @@
 pulseaudio (5.0-2) UNRELEASED; urgency=low
 
   [ Balint Reczey ]
-  * Start working on next upload
   * Fix FTBFS on ARM architectures
 
   [ Felipe Sateler ]
