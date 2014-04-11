@@ -12,6 +12,7 @@ pulseaudio (5.0-2) UNRELEASED; urgency=low
   * Drop xz flag to dh_builddeb, it is now default
   * Try to ensure on non-arm platforms that the arm workaround will work
   * Use canonical vcs addresses
+  * Don't pass start and stop arguments to update-rc.d, they are ignored
 
  -- Balint Reczey <balint@balintreczey.hu>  Mon, 07 Apr 2014 15:13:52 +0200
 

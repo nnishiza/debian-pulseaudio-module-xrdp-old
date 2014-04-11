@@ -81,4 +81,3 @@ DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-$(DEB_UPSTREAM_VERSION)/mod
 LDFLAGS += -Wl,--no-as-needed
 
 DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
-DEB_UPDATE_RCD_PARAMS = start 25 2 3 4 5 . stop 15 0 1 6 .
