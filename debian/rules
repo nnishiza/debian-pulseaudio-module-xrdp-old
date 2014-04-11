@@ -39,9 +39,11 @@ install/pulseaudio::
 	install -m 644 shell-completion/pulseaudio-zsh-completion.zsh \
 		$(CURDIR)/debian/tmp/usr/share/zsh/vendor-completions/_pulseaudio
 
+SVOLUME_ARM = pulsecore/libpulsecommon_$(DEB_UPSTREAM_VERSION)_la-svolume_arm.lo
 common-configure-arch::
+	make -qn -C src $(SVOLUME_ARM) || [ $$? != 2 ]
 ifneq (,$(findstring $(DEB_HOST_ARCH), "arm armel"))
-	make -C src pulsecore/libpulsecommon_5.0_la-svolume_arm.lo CFLAGS+=-march=armv6
+	make -C src $(SVOLUME_ARM) CFLAGS+=-march=armv6
 endif
 
 common-binary-post-install-arch:: list-missing
