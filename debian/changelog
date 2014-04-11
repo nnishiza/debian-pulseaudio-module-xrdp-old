@@ -4,6 +4,7 @@ pulseaudio (5.0-2) UNRELEASED; urgency=low
   * Fix FTBFS on ARM architectures
 
   [ Felipe Sateler ]
+  * Add myself to uploaders
   * Install pulseaudio shell completions
   * Add Breaks: on versions of jack with no latency API.
      Closes: #685258
