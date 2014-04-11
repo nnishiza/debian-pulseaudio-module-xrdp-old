@@ -1,4 +1,4 @@
-pulseaudio (5.0-2) UNRELEASED; urgency=low
+pulseaudio (5.0-2) unstable; urgency=low
 
   [ Balint Reczey ]
   * Fix FTBFS on ARM architectures
@@ -17,7 +17,7 @@ pulseaudio (5.0-2) UNRELEASED; urgency=low
   [ Sjoerd Simons ]
   * debian/control: remove Martin-Éric Racine from Uploaders at his request
 
- -- Sjoerd Simons <sjoerd@debian.org>  Fri, 11 Apr 2014 20:29:12 +0200
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 11 Apr 2014 21:30:05 +0200
 
 pulseaudio (5.0-1) unstable; urgency=medium
 
