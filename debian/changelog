@@ -14,7 +14,10 @@ pulseaudio (5.0-2) UNRELEASED; urgency=low
   * Use canonical vcs addresses
   * Don't pass start and stop arguments to update-rc.d, they are ignored
 
- -- Balint Reczey <balint@balintreczey.hu>  Mon, 07 Apr 2014 15:13:52 +0200
+  [ Sjoerd Simons ]
+  * debian/control: remove Martin-Éric Racine from Uploaders at his request
+
+ -- Sjoerd Simons <sjoerd@debian.org>  Fri, 11 Apr 2014 20:29:12 +0200
 
 pulseaudio (5.0-1) unstable; urgency=medium
 

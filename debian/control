@@ -2,8 +2,7 @@ Source: pulseaudio
 Section: sound
 Priority: optional
 Maintainer: Pulseaudio maintenance team <pkg-pulseaudio-devel@lists.alioth.debian.org>
-Uploaders: Sjoerd Simons <sjoerd@debian.org>, 
-    Martin-Éric Racine <martin-eric.racine@iki.fi>,
+Uploaders: Sjoerd Simons <sjoerd@debian.org>,
     Balint Reczey <balint@balintreczey.hu>,
     Felipe Sateler <fsateler@debian.org>
 # The following packages can be omitted for bootstrapping (DEB_BUILD_PROFILES=stage1):
