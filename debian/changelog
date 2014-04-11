@@ -8,6 +8,7 @@ pulseaudio (5.0-2) UNRELEASED; urgency=low
   * Add Breaks: on versions of jack with no latency API.
      Closes: #685258
   * Make pulseaudio-dbg Recommend libpulse0-dbg
+  * Drop xz flag to dh_builddeb, it is now default
 
  -- Balint Reczey <balint@balintreczey.hu>  Mon, 07 Apr 2014 15:13:52 +0200
 
