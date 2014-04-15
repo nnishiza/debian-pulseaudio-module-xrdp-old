@@ -1,0 +1,15 @@
+Description: Add support for Asus P5K-SE motherboard
+Origin: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=744831#5
+Bug-Debian: http://bugs.debian.org/744831
+Forwarded: https://bugs.freedesktop.org/show_bug.cgi?id=77487
+--- a/src/modules/alsa/mixer/profile-sets/90-pulseaudio.rules
++++ b/src/modules/alsa/mixer/profile-sets/90-pulseaudio.rules
+@@ -75,6 +75,8 @@ ATTRS{subsystem_vendor}=="0x1028", ATTRS
+ ATTRS{subsystem_vendor}=="0x1043", ATTRS{subsystem_device}=="0x831a", ENV{PULSE_PROFILE_SET}="force-speaker-and-int-mic.conf"
+ # Asus T101MT
+ ATTRS{subsystem_vendor}=="0x1043", ATTRS{subsystem_device}=="0x83ce", ENV{PULSE_PROFILE_SET}="force-speaker-and-int-mic.conf"
++# Asus P5K-SE
++ATTRS{subsystem_vendor}=="0x1043", ATTRS{subsystem_device}=="0x829f", ENV{PULSE_PROFILE_SET}="force-speaker-and-int-mic.conf"
+ # Sony Vaio VGN-SR21M
+ ATTRS{subsystem_vendor}=="0x104d", ATTRS{subsystem_device}=="0x9033", ENV{PULSE_PROFILE_SET}="force-speaker-and-int-mic.conf"
+ # Sony Vaio VPC-W115XG
