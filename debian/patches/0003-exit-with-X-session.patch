@@ -1,3 +1,6 @@
+Description: start-pulseaudio-*: Kill pulseaudio daemon when x session ends
+Forwarded: https://bugs.freedesktop.org/show_bug.cgi?id=77497
+Author: Alexander Kurtz <kurtz.alex@googlemail.com>
 --- a/src/daemon/start-pulseaudio-x11.in
 +++ b/src/daemon/start-pulseaudio-x11.in
 @@ -19,6 +19,13 @@
