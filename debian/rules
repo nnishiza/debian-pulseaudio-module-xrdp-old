@@ -46,18 +46,6 @@ clean::
 	rm -f debian/pulseaudio.install.kfreebsd-amd64
 	rm -f debian/pulseaudio.install.hurd-i386
 
-update-patch-series:
-	mkdir -p $(CURDIR)/debian/patches
-	rm -f $(CURDIR)/debian/patches/*.patch
-	git format-patch -o $(CURDIR)/debian/patches patches ^upstream | \
-		xargs -n 1 basename > $(CURDIR)/debian/patches/series
-	for patch in $$(ls $(CURDIR)/debian/patches/*.patch) ; \
-	do \
-		lines=$$(cat $$patch | wc -l) ; \
-		head -n $$(($$lines - 3)) $$patch > $${patch}.chomped ; \
-		mv $${patch}.chomped $$patch ; \
-	done
-
 # Libs should be in the multi-arch path, but the modules should be in the
 # normal directory as pulseaudio is foreign
 DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 \
