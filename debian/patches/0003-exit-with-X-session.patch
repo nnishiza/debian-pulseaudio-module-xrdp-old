@@ -1,5 +1,3 @@
-diff --git a/src/daemon/start-pulseaudio-x11.in b/src/daemon/start-pulseaudio-x11.in
-index 391a6d3..e65dd9f 100755
 --- a/src/daemon/start-pulseaudio-x11.in
 +++ b/src/daemon/start-pulseaudio-x11.in
 @@ -19,6 +19,13 @@
@@ -25,4 +23,30 @@ index 391a6d3..e65dd9f 100755
 +if [ "$EXIT_WITH_X_SESSION" = yes ]; then
 +	/usr/bin/xprop -root -spy > /dev/null 2>&1 || true
 +	/usr/bin/pulseaudio --kill
++fi &
+--- a/src/daemon/start-pulseaudio-kde.in
++++ b/src/daemon/start-pulseaudio-kde.in
+@@ -21,6 +21,13 @@ set -e
+ 
+ [ -z "$PULSE_SERVER" ]
+ 
++# check if pulseaudio has already been started by someone else
++if /usr/bin/pulseaudio --check; then
++    EXIT_WITH_X_SESSION=no
++else
++    EXIT_WITH_X_SESSION=yes
++fi
++
+ @PA_BINARY@ --start "$@"
+ 
+ if [ x"$DISPLAY" != x ] ; then
+@@ -28,3 +35,9 @@ if [ x"$DISPLAY" != x ] ; then
+     @PACTL_BINARY@ load-module module-device-manager "do_routing=1" > /dev/null
+ 
+ fi
++
++# fork and wait for X-session to end, then quit pulseaudio
++if [ "$EXIT_WITH_X_SESSION" = yes ]; then
++    /usr/bin/xprop -root -spy > /dev/null 2>&1 || true
++    /usr/bin/pulseaudio --kill
 +fi &
