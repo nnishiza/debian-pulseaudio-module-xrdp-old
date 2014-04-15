@@ -7,6 +7,9 @@ include /usr/share/cdbs/1/rules/autoreconf.mk
 
 export AUTOPOINT=intltoolize --automake --copy
 
+# Needed for testsuite
+export XDG_RUNTIME_DIR = $(CURDIR)/debian/tmp/tmp/xdgruntimedir
+
 #Don't build all the modules packages when bootstrapping
 ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
   $(warning Bootstrap profile build)
@@ -62,3 +65,5 @@ DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-$(DEB_UPSTREAM_VERSION)/mod
 LDFLAGS += -Wl,--no-as-needed
 
 DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
+
+DEB_MAKE_CHECK_TARGET = check VERBOSE=1
