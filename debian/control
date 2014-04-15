@@ -9,6 +9,7 @@ Uploaders: Sjoerd Simons <sjoerd@debian.org>,
 #  libbluetooth-dev
 Build-Depends: debhelper (>= 9),
     cdbs (>= 0.4.93),
+    check,
     dh-autoreconf,
     intltool,
     libasound2-dev (>= 1.0.24) [linux-any],
