@@ -7,7 +7,7 @@ Uploaders: Sjoerd Simons <sjoerd@debian.org>,
     Felipe Sateler <fsateler@debian.org>
 # The following packages can be omitted for bootstrapping (DEB_BUILD_PROFILES=stage1):
 #  libbluetooth-dev
-Build-Depends: debhelper (>= 8.1.3),
+Build-Depends: debhelper (>= 9),
     cdbs (>= 0.4.93),
     check,
     dh-autoreconf,

@@ -64,6 +64,4 @@ DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-$(DEB_UPSTREAM_VERSION)/mod
 
 LDFLAGS += -Wl,--no-as-needed
 
-DEB_DH_INSTALL_ARGS = --sourcedir=$(CURDIR)/debian/tmp
-
 DEB_MAKE_CHECK_TARGET = check VERBOSE=1

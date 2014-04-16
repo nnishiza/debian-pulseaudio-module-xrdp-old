@@ -7,6 +7,8 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
     - Kill pulseaudio on session exit with kde too
     - Add DEP-3 header, forwarded
   * Enable testsuite
+  * Bump debhelper compat level to 9
+    - debug symbols are now stored by build-id instead of by path
 
  -- Felipe Sateler <fsateler@debian.org>  Mon, 14 Apr 2014 10:02:36 -0300
 
