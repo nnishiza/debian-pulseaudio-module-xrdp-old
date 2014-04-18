@@ -26,6 +26,7 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
      - New patch from upstream, fixes crash on empty UDP packets.
        Fixes CVE-2014-397
   * zsh-completion: Fix completion for default sink/source
+  * Add bugscript to the pulseaudio package. Closes: #739294
 
   [ Jelmer Vernooij ]
   * Disable building against tdb on the hurd, where it is not available.
