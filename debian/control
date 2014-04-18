@@ -56,7 +56,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   udev (>= 143) [linux-any],
   libasound2-plugins [linux-any],
   libpulse0 (= ${binary:Version})
-Breaks: libltdl3 (<< 1.5.24-1)
+Breaks: libltdl3 (<< 1.5.24-1), avahi-daemon (<< 0.6.31-3)
 Recommends: pulseaudio-module-x11, rtkit
 Suggests: pulseaudio-utils, pavumeter, pavucontrol, paman, paprefs
 Description: PulseAudio sound server
