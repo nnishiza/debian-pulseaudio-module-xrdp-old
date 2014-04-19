@@ -1,0 +1,3 @@
+# These are not meant to be executed
+pulseaudio: script-not-executable etc/pulse/*.pa
+pulseaudio: script-not-executable etc/bash_completion.d/pulseaudio-bash-completion.sh
