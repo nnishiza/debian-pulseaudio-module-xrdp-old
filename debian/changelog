@@ -11,6 +11,7 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
     - debug symbols are now stored by build-id instead of by path
   * Change init script dependency from avahi to avahi-daemon. Closes: #731609
     - Requires adding a Breaks on avahi-daemon << 0.6.31-3
+  * Bump standards-version (No changes needed)
 
  -- Felipe Sateler <fsateler@debian.org>  Mon, 14 Apr 2014 10:02:36 -0300
 
