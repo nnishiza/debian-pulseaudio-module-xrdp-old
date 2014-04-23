@@ -1,0 +1,30 @@
+Description: Do not start pulseaudio if it is already running
+Origin: https://bbs.archlinux.org/viewtopic.php?pid=1164699#p1164699
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=743813
+Forwarded: http://lists.freedesktop.org/archives/pulseaudio-discuss/2014-April/020381.html
+--- a/src/daemon/start-pulseaudio-kde.in
++++ b/src/daemon/start-pulseaudio-kde.in
+@@ -26,9 +26,9 @@ if /usr/bin/pulseaudio --check; then
+     EXIT_WITH_X_SESSION=no
+ else
+     EXIT_WITH_X_SESSION=yes
++    @PA_BINARY@ --start "$@"
+ fi
+ 
+-@PA_BINARY@ --start "$@"
+ 
+ if [ x"$DISPLAY" != x ] ; then
+ 
+--- a/src/daemon/start-pulseaudio-x11.in
++++ b/src/daemon/start-pulseaudio-x11.in
+@@ -24,9 +24,9 @@ if /usr/bin/pulseaudio --check; then
+        EXIT_WITH_X_SESSION=no
+ else
+        EXIT_WITH_X_SESSION=yes
++       @PA_BINARY@ --start "$@"
+ fi
+ 
+-@PA_BINARY@ --start "$@"
+ 
+ if [ x"$DISPLAY" != x ] ; then
+ 
