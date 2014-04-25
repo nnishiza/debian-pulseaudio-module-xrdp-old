@@ -17,6 +17,8 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
     - neither are the pulseaudio configuration files
   * Do not start pulseaudio in X session if it was already started.
      Closes: #743813 
+  * Remove pulseaudio init script, place it under examples.
+     Closes: #696842
 
  -- Felipe Sateler <fsateler@debian.org>  Mon, 14 Apr 2014 10:02:36 -0300
 

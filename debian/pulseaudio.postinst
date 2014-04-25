@@ -38,4 +38,17 @@ esac
 
 #DEBHELPER#
 
+# This has to be after the debhelper block, so that dpkg-maintscript-helper
+# has had a chance to remove the init file
+# This init file was removed in 5.0-3, remove the links if
+# no version with local modifications remain
+if [ "$1" = "configure" ] ; then
+    if dpkg --compare-versions "$2" lt "5.0-3~" ; then
+        if [ ! -f /etc/init.d/pulseaudio ] ; then
+            update-rc.d pulseaudio remove
+        fi
+    fi
+fi
+
+
 exit 0

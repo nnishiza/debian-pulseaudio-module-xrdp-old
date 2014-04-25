@@ -11,6 +11,11 @@
 # Description:       System mode startup script for
 #                    the PulseAudio sound server.
 ### END INIT INFO
+#
+# Example init file for a system wide pulseaudio daemon.
+# If you use system wide mode, you are on your own!
+# http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/WhatIsWrongWithSystemWide/
+#
 
 DAEMON=/usr/bin/pulseaudio
 PIDDIR=/var/run/pulse
