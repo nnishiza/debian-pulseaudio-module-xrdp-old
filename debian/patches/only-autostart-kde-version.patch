@@ -1,0 +1,12 @@
+Description: Sometimes starting 2 pulseaudio daemons breaks kde login, so don't start the generic one when the kde one will start
+ This is fixed upstream post 5.0 by not shipping a kde-specific version
+Bug-Debian: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=705426
+Author: Török Edwin <edwin@etorok.net>
+Forwarded: not-needed
+--- a/src/daemon/pulseaudio.desktop.in
++++ b/src/daemon/pulseaudio.desktop.in
+@@ -8,3 +8,4 @@ Type=Application
+ Categories=
+ GenericName=
+ X-GNOME-Autostart-Phase=Initialization
++NotShowIn=KDE;
