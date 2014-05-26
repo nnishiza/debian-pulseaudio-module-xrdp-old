@@ -1,5 +1,6 @@
 pulseaudio (5.0-3) UNRELEASED; urgency=medium
 
+  [ Felipe Sateler ]
   * Drop workaround for ARM < v6, upstream now conditionally compiles it.
   * Add udev rule for Asus P5K-SE motherboard. Closes: #744831
   * Drop special patches rule, not used anymore
@@ -22,6 +23,10 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
   * debian/patches/only-autostart-kde-version.patch:
      - Do not autostart pulseaudio twice under KDE, it sometimes leads
        to slow system startup. Closes: #705426
+
+  [ Jelmer Vernooij ]
+  * Disable building against tdb on the hurd, where it is not available.
+     Closes: #749333
 
  -- Felipe Sateler <fsateler@debian.org>  Mon, 14 Apr 2014 10:02:36 -0300
 
