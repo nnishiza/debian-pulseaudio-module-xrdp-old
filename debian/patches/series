@@ -5,3 +5,4 @@
 kfreebsd_no_lock_and_threads_synchro.patch
 asus-P5K-SE-udev-rules.patch
 only-autostart-kde-version.patch
+rtp-recv-fix-crash-on-empty-UDP-packets-CVE-2014-397.patch
