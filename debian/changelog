@@ -2,7 +2,6 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
 
   [ Felipe Sateler ]
   * Drop workaround for ARM < v6, upstream now conditionally compiles it.
-  * Add udev rule for Asus P5K-SE motherboard. Closes: #744831
   * Drop special patches rule, not used anymore
   * debian/patches/0003-exit-with-X-session.patch
     - Kill pulseaudio on session exit with kde too
