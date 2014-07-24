@@ -27,6 +27,9 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
        Fixes CVE-2014-397
   * zsh-completion: Fix completion for default sink/source
   * Add bugscript to the pulseaudio package. Closes: #739294
+  * Make pulseaudio Depend on pulseaudio-utils
+    - start-pulseaudio{kde,x11} needs it. Closes: #648973
+    - The bugscript needs it too.
 
   [ Jelmer Vernooij ]
   * Disable building against tdb on the hurd, where it is not available.
