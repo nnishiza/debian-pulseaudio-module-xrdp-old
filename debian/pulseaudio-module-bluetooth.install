@@ -3,4 +3,3 @@ usr/lib/pulse-*/modules/module-bluetooth-discover.so
 usr/lib/pulse-*/modules/module-bluetooth-policy.so
 usr/lib/pulse-*/modules/module-bluez*-device.so
 usr/lib/pulse-*/modules/module-bluez*-discover.so
-usr/share/lintian/overrides/pulseaudio-module-bluetooth

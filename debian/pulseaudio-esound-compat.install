@@ -4,4 +4,3 @@ usr/lib/pulse-*/modules/module-esound-compat-spawnfd.so
 usr/lib/pulse-*/modules/module-esound-compat-spawnpid.so
 usr/lib/pulse-*/modules/module-esound-protocol-tcp.so
 usr/lib/pulse-*/modules/module-esound-protocol-unix.so
-usr/share/lintian/overrides/pulseaudio-esound-compat

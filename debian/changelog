@@ -30,6 +30,7 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
   * Make pulseaudio Depend on pulseaudio-utils
     - start-pulseaudio{kde,x11} needs it. Closes: #648973
     - The bugscript needs it too.
+  * Use dh_lintian instead of manually installing overrides
 
   [ Jelmer Vernooij ]
   * Disable building against tdb on the hurd, where it is not available.
