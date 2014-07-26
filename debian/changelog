@@ -9,6 +9,7 @@ pulseaudio (5.0-3) UNRELEASED; urgency=medium
   * Enable testsuite
   * Bump debhelper compat level to 9
     - debug symbols are now stored by build-id instead of by path
+    - Exclude private libpulsecommon-5.0.so from dh_makeshlibs
   * Change init script dependency from avahi to avahi-daemon. Closes: #731609
     - Requires adding a Breaks on avahi-daemon << 0.6.31-3
   * Bump standards-version (No changes needed)
