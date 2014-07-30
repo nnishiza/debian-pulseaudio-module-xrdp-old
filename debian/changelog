@@ -1,3 +1,9 @@
+pulseaudio (5.0-4) UNRELEASED; urgency=medium
+
+  * Revert enabling of testsuite while issues are worked out.
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 30 Jul 2014 10:05:41 -0400
+
 pulseaudio (5.0-3) unstable; urgency=medium
 
   [ Felipe Sateler ]
