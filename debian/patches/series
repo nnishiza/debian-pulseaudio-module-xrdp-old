@@ -6,3 +6,4 @@ kfreebsd_no_lock_and_threads_synchro.patch
 only-autostart-kde-version.patch
 rtp-recv-fix-crash-on-empty-UDP-packets-CVE-2014-397.patch
 zsh-completion-Fix-completion-for-default-sink-sourc.patch
+gnu-kfreebsd.patch

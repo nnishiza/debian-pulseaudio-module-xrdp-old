@@ -1,3 +1,9 @@
+pulseaudio (5.0-5) UNRELEASED; urgency=medium
+
+  * Fix #defines for Debian GNU/kFreeBSD. Closes: #756914
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 03 Aug 2014 17:42:57 -0400
+
 pulseaudio (5.0-4) unstable; urgency=medium
 
   * Revert enabling of testsuite.

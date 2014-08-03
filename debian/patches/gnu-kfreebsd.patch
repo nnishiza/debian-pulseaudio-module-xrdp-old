@@ -1,0 +1,174 @@
+commit 5b68e29061f3b8de676f36b68db1f9b6c163b677
+Author: Felipe Sateler <fsateler@debian.org>
+Date:   Sun Aug 3 17:37:03 2014 -0400
+
+    Fix #defines for Debian GNU/kFreeBSD
+    
+    Because debian does not run with the freebsd libc, but rather uses the
+    GNU one, it chose to not define __FreeBSD__, but rather
+    __FreeBSD_kernel__.
+    Use the alternative when the functionality tested is for kernel
+    features, and keep the __FreeBSD__ one when using freebsd libc headers.
+
+diff --git a/src/daemon/caps.c b/src/daemon/caps.c
+index 669d6e2..5477401 100644
+--- a/src/daemon/caps.c
++++ b/src/daemon/caps.c
+@@ -86,7 +86,7 @@ void pa_drop_caps(void) {
+     pa_assert_se(cap_clear(caps) == 0);
+     pa_assert_se(cap_set_proc(caps) == 0);
+     pa_assert_se(cap_free(caps) == 0);
+-#elif defined(__FreeBSD__)
++#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     /* FreeBSD doesn't have this functionality, even though sys/capability.h is
+      * available. See https://bugs.freedesktop.org/show_bug.cgi?id=73967 */
+ #else
+diff --git a/src/pulsecore/atomic.h b/src/pulsecore/atomic.h
+index 419783d..bcc0bb3 100644
+--- a/src/pulsecore/atomic.h
++++ b/src/pulsecore/atomic.h
+@@ -180,7 +180,7 @@ static inline bool pa_atomic_ptr_cmpxchg(pa_atomic_ptr_t *a, void *old_p, void*
+     return r == old_p;
+ }
+ 
+-#elif defined(__FreeBSD__)
++#elif defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+ 
+ #include <sys/cdefs.h>
+ #include <sys/types.h>
+diff --git a/src/pulsecore/sconv_sse.c b/src/pulsecore/sconv_sse.c
+index 10943ba..ff8ad94 100644
+--- a/src/pulsecore/sconv_sse.c
++++ b/src/pulsecore/sconv_sse.c
+@@ -33,7 +33,7 @@
+ #include "cpu-x86.h"
+ #include "sconv.h"
+ 
+-#if (!defined(__APPLE__) && !defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__)
++#if (!defined(__APPLE__) && !defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__)
+ 
+ static const PA_DECLARE_ALIGNED (16, float, scale[4]) = { 0x8000, 0x8000, 0x8000, 0x8000 };
+ 
+@@ -163,7 +163,7 @@ static void pa_sconv_s16le_from_f32ne_sse2(unsigned n, const float *a, int16_t *
+ #endif /* defined (__i386__) || defined (__amd64__) */
+ 
+ void pa_convert_func_init_sse(pa_cpu_x86_flag_t flags) {
+-#if (!defined(__APPLE__) && !defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__)
++#if (!defined(__APPLE__) && !defined(__FreeBSD__) && defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__)
+ 
+     if (flags & PA_CPU_X86_SSE2) {
+         pa_log_info("Initialising SSE2 optimized conversions.");
+diff --git a/src/pulsecore/svolume_mmx.c b/src/pulsecore/svolume_mmx.c
+index 279af8a..411e62c 100644
+--- a/src/pulsecore/svolume_mmx.c
++++ b/src/pulsecore/svolume_mmx.c
+@@ -34,7 +34,7 @@
+ 
+ #include "sample-util.h"
+ 
+-#if (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__)
++#if (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__)
+ /* in s: 2 int16_t samples
+  * in v: 2 int32_t volumes, fixed point 16:16
+  * out s: contains scaled and clamped int16_t samples.
+@@ -240,15 +240,15 @@ static void pa_volume_s16re_mmx(int16_t *samples, const int32_t *volumes, unsign
+     );
+ }
+ 
+-#endif /* (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__) */
++#endif /* (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__) */
+ 
+ void pa_volume_func_init_mmx(pa_cpu_x86_flag_t flags) {
+-#if (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__)
++#if (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__)
+     if ((flags & PA_CPU_X86_MMX) && (flags & PA_CPU_X86_CMOV)) {
+         pa_log_info("Initialising MMX optimized volume functions.");
+ 
+         pa_set_volume_func(PA_SAMPLE_S16NE, (pa_do_volume_func_t) pa_volume_s16ne_mmx);
+         pa_set_volume_func(PA_SAMPLE_S16RE, (pa_do_volume_func_t) pa_volume_s16re_mmx);
+     }
+-#endif /* (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__) */
++#endif /* (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__) */
+ }
+diff --git a/src/pulsecore/svolume_sse.c b/src/pulsecore/svolume_sse.c
+index eafa92c..abd8fa5 100644
+--- a/src/pulsecore/svolume_sse.c
++++ b/src/pulsecore/svolume_sse.c
+@@ -34,7 +34,7 @@
+ 
+ #include "sample-util.h"
+ 
+-#if (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__)
++#if (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__)
+ 
+ #define VOLUME_32x16(s,v)                  /* .. |   vh  |   vl  | */                   \
+       " pxor %%xmm4, %%xmm4          \n\t" /* .. |    0  |    0  | */                   \
+@@ -251,15 +251,15 @@ static void pa_volume_s16re_sse2(int16_t *samples, const int32_t *volumes, unsig
+     );
+ }
+ 
+-#endif /* (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__) */
++#endif /* (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__) */
+ 
+ void pa_volume_func_init_sse(pa_cpu_x86_flag_t flags) {
+-#if (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__)
++#if (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__)
+     if (flags & PA_CPU_X86_SSE2) {
+         pa_log_info("Initialising SSE2 optimized volume functions.");
+ 
+         pa_set_volume_func(PA_SAMPLE_S16NE, (pa_do_volume_func_t) pa_volume_s16ne_sse2);
+         pa_set_volume_func(PA_SAMPLE_S16RE, (pa_do_volume_func_t) pa_volume_s16re_sse2);
+     }
+-#endif /* (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__) */
++#endif /* (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__) */
+ }
+diff --git a/src/tests/once-test.c b/src/tests/once-test.c
+index 8b0009a..5744eca 100644
+--- a/src/tests/once-test.c
++++ b/src/tests/once-test.c
+@@ -24,8 +24,10 @@
+ #ifdef HAVE_PTHREAD
+ #include <pthread.h>
+ #ifdef HAVE_PTHREAD_SETAFFINITY_NP
+-#if defined(__FreeBSD__)
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
++#ifdef __FreeBSD__
+ #include <pthread_np.h>
++#endif
+ #include <sys/param.h>
+ #include <sys/cpuset.h>
+ #endif
+@@ -63,7 +65,7 @@ static void thread_func(void *data) {
+ 
+ #ifdef HAVE_PTHREAD_SETAFFINITY_NP
+     static pa_atomic_t i_cpu = PA_ATOMIC_INIT(0);
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     cpuset_t mask;
+ #else
+     cpu_set_t mask;
+diff --git a/src/tests/rtstutter.c b/src/tests/rtstutter.c
+index ed567c1..8096ada 100644
+--- a/src/tests/rtstutter.c
++++ b/src/tests/rtstutter.c
+@@ -31,8 +31,10 @@
+ #ifdef HAVE_PTHREAD
+ #include <pthread.h>
+ #ifdef HAVE_PTHREAD_SETAFFINITY_NP
+-#if defined(__FreeBSD__)
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
++#ifdef __FreeBSD__
+ #include <pthread_np.h>
++#endif
+ #include <sys/param.h>
+ #include <sys/cpuset.h>
+ #endif
+@@ -61,7 +63,7 @@ static void work(void *p) {
+ 
+ #ifdef HAVE_PTHREAD_SETAFFINITY_NP
+ {
+-#ifdef __FreeBSD__
++#if defined(__FreeBSD__) || defined(__FreeBSD_kernel__)
+     cpuset_t mask;
+ #else
+     cpu_set_t mask;
