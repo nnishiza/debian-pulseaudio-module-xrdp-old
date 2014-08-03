@@ -1,10 +1,10 @@
-pulseaudio (5.0-5) UNRELEASED; urgency=medium
+pulseaudio (5.0-5) unstable; urgency=medium
 
   * Fix #defines for Debian GNU/kFreeBSD. Closes: #756914
   * debian/patches/kfreebsd_no_lock_and_threads_synchro.patch: mark as applied
     upstream
 
- -- Felipe Sateler <fsateler@debian.org>  Sun, 03 Aug 2014 17:42:57 -0400
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 03 Aug 2014 17:50:59 -0400
 
 pulseaudio (5.0-4) unstable; urgency=medium
 
