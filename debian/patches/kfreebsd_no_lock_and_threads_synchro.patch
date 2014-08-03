@@ -4,6 +4,7 @@ Origin: http://svnweb.freebsd.org/ports/head/audio/pulseaudio/files/patch-src_da
 Author: Joe Marcus Clarke <marcus@FreeBSD.org>
 Author: Steven Chamberlain <steven@pyro.eu.org>
 Last-Update: 2013-04-24
+Applied-Upstream: 6.0, commit:69fae3e33ad024be39fb3da0643314abf4e59980
 
 --- a/src/daemon/main.c
 +++ b/src/daemon/main.c
