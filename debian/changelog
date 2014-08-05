@@ -1,3 +1,11 @@
+pulseaudio (5.0-7) experimental; urgency=medium
+
+  * Re-enable testsuite
+    - Disable test suite timeouts
+    - Apply patches from upstream to fix failures
+
+ -- Felipe Sateler <fsateler@debian.org>  Tue, 05 Aug 2014 10:31:51 -0400
+
 pulseaudio (5.0-6) unstable; urgency=medium
 
   * Fix gnu-kfreebsd.patch typo (missing !)
