@@ -1,0 +1,18 @@
+Author: Peter Meerwald pmeerw at pmeerw.net
+Description: util: Fix pa_get_binary_name() on	Debian/kFreeBSD
+ Debian GNU/kFreeBSD uses a FreeBSD kernel and GLIBC,
+ it #defines __FreeBSD_kernel__, but not __FreeBSD__ nor __linux__
+ Debian GNU/kFreeBSD does have a /proc/self/exe
+ .
+ FreeBSD #defines __FreeBSD__ and __FreeBSD_kernel__
+--- a/src/pulse/util.c
++++ b/src/pulse/util.c
+@@ -181,7 +181,7 @@ char *pa_get_binary_name(char *s, size_t
+     }
+ #endif
+ 
+-#ifdef __linux__
++#ifdef __linux__ || defined(__FreeBSD_kernel__)
+     {
+         char *rp;
+         /* This works on Linux only */
