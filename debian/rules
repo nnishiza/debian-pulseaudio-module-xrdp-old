@@ -9,6 +9,7 @@ export AUTOPOINT=intltoolize --automake --copy
 
 # Needed for testsuite
 export XDG_RUNTIME_DIR = $(CURDIR)/debian/tmp/tmp/xdgruntimedir
+export CK_TIMEOUT_MULTIPLIER = 0
 
 #Don't build all the modules packages when bootstrapping
 ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
