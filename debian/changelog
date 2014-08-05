@@ -1,3 +1,9 @@
+pulseaudio (5.0-6) UNRELEASED; urgency=medium
+
+  * Fix gnu-kfreebsd.patch typo (missing !)
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 04 Aug 2014 19:45:28 -0400
+
 pulseaudio (5.0-5) unstable; urgency=medium
 
   * Fix #defines for Debian GNU/kFreeBSD. Closes: #756914
