@@ -1,0 +1,27 @@
+From a39a3b3f7df3ece773bb74b8c6baa599272704e0 Mon Sep 17 00:00:00 2001
+From: Peter Meerwald <pmeerw@pmeerw.net>
+Date: Wed, 6 Aug 2014 11:47:34 +0200
+Subject: [PATCH 4/6] endianmacros: Fix PA_MAYBE_INT16_SWAP() macro
+
+PA_MAYBE_INT16_SWAP() should call PA_INT16_SWAP(), not PA_INT32_SWAP
+
+PA_MAYBE_INT16_SWAP() is not used (yet), so no big deal :)
+
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+---
+ src/pulsecore/endianmacros.h | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/src/pulsecore/endianmacros.h
++++ b/src/pulsecore/endianmacros.h
+@@ -82,8 +82,8 @@ static inline float PA_FLOAT32_SWAP(floa
+     return t.f;
+ }
+ 
+-#define PA_MAYBE_INT16_SWAP(c,x) ((c) ? PA_INT32_SWAP(x) : (x))
+-#define PA_MAYBE_UINT16_SWAP(c,x) ((c) ? PA_UINT32_SWAP(x) : (x))
++#define PA_MAYBE_INT16_SWAP(c,x) ((c) ? PA_INT16_SWAP(x) : (x))
++#define PA_MAYBE_UINT16_SWAP(c,x) ((c) ? PA_UINT16_SWAP(x) : (x))
+ 
+ #define PA_MAYBE_INT32_SWAP(c,x) ((c) ? PA_INT32_SWAP(x) : (x))
+ #define PA_MAYBE_UINT32_SWAP(c,x) ((c) ? PA_UINT32_SWAP(x) : (x))

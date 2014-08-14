@@ -7,5 +7,8 @@ only-autostart-kde-version.patch
 rtp-recv-fix-crash-on-empty-UDP-packets-CVE-2014-397.patch
 zsh-completion-Fix-completion-for-default-sink-sourc.patch
 gnu-kfreebsd.patch
-fix-pa_get_binary_name-on-debian-kfreebsd.patch
-fix-mixing-of-s24-samples-stored-as-s32re.patch
+mix-Fix-mixing-of-S24-samples-stored-as-S32RE.patch
+tests-Cleanup-mix-test.patch
+endianmacros-Fix-PA_MAYBE_INT16_SWAP-macro.patch
+tests-Fix-mix-test-on-big-endian-systems.patch
+util-Fix-pa_get_binary_name-on-Debian-kFreeBSD.patch

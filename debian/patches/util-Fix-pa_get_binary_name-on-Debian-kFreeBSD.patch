@@ -1,0 +1,38 @@
+From 8a4a4f408c3e71a67b2134c21b971ce54a571fd1 Mon Sep 17 00:00:00 2001
+From: Peter Meerwald <pmeerw@pmeerw.net>
+Date: Mon, 4 Aug 2014 14:45:23 +0200
+Subject: [PATCH 6/6] util: Fix pa_get_binary_name() on Debian/kFreeBSD
+
+Debian GNU/kFreeBSD uses a FreeBSD kernel and GLIBC,
+it #defines __FreeBSD_kernel__, but not __FreeBSD__ nor __linux__
+Debian GNU/kFreeBSD does have a /proc/self/exe
+
+FreeBSD #defines __FreeBSD__ and __FreeBSD_kernel__
+
+problem reporte here:
+http://lists.freedesktop.org/archives/pulseaudio-discuss/2014-July/020998.html
+
+http://stackoverflow.com/questions/1023306/finding-current-executables-path-without-proc-self-exe and
+http://stackoverflow.com/questions/933850/how-to-find-the-location-of-the-executable-in-c have some
+background info
+
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+---
+ src/pulse/util.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+--- a/src/pulse/util.c
++++ b/src/pulse/util.c
+@@ -181,10 +181,10 @@ char *pa_get_binary_name(char *s, size_t
+     }
+ #endif
+ 
+-#ifdef __linux__
++#if defined(__linux__) || defined(__FreeBSD_kernel__)
+     {
+         char *rp;
+-        /* This works on Linux only */
++        /* This works on Linux and Debian/kFreeBSD */
+ 
+         if ((rp = pa_readlink("/proc/self/exe"))) {
+             pa_strlcpy(s, pa_path_get_filename(rp), l);
