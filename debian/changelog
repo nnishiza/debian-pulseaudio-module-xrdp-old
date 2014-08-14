@@ -1,3 +1,9 @@
+pulseaudio (5.0-8) experimental; urgency=medium
+
+  * Pick some patches from upstream fixing tests
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 13 Aug 2014 23:59:16 -0400
+
 pulseaudio (5.0-7) experimental; urgency=medium
 
   * Re-enable testsuite
