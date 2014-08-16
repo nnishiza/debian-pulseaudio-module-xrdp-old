@@ -1,0 +1,118 @@
+Author: Peter Meerwald <pmeerw@pmeerw.net>
+Description: misc cleanups and bug fixes
+ This is a collapse of a few small patches by Peter Meerwald.
+ Changes are:
+ put *.log and *.trs (which are created by running 'make check') into src/.gitignore
+ fix format specifiers, avoid compilation warnings
+ fix compilation warning when certain syscalls are not available (e.g. on kFreeBSD)
+ add checks for the expected results in sigbus-test
+ add SIGSEGV to the memtrap signal handler to make the sigbus-test work on kFreeBSD
+--- a/src/.gitignore
++++ b/src/.gitignore
+@@ -3,6 +3,8 @@ TAGS
+ *.o
+ *.la
+ *.gcno
++*.trs
++*.log
+ .deps
+ .libs
+ /Makefile
+--- a/src/pulsecore/core-util.c
++++ b/src/pulsecore/core-util.c
+@@ -3315,8 +3315,11 @@ int pa_open_cloexec(const char *fn, int
+         return fd;
+ #endif
+ 
+-    if ((fd = open(fn, flags, mode)) < 0)
+-        return fd;
++    if ((fd = open(fn, flags, mode)) >= 0)
++        goto finish;
++
++    /* return error */
++    return fd;
+ 
+ finish:
+     /* Some implementations might simply ignore O_CLOEXEC if it is not
+@@ -3337,8 +3340,11 @@ int pa_socket_cloexec(int domain, int ty
+         return fd;
+ #endif
+ 
+-    if ((fd = socket(domain, type, protocol)) < 0)
+-        return fd;
++    if ((fd = socket(domain, type, protocol)) >= 0)
++        goto finish;
++
++    /* return error */
++    return fd;
+ 
+ finish:
+     /* Some implementations might simply ignore SOCK_CLOEXEC if it is
+@@ -3360,8 +3366,11 @@ int pa_pipe_cloexec(int pipefd[2]) {
+ 
+ #endif
+ 
+-    if ((r = pipe(pipefd)) < 0)
+-        return r;
++    if ((r = pipe(pipefd)) >= 0)
++        goto finish;
++
++    /* return error */
++    return r;
+ 
+ finish:
+     pa_make_fd_cloexec(pipefd[0]);
+@@ -3382,8 +3391,11 @@ int pa_accept_cloexec(int sockfd, struct
+ 
+ #endif
+ 
+-    if ((fd = accept(sockfd, addr, addrlen)) < 0)
+-        return fd;
++    if ((fd = accept(sockfd, addr, addrlen)) >= 0)
++        goto finish;
++
++    /* return error */
++    return fd;
+ 
+ finish:
+     pa_make_fd_cloexec(fd);
+--- a/src/pulsecore/memtrap.c
++++ b/src/pulsecore/memtrap.c
+@@ -237,5 +237,8 @@ void pa_memtrap_install(void) {
+     sa.sa_flags = SA_RESTART|SA_SIGINFO;
+ 
+     pa_assert_se(sigaction(SIGBUS, &sa, NULL) == 0);
++#ifdef __FreeBSD_kernel__
++    pa_assert_se(sigaction(SIGSEGV, &sa, NULL) == 0);
++#endif
+ #endif
+ }
+--- a/src/tests/mcalign-test.c
++++ b/src/tests/mcalign-test.c
+@@ -74,7 +74,7 @@ int main(int argc, char *argv[]) {
+ 
+         c.length = (size_t) r;
+         pa_mcalign_push(a, &c);
+-        fprintf(stderr, "Read %ld bytes\n", (long)r);
++        fprintf(stderr, "Read %zd bytes\n", r);
+ 
+         c.index += (size_t) r;
+ 
+--- a/src/tests/sigbus-test.c
++++ b/src/tests/sigbus-test.c
+@@ -54,6 +54,7 @@ START_TEST (sigbus_test) {
+     /* Verify memory map */
+     pa_log("Let's see if this worked: %s", (char*) p);
+     pa_log("And memtrap says it is good: %s", pa_yes_no(pa_memtrap_is_good(m)));
++    fail_unless(pa_memtrap_is_good(m) == true);
+ 
+     /* Invalidate mapping */
+     fail_unless(ftruncate(fd, 0) >= 0);
+@@ -64,6 +65,7 @@ START_TEST (sigbus_test) {
+     /* Verify memory map */
+     pa_log("Let's see if this worked: %s", (char*) p);
+     pa_log("And memtrap says it is good: %s", pa_yes_no(pa_memtrap_is_good(m)));
++    fail_unless(pa_memtrap_is_good(m) == false);
+ 
+     pa_memtrap_remove(m);
+     munmap(p, PA_PAGE_SIZE);

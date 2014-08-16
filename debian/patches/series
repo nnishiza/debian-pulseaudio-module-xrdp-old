@@ -12,3 +12,4 @@ tests-Cleanup-mix-test.patch
 endianmacros-Fix-PA_MAYBE_INT16_SWAP-macro.patch
 tests-Fix-mix-test-on-big-endian-systems.patch
 util-Fix-pa_get_binary_name-on-Debian-kFreeBSD.patch
+misc-cleanups-and-bug-fixes.patch
