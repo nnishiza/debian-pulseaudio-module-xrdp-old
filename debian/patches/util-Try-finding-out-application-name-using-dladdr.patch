@@ -1,0 +1,63 @@
+From 139358150c8ba7f40d9412147d6ee0824005fc4b Mon Sep 17 00:00:00 2001
+From: Felipe Sateler <fsateler@debian.org>
+Date: Thu, 14 Aug 2014 00:43:00 -0400
+Subject: [PATCH] util: Try finding out application name using dladdr if
+ available
+
+---
+ configure.ac     |  2 ++
+ src/pulse/util.c | 18 ++++++++++++++++++
+ 2 files changed, 20 insertions(+)
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -574,6 +574,8 @@ AC_SYS_LARGEFILE
+ # Check for open64 to know if the current system does have open64() and similar functions
+ AC_CHECK_FUNCS_ONCE([open64])
+ 
++AC_SEARCH_LIBS([dladdr], [dl], [HAVE_DLADDR=1], [HAVE_DLADDR=0])
++AC_DEFINE(HAVE_DLADDR, [1], [Have dladdr?])
+ 
+ ###################################
+ #      External libraries         #
+--- a/src/pulse/util.c
++++ b/src/pulse/util.c
+@@ -32,6 +32,7 @@
+ #include <time.h>
+ #include <unistd.h>
+ #include <sys/types.h>
++#include <dlfcn.h>
+ 
+ #ifdef HAVE_PWD_H
+ #include <pwd.h>
+@@ -64,6 +65,10 @@
+ 
+ #include "util.h"
+ 
++#ifdef HAVE_DLADDR
++extern int main(int, char*[]);
++#endif
++
+ char *pa_get_user_name(char *s, size_t l) {
+     const char *p;
+     char *name = NULL;
+@@ -205,6 +210,19 @@ char *pa_get_binary_name(char *s, size_t
+         }
+     }
+ #endif
++
++#ifdef HAVE_DLADDR
++    {
++        Dl_info DLInfo;
++        int err = dladdr(&main, &DLInfo);
++        if (err != 0) {
++            char *p = pa_realpath(DLInfo.dli_fname);
++            if (p) {
++                return p;
++            }
++        }
++    }
++#endif
+ 
+ #if defined(HAVE_SYS_PRCTL_H) && defined(PR_GET_NAME)
+     {
