@@ -1,8 +1,8 @@
-pulseaudio (5.0-10) UNRELEASED; urgency=medium
+pulseaudio (5.0-10) experimental; urgency=medium
 
   * patch: try finding out binary name using dladdr
 
- -- Felipe Sateler <fsateler@debian.org>  Sun, 17 Aug 2014 13:40:44 -0400
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 17 Aug 2014 13:40:57 -0400
 
 pulseaudio (5.0-9) experimental; urgency=medium
 
