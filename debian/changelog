@@ -1,3 +1,11 @@
+pulseaudio (5.0-11) UNRELEASED; urgency=medium
+
+  * Fix crash when main cannot be found in patch
+    util-Try-finding-out-application-name-using-dladdr
+    Closes: #758556, 758531
+
+ -- Felipe Sateler <fsateler@debian.org>  Tue, 26 Aug 2014 00:22:19 -0400
+
 pulseaudio (5.0-10) experimental; urgency=medium
 
   * patch: try finding out binary name using dladdr
