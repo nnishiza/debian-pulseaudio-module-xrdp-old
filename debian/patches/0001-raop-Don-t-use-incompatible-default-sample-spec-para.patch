@@ -1,0 +1,41 @@
+From b1c4e7bf6bae405999d3247c332a71be6b130496 Mon Sep 17 00:00:00 2001
+From: Tanu Kaskinen <tanu.kaskinen@linux.intel.com>
+Date: Tue, 19 Aug 2014 14:08:34 +0300
+Subject: [PATCH] raop: Don't use incompatible default sample spec parameters
+
+Since the RAOP sink supports only some formats and channel counts, we
+shouldn't blindly use pa_core.default_sample_spec. This patch changes
+things so that we default to PA_SAMPLE_S16NE and 2 channels, and only
+take the sample rate from pa_core.default_sample_spec.
+---
+ src/modules/raop/module-raop-sink.c | 8 +++++---
+ 1 file changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/src/modules/raop/module-raop-sink.c b/src/modules/raop/module-raop-sink.c
+index 2d08645..13036d9 100644
+--- a/src/modules/raop/module-raop-sink.c
++++ b/src/modules/raop/module-raop-sink.c
+@@ -518,15 +518,17 @@ int pa__init(pa_module*m) {
+         goto fail;
+     }
+ 
+-    ss = m->core->default_sample_spec;
++    ss.format = PA_SAMPLE_S16NE;
++    ss.channels = 2;
++    ss.rate = m->core->default_sample_spec.rate;
+     if (pa_modargs_get_sample_spec(ma, &ss) < 0) {
+         pa_log("invalid sample format specification");
+         goto fail;
+     }
+ 
+-    if ((/*ss.format != PA_SAMPLE_U8 &&*/ ss.format != PA_SAMPLE_S16NE) ||
++    if ((ss.format != PA_SAMPLE_S16NE) ||
+         (ss.channels > 2)) {
+-        pa_log("sample type support is limited to mono/stereo and U8 or S16NE sample data");
++        pa_log("sample type support is limited to mono/stereo and S16NE sample data");
+         goto fail;
+     }
+ 
+-- 
+2.1.0
+

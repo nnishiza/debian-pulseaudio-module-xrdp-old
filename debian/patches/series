@@ -1,4 +1,4 @@
-0001-raop-sink-channels.patch
+0001-raop-Don-t-use-incompatible-default-sample-spec-para.patch
 0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
 0003-exit-with-X-session.patch
 0004-dont-start-when-already-running.patch
