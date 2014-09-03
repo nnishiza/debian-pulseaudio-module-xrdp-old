@@ -1,8 +1,8 @@
-pulseaudio (5.0-12) UNRELEASED; urgency=medium
+pulseaudio (5.0-12) experimental; urgency=medium
 
   * Import patch from upstream fixing float endianness swap.
 
- -- Felipe Sateler <fsateler@debian.org>  Wed, 03 Sep 2014 15:38:02 -0400
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 03 Sep 2014 15:38:47 -0400
 
 pulseaudio (5.0-11) experimental; urgency=medium
 
