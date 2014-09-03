@@ -14,3 +14,4 @@ tests-Fix-mix-test-on-big-endian-systems.patch
 util-Fix-pa_get_binary_name-on-Debian-kFreeBSD.patch
 misc-cleanups-and-bug-fixes.patch
 util-Try-finding-out-application-name-using-dladdr.patch
+broken-PA_FLOAT32_SWAP.patch

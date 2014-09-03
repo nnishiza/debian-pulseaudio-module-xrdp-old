@@ -1,0 +1,320 @@
+From: Peter Meerwald <pmeerw@pmeerw.net>
+To: General PulseAudio Discussion <pulseaudio-discuss@lists.freedesktop.org>
+Date: Wed,  3 Sep 2014 02:25:42 +0200
+Message-Id: <1409703942-20509-2-git-send-email-pmeerw@pmeerw.net>
+X-Mailer: git-send-email 1.9.1
+In-Reply-To: <1409703942-20509-1-git-send-email-pmeerw@pmeerw.net>
+References: <1409703942-20509-1-git-send-email-pmeerw@pmeerw.net>
+Subject: [pulseaudio-discuss] [PATCH 2/2] endianmacros: Replace borked
+	PA_FLOAT32_SWAP() with PA_READ_FLOAT32RE() / PA_WRITE_FLOAT32RE()
+X-BeenThere: pulseaudio-discuss@lists.freedesktop.org
+X-Mailman-Version: 2.1.15
+Precedence: list
+Reply-To: General PulseAudio Discussion
+ <pulseaudio-discuss@lists.freedesktop.org>
+List-Id: General PulseAudio Discussion
+ <pulseaudio-discuss.lists.freedesktop.org>
+List-Unsubscribe: <http://lists.freedesktop.org/mailman/options/pulseaudio-discuss>, 
+ <mailto:pulseaudio-discuss-request@lists.freedesktop.org?subject=unsubscribe>
+List-Archive: <http://lists.freedesktop.org/archives/pulseaudio-discuss>
+List-Post: <mailto:pulseaudio-discuss@lists.freedesktop.org>
+List-Help: <mailto:pulseaudio-discuss-request@lists.freedesktop.org?subject=help>
+List-Subscribe: <http://lists.freedesktop.org/mailman/listinfo/pulseaudio-discuss>, 
+ <mailto:pulseaudio-discuss-request@lists.freedesktop.org?subject=subscribe>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Errors-To: pulseaudio-discuss-bounces@lists.freedesktop.org
+Sender: "pulseaudio-discuss" <pulseaudio-discuss-bounces@lists.freedesktop.org>
+
+From: Peter Meerwald <pmeerw@debian>
+
+building PA with -O0 leads to test failure in mix-test on i386
+
+issue reported by Felipe, see
+http://lists.freedesktop.org/archives/pulseaudio-discuss/2014-August/021406.html
+
+the problem is the value 0xbeffbd7f: when byte-swapped it becomes 0x7fbdffbe and according
+to IEEE-754 represents a signalling NaN (starting with s111 1111 10, see http://en.wikipedia.org/wiki/NaN)
+
+when this value is assigned to a floating point register, it becomes 0x7ffdffbe, representing
+a quiet NaN (starting with s111 1111 11) -- a signalling NaN is turned into a quiet NaN!
+
+so PA_FLOAT32_SWAP(PA_FLOAT32_SWAP(x)) != x for certain values, uhuh!
+
+the following test code can be used; due to volatile, it will always demonstrate the issue;
+without volatile, it depends on the optimization level (i386, 32-bit, gcc 4.9):
+
+// snip
+
+static inline float PA_FLOAT32_SWAP(float x) {
+    union {
+        float f;
+        uint32_t u;
+    } t;
+
+    t.f = x;
+    t.u = bswap_32(t.u);
+    return t.f;
+}
+
+int main() {
+  unsigned x = 0xbeffbd7f;
+  volatile float f = PA_FLOAT32_SWAP(*(float *)&x);
+  printf("%08x %08x %08x %f\n", 0xbeffbd7f, *(unsigned *)&f, bswap_32(*(unsigned *)&f), f);
+}
+// snip
+
+the problem goes away with optimization when no temporary floating point registers are used
+
+the proposed solution is to avoid passing swapped floating point data in a
+float; this is done with new functions PA_READ_FLOAT32RE() and PA_WRITE_FLOAT32RE()
+which use uint32_t to dereference a pointer and byte-swap the data, hence no temporary
+float variable is used
+
+also delete PA_FLOAT32_TO_LE()/_BE(), not used
+
+Signed-off-by: Peter Meerwald <pmeerw@pmeerw.net>
+Reported-by: Felipe Sateler <fsateler@debian.org>
+---
+ src/pulsecore/endianmacros.h | 23 ++++++++++++-----------
+ src/pulsecore/mix.c          | 11 ++++-------
+ src/pulsecore/sample-util.c  |  4 ++--
+ src/pulsecore/sconv-s16le.c  | 22 ++++++++--------------
+ src/pulsecore/svolume_c.c    |  4 ++--
+ src/tests/mix-test.c         |  4 ++--
+ src/tests/resampler-test.c   |  4 ++--
+ 7 files changed, 32 insertions(+), 40 deletions(-)
+
+--- a/src/pulsecore/endianmacros.h
++++ b/src/pulsecore/endianmacros.h
+@@ -71,25 +71,32 @@ static inline void PA_WRITE24LE(uint8_t
+     p[0] = (uint8_t) u;
+ }
+ 
+-static inline float PA_FLOAT32_SWAP(float x) {
++static inline float PA_READ_FLOAT32RE(const void *p) {
+     union {
+         float f;
+         uint32_t u;
+     } t;
+ 
+-    t.f = x;
+-    t.u = PA_UINT32_SWAP(t.u);
++    t.u = PA_UINT32_SWAP(*(uint32_t *) p);
+     return t.f;
+ }
+ 
++static inline void PA_WRITE_FLOAT32RE(void *p, float x) {
++    union {
++        float f;
++        uint32_t u;
++    } t;
++
++    t.f = x;
++    *(uint32_t *) p = PA_UINT32_SWAP(t.u);
++}
++
+ #define PA_MAYBE_INT16_SWAP(c,x) ((c) ? PA_INT16_SWAP(x) : (x))
+ #define PA_MAYBE_UINT16_SWAP(c,x) ((c) ? PA_UINT16_SWAP(x) : (x))
+ 
+ #define PA_MAYBE_INT32_SWAP(c,x) ((c) ? PA_INT32_SWAP(x) : (x))
+ #define PA_MAYBE_UINT32_SWAP(c,x) ((c) ? PA_UINT32_SWAP(x) : (x))
+ 
+-#define PA_MAYBE_FLOAT32_SWAP(c,x) ((c) ? PA_FLOAT32_SWAP(x) : (x))
+-
+ #ifdef WORDS_BIGENDIAN
+  #define PA_INT16_FROM_LE(x) PA_INT16_SWAP(x)
+  #define PA_INT16_FROM_BE(x) ((int16_t)(x))
+@@ -115,9 +122,6 @@ static inline float PA_FLOAT32_SWAP(floa
+  #define PA_UINT32_TO_LE(x) PA_UINT32_SWAP(x)
+  #define PA_UINT32_TO_BE(x) ((uint32_t)(x))
+ 
+- #define PA_FLOAT32_TO_LE(x) PA_FLOAT32_SWAP(x)
+- #define PA_FLOAT32_TO_BE(x) ((float) (x))
+-
+  #define PA_READ24NE(x) PA_READ24BE(x)
+  #define PA_WRITE24NE(x,y) PA_WRITE24BE((x),(y))
+ 
+@@ -148,9 +152,6 @@ static inline float PA_FLOAT32_SWAP(floa
+  #define PA_UINT32_TO_LE(x) ((uint32_t)(x))
+  #define PA_UINT32_TO_BE(x) PA_UINT32_SWAP(x)
+ 
+- #define PA_FLOAT32_TO_LE(x) ((float) (x))
+- #define PA_FLOAT32_TO_BE(x) PA_FLOAT32_SWAP(x)
+-
+  #define PA_READ24NE(x) PA_READ24LE(x)
+  #define PA_WRITE24NE(x,y) PA_WRITE24LE((x),(y))
+ 
+--- a/src/pulsecore/mix.c
++++ b/src/pulsecore/mix.c
+@@ -576,17 +576,14 @@ static void pa_mix_float32re_c(pa_mix_in
+ 
+         for (i = 0; i < nstreams; i++) {
+             pa_mix_info *m = streams + i;
+-            float v, cv = m->linear[channel].f;
++            float cv = m->linear[channel].f;
+ 
+-            if (PA_LIKELY(cv > 0)) {
+-                v = PA_FLOAT32_SWAP(*(float*) m->ptr);
+-                v *= cv;
+-                sum += v;
+-            }
++            if (PA_LIKELY(cv > 0))
++                sum += PA_READ_FLOAT32RE(m->ptr) * cv;
+             m->ptr = (uint8_t*) m->ptr + sizeof(float);
+         }
+ 
+-        *data = PA_FLOAT32_SWAP(sum);
++        PA_WRITE_FLOAT32RE(data, sum);
+ 
+         if (PA_UNLIKELY(++channel >= channels))
+             channel = 0;
+--- a/src/pulsecore/sample-util.c
++++ b/src/pulsecore/sample-util.c
+@@ -296,9 +296,9 @@ void pa_sample_clamp(pa_sample_format_t
+         for (; n > 0; n--) {
+             float f;
+ 
+-            f = PA_FLOAT32_SWAP(*s);
++            f = PA_READ_FLOAT32RE(s);
+             f = PA_CLAMP_UNLIKELY(f, -1.0f, 1.0f);
+-            *d = PA_FLOAT32_SWAP(f);
++            PA_WRITE_FLOAT32RE(d, f);
+ 
+             s = (const float*) ((const uint8_t*) s + sstr);
+             d = (float*) ((uint8_t*) d + dstr);
+--- a/src/pulsecore/sconv-s16le.c
++++ b/src/pulsecore/sconv-s16le.c
+@@ -157,8 +157,7 @@ void pa_sconv_s16le_to_float32re(unsigne
+     for (; n > 0; n--) {
+         int16_t s = *(a++);
+         float k = INT16_FROM(s) * (1.0f / (1 << 15));
+-        k = PA_FLOAT32_SWAP(k);
+-        *(b++) = k;
++        PA_WRITE_FLOAT32RE(b++, k);
+     }
+ }
+ 
+@@ -169,8 +168,7 @@ void pa_sconv_s32le_to_float32re(unsigne
+     for (; n > 0; n--) {
+         int32_t s = *(a++);
+         float k = INT32_FROM(s) * (1.0f / (1U << 31));
+-        k = PA_FLOAT32_SWAP(k);
+-        *(b++) = k;
++        PA_WRITE_FLOAT32RE(b++, k);
+     }
+ }
+ 
+@@ -180,8 +178,7 @@ void pa_sconv_s16le_from_float32re(unsig
+ 
+     for (; n > 0; n--) {
+         int16_t s;
+-        float v = *(a++);
+-        v = PA_FLOAT32_SWAP(v) * (1 << 15);
++        float v = PA_READ_FLOAT32RE(a++) * (1 << 15);
+         s = (int16_t) PA_CLAMP_UNLIKELY(lrintf(v), -0x8000, 0x7FFF);
+         *(b++) = INT16_TO(s);
+     }
+@@ -193,8 +190,7 @@ void pa_sconv_s32le_from_float32re(unsig
+ 
+     for (; n > 0; n--) {
+         int32_t s;
+-        float v = *(a++);
+-        v = PA_FLOAT32_SWAP(v) * (1U << 31);
++        float v = PA_READ_FLOAT32RE(a++) * (1U << 31);
+         s = (int32_t) PA_CLAMP_UNLIKELY(llrintf(v), -0x80000000LL, 0x7FFFFFFFLL);
+         *(b++) = INT32_TO(s);
+     }
+@@ -325,7 +321,7 @@ void pa_sconv_s24le_to_float32re(unsigne
+     for (; n > 0; n--) {
+         int32_t s = READ24(a) << 8;
+         float k = s * (1.0f / (1U << 31));
+-        *b = PA_FLOAT32_SWAP(k);
++        PA_WRITE_FLOAT32RE(b, k);
+         a += 3;
+         b++;
+     }
+@@ -337,8 +333,7 @@ void pa_sconv_s24le_from_float32re(unsig
+ 
+     for (; n > 0; n--) {
+         int32_t s;
+-        float v = *a;
+-        v = PA_FLOAT32_SWAP(v) * (1U << 31);
++        float v = PA_READ_FLOAT32RE(a) * (1U << 31);
+         s = (int32_t) PA_CLAMP_UNLIKELY(llrint(v), -0x80000000LL, 0x7FFFFFFFLL);
+         WRITE24(b, ((uint32_t) s) >> 8);
+         a++;
+@@ -411,7 +406,7 @@ void pa_sconv_s24_32le_to_float32re(unsi
+     for (; n > 0; n--) {
+         int32_t s = (int32_t) (UINT32_FROM(*a) << 8);
+         float k = s * (1.0f / (1U << 31));
+-        *b = PA_FLOAT32_SWAP(k);
++        PA_WRITE_FLOAT32RE(b, k);
+         a++;
+         b++;
+     }
+@@ -437,8 +432,7 @@ void pa_sconv_s24_32le_from_float32re(un
+ 
+     for (; n > 0; n--) {
+         int32_t s;
+-        float v = *a;
+-        v = PA_FLOAT32_SWAP(v) * (1U << 31);
++        float v = PA_READ_FLOAT32RE(a) * (1U << 31);
+         s = (int32_t) PA_CLAMP_UNLIKELY(llrint(v), -0x80000000LL, 0x7FFFFFFFLL);
+         *b = UINT32_TO(((uint32_t) s) >> 8);
+         a++;
+--- a/src/pulsecore/svolume_c.c
++++ b/src/pulsecore/svolume_c.c
+@@ -125,9 +125,9 @@ static void pa_volume_float32re_c(float
+     for (channel = 0; length; length--) {
+         float t;
+ 
+-        t = PA_FLOAT32_SWAP(*samples);
++        t = PA_READ_FLOAT32RE(samples);
+         t *= volumes[channel];
+-        *samples++ = PA_FLOAT32_SWAP(t);
++        PA_WRITE_FLOAT32RE(samples++, t);
+ 
+         if (PA_UNLIKELY(++channel >= channels))
+             channel = 0;
+--- a/src/tests/mix-test.c
++++ b/src/tests/mix-test.c
+@@ -150,7 +150,7 @@ static void compare_block(const pa_sampl
+             float *u = d;
+ 
+             for (i = 0; i < chunk->length / pa_frame_size(ss); i++) {
+-                float uu = PA_MAYBE_FLOAT32_SWAP(ss->format != PA_SAMPLE_FLOAT32NE, *u);
++                float uu = ss->format == PA_SAMPLE_FLOAT32NE ? *u : PA_READ_FLOAT32RE(u);
+                 fail_unless(fabsf(uu - *v) <= 1e-6f, NULL);
+                 ++u;
+                 ++v;
+@@ -264,7 +264,7 @@ static pa_memblock* generate_block(pa_me
+             if (ss->format == PA_SAMPLE_FLOAT32RE) {
+                 float *u = d;
+                 for (i = 0; i < 10; i++)
+-                    u[i] = PA_FLOAT32_SWAP(float32ne_result[0][i]);
++                    PA_WRITE_FLOAT32RE(&u[i], float32ne_result[0][i]);
+             } else
+                 memcpy(d, float32ne_result[0], sizeof(float32ne_result[0]));
+ 
+--- a/src/tests/resampler-test.c
++++ b/src/tests/resampler-test.c
+@@ -98,7 +98,7 @@ static void dump_block(const char *label
+             float *u = d;
+ 
+             for (i = 0; i < chunk->length / pa_frame_size(ss); i++) {
+-                printf("%4.3g ", ss->format == PA_SAMPLE_FLOAT32NE ? *u : PA_FLOAT32_SWAP(*u));
++                printf("%4.3g ", ss->format == PA_SAMPLE_FLOAT32NE ? *u : PA_READ_FLOAT32RE(u));
+                 u++;
+             }
+ 
+@@ -222,7 +222,7 @@ static pa_memblock* generate_block(pa_me
+ 
+             if (ss->format == PA_SAMPLE_FLOAT32RE)
+                 for (i = 0; i < 10; i++)
+-                    u[i] = PA_FLOAT32_SWAP(u[i]);
++                    PA_WRITE_FLOAT32RE(&u[i], u[i]);
+ 
+             break;
+         }
