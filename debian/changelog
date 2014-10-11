@@ -1,8 +1,9 @@
-pulseaudio (5.0-13) UNRELEASED; urgency=medium
+pulseaudio (5.0-13) unstable; urgency=medium
 
   * Replace raop channels patch with proper fix from upstream.
+  * Release to unstable.
 
- -- Felipe Sateler <fsateler@debian.org>  Sat, 11 Oct 2014 01:24:16 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Sat, 11 Oct 2014 01:24:59 -0300
 
 pulseaudio (5.0-12) experimental; urgency=medium
 
