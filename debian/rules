@@ -25,6 +25,7 @@ common-build-arch::
 	  debian/pulseaudio.install >  debian/pulseaudio.install.kfreebsd-amd64
 	grep -v -e alsa -e evdev -e udev -e share/pulseaudio -e systemd \
 	  debian/pulseaudio.install > debian/pulseaudio.install.hurd-i386
+	dh_translations
 
 common-install-arch::
 	find $(DEB_DESTDIR) -name "*.la" -delete
@@ -47,6 +48,19 @@ clean::
 	rm -f debian/pulseaudio.install.kfreebsd-i386
 	rm -f debian/pulseaudio.install.kfreebsd-amd64
 	rm -f debian/pulseaudio.install.hurd-i386
+	rm -f debian/stamp-post-patches
+	if test -f $(CURDIR)/debian/daemon.conf.in; then \
+	   mv $(CURDIR)/debian/daemon.conf.in $(CURDIR)/src/daemon/daemon.conf.in; \
+	fi
+
+-post-patches:: debian/stamp-post-patches
+
+debian/stamp-post-patches:
+	cp $(CURDIR)/src/daemon/daemon.conf.in $(CURDIR)/debian/daemon.conf.in
+	sed -e 's/; deferred-volume-safety-margin-usec = 8000/deferred-volume-safety-margin-usec = 1/' \
+	    -e 's/; flat-volumes = yes/flat-volumes = no/' \
+	    $(CURDIR)/src/daemon/daemon.conf.in
+	touch debian/stamp-post-patches
 
 # Libs should be in the multi-arch path, but the modules should be in the
 # normal directory as pulseaudio is foreign
