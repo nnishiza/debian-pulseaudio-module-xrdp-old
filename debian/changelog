@@ -18,6 +18,7 @@ pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
     - util-Fix-pa_get_binary_name-on-Debian-kFreeBSD.patch
     - util-Try-finding-out-application-name-using-dladdr.patch
     - zsh-completion-Fix-completion-for-default-sink-sourc.patch
+  * Refreshed debian/patches/gnu-kfreebsd.patch
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 25 Nov 2014 09:39:16 +1100
 
