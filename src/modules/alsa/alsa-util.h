@@ -118,7 +118,7 @@ void pa_alsa_init_proplist_pcm_info(pa_core *c, pa_proplist *p, snd_pcm_info_t *
 void pa_alsa_init_proplist_card(pa_core *c, pa_proplist *p, int card);
 void pa_alsa_init_proplist_pcm(pa_core *c, pa_proplist *p, snd_pcm_t *pcm);
 void pa_alsa_init_proplist_ctl(pa_proplist *p, const char *name);
-bool pa_alsa_init_description(pa_proplist *p);
+bool pa_alsa_init_description(pa_proplist *p, pa_card *card);
 
 int pa_alsa_recover_from_poll(snd_pcm_t *pcm, int revents);
 
@@ -142,16 +142,15 @@ const char* pa_alsa_strerror(int errnum);
 
 bool pa_alsa_may_tsched(bool want);
 
-snd_hctl_elem_t* pa_alsa_find_jack(snd_hctl_t *hctl, const char* jack_name);
-snd_hctl_elem_t* pa_alsa_find_eld_ctl(snd_hctl_t *hctl, int device);
+snd_mixer_elem_t *pa_alsa_mixer_find(snd_mixer_t *mixer, const char *name, unsigned int device);
 
-snd_mixer_t *pa_alsa_open_mixer(int alsa_card_index, char **ctl_device, snd_hctl_t **hctl);
+snd_mixer_t *pa_alsa_open_mixer(int alsa_card_index, char **ctl_device);
 
 typedef struct pa_hdmi_eld pa_hdmi_eld;
 struct pa_hdmi_eld {
     char monitor_name[17];
 };
 
-int pa_alsa_get_hdmi_eld(snd_hctl_t *hctl, int device, pa_hdmi_eld *eld);
+int pa_alsa_get_hdmi_eld(snd_hctl_elem_t *elem, pa_hdmi_eld *eld);
 
 #endif

@@ -126,7 +126,7 @@ void pa_sink_new_data_set_muted(pa_sink_new_data *data, bool mute) {
     pa_assert(data);
 
     data->muted_is_set = true;
-    data->muted = !!mute;
+    data->muted = mute;
 }
 
 void pa_sink_new_data_set_port(pa_sink_new_data *data, const char *port) {
@@ -231,9 +231,15 @@ pa_sink* pa_sink_new(
     if (data->card)
         pa_proplist_update(data->proplist, PA_UPDATE_MERGE, data->card->proplist);
 
-    pa_device_init_description(data->proplist);
+    pa_device_init_description(data->proplist, data->card);
     pa_device_init_icon(data->proplist, true);
     pa_device_init_intended_roles(data->proplist);
+
+    if (!data->active_port) {
+        pa_device_port *p = pa_device_port_find_best(data->ports);
+        if (p)
+            pa_sink_new_data_set_port(data, p->name);
+    }
 
     if (pa_hook_fire(&core->hooks[PA_CORE_HOOK_SINK_FIXATE], data) < 0) {
         pa_xfree(s);
@@ -300,23 +306,10 @@ pa_sink* pa_sink_new(
         if ((s->active_port = pa_hashmap_get(s->ports, data->active_port)))
             s->save_port = data->save_port;
 
-    if (!s->active_port) {
-        void *state;
-        pa_device_port *p;
-
-        PA_HASHMAP_FOREACH(p, s->ports, state) {
-            if (p->available == PA_AVAILABLE_NO)
-                continue;
-
-            if (!s->active_port || p->priority > s->active_port->priority)
-                s->active_port = p;
-        }
-        if (!s->active_port) {
-            PA_HASHMAP_FOREACH(p, s->ports, state)
-                if (!s->active_port || p->priority > s->active_port->priority)
-                    s->active_port = p;
-        }
-    }
+    /* Hopefully the active port has already been assigned in the previous call
+       to pa_device_port_find_best, but better safe than sorry */
+    if (!s->active_port)
+        s->active_port = pa_device_port_find_best(s->ports);
 
     if (s->active_port)
         s->latency_offset = s->active_port->latency_offset;
@@ -515,7 +508,7 @@ void pa_sink_set_write_volume_callback(pa_sink *s, pa_sink_cb_t cb) {
         pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
 }
 
-void pa_sink_set_get_mute_callback(pa_sink *s, pa_sink_cb_t cb) {
+void pa_sink_set_get_mute_callback(pa_sink *s, pa_sink_get_mute_cb_t cb) {
     pa_assert(s);
 
     s->get_mute = cb;
@@ -620,8 +613,10 @@ void pa_sink_put(pa_sink* s) {
      * the sink implementor to set this flag as needed.
      *
      * Note: This flag can also change over the life time of the sink. */
-    if (!(s->flags & PA_SINK_HW_VOLUME_CTRL) && !(s->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER))
+    if (!(s->flags & PA_SINK_HW_VOLUME_CTRL) && !(s->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER)) {
         pa_sink_enable_decibel_volume(s, true);
+        s->soft_volume = s->reference_volume;
+    }
 
     /* If the sink implementor support DB volumes by itself, we should always
      * try and enable flat volumes too */
@@ -674,7 +669,7 @@ void pa_sink_put(pa_sink* s) {
 /* Called from main context */
 void pa_sink_unlink(pa_sink* s) {
     bool linked;
-    pa_sink_input *i, *j = NULL;
+    pa_sink_input *i, PA_UNUSED *j = NULL;
 
     pa_assert(s);
     pa_assert_ctl_context();
@@ -1394,7 +1389,8 @@ int pa_sink_update_rate(pa_sink *s, uint32_t rate, bool passthrough) {
     uint32_t alternate_rate = s->alternate_sample_rate;
     uint32_t idx;
     pa_sink_input *i;
-    bool use_alternate = false;
+    bool default_rate_is_usable = false;
+    bool alternate_rate_is_usable = false;
 
     if (rate == s->sample_spec.rate)
         return 0;
@@ -1403,7 +1399,7 @@ int pa_sink_update_rate(pa_sink *s, uint32_t rate, bool passthrough) {
         return -1;
 
     if (PA_UNLIKELY(default_rate == alternate_rate && !passthrough)) {
-        pa_log_debug("Default and alternate sample rates are the same.");
+        pa_log_debug("Default and alternate sample rates are the same, so there is no point in switching.");
         return -1;
     }
 
@@ -1423,25 +1419,20 @@ int pa_sink_update_rate(pa_sink *s, uint32_t rate, bool passthrough) {
     if (PA_UNLIKELY(!pa_sample_rate_valid(desired_rate)))
         return -1;
 
-    if (!passthrough) {
-        pa_assert((default_rate % 4000 == 0) || (default_rate % 11025 == 0));
-        pa_assert((alternate_rate % 4000 == 0) || (alternate_rate % 11025 == 0));
+    if (!passthrough && default_rate != desired_rate && alternate_rate != desired_rate) {
+        if (default_rate % 11025 == 0 && desired_rate % 11025 == 0)
+            default_rate_is_usable = true;
+        if (default_rate % 4000 == 0 && desired_rate % 4000 == 0)
+            default_rate_is_usable = true;
+        if (alternate_rate && alternate_rate % 11025 == 0 && desired_rate % 11025 == 0)
+            alternate_rate_is_usable = true;
+        if (alternate_rate && alternate_rate % 4000 == 0 && desired_rate % 4000 == 0)
+            alternate_rate_is_usable = true;
 
-        if (default_rate % 11025 == 0) {
-            if ((alternate_rate % 4000 == 0) && (desired_rate % 4000 == 0))
-                use_alternate=true;
-        } else {
-            /* default is 4000 multiple */
-            if ((alternate_rate % 11025 == 0) && (desired_rate % 11025 == 0))
-                use_alternate=true;
-        }
-
-        if (use_alternate)
+        if (alternate_rate_is_usable && !default_rate_is_usable)
             desired_rate = alternate_rate;
         else
             desired_rate = default_rate;
-    } else {
-        desired_rate = rate; /* use stream sampling rate, discard default/alternate settings */
     }
 
     if (desired_rate == s->sample_spec.rate)
@@ -1621,6 +1612,7 @@ void pa_sink_leave_passthrough(pa_sink *s) {
 static void compute_reference_ratio(pa_sink_input *i) {
     unsigned c = 0;
     pa_cvolume remapped;
+    pa_cvolume ratio;
 
     pa_assert(i);
     pa_assert(pa_sink_flat_volume_enabled(i->sink));
@@ -1635,7 +1627,7 @@ static void compute_reference_ratio(pa_sink_input *i) {
     remapped = i->sink->reference_volume;
     pa_cvolume_remap(&remapped, &i->sink->channel_map, &i->channel_map);
 
-    i->reference_ratio.channels = i->sample_spec.channels;
+    ratio = i->reference_ratio;
 
     for (c = 0; c < i->sample_spec.channels; c++) {
 
@@ -1645,14 +1637,16 @@ static void compute_reference_ratio(pa_sink_input *i) {
 
         /* Don't update the reference ratio unless necessary */
         if (pa_sw_volume_multiply(
-                    i->reference_ratio.values[c],
+                    ratio.values[c],
                     remapped.values[c]) == i->volume.values[c])
             continue;
 
-        i->reference_ratio.values[c] = pa_sw_volume_divide(
+        ratio.values[c] = pa_sw_volume_divide(
                 i->volume.values[c],
                 remapped.values[c]);
     }
+
+    pa_sink_input_set_reference_ratio(i, &ratio);
 }
 
 /* Called from main context. Only called for the root sink in volume sharing
@@ -1842,20 +1836,13 @@ static void update_real_volume(pa_sink *s, const pa_cvolume *new_volume, pa_chan
     PA_IDXSET_FOREACH(i, s->inputs, idx) {
         if (i->origin_sink && (i->origin_sink->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER)) {
             if (pa_sink_flat_volume_enabled(s)) {
-                pa_cvolume old_volume = i->volume;
+                pa_cvolume new_input_volume;
 
                 /* Follow the root sink's real volume. */
-                i->volume = *new_volume;
-                pa_cvolume_remap(&i->volume, channel_map, &i->channel_map);
+                new_input_volume = *new_volume;
+                pa_cvolume_remap(&new_input_volume, channel_map, &i->channel_map);
+                pa_sink_input_set_volume_direct(i, &new_input_volume);
                 compute_reference_ratio(i);
-
-                /* The volume changed, let's tell people so */
-                if (!pa_cvolume_equal(&old_volume, &i->volume)) {
-                    if (i->volume_changed)
-                        i->volume_changed(i);
-
-                    pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
-                }
             }
 
             update_real_volume(i->origin_sink, new_volume, channel_map);
@@ -1910,7 +1897,7 @@ static void propagate_reference_volume(pa_sink *s) {
      * sink input volumes accordingly */
 
     PA_IDXSET_FOREACH(i, s->inputs, idx) {
-        pa_cvolume old_volume;
+        pa_cvolume new_volume;
 
         if (i->origin_sink && (i->origin_sink->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER)) {
             propagate_reference_volume(i->origin_sink);
@@ -1921,24 +1908,14 @@ static void propagate_reference_volume(pa_sink *s) {
             continue;
         }
 
-        old_volume = i->volume;
-
         /* This basically calculates:
          *
          * i->volume := s->reference_volume * i->reference_ratio  */
 
-        i->volume = s->reference_volume;
-        pa_cvolume_remap(&i->volume, &s->channel_map, &i->channel_map);
-        pa_sw_cvolume_multiply(&i->volume, &i->volume, &i->reference_ratio);
-
-        /* The volume changed, let's tell people so */
-        if (!pa_cvolume_equal(&old_volume, &i->volume)) {
-
-            if (i->volume_changed)
-                i->volume_changed(i);
-
-            pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
-        }
+        new_volume = s->reference_volume;
+        pa_cvolume_remap(&new_volume, &s->channel_map, &i->channel_map);
+        pa_sw_cvolume_multiply(&new_volume, &new_volume, &i->reference_ratio);
+        pa_sink_input_set_volume_direct(i, &new_volume);
     }
 }
 
@@ -1961,13 +1938,11 @@ static bool update_reference_volume(pa_sink *s, const pa_cvolume *v, const pa_ch
     pa_cvolume_remap(&volume, channel_map, &s->channel_map);
 
     reference_volume_changed = !pa_cvolume_equal(&volume, &s->reference_volume);
-    s->reference_volume = volume;
+    pa_sink_set_reference_volume_direct(s, &volume);
 
     s->save_volume = (!reference_volume_changed && s->save_volume) || save;
 
-    if (reference_volume_changed)
-        pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
-    else if (!(s->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER))
+    if (!reference_volume_changed && !(s->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER))
         /* If the root sink's volume doesn't change, then there can't be any
          * changes in the other sinks in the sink tree either.
          *
@@ -2056,7 +2031,7 @@ void pa_sink_set_volume(
 
         /* Let's 'push' the reference volume if necessary */
         pa_cvolume_merge(&new_reference_volume, &s->reference_volume, &root_sink->real_volume);
-        /* If the sink and it's root don't have the same number of channels, we need to remap */
+        /* If the sink and its root don't have the same number of channels, we need to remap */
         if (s != root_sink && !pa_channel_map_equal(&s->channel_map, &root_sink->channel_map))
             pa_cvolume_remap(&new_reference_volume, &s->channel_map, &root_sink->channel_map);
         update_reference_volume(root_sink, &new_reference_volume, &root_sink->channel_map, save);
@@ -2135,11 +2110,11 @@ static void propagate_real_volume(pa_sink *s, const pa_cvolume *old_real_volume)
     if (pa_sink_flat_volume_enabled(s)) {
 
         PA_IDXSET_FOREACH(i, s->inputs, idx) {
-            pa_cvolume old_volume = i->volume;
+            pa_cvolume new_volume;
 
             /* 2. Since the sink's reference and real volumes are equal
              * now our ratios should be too. */
-            i->reference_ratio = i->real_ratio;
+            pa_sink_input_set_reference_ratio(i, &i->real_ratio);
 
             /* 3. Recalculate the new stream reference volume based on the
              * reference ratio and the sink's reference volume.
@@ -2149,18 +2124,10 @@ static void propagate_real_volume(pa_sink *s, const pa_cvolume *old_real_volume)
              * i->volume = s->reference_volume * i->reference_ratio
              *
              * This is identical to propagate_reference_volume() */
-            i->volume = s->reference_volume;
-            pa_cvolume_remap(&i->volume, &s->channel_map, &i->channel_map);
-            pa_sw_cvolume_multiply(&i->volume, &i->volume, &i->reference_ratio);
-
-            /* Notify if something changed */
-            if (!pa_cvolume_equal(&old_volume, &i->volume)) {
-
-                if (i->volume_changed)
-                    i->volume_changed(i);
-
-                pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
-            }
+            new_volume = s->reference_volume;
+            pa_cvolume_remap(&new_volume, &s->channel_map, &i->channel_map);
+            pa_sw_cvolume_multiply(&new_volume, &new_volume, &i->reference_ratio);
+            pa_sink_input_set_volume_direct(i, &new_volume);
 
             if (i->origin_sink && (i->origin_sink->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER))
                 propagate_real_volume(i->origin_sink, old_real_volume);
@@ -2230,19 +2197,30 @@ void pa_sink_set_mute(pa_sink *s, bool mute, bool save) {
 
     pa_sink_assert_ref(s);
     pa_assert_ctl_context();
-    pa_assert(PA_SINK_IS_LINKED(s->state));
 
     old_muted = s->muted;
+
+    if (mute == old_muted) {
+        s->save_muted |= save;
+        return;
+    }
+
     s->muted = mute;
-    s->save_muted = (old_muted == s->muted && s->save_muted) || save;
+    s->save_muted = save;
 
-    if (!(s->flags & PA_SINK_DEFERRED_VOLUME) && s->set_mute)
+    if (!(s->flags & PA_SINK_DEFERRED_VOLUME) && s->set_mute) {
+        s->set_mute_in_progress = true;
         s->set_mute(s);
+        s->set_mute_in_progress = false;
+    }
 
+    if (!PA_SINK_IS_LINKED(s->state))
+        return;
+
+    pa_log_debug("The mute of sink %s changed from %s to %s.", s->name, pa_yes_no(old_muted), pa_yes_no(mute));
     pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_MUTE, NULL, 0, NULL) == 0);
-
-    if (old_muted != s->muted)
-        pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
+    pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
+    pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_MUTE_CHANGED], s);
 }
 
 /* Called from main thread */
@@ -2252,21 +2230,15 @@ bool pa_sink_get_mute(pa_sink *s, bool force_refresh) {
     pa_assert_ctl_context();
     pa_assert(PA_SINK_IS_LINKED(s->state));
 
-    if (s->refresh_muted || force_refresh) {
-        bool old_muted = s->muted;
+    if ((s->refresh_muted || force_refresh) && s->get_mute) {
+        bool mute;
 
-        if (!(s->flags & PA_SINK_DEFERRED_VOLUME) && s->get_mute)
-            s->get_mute(s);
-
-        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_GET_MUTE, NULL, 0, NULL) == 0);
-
-        if (old_muted != s->muted) {
-            s->save_muted = true;
-
-            pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
-
-            /* Make sure the soft mute status stays in sync */
-            pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_MUTE, NULL, 0, NULL) == 0);
+        if (s->flags & PA_SINK_DEFERRED_VOLUME) {
+            if (pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_GET_MUTE, &mute, 0, NULL) >= 0)
+                pa_sink_mute_changed(s, mute);
+        } else {
+            if (s->get_mute(s, &mute) >= 0)
+                pa_sink_mute_changed(s, mute);
         }
     }
 
@@ -2279,15 +2251,17 @@ void pa_sink_mute_changed(pa_sink *s, bool new_muted) {
     pa_assert_ctl_context();
     pa_assert(PA_SINK_IS_LINKED(s->state));
 
-    /* The sink implementor may call this if the volume changed to make sure everyone is notified */
-
-    if (s->muted == new_muted)
+    if (s->set_mute_in_progress)
         return;
 
-    s->muted = new_muted;
-    s->save_muted = true;
+    /* pa_sink_set_mute() does this same check, so this may appear redundant,
+     * but we must have this here also, because the save parameter of
+     * pa_sink_set_mute() would otherwise have unintended side effects (saving
+     * the mute state when it shouldn't be saved). */
+    if (new_muted == s->muted)
+        return;
 
-    pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
+    pa_sink_set_mute(s, new_muted, true);
 }
 
 /* Called from main thread */
@@ -2554,9 +2528,7 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
                 i->thread_info.sync_next = NULL;
             }
 
-            if (pa_hashmap_remove(s->thread_info.inputs, PA_UINT32_TO_PTR(i->index)))
-                pa_sink_input_unref(i);
-
+            pa_hashmap_remove_and_free(s->thread_info.inputs, PA_UINT32_TO_PTR(i->index));
             pa_sink_invalidate_requested_latency(s, true);
             pa_sink_request_rewind(s, (size_t) -1);
 
@@ -2637,8 +2609,7 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
             i->thread_info.attached = false;
 
             /* Let's remove the sink input ...*/
-            if (pa_hashmap_remove(s->thread_info.inputs, PA_UINT32_TO_PTR(i->index)))
-                pa_sink_input_unref(i);
+            pa_hashmap_remove_and_free(s->thread_info.inputs, PA_UINT32_TO_PTR(i->index));
 
             pa_sink_invalidate_requested_latency(s, true);
 
@@ -2775,7 +2746,7 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
         case PA_SINK_MESSAGE_GET_MUTE:
 
             if (s->flags & PA_SINK_DEFERRED_VOLUME && s->get_mute)
-                s->get_mute(s);
+                return s->get_mute(s, userdata);
 
             return 0;
 
@@ -3441,16 +3412,21 @@ bool pa_device_init_icon(pa_proplist *p, bool is_sink) {
     return true;
 }
 
-bool pa_device_init_description(pa_proplist *p) {
+bool pa_device_init_description(pa_proplist *p, pa_card *card) {
     const char *s, *d = NULL, *k;
     pa_assert(p);
 
     if (pa_proplist_contains(p, PA_PROP_DEVICE_DESCRIPTION))
         return true;
 
-    if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_FORM_FACTOR)))
-        if (pa_streq(s, "internal"))
-            d = _("Built-in Audio");
+    if (card)
+        if ((s = pa_proplist_gets(card->proplist, PA_PROP_DEVICE_DESCRIPTION)))
+            d = s;
+
+    if (!d)
+        if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_FORM_FACTOR)))
+            if (pa_streq(s, "internal"))
+                d = _("Built-in Audio");
 
     if (!d)
         if ((s = pa_proplist_gets(p, PA_PROP_DEVICE_CLASS)))
@@ -3802,4 +3778,29 @@ done:
         pa_idxset_free(sink_formats, (pa_free_cb_t) pa_format_info_free);
 
     return out_formats;
+}
+
+/* Called from the main thread. */
+void pa_sink_set_reference_volume_direct(pa_sink *s, const pa_cvolume *volume) {
+    pa_cvolume old_volume;
+    char old_volume_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+    char new_volume_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+
+    pa_assert(s);
+    pa_assert(volume);
+
+    old_volume = s->reference_volume;
+
+    if (pa_cvolume_equal(volume, &old_volume))
+        return;
+
+    s->reference_volume = *volume;
+    pa_log_debug("The reference volume of sink %s changed from %s to %s.", s->name,
+                 pa_cvolume_snprint_verbose(old_volume_str, sizeof(old_volume_str), &old_volume, &s->channel_map,
+                                            s->flags & PA_SINK_DECIBEL_VOLUME),
+                 pa_cvolume_snprint_verbose(new_volume_str, sizeof(new_volume_str), volume, &s->channel_map,
+                                            s->flags & PA_SINK_DECIBEL_VOLUME));
+
+    pa_subscription_post(s->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, s->index);
+    pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_VOLUME_CHANGED], s);
 }

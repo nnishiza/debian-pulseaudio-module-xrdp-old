@@ -141,6 +141,9 @@ struct userdata {
     pa_hook_slot *sink_new_slot, *source_new_slot, *sink_unlink_slot, *source_unlink_slot, *sink_changed_slot, *source_changed_slot;
 
     pa_native_protocol *native;
+
+    bool shutting_down; /* Used in the main thread. */
+    bool client_freed; /* Used in the Avahi thread. */
 };
 
 /* Runs in PA mainloop context */
@@ -373,10 +376,8 @@ static void publish_service(pa_mainloop_api *api PA_GCC_UNUSED, void *service) {
 finish:
 
     /* Remove this service */
-    if (r < 0) {
-        pa_hashmap_remove(s->userdata->services, s->key);
-        service_free(s);
-    }
+    if (r < 0)
+        pa_hashmap_remove_and_free(s->userdata->services, s->key);
 
     avahi_string_list_free(txt);
 }
@@ -467,16 +468,11 @@ static pa_hook_result_t device_new_or_changed_cb(pa_core *c, pa_object *o, struc
 
 /* Runs in PA mainloop context */
 static pa_hook_result_t device_unlink_cb(pa_core *c, pa_object *o, struct userdata *u) {
-    struct service *s;
-
     pa_assert(c);
     pa_object_assert_ref(o);
 
     pa_threaded_mainloop_lock(u->mainloop);
-
-    if ((s = pa_hashmap_remove(u->services, o)))
-        service_free(s);
-
+    pa_hashmap_remove_and_free(u->services, o);
     pa_threaded_mainloop_unlock(u->mainloop);
 
     return PA_HOOK_OK;
@@ -638,6 +634,11 @@ static void unpublish_all_services(struct userdata *u, bool rem) {
 static int avahi_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *chunk) {
     struct userdata *u = (struct userdata *) data;
 
+    pa_assert(u);
+
+    if (u->shutting_down)
+        return 0;
+
     switch (code) {
         case AVAHI_MESSAGE_PUBLISH_ALL:
             publish_all_services(u);
@@ -645,10 +646,6 @@ static int avahi_process_msg(pa_msgobject *o, int code, void *data, int64_t offs
 
         case AVAHI_MESSAGE_SHUTDOWN_START:
             pa_module_unload(u->core, u->module, true);
-            break;
-
-        case AVAHI_MESSAGE_SHUTDOWN_COMPLETE:
-            /* pa__done() is waiting for this */
             break;
 
         default:
@@ -704,6 +701,16 @@ static void create_client(pa_mainloop_api *api PA_GCC_UNUSED, void *userdata) {
     struct userdata *u = (struct userdata *) userdata;
     int error;
 
+    /* create_client() and client_free() are called via defer events. If the
+     * two defer events are created very quickly one after another, we can't
+     * assume that the defer event that runs create_client() will be dispatched
+     * before the defer event that runs client_free() (at the time of writing,
+     * pa_mainloop actually always dispatches queued defer events in reverse
+     * creation order). For that reason we must be prepared for the case where
+     * client_free() has already been called. */
+    if (u->client_freed)
+        return;
+
     pa_thread_mq_install(&u->thread_mq);
 
     if (!(u->client = avahi_client_new(u->avahi_poll, AVAHI_CLIENT_NO_FAIL, client_callback, u, &error))) {
@@ -730,7 +737,7 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    m->userdata = u = pa_xnew(struct userdata, 1);
+    m->userdata = u = pa_xnew0(struct userdata, 1);
     u->core = m->core;
     u->module = m;
     u->native = pa_native_protocol_get(u->core);
@@ -753,8 +760,6 @@ int pa__init(pa_module*m) {
     u->source_new_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_PUT], PA_HOOK_LATE, (pa_hook_cb_t) device_new_or_changed_cb, u);
     u->source_changed_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_PROPLIST_CHANGED], PA_HOOK_LATE, (pa_hook_cb_t) device_new_or_changed_cb, u);
     u->source_unlink_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_UNLINK], PA_HOOK_LATE, (pa_hook_cb_t) device_unlink_cb, u);
-
-    u->main_entry_group = NULL;
 
     un = pa_get_user_name_malloc();
     hn = pa_get_host_name_malloc();
@@ -797,7 +802,9 @@ static void client_free(pa_mainloop_api *api PA_GCC_UNUSED, void *userdata) {
     if (u->avahi_poll)
         pa_avahi_poll_free(u->avahi_poll);
 
-    pa_asyncmsgq_post(u->thread_mq.outq, PA_MSGOBJECT(u->msg), AVAHI_MESSAGE_SHUTDOWN_COMPLETE, NULL, 0, NULL, NULL);
+    pa_asyncmsgq_post(u->thread_mq.outq, PA_MSGOBJECT(u->msg), AVAHI_MESSAGE_SHUTDOWN_COMPLETE, u, 0, NULL, NULL);
+
+    u->client_freed = true;
 }
 
 void pa__done(pa_module*m) {
@@ -807,7 +814,11 @@ void pa__done(pa_module*m) {
     if (!(u = m->userdata))
         return;
 
+    u->shutting_down = true;
+
+    pa_threaded_mainloop_lock(u->mainloop);
     pa_mainloop_api_once(u->api, client_free, u);
+    pa_threaded_mainloop_unlock(u->mainloop);
     pa_asyncmsgq_wait_for(u->thread_mq.outq, AVAHI_MESSAGE_SHUTDOWN_COMPLETE);
 
     pa_threaded_mainloop_stop(u->mainloop);

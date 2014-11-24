@@ -58,6 +58,8 @@ static inline bool PA_SINK_IS_LINKED(pa_sink_state_t x) {
 /* A generic definition for void callback functions */
 typedef void(*pa_sink_cb_t)(pa_sink *s);
 
+typedef int (*pa_sink_get_mute_cb_t)(pa_sink *s, bool *mute);
+
 struct pa_sink {
     pa_msgobject parent;
 
@@ -117,6 +119,8 @@ struct pa_sink {
     int64_t latency_offset;
 
     unsigned priority;
+
+    bool set_mute_in_progress;
 
     /* Called when the main loop requests a state change. Called from
      * main loop context. If returns -1 the state change will be
@@ -189,14 +193,24 @@ struct pa_sink {
      * set this callback. */
     pa_sink_cb_t write_volume; /* may be NULL */
 
-    /* Called when the mute setting is queried. A PA_SINK_MESSAGE_GET_MUTE
-     * message will also be sent. Called from IO thread if PA_SINK_DEFERRED_VOLUME
-     * flag is set otherwise from main loop context. If refresh_mute is false
-     * neither this function is called nor a message is sent.
+    /* If the sink mute can change "spontaneously" (i.e. initiated by the sink
+     * implementation, not by someone else calling pa_sink_set_mute()), then
+     * the sink implementation can notify about changed mute either by calling
+     * pa_sink_mute_changed() or by calling pa_sink_get_mute() with
+     * force_refresh=true. If the implementation chooses the latter approach,
+     * it should implement the get_mute callback. Otherwise get_mute can be
+     * NULL.
+     *
+     * This is called when pa_sink_get_mute() is called with
+     * force_refresh=true. This is called from the IO thread if the
+     * PA_SINK_DEFERRED_VOLUME flag is set, otherwise this is called from the
+     * main thread. On success, the implementation is expected to return 0 and
+     * set the mute parameter that is passed as a reference. On failure, the
+     * implementation is expected to return -1.
      *
      * You must use the function pa_sink_set_get_mute_callback() to
      * set this callback. */
-    pa_sink_cb_t get_mute; /* may be NULL */
+    pa_sink_get_mute_cb_t get_mute;
 
     /* Called when the mute setting shall be changed. A PA_SINK_MESSAGE_SET_MUTE
      * message will also be sent. Called from IO thread if PA_SINK_DEFERRED_VOLUME
@@ -342,7 +356,7 @@ typedef struct pa_sink_new_data {
     pa_channel_map channel_map;
     uint32_t alternate_sample_rate;
     pa_cvolume volume;
-    bool muted :1;
+    bool muted:1;
 
     bool sample_spec_is_set:1;
     bool channel_map_is_set:1;
@@ -377,7 +391,7 @@ pa_sink* pa_sink_new(
 void pa_sink_set_get_volume_callback(pa_sink *s, pa_sink_cb_t cb);
 void pa_sink_set_set_volume_callback(pa_sink *s, pa_sink_cb_t cb);
 void pa_sink_set_write_volume_callback(pa_sink *s, pa_sink_cb_t cb);
-void pa_sink_set_get_mute_callback(pa_sink *s, pa_sink_cb_t cb);
+void pa_sink_set_get_mute_callback(pa_sink *s, pa_sink_get_mute_cb_t cb);
 void pa_sink_set_set_mute_callback(pa_sink *s, pa_sink_cb_t cb);
 void pa_sink_enable_decibel_volume(pa_sink *s, bool enable);
 
@@ -399,7 +413,7 @@ void pa_sink_mute_changed(pa_sink *s, bool new_muted);
 
 void pa_sink_update_flags(pa_sink *s, pa_sink_flags_t mask, pa_sink_flags_t value);
 
-bool pa_device_init_description(pa_proplist *p);
+bool pa_device_init_description(pa_proplist *p, pa_card *card);
 bool pa_device_init_icon(pa_proplist *p, bool is_sink);
 bool pa_device_init_intended_roles(pa_proplist *p);
 unsigned pa_device_init_priority(pa_proplist *p);
@@ -502,6 +516,13 @@ void pa_sink_request_rewind(pa_sink*s, size_t nbytes);
 void pa_sink_invalidate_requested_latency(pa_sink *s, bool dynamic);
 
 pa_usec_t pa_sink_get_latency_within_thread(pa_sink *s);
+
+/* Called from the main thread, from sink-input.c only. The normal way to set
+ * the sink reference volume is to call pa_sink_set_volume(), but the flat
+ * volume logic in sink-input.c needs also a function that doesn't do all the
+ * extra stuff that pa_sink_set_volume() does. This function simply sets
+ * s->reference_volume and fires change notifications. */
+void pa_sink_set_reference_volume_direct(pa_sink *s, const pa_cvolume *volume);
 
 /* Verify that we called in IO context (aka 'thread context), or that
  * the sink is not yet set up, i.e. the thread not set up yet. See

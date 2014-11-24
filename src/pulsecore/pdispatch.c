@@ -190,6 +190,13 @@ static const char *command_names[PA_COMMAND_MAX] = {
     [PA_COMMAND_SET_SOURCE_OUTPUT_VOLUME] = "SET_SOURCE_OUTPUT_VOLUME",
     [PA_COMMAND_SET_SOURCE_OUTPUT_MUTE] = "SET_SOURCE_OUTPUT_MUTE",
 
+    /* Supported since protocol v27 (3.0) */
+    [PA_COMMAND_SET_PORT_LATENCY_OFFSET] = "SET_PORT_LATENCY_OFFSET",
+
+    /* Supported since protocol v30 (6.0) */
+    /* BOTH DIRECTIONS */
+    [PA_COMMAND_ENABLE_SRBCHANNEL] = "ENABLE_SRBCHANNEL",
+    [PA_COMMAND_DISABLE_SRBCHANNEL] = "DISABLE_SRBCHANNEL",
 };
 
 #endif
@@ -214,7 +221,7 @@ struct pa_pdispatch {
     PA_LLIST_HEAD(struct reply_info, replies);
     pa_pdispatch_drain_cb_t drain_callback;
     void *drain_userdata;
-    const pa_creds *creds;
+    const pa_cmsg_ancil_data *ancil_data;
     bool use_rtclock;
 };
 
@@ -284,7 +291,7 @@ static void run_action(pa_pdispatch *pd, struct reply_info *r, uint32_t command,
     pa_pdispatch_unref(pd);
 }
 
-int pa_pdispatch_run(pa_pdispatch *pd, pa_packet*packet, const pa_creds *creds, void *userdata) {
+int pa_pdispatch_run(pa_pdispatch *pd, pa_packet *packet, const pa_cmsg_ancil_data *ancil_data, void *userdata) {
     uint32_t tag, command;
     pa_tagstruct *ts = NULL;
     int ret = -1;
@@ -318,7 +325,7 @@ int pa_pdispatch_run(pa_pdispatch *pd, pa_packet*packet, const pa_creds *creds, 
 }
 #endif
 
-    pd->creds = creds;
+    pd->ancil_data = ancil_data;
 
     if (command == PA_COMMAND_ERROR || command == PA_COMMAND_REPLY) {
         struct reply_info *r;
@@ -342,7 +349,7 @@ int pa_pdispatch_run(pa_pdispatch *pd, pa_packet*packet, const pa_creds *creds, 
     ret = 0;
 
 finish:
-    pd->creds = NULL;
+    pd->ancil_data = NULL;
 
     if (ts)
         pa_tagstruct_free(ts);
@@ -431,9 +438,29 @@ pa_pdispatch* pa_pdispatch_ref(pa_pdispatch *pd) {
     return pd;
 }
 
+#ifdef HAVE_CREDS
+
 const pa_creds * pa_pdispatch_creds(pa_pdispatch *pd) {
     pa_assert(pd);
     pa_assert(PA_REFCNT_VALUE(pd) >= 1);
 
-    return pd->creds;
+    if (pd->ancil_data && pd->ancil_data->creds_valid)
+         return &pd->ancil_data->creds;
+    return NULL;
 }
+
+const int * pa_pdispatch_fds(pa_pdispatch *pd, int *nfd) {
+    pa_assert(pd);
+    pa_assert(PA_REFCNT_VALUE(pd) >= 1);
+    pa_assert(nfd);
+
+    if (pd->ancil_data) {
+         *nfd = pd->ancil_data->nfd;
+         return pd->ancil_data->fds;
+    }
+
+    *nfd = 0;
+    return NULL;
+}
+
+#endif

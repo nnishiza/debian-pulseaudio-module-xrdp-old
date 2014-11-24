@@ -144,12 +144,10 @@ static void free_session(struct session *session) {
 }
 
 static void remove_session(struct userdata *u, const char *id) {
-    struct session *session;
+    pa_assert(u);
+    pa_assert(id);
 
-    if (!(session = pa_hashmap_remove(u->sessions, id)))
-        return;
-
-    free_session(session);
+    pa_hashmap_remove_and_free(u->sessions, id);
 }
 
 static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *message, void *userdata) {
@@ -242,7 +240,7 @@ static int get_session_list(struct userdata *u) {
         if ((at = dbus_message_iter_get_arg_type(&sub)) == DBUS_TYPE_INVALID)
             break;
 
-        assert(at == DBUS_TYPE_OBJECT_PATH);
+        pa_assert(at == DBUS_TYPE_OBJECT_PATH);
         dbus_message_iter_get_basic(&sub, &id);
 
         add_session(u, id);

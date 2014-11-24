@@ -72,7 +72,7 @@ pa_core* pa_core_new(pa_mainloop_api *m, bool shared, size_t shm_size) {
 
     if (shared) {
         if (!(pool = pa_mempool_new(shared, shm_size))) {
-            pa_log_warn("failed to allocate shared memory pool. Falling back to a normal memory pool.");
+            pa_log_warn("Failed to allocate shared memory pool. Falling back to a normal memory pool.");
             shared = false;
         }
     }
@@ -126,6 +126,11 @@ pa_core* pa_core_new(pa_mainloop_api *m, bool shared, size_t shm_size) {
 
     c->mempool = pool;
     pa_silence_cache_init(&c->silence_cache);
+
+    if (shared && !(c->rw_mempool = pa_mempool_new(shared, shm_size)))
+        pa_log_warn("Failed to allocate shared writable memory pool.");
+    if (c->rw_mempool)
+        pa_mempool_set_is_remote_writable(c->rw_mempool, true);
 
     c->exit_event = NULL;
 
@@ -208,6 +213,8 @@ static void core_free(pa_object *o) {
     pa_assert(!c->default_sink);
 
     pa_silence_cache_done(&c->silence_cache);
+    if (c->rw_mempool)
+        pa_mempool_free(c->rw_mempool);
     pa_mempool_free(c->mempool);
 
     for (j = 0; j < PA_CORE_HOOK_MAX; j++)
@@ -254,7 +261,6 @@ void pa_core_maybe_vacuum(pa_core *c) {
 
     if (pa_idxset_isempty(c->sink_inputs) && pa_idxset_isempty(c->source_outputs)) {
         pa_log_debug("Hmm, no streams around, trying to vacuum.");
-        pa_mempool_vacuum(c->mempool);
     } else {
         pa_sink *si;
         pa_source *so;
@@ -271,8 +277,12 @@ void pa_core_maybe_vacuum(pa_core *c) {
                 return;
 
         pa_log_info("All sinks and sources are suspended, vacuuming memory");
-        pa_mempool_vacuum(c->mempool);
     }
+
+    pa_mempool_vacuum(c->mempool);
+
+    if (c->rw_mempool)
+        pa_mempool_vacuum(c->rw_mempool);
 }
 
 pa_time_event* pa_core_rttime_new(pa_core *c, pa_usec_t usec, pa_time_event_cb_t cb, void *userdata) {

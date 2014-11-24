@@ -356,10 +356,10 @@ static void stream_state_callback(pa_stream *s, void *userdata) {
                         pa_sample_spec_snprint(sst, sizeof(sst), pa_stream_get_sample_spec(s)),
                         pa_channel_map_snprint(cmt, sizeof(cmt), pa_stream_get_channel_map(s)));
 
-                pa_log(_("Connected to device %s (%u, %ssuspended)."),
+                pa_log(_("Connected to device %s (index: %u, suspended: %s)."),
                         pa_stream_get_device_name(s),
                         pa_stream_get_device_index(s),
-                        pa_stream_is_suspended(s) ? "" : "not ");
+                        pa_yes_no(pa_stream_is_suspended(s)));
             }
 
             break;
@@ -687,12 +687,12 @@ static void help(const char *argv0) {
              "      --channels=CHANNELS               The number of channels, 1 for mono, 2 for stereo\n"
              "                                        (defaults to 2)\n"
              "      --channel-map=CHANNELMAP          Channel map to use instead of the default\n"
-             "      --fix-format                      Take the sample format from the sink the stream is\n"
+             "      --fix-format                      Take the sample format from the sink/source the stream is\n"
              "                                        being connected to.\n"
-             "      --fix-rate                        Take the sampling rate from the sink the stream is\n"
+             "      --fix-rate                        Take the sampling rate from the sink/source the stream is\n"
              "                                        being connected to.\n"
              "      --fix-channels                    Take the number of channels and the channel map\n"
-             "                                        from the sink the stream is being connected to.\n"
+             "                                        from the sink/source the stream is being connected to.\n"
              "      --no-remix                        Don't upmix or downmix channels.\n"
              "      --no-remap                        Map channels by index instead of name.\n"
              "      --latency=BYTES                   Request the specified latency in bytes.\n"
@@ -701,7 +701,7 @@ static void help(const char *argv0) {
              "      --process-time-msec=MSEC          Request the specified process time per request in msec.\n"
              "      --property=PROPERTY=VALUE         Set the specified property to the specified value.\n"
              "      --raw                             Record/play raw PCM data.\n"
-             "      --passthrough                     passthrough data \n"
+             "      --passthrough                     Passthrough data.\n"
              "      --file-format[=FFORMAT]           Record/play formatted PCM data.\n"
              "      --list-file-formats               List available file formats.\n"
              "      --monitor-stream=INDEX            Record from the sink input with index INDEX.\n")

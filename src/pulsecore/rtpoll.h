@@ -41,7 +41,7 @@
  * 3) It allows arbitrary functions to be run before entering the
  * actual poll() and after it.
  *
- * Only a single interval timer is supported..*/
+ * Only a single interval timer is supported. */
 
 typedef struct pa_rtpoll pa_rtpoll;
 typedef struct pa_rtpoll_item pa_rtpoll_item;
@@ -57,11 +57,10 @@ pa_rtpoll *pa_rtpoll_new(void);
 void pa_rtpoll_free(pa_rtpoll *p);
 
 /* Sleep on the rtpoll until the time event, or any of the fd events
- * is triggered. If "wait" is 0 we don't sleep but only update the
- * struct pollfd. Returns negative on error, positive if the loop
+ * is triggered. Returns negative on error, positive if the loop
  * should continue to run, 0 when the loop should be terminated
  * cleanly. */
-int pa_rtpoll_run(pa_rtpoll *f, bool wait);
+int pa_rtpoll_run(pa_rtpoll *f);
 
 void pa_rtpoll_set_timer_absolute(pa_rtpoll *p, pa_usec_t usec);
 void pa_rtpoll_set_timer_relative(pa_rtpoll *p, pa_usec_t usec);

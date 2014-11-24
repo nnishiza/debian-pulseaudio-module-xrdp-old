@@ -304,9 +304,9 @@ static void command_suspended(pa_pdispatch *pd,  uint32_t command,  uint32_t tag
     pa_log_debug("Server reports device suspend.");
 
 #ifdef TUNNEL_SINK
-    pa_asyncmsgq_send(u->sink->asyncmsgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(!!suspended), 0, NULL);
+    pa_asyncmsgq_send(u->sink->asyncmsgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(suspended), 0, NULL);
 #else
-    pa_asyncmsgq_send(u->source->asyncmsgq, PA_MSGOBJECT(u->source), SOURCE_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(!!suspended), 0, NULL);
+    pa_asyncmsgq_send(u->source->asyncmsgq, PA_MSGOBJECT(u->source), SOURCE_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(suspended), 0, NULL);
 #endif
 
     request_latency(u);
@@ -337,9 +337,9 @@ static void command_moved(pa_pdispatch *pd,  uint32_t command,  uint32_t tag, pa
     pa_log_debug("Server reports a stream move.");
 
 #ifdef TUNNEL_SINK
-    pa_asyncmsgq_send(u->sink->asyncmsgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(!!suspended), 0, NULL);
+    pa_asyncmsgq_send(u->sink->asyncmsgq, PA_MSGOBJECT(u->sink), SINK_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(suspended), 0, NULL);
 #else
-    pa_asyncmsgq_send(u->source->asyncmsgq, PA_MSGOBJECT(u->source), SOURCE_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(!!suspended), 0, NULL);
+    pa_asyncmsgq_send(u->source->asyncmsgq, PA_MSGOBJECT(u->source), SOURCE_MESSAGE_REMOTE_SUSPEND, PA_UINT32_TO_PTR(suspended), 0, NULL);
 #endif
 
     request_latency(u);
@@ -457,7 +457,7 @@ static void stream_cork(struct userdata *u, bool cork) {
 #endif
     pa_tagstruct_putu32(t, u->ctag++);
     pa_tagstruct_putu32(t, u->channel);
-    pa_tagstruct_put_boolean(t, !!cork);
+    pa_tagstruct_put_boolean(t, cork);
     pa_pstream_send_tagstruct(u->pstream, t);
 
     request_latency(u);
@@ -717,7 +717,7 @@ static void thread_func(void *userdata) {
             pa_sink_process_rewind(u->sink, 0);
 #endif
 
-        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0)
+        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
             goto fail;
 
         if (ret == 0)
@@ -1251,7 +1251,7 @@ static void sink_input_info_cb(pa_pdispatch *pd, uint32_t command,  uint32_t tag
 
     pa_assert(u->sink);
 
-    if ((u->version < 11 || !!mute == !!u->sink->muted) &&
+    if ((u->version < 11 || mute == u->sink->muted) &&
         pa_cvolume_equal(&volume, &u->sink->real_volume))
         return;
 
@@ -1780,14 +1780,14 @@ static void pstream_die_callback(pa_pstream *p, void *userdata) {
 }
 
 /* Called from main context */
-static void pstream_packet_callback(pa_pstream *p, pa_packet *packet, const pa_creds *creds, void *userdata) {
+static void pstream_packet_callback(pa_pstream *p, pa_packet *packet, const pa_cmsg_ancil_data *ancil_data, void *userdata) {
     struct userdata *u = userdata;
 
     pa_assert(p);
     pa_assert(packet);
     pa_assert(u);
 
-    if (pa_pdispatch_run(u->pdispatch, packet, creds, u) < 0) {
+    if (pa_pdispatch_run(u->pdispatch, packet, ancil_data, u) < 0) {
         pa_log("Invalid packet");
         pa_module_unload_request(u->module, true);
         return;
@@ -1906,7 +1906,7 @@ static void sink_set_mute(pa_sink *sink) {
     pa_tagstruct_putu32(t, PA_COMMAND_SET_SINK_INPUT_MUTE);
     pa_tagstruct_putu32(t, u->ctag++);
     pa_tagstruct_putu32(t, u->device_index);
-    pa_tagstruct_put_boolean(t, !!sink->muted);
+    pa_tagstruct_put_boolean(t, sink->muted);
     pa_pstream_send_tagstruct(u->pstream, t);
 }
 
@@ -1997,7 +1997,7 @@ int pa__init(pa_module*m) {
 #endif
 
         /* Figure out the cookie the same way a normal client would */
-        if (cookie_path)
+        if (!cookie_path)
             cookie_path = getenv(ENV_COOKIE_FILE);
 
 #ifdef HAVE_X11

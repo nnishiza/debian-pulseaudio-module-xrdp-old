@@ -105,7 +105,6 @@ DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/Makefile.am \
 	$(srcdir)/pulse-client.conf.5.xml.in \
 	$(srcdir)/default.pa.5.xml.in \
 	$(srcdir)/pulse-cli-syntax.5.xml.in \
-	$(srcdir)/start-pulseaudio-kde.1.xml.in \
 	$(srcdir)/start-pulseaudio-x11.1.xml.in $(dist_man_MANS)
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
@@ -131,7 +130,7 @@ CONFIG_CLEAN_FILES = pulseaudio.1.xml esdcompat.1.xml \
 	pactl.1.xml pasuspender.1.xml padsp.1.xml \
 	pulse-daemon.conf.5.xml pulse-client.conf.5.xml \
 	default.pa.5.xml pulse-cli-syntax.5.xml \
-	start-pulseaudio-kde.1.xml start-pulseaudio-x11.1.xml
+	start-pulseaudio-x11.1.xml
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -202,6 +201,8 @@ AUTOMAKE = @AUTOMAKE@
 AVAHI_CFLAGS = @AVAHI_CFLAGS@
 AVAHI_LIBS = @AVAHI_LIBS@
 AWK = @AWK@
+BLUEZ_CFLAGS = @BLUEZ_CFLAGS@
+BLUEZ_LIBS = @BLUEZ_LIBS@
 CC = @CC@
 CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
@@ -249,13 +250,16 @@ HAVE_AVAHI = @HAVE_AVAHI@
 HAVE_BLUEZ = @HAVE_BLUEZ@
 HAVE_BLUEZ_4 = @HAVE_BLUEZ_4@
 HAVE_BLUEZ_5 = @HAVE_BLUEZ_5@
+HAVE_BLUEZ_5_NATIVE_HEADSET = @HAVE_BLUEZ_5_NATIVE_HEADSET@
+HAVE_BLUEZ_5_OFONO_HEADSET = @HAVE_BLUEZ_5_OFONO_HEADSET@
 HAVE_DBUS = @HAVE_DBUS@
 HAVE_GLIB20 = @HAVE_GLIB20@
 HAVE_MKFIFO = @HAVE_MKFIFO@
 HAVE_NEON = @HAVE_NEON@
 HAVE_OSS_OUTPUT = @HAVE_OSS_OUTPUT@
-HAVE_SYSTEMD = @HAVE_SYSTEMD@
+HAVE_SYSTEMD_DAEMON = @HAVE_SYSTEMD_DAEMON@
 HAVE_SYSTEMD_JOURNAL = @HAVE_SYSTEMD_JOURNAL@
+HAVE_SYSTEMD_LOGIN = @HAVE_SYSTEMD_LOGIN@
 HAVE_SYS_RESOURCE_H = @HAVE_SYS_RESOURCE_H@
 HAVE_UDEV = @HAVE_UDEV@
 HAVE_WAVEOUT = @HAVE_WAVEOUT@
@@ -278,8 +282,6 @@ INTLTOOL__v_MERGE_0 = @INTLTOOL__v_MERGE_0@
 INTL_MACOSX_LIBS = @INTL_MACOSX_LIBS@
 JACK_CFLAGS = @JACK_CFLAGS@
 JACK_LIBS = @JACK_LIBS@
-JOURNAL_CFLAGS = @JOURNAL_CFLAGS@
-JOURNAL_LIBS = @JOURNAL_LIBS@
 LD = @LD@
 LDFLAGS = @LDFLAGS@
 LIBASYNCNS_CFLAGS = @LIBASYNCNS_CFLAGS@
@@ -346,6 +348,7 @@ PATH_SEPARATOR = @PATH_SEPARATOR@
 PA_ACCESS_GROUP = @PA_ACCESS_GROUP@
 PA_API_VERSION = @PA_API_VERSION@
 PA_BINARY = @PA_BINARY@
+PA_DEFAULT_AUTOSPAWN = @PA_DEFAULT_AUTOSPAWN@
 PA_DEFAULT_CONFIG_DIR = @PA_DEFAULT_CONFIG_DIR@
 PA_DLSEARCHPATH = @PA_DLSEARCHPATH@
 PA_INCDIR = @PA_INCDIR@
@@ -379,6 +382,12 @@ SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STOW = @STOW@
 STRIP = @STRIP@
+SYSTEMDDAEMON_CFLAGS = @SYSTEMDDAEMON_CFLAGS@
+SYSTEMDDAEMON_LIBS = @SYSTEMDDAEMON_LIBS@
+SYSTEMDJOURNAL_CFLAGS = @SYSTEMDJOURNAL_CFLAGS@
+SYSTEMDJOURNAL_LIBS = @SYSTEMDJOURNAL_LIBS@
+SYSTEMDLOGIN_CFLAGS = @SYSTEMDLOGIN_CFLAGS@
+SYSTEMDLOGIN_LIBS = @SYSTEMDLOGIN_LIBS@
 SYSTEMD_CFLAGS = @SYSTEMD_CFLAGS@
 SYSTEMD_LIBS = @SYSTEMD_LIBS@
 TDB_CFLAGS = @TDB_CFLAGS@
@@ -451,11 +460,13 @@ sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
 sysconfdir = @sysconfdir@
+systemduserunitdir = @systemduserunitdir@
 target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 udevrulesdir = @udevrulesdir@
+zshcompletiondir = @zshcompletiondir@
 DISTCLEANFILES = \
 	$(noinst_DATA)
 
@@ -473,7 +484,6 @@ noinst_DATA = \
 	pulse-client.conf.5.xml \
 	default.pa.5.xml \
 	pulse-cli-syntax.5.xml \
-	start-pulseaudio-kde.1.xml \
 	start-pulseaudio-x11.1.xml
 
 @BUILD_MANPAGES_TRUE@dist_man_MANS = \
@@ -490,7 +500,6 @@ noinst_DATA = \
 @BUILD_MANPAGES_TRUE@	pulse-client.conf.5 \
 @BUILD_MANPAGES_TRUE@	default.pa.5 \
 @BUILD_MANPAGES_TRUE@	pulse-cli-syntax.5 \
-@BUILD_MANPAGES_TRUE@	start-pulseaudio-kde.1 \
 @BUILD_MANPAGES_TRUE@	start-pulseaudio-x11.1
 
 @BUILD_MANPAGES_TRUE@CLEANFILES = \
@@ -510,7 +519,6 @@ EXTRA_DIST = \
 	pulse-client.conf.5.xml.in \
 	default.pa.5.xml.in \
 	pulse-cli-syntax.5.xml.in \
-	start-pulseaudio-kde.1.xml.in \
 	start-pulseaudio-x11.1.xml.in \
 	xmltoman \
 	xmltoman.css \
@@ -575,8 +583,6 @@ pulse-client.conf.5.xml: $(top_builddir)/config.status $(srcdir)/pulse-client.co
 default.pa.5.xml: $(top_builddir)/config.status $(srcdir)/default.pa.5.xml.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 pulse-cli-syntax.5.xml: $(top_builddir)/config.status $(srcdir)/pulse-cli-syntax.5.xml.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-start-pulseaudio-kde.1.xml: $(top_builddir)/config.status $(srcdir)/start-pulseaudio-kde.1.xml.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 start-pulseaudio-x11.1.xml: $(top_builddir)/config.status $(srcdir)/start-pulseaudio-x11.1.xml.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@

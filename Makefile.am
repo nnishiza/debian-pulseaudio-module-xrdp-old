@@ -21,6 +21,7 @@ EXTRA_DIST = \
 	bootstrap.sh \
 	git-version-gen \
 	LICENSE \
+	pulseaudio.supp \
 	GPL \
 	LGPL \
 	doxygen/Makefile.am \
@@ -29,7 +30,6 @@ EXTRA_DIST = \
 	PROTOCOL \
 	README \
 	todo \
-	shell-completion/pulseaudio-zsh-completion.zsh \
 	.gitignore \
 	doxygen/.gitignore \
 	m4/.gitignore \
@@ -47,7 +47,8 @@ noinst_DATA =
 vapidir = $(datadir)/vala/vapi
 dist_vapi_DATA = \
 		vala/libpulse.deps vala/libpulse.vapi \
-		vala/libpulse-mainloop-glib.deps vala/libpulse-mainloop-glib.vapi
+		vala/libpulse-mainloop-glib.deps vala/libpulse-mainloop-glib.vapi \
+		vala/libpulse-simple.deps vala/libpulse-simple.vapi
 
 pkgconfigdir = $(libdir)/pkgconfig
 pkgconfig_DATA = libpulse.pc libpulse-simple.pc
@@ -61,7 +62,22 @@ cmakedir = $(libdir)/cmake/PulseAudio
 cmake_DATA = PulseAudioConfig.cmake PulseAudioConfigVersion.cmake
 
 bashcompletiondir=$(sysconfdir)/bash_completion.d
-dist_bashcompletion_DATA = shell-completion/pulseaudio-bash-completion.sh
+dist_bashcompletion_DATA = shell-completion/bash/pulseaudio
+
+install-bashcompletion-aliases:
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/pactl
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/pacmd
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/pasuspender
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/padsp
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/pacat
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/paplay
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/parec
+	$(LN_S) -f pulseaudio $(DESTDIR)$(bashcompletiondir)/parecord
+
+install-data-hook: install-bashcompletion-aliases
+
+zshcompletiondir=@zshcompletiondir@
+dist_zshcompletion_DATA = shell-completion/zsh/_pulseaudio
 
 homepage: all dist doxygen
 	test -d $$HOME/homepage/private

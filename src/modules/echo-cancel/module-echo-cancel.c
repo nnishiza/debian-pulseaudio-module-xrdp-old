@@ -168,7 +168,7 @@ static const pa_echo_canceller ec_table[] = {
  *    capture and playback samples, we perform a resync. This adjusts the
  *    position in the playback memblock to the requested sample. Quick
  *    adjustments include moving the playback samples before the capture
- *    samples (because else the echo canceler does not work) or when the
+ *    samples (because else the echo canceller does not work) or when the
  *    playback pointer drifts too far away.
  *
  * 2) periodically check the difference between capture and playback. We use a
@@ -224,7 +224,7 @@ struct userdata {
     pa_source *source;
     bool source_auto_desc;
     pa_source_output *source_output;
-    pa_memblockq *source_memblockq; /* echo canceler needs fixed sized chunks */
+    pa_memblockq *source_memblockq; /* echo canceller needs fixed sized chunks */
     size_t source_skip;
 
     pa_sink *sink;
@@ -362,7 +362,7 @@ static void time_callback(pa_mainloop_api *a, pa_time_event *e, const struct tim
 
     if (diff_time < 0) {
         /* recording before playback, we need to adjust quickly. The echo
-         * canceler does not work in this case. */
+         * canceller does not work in this case. */
         pa_asyncmsgq_post(u->asyncmsgq, PA_MSGOBJECT(u->source_output), SOURCE_OUTPUT_MESSAGE_APPLY_DIFF_TIME,
             NULL, diff_time, NULL, NULL);
         /*new_rate = base_rate - ((pa_usec_to_bytes(-diff_time, &u->source_output->sample_spec) / fs) * PA_USEC_PER_SEC) / u->adjust_time;*/
@@ -475,7 +475,7 @@ static int source_set_state_cb(pa_source *s, pa_source_state_t state) {
 
     if (state == PA_SOURCE_RUNNING) {
         /* restart timer when both sink and source are active */
-        if (IS_ACTIVE(u) && u->adjust_time)
+        if ((pa_sink_get_state(u->sink) == PA_SINK_RUNNING) && u->adjust_time)
             pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
 
         pa_atomic_store(&u->request_resync, 1);
@@ -500,7 +500,7 @@ static int sink_set_state_cb(pa_sink *s, pa_sink_state_t state) {
 
     if (state == PA_SINK_RUNNING) {
         /* restart timer when both sink and source are active */
-        if (IS_ACTIVE(u) && u->adjust_time)
+        if ((pa_source_get_state(u->source) == PA_SOURCE_RUNNING) && u->adjust_time)
             pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
 
         pa_atomic_store(&u->request_resync, 1);
@@ -644,20 +644,6 @@ static void sink_set_mute_cb(pa_sink *s) {
         return;
 
     pa_sink_input_set_mute(u->sink_input, s->muted, s->save_muted);
-}
-
-/* Called from main context */
-static void source_get_mute_cb(pa_source *s) {
-    struct userdata *u;
-
-    pa_source_assert_ref(s);
-    pa_assert_se(u = s->userdata);
-
-    if (!PA_SOURCE_IS_LINKED(pa_source_get_state(s)) ||
-        !PA_SOURCE_OUTPUT_IS_LINKED(pa_source_output_get_state(u->source_output)))
-        return;
-
-    pa_source_output_get_mute(u->source_output);
 }
 
 /* Called from source I/O thread context. */
@@ -1573,14 +1559,14 @@ uint32_t pa_echo_canceller_blocksize_power2(unsigned rate, unsigned ms) {
     unsigned nframes = (rate * ms) / 1000;
     uint32_t y = 1 << ((8 * sizeof(uint32_t)) - 2);
 
-    assert(rate >= 4000);
-    assert(ms >= 1);
+    pa_assert(rate >= 4000);
+    pa_assert(ms >= 1);
 
     /* nframes should be a power of 2, round down to nearest power of two */
     while (y > nframes)
         y >>= 1;
 
-    assert(y >= 1);
+    pa_assert(y >= 1);
     return y;
 }
 
@@ -1810,7 +1796,6 @@ int pa__init(pa_module*m) {
     u->source->parent.process_msg = source_process_msg_cb;
     u->source->set_state = source_set_state_cb;
     u->source->update_requested_latency = source_update_requested_latency_cb;
-    pa_source_set_get_mute_callback(u->source, source_get_mute_cb);
     pa_source_set_set_mute_callback(u->source, source_set_mute_cb);
     if (!u->use_volume_sharing) {
         pa_source_set_get_volume_callback(u->source, source_get_volume_cb);

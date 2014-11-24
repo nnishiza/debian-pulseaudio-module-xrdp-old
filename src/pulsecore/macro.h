@@ -77,6 +77,12 @@ static inline size_t PA_PAGE_ALIGN(size_t l) {
     return (l + PA_PAGE_SIZE - 1) & ~(PA_PAGE_SIZE - 1);
 }
 
+#if defined(__GNUC__)
+    #define PA_UNUSED __attribute__ ((unused))
+#else
+    #define PA_UNUSED
+#endif
+
 #define PA_ELEMENTSOF(x) (sizeof(x)/sizeof((x)[0]))
 
 #if defined(__GNUC__)
@@ -231,7 +237,7 @@ static inline size_t PA_PAGE_ALIGN(size_t l) {
 #endif
 
 #ifdef NDEBUG
-#define pa_assert_not_reached() pa_nop()
+#define pa_assert_not_reached() abort()
 #else
 #define pa_assert_not_reached()                                         \
     do {                                                                \

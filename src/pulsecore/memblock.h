@@ -85,10 +85,10 @@ pa_memblock *pa_memblock_new(pa_mempool *, size_t length);
 pa_memblock *pa_memblock_new_pool(pa_mempool *, size_t length);
 
 /* Allocate a new memory block of type PA_MEMBLOCK_USER */
-pa_memblock *pa_memblock_new_user(pa_mempool *, void *data, size_t length, pa_free_cb_t free_cb, bool read_only);
+pa_memblock *pa_memblock_new_user(pa_mempool *, void *data, size_t length, pa_free_cb_t free_cb, void *free_cb_data, bool read_only);
 
 /* A special case of pa_memblock_new_user: take a memory buffer previously allocated with pa_xmalloc()  */
-#define pa_memblock_new_malloced(p,data,length) pa_memblock_new_user(p, data, length, pa_xfree, 0)
+#define pa_memblock_new_malloced(p,data,length) pa_memblock_new_user(p, data, length, pa_xfree, data, 0)
 
 /* Allocate a new memory block of type PA_MEMBLOCK_FIXED */
 pa_memblock *pa_memblock_new_fixed(pa_mempool *, void *data, size_t length, bool read_only);
@@ -104,6 +104,7 @@ function is not multiple caller safe, i.e. needs to be locked
 manually if called from more than one thread at the same time. */
 void pa_memblock_unref_fixed(pa_memblock*b);
 
+bool pa_memblock_is_ours(pa_memblock *b);
 bool pa_memblock_is_read_only(pa_memblock *b);
 bool pa_memblock_is_silence(pa_memblock *b);
 bool pa_memblock_ref_is_one(pa_memblock *b);
@@ -125,12 +126,15 @@ const pa_mempool_stat* pa_mempool_get_stat(pa_mempool *p);
 void pa_mempool_vacuum(pa_mempool *p);
 int pa_mempool_get_shm_id(pa_mempool *p, uint32_t *id);
 bool pa_mempool_is_shared(pa_mempool *p);
+bool pa_mempool_is_remote_writable(pa_mempool *p);
+void pa_mempool_set_is_remote_writable(pa_mempool *p, bool writable);
 size_t pa_mempool_block_size_max(pa_mempool *p);
 
 /* For receiving blocks from other nodes */
 pa_memimport* pa_memimport_new(pa_mempool *p, pa_memimport_release_cb_t cb, void *userdata);
 void pa_memimport_free(pa_memimport *i);
-pa_memblock* pa_memimport_get(pa_memimport *i, uint32_t block_id, uint32_t shm_id, size_t offset, size_t size);
+pa_memblock* pa_memimport_get(pa_memimport *i, uint32_t block_id, uint32_t shm_id,
+                              size_t offset, size_t size, bool writable);
 int pa_memimport_process_revoke(pa_memimport *i, uint32_t block_id);
 
 /* For sending blocks to other nodes */
