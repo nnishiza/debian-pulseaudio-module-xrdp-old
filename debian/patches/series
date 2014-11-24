@@ -1,17 +1,1 @@
-0001-raop-Don-t-use-incompatible-default-sample-spec-para.patch
-0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
-0003-exit-with-X-session.patch
-0004-dont-start-when-already-running.patch
-kfreebsd_no_lock_and_threads_synchro.patch
-only-autostart-kde-version.patch
-rtp-recv-fix-crash-on-empty-UDP-packets-CVE-2014-397.patch
-zsh-completion-Fix-completion-for-default-sink-sourc.patch
 gnu-kfreebsd.patch
-mix-Fix-mixing-of-S24-samples-stored-as-S32RE.patch
-tests-Cleanup-mix-test.patch
-endianmacros-Fix-PA_MAYBE_INT16_SWAP-macro.patch
-tests-Fix-mix-test-on-big-endian-systems.patch
-util-Fix-pa_get_binary_name-on-Debian-kFreeBSD.patch
-misc-cleanups-and-bug-fixes.patch
-util-Try-finding-out-application-name-using-dladdr.patch
-broken-PA_FLOAT32_SWAP.patch
