@@ -949,8 +949,7 @@ static void handle_entry_remove(DBusConnection *conn, DBusMessage *msg, void *us
     send_entry_removed_signal(de);
     trigger_save(de->userdata);
 
-    pa_assert_se(pa_hashmap_remove(de->userdata->dbus_entries, de->entry_name));
-    dbus_entry_free(de);
+    pa_assert_se(pa_hashmap_remove_and_free(de->userdata->dbus_entries, de->entry_name) >= 0);
 
     pa_dbus_send_empty_reply(conn, msg);
 }
@@ -1300,7 +1299,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         }
 
         if (sink_input->save_muted) {
-            entry->muted = pa_sink_input_get_mute(sink_input);
+            entry->muted = sink_input->muted;
             entry->muted_valid = true;
 
             mute_updated = !created_new_entry && (!old->muted_valid || entry->muted != old->muted);
@@ -1350,7 +1349,7 @@ static void subscribe_callback(pa_core *c, pa_subscription_event_type_t t, uint3
         }
 
         if (source_output->save_muted) {
-            entry->muted = pa_source_output_get_mute(source_output);
+            entry->muted = source_output->muted;
             entry->muted_valid = true;
 
             mute_updated = !created_new_entry && (!old->muted_valid || entry->muted != old->muted);
@@ -1832,7 +1831,6 @@ static int fill_db(struct userdata *u, const char *filename) {
         *d = 0;
         if (pa_atod(v, &db) >= 0) {
             if (db <= 0.0) {
-                pa_datum key, data;
                 struct entry e;
 
                 pa_zero(e);
@@ -1841,13 +1839,7 @@ static int fill_db(struct userdata *u, const char *filename) {
                 pa_cvolume_set(&e.volume, 1, pa_sw_volume_from_dB(db));
                 pa_channel_map_init_mono(&e.channel_map);
 
-                key.data = (void *) ln;
-                key.size = strlen(ln);
-
-                data.data = (void *) &e;
-                data.size = sizeof(e);
-
-                if (pa_database_set(u->database, &key, &data, false) == 0)
+                if (entry_write(u, ln, &e, false))
                     pa_log_debug("Setting %s to %0.2f dB.", ln, db);
             } else
                 pa_log_warn("[%s:%u] Positive dB values are not allowed, not setting entry %s.", fn, n, ln);
@@ -1912,7 +1904,7 @@ static void entry_apply(struct userdata *u, const char *name, struct entry *e) {
                        removed the sink element from the rule. */
                     si->save_sink = false;
                     /* This is cheating a bit. The sink input itself has not changed
-                       but the rules governing it's routing have, so we fire this event
+                       but the rules governing its routing have, so we fire this event
                        such that other routing modules (e.g. module-device-manager)
                        will pick up the change and reapply their routing */
                     pa_subscription_post(si->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, si->index);
@@ -1960,7 +1952,7 @@ static void entry_apply(struct userdata *u, const char *name, struct entry *e) {
                        removed the source element from the rule. */
                     so->save_source = false;
                     /* This is cheating a bit. The source output itself has not changed
-                       but the rules governing it's routing have, so we fire this event
+                       but the rules governing its routing have, so we fire this event
                        such that other routing modules (e.g. module-device-manager)
                        will pick up the change and reapply their routing */
                     pa_subscription_post(so->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, so->index);
@@ -2099,7 +2091,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
 
                 PA_HASHMAP_FOREACH(de, u->dbus_entries, state) {
                     send_entry_removed_signal(de);
-                    dbus_entry_free(pa_hashmap_remove(u->dbus_entries, de->entry_name));
+                    pa_hashmap_remove_and_free(u->dbus_entries, de->entry_name);
                 }
 #endif
                 pa_database_clear(u->database);
@@ -2213,7 +2205,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
 #ifdef HAVE_DBUS
                 if ((de = pa_hashmap_get(u->dbus_entries, name))) {
                     send_entry_removed_signal(de);
-                    dbus_entry_free(pa_hashmap_remove(u->dbus_entries, name));
+                    pa_hashmap_remove_and_free(u->dbus_entries, name);
                 }
 #endif
 

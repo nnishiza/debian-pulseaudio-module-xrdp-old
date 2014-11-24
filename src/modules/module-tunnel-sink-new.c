@@ -60,6 +60,7 @@ PA_MODULE_USAGE(
         "cookie=<cookie file path>"
         );
 
+#define MAX_LATENCY_USEC (200 * PA_USEC_PER_MSEC)
 #define TUNNEL_THREAD_FAILED_MAINLOOP 1
 
 static void stream_state_cb(pa_stream *stream, void *userdata);
@@ -101,6 +102,16 @@ static const char* const valid_modargs[] = {
    /* "reconnect", reconnect if server comes back again - unimplemented */
     NULL,
 };
+
+static void cork_stream(struct userdata *u, bool cork) {
+    pa_operation *operation;
+
+    pa_assert(u);
+    pa_assert(u->stream);
+
+    if ((operation = pa_stream_cork(u->stream, cork, NULL, NULL)))
+        pa_operation_unref(operation);
+}
 
 static void reset_bufferattr(pa_buffer_attr *bufferattr) {
     pa_assert(bufferattr);
@@ -171,41 +182,34 @@ static void thread_func(void *userdata) {
         if (u->connected &&
                 pa_stream_get_state(u->stream) == PA_STREAM_READY &&
                 PA_SINK_IS_LINKED(u->sink->thread_info.state)) {
-            /* TODO: Cork the stream when the sink is suspended. */
+            size_t writable;
 
-            if (pa_stream_is_corked(u->stream)) {
-                pa_operation *operation;
-                if ((operation = pa_stream_cork(u->stream, 0, NULL, NULL)))
-                    pa_operation_unref(operation);
-            } else {
-                size_t writable;
+            writable = pa_stream_writable_size(u->stream);
+            if (writable > 0) {
+                pa_memchunk memchunk;
+                const void *p;
 
-                writable = pa_stream_writable_size(u->stream);
-                if (writable > 0) {
-                    pa_memchunk memchunk;
-                    const void *p;
+                pa_sink_render_full(u->sink, writable, &memchunk);
 
-                    pa_sink_render_full(u->sink, writable, &memchunk);
+                pa_assert(memchunk.length > 0);
 
-                    pa_assert(memchunk.length > 0);
+                /* we have new data to write */
+                p = pa_memblock_acquire(memchunk.memblock);
+                /* TODO: Use pa_stream_begin_write() to reduce copying. */
+                ret = pa_stream_write(u->stream,
+                                      (uint8_t*) p + memchunk.index,
+                                      memchunk.length,
+                                      NULL,     /**< A cleanup routine for the data or NULL to request an internal copy */
+                                      0,        /** offset */
+                                      PA_SEEK_RELATIVE);
+                pa_memblock_release(memchunk.memblock);
+                pa_memblock_unref(memchunk.memblock);
 
-                    /* we have new data to write */
-                    p = pa_memblock_acquire(memchunk.memblock);
-                    /* TODO: Use pa_stream_begin_write() to reduce copying. */
-                    ret = pa_stream_write(u->stream,
-                                          (uint8_t*) p + memchunk.index,
-                                          memchunk.length,
-                                          NULL,     /**< A cleanup routine for the data or NULL to request an internal copy */
-                                          0,        /** offset */
-                                          PA_SEEK_RELATIVE);
-                    pa_memblock_release(memchunk.memblock);
-                    pa_memblock_unref(memchunk.memblock);
-
-                    if (ret != 0) {
-                        pa_log_error("Could not write data into the stream ... ret = %i", ret);
-                        u->thread_mainloop_api->quit(u->thread_mainloop_api, TUNNEL_THREAD_FAILED_MAINLOOP);
-                    }
+                if (ret != 0) {
+                    pa_log_error("Could not write data into the stream ... ret = %i", ret);
+                    u->thread_mainloop_api->quit(u->thread_mainloop_api, TUNNEL_THREAD_FAILED_MAINLOOP);
                 }
+
             }
         }
     }
@@ -244,6 +248,9 @@ static void stream_state_cb(pa_stream *stream, void *userdata) {
             pa_log_debug("Stream terminated.");
             break;
         case PA_STREAM_READY:
+            if (PA_SINK_IS_OPENED(u->sink->thread_info.state))
+                cork_stream(u, false);
+
             /* Only call our requested_latency_cb when requested_latency
              * changed between PA_STREAM_CREATING -> PA_STREAM_READY, because
              * we don't want to override the initial tlength set by the server
@@ -313,7 +320,7 @@ static void context_state_cb(pa_context *c, void *userdata) {
             }
 
             requested_latency = pa_sink_get_requested_latency_within_thread(u->sink);
-            if (requested_latency == (uint32_t) -1)
+            if (requested_latency == (pa_usec_t) -1)
                 requested_latency = u->sink->thread_info.max_latency;
 
             reset_bufferattr(&bufferattr);
@@ -415,6 +422,26 @@ static int sink_process_msg_cb(pa_msgobject *o, int code, void *data, int64_t of
             *((pa_usec_t*) data) = remote_latency;
             return 0;
         }
+        case PA_SINK_MESSAGE_SET_STATE:
+            if (!u->stream || pa_stream_get_state(u->stream) != PA_STREAM_READY)
+                break;
+
+            switch ((pa_sink_state_t) PA_PTR_TO_UINT(data)) {
+                case PA_SINK_SUSPENDED: {
+                    cork_stream(u, true);
+                    break;
+                }
+                case PA_SINK_IDLE:
+                case PA_SINK_RUNNING: {
+                    cork_stream(u, false);
+                    break;
+                }
+                case PA_SINK_INVALID_STATE:
+                case PA_SINK_INIT:
+                case PA_SINK_UNLINKED:
+                    break;
+            }
+            break;
     }
     return pa_sink_process_msg(o, code, data, offset, chunk);
 }
@@ -499,6 +526,7 @@ int pa__init(pa_module *m) {
     u->sink->userdata = u;
     u->sink->parent.process_msg = sink_process_msg_cb;
     u->sink->update_requested_latency = sink_update_requested_latency_cb;
+    pa_sink_set_latency_range(u->sink, 0, MAX_LATENCY_USEC);
 
     /* set thread message queue */
     pa_sink_set_asyncmsgq(u->sink, u->thread_mq->inq);

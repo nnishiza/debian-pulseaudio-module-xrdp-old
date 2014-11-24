@@ -83,6 +83,8 @@ struct pa_memblock {
         struct {
             /* If type == PA_MEMBLOCK_USER this points to a function for freeing this memory block */
             pa_free_cb_t free_cb;
+            /* If type == PA_MEMBLOCK_USER this is passed as free_cb argument */
+            void *free_cb_data;
         } user;
 
         struct {
@@ -97,6 +99,7 @@ struct pa_memimport_segment {
     pa_shm memory;
     pa_memtrap *trap;
     unsigned n_blocks;
+    bool writable;
 };
 
 /* A collection of multiple segments */
@@ -146,6 +149,7 @@ struct pa_mempool {
     pa_shm memory;
     size_t block_size;
     unsigned n_blocks;
+    bool is_remote_writable;
 
     pa_atomic_t n_init;
 
@@ -303,6 +307,19 @@ static struct mempool_slot* mempool_slot_by_ptr(pa_mempool *p, void *ptr) {
 }
 
 /* No lock necessary */
+bool pa_mempool_is_remote_writable(pa_mempool *p) {
+    pa_assert(p);
+    return p->is_remote_writable;
+}
+
+/* No lock necessary */
+void pa_mempool_set_is_remote_writable(pa_mempool *p, bool writable) {
+    pa_assert(p);
+    pa_assert(!writable || pa_mempool_is_shared(p));
+    p->is_remote_writable = writable;
+}
+
+/* No lock necessary */
 pa_memblock *pa_memblock_new_pool(pa_mempool *p, size_t length) {
     pa_memblock *b = NULL;
     struct mempool_slot *slot;
@@ -387,7 +404,13 @@ pa_memblock *pa_memblock_new_fixed(pa_mempool *p, void *d, size_t length, bool r
 }
 
 /* No lock necessary */
-pa_memblock *pa_memblock_new_user(pa_mempool *p, void *d, size_t length, pa_free_cb_t free_cb, bool read_only) {
+pa_memblock *pa_memblock_new_user(
+        pa_mempool *p,
+        void *d,
+        size_t length,
+        pa_free_cb_t free_cb,
+        void *free_cb_data,
+        bool read_only) {
     pa_memblock *b;
 
     pa_assert(p);
@@ -410,9 +433,18 @@ pa_memblock *pa_memblock_new_user(pa_mempool *p, void *d, size_t length, pa_free
     pa_atomic_store(&b->please_signal, 0);
 
     b->per_type.user.free_cb = free_cb;
+    b->per_type.user.free_cb_data = free_cb_data;
 
     stat_add(b);
     return b;
+}
+
+/* No lock necessary */
+bool pa_memblock_is_ours(pa_memblock *b) {
+    pa_assert(b);
+    pa_assert(PA_REFCNT_VALUE(b) > 0);
+
+    return b->type != PA_MEMBLOCK_IMPORTED;
 }
 
 /* No lock necessary */
@@ -513,7 +545,7 @@ static void memblock_free(pa_memblock *b) {
     switch (b->type) {
         case PA_MEMBLOCK_USER :
             pa_assert(b->per_type.user.free_cb);
-            b->per_type.user.free_cb(pa_atomic_ptr_load(&b->data));
+            b->per_type.user.free_cb(b->per_type.user.free_cb_data);
 
             /* Fall through */
 
@@ -647,6 +679,7 @@ static void memblock_make_local(pa_memblock *b) {
     /* Humm, not enough space in the pool, so lets allocate the memory with malloc() */
     b->per_type.user.free_cb = pa_xfree;
     pa_atomic_ptr_store(&b->data, pa_xmemdup(pa_atomic_ptr_load(&b->data), b->length));
+    b->per_type.user.free_cb_data = pa_atomic_ptr_load(&b->data);
 
     b->type = PA_MEMBLOCK_USER;
     b->read_only = false;
@@ -877,7 +910,7 @@ int pa_mempool_get_shm_id(pa_mempool *p, uint32_t *id) {
 bool pa_mempool_is_shared(pa_mempool *p) {
     pa_assert(p);
 
-    return !!p->memory.shared;
+    return p->memory.shared;
 }
 
 /* For receiving blocks from other nodes */
@@ -905,7 +938,7 @@ pa_memimport* pa_memimport_new(pa_mempool *p, pa_memimport_release_cb_t cb, void
 static void memexport_revoke_blocks(pa_memexport *e, pa_memimport *i);
 
 /* Should be called locked */
-static pa_memimport_segment* segment_attach(pa_memimport *i, uint32_t shm_id) {
+static pa_memimport_segment* segment_attach(pa_memimport *i, uint32_t shm_id, bool writable) {
     pa_memimport_segment* seg;
 
     if (pa_hashmap_size(i->segments) >= PA_MEMIMPORT_SEGMENTS_MAX)
@@ -913,11 +946,12 @@ static pa_memimport_segment* segment_attach(pa_memimport *i, uint32_t shm_id) {
 
     seg = pa_xnew0(pa_memimport_segment, 1);
 
-    if (pa_shm_attach_ro(&seg->memory, shm_id) < 0) {
+    if (pa_shm_attach(&seg->memory, shm_id, writable) < 0) {
         pa_xfree(seg);
         return NULL;
     }
 
+    seg->writable = writable;
     seg->import = i;
     seg->trap = pa_memtrap_add(seg->memory.ptr, seg->memory.size);
 
@@ -973,7 +1007,8 @@ void pa_memimport_free(pa_memimport *i) {
 }
 
 /* Self-locked */
-pa_memblock* pa_memimport_get(pa_memimport *i, uint32_t block_id, uint32_t shm_id, size_t offset, size_t size) {
+pa_memblock* pa_memimport_get(pa_memimport *i, uint32_t block_id, uint32_t shm_id,
+                              size_t offset, size_t size, bool writable) {
     pa_memblock *b = NULL;
     pa_memimport_segment *seg;
 
@@ -990,8 +1025,13 @@ pa_memblock* pa_memimport_get(pa_memimport *i, uint32_t block_id, uint32_t shm_i
         goto finish;
 
     if (!(seg = pa_hashmap_get(i->segments, PA_UINT32_TO_PTR(shm_id))))
-        if (!(seg = segment_attach(i, shm_id)))
+        if (!(seg = segment_attach(i, shm_id, writable)))
             goto finish;
+
+    if (writable != seg->writable) {
+        pa_log("Cannot open segment - writable status changed!");
+        goto finish;
+    }
 
     if (offset+size > seg->memory.size)
         goto finish;
@@ -1002,7 +1042,7 @@ pa_memblock* pa_memimport_get(pa_memimport *i, uint32_t block_id, uint32_t shm_i
     PA_REFCNT_INIT(b);
     b->pool = i->pool;
     b->type = PA_MEMBLOCK_IMPORTED;
-    b->read_only = true;
+    b->read_only = !writable;
     b->is_silence = false;
     pa_atomic_ptr_store(&b->data, (uint8_t*) seg->memory.ptr + offset);
     b->length = size;

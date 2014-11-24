@@ -76,6 +76,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_PROPLIST_CHANGED,
     PA_CORE_HOOK_SINK_PORT_CHANGED,
     PA_CORE_HOOK_SINK_FLAGS_CHANGED,
+    PA_CORE_HOOK_SINK_VOLUME_CHANGED,
+    PA_CORE_HOOK_SINK_MUTE_CHANGED,
     PA_CORE_HOOK_SOURCE_NEW,
     PA_CORE_HOOK_SOURCE_FIXATE,
     PA_CORE_HOOK_SOURCE_PUT,
@@ -85,6 +87,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SOURCE_PROPLIST_CHANGED,
     PA_CORE_HOOK_SOURCE_PORT_CHANGED,
     PA_CORE_HOOK_SOURCE_FLAGS_CHANGED,
+    PA_CORE_HOOK_SOURCE_VOLUME_CHANGED,
+    PA_CORE_HOOK_SOURCE_MUTE_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_NEW,
     PA_CORE_HOOK_SINK_INPUT_FIXATE,
     PA_CORE_HOOK_SINK_INPUT_PUT,
@@ -95,6 +99,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SINK_INPUT_MOVE_FAIL,
     PA_CORE_HOOK_SINK_INPUT_STATE_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED,
+    PA_CORE_HOOK_SINK_INPUT_VOLUME_CHANGED,
+    PA_CORE_HOOK_SINK_INPUT_MUTE_CHANGED,
     PA_CORE_HOOK_SINK_INPUT_SEND_EVENT,
     PA_CORE_HOOK_SOURCE_OUTPUT_NEW,
     PA_CORE_HOOK_SOURCE_OUTPUT_FIXATE,
@@ -106,6 +112,8 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_SOURCE_OUTPUT_MOVE_FAIL,
     PA_CORE_HOOK_SOURCE_OUTPUT_STATE_CHANGED,
     PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED,
+    PA_CORE_HOOK_SOURCE_OUTPUT_VOLUME_CHANGED,
+    PA_CORE_HOOK_SOURCE_OUTPUT_MUTE_CHANGED,
     PA_CORE_HOOK_SOURCE_OUTPUT_SEND_EVENT,
     PA_CORE_HOOK_CLIENT_NEW,
     PA_CORE_HOOK_CLIENT_PUT,
@@ -162,7 +170,10 @@ struct pa_core {
     PA_LLIST_HEAD(pa_subscription_event, subscription_event_queue);
     pa_subscription_event *subscription_event_last;
 
-    pa_mempool *mempool;
+    /* The mempool is used for data we write to, it's readonly for the client.
+       The rw_mempool is used for data writable by both server and client (and
+       can be NULL in some cases). */
+    pa_mempool *mempool, *rw_mempool;
     pa_silence_cache silence_cache;
 
     pa_time_event *exit_event;

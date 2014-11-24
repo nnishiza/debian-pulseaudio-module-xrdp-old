@@ -4,10 +4,10 @@ pulse-client.conf \- PulseAudio client configuration file
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/client.conf\fB
 
-\fI/etc/pulse/client.conf\fB
+\fI/usr/local/etc/pulse/client.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio client library reads configuration directives from a file \fI~/.config/pulse/client.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/client.conf\f1.
+The PulseAudio client library reads configuration directives from a file \fI~/.config/pulse/client.conf\f1 on startup and when that file doesn't exist from \fI/usr/local/etc/pulse/client.conf\f1.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -20,7 +20,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBdefault-server=\f1 The default sever to connect to. The environment variable \fB$PULSE_SERVER\f1 takes precedence.
 .TP
-\fBautospawn=\f1 Autospawn a PulseAudio daemon when needed. Takes a boolean value, defaults to \fByes\f1.
+\fBautospawn=\f1 Autospawn a PulseAudio daemon when needed. Takes a boolean value, defaults to \fBno\f1.
 .TP
 \fBdaemon-binary=\f1 Path to the PulseAudio daemon to run when autospawning. Defaults to a path configured at compile time.
 .TP

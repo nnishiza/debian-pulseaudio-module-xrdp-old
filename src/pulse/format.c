@@ -249,7 +249,7 @@ pa_prop_type_t pa_format_info_get_prop_type(const pa_format_info *f, const char 
         return PA_PROP_TYPE_INVALID;
 
     o = json_tokener_parse(str);
-    if (is_error(o))
+    if (!o)
         return PA_PROP_TYPE_INVALID;
 
     switch (json_object_get_type(o)) {
@@ -278,25 +278,20 @@ pa_prop_type_t pa_format_info_get_prop_type(const pa_format_info *f, const char 
             else
                 type = PA_PROP_TYPE_INVALID;
 
-            json_object_put(o1);
             break;
 
         case json_type_object:
             /* We actually know at this point that it's a int range, but let's
              * confirm. */
-            o1 = json_object_object_get(o, PA_JSON_MIN_KEY);
-            if (!o1) {
+            if (!json_object_object_get_ex(o, PA_JSON_MIN_KEY, NULL)) {
                 type = PA_PROP_TYPE_INVALID;
                 break;
             }
-            json_object_put(o1);
 
-            o1 = json_object_object_get(o, PA_JSON_MAX_KEY);
-            if (!o1) {
+            if (!json_object_object_get_ex(o, PA_JSON_MAX_KEY, NULL)) {
                 type = PA_PROP_TYPE_INVALID;
                 break;
             }
-            json_object_put(o1);
 
             type = PA_PROP_TYPE_INT_RANGE;
             break;
@@ -323,7 +318,7 @@ int pa_format_info_get_prop_int(const pa_format_info *f, const char *key, int *v
         return -PA_ERR_NOENTITY;
 
     o = json_tokener_parse(str);
-    if (is_error(o)) {
+    if (!o) {
         pa_log_debug("Failed to parse format info property '%s'.", key);
         return -PA_ERR_INVALID;
     }
@@ -355,7 +350,7 @@ int pa_format_info_get_prop_int_range(const pa_format_info *f, const char *key, 
         return -PA_ERR_NOENTITY;
 
     o = json_tokener_parse(str);
-    if (is_error(o)) {
+    if (!o) {
         pa_log_debug("Failed to parse format info property '%s'.", key);
         return -PA_ERR_INVALID;
     }
@@ -363,17 +358,15 @@ int pa_format_info_get_prop_int_range(const pa_format_info *f, const char *key, 
     if (json_object_get_type(o) != json_type_object)
         goto out;
 
-    if (!(o1 = json_object_object_get(o, PA_JSON_MIN_KEY)))
+    if (!json_object_object_get_ex(o, PA_JSON_MIN_KEY, &o1))
         goto out;
 
     *min = json_object_get_int(o1);
-    json_object_put(o1);
 
-    if (!(o1 = json_object_object_get(o, PA_JSON_MAX_KEY)))
+    if (!json_object_object_get_ex(o, PA_JSON_MAX_KEY, &o1))
         goto out;
 
     *max = json_object_get_int(o1);
-    json_object_put(o1);
 
     ret = 0;
 
@@ -400,7 +393,7 @@ int pa_format_info_get_prop_int_array(const pa_format_info *f, const char *key, 
         return -PA_ERR_NOENTITY;
 
     o = json_tokener_parse(str);
-    if (is_error(o)) {
+    if (!o) {
         pa_log_debug("Failed to parse format info property '%s'.", key);
         return -PA_ERR_INVALID;
     }
@@ -415,12 +408,10 @@ int pa_format_info_get_prop_int_array(const pa_format_info *f, const char *key, 
         o1 = json_object_array_get_idx(o, i);
 
         if (json_object_get_type(o1) != json_type_int) {
-            json_object_put(o1);
             goto out;
         }
 
         (*values)[i] = json_object_get_int(o1);
-        json_object_put(o1);
     }
 
     ret = 0;
@@ -446,7 +437,7 @@ int pa_format_info_get_prop_string(const pa_format_info *f, const char *key, cha
         return -PA_ERR_NOENTITY;
 
     o = json_tokener_parse(str);
-    if (is_error(o)) {
+    if (!o) {
         pa_log_debug("Failed to parse format info property '%s'.", key);
         return -PA_ERR_INVALID;
     }
@@ -478,7 +469,7 @@ int pa_format_info_get_prop_string_array(const pa_format_info *f, const char *ke
         return -PA_ERR_NOENTITY;
 
     o = json_tokener_parse(str);
-    if (is_error(o)) {
+    if (!o) {
         pa_log_debug("Failed to parse format info property '%s'.", key);
         return -PA_ERR_INVALID;
     }
@@ -493,12 +484,10 @@ int pa_format_info_get_prop_string_array(const pa_format_info *f, const char *ke
         o1 = json_object_array_get_idx(o, i);
 
         if (json_object_get_type(o1) != json_type_string) {
-            json_object_put(o1);
             goto out;
         }
 
         (*values)[i] = pa_xstrdup(json_object_get_string(o1));
-        json_object_put(o1);
     }
 
     ret = 0;
@@ -637,11 +626,11 @@ static int pa_format_info_prop_compatible(const char *one, const char *two) {
     int i, ret = 0;
 
     o1 = json_tokener_parse(one);
-    if (is_error(o1))
+    if (!o1)
         goto out;
 
     o2 = json_tokener_parse(two);
-    if (is_error(o2))
+    if (!o2)
         goto out;
 
     /* We don't deal with both values being non-fixed - just because there is no immediate need (FIXME) */
@@ -677,12 +666,12 @@ static int pa_format_info_prop_compatible(const char *one, const char *two) {
             goto out;
         }
 
-        o_min = json_object_object_get(o1, PA_JSON_MIN_KEY);
-        if (!o_min || json_object_get_type(o_min) != json_type_int)
+        if (!json_object_object_get_ex(o1, PA_JSON_MIN_KEY, &o_min) ||
+            json_object_get_type(o_min) != json_type_int)
             goto out;
 
-        o_max = json_object_object_get(o1, PA_JSON_MAX_KEY);
-        if (!o_max || json_object_get_type(o_max) != json_type_int)
+        if (!json_object_object_get_ex(o1, PA_JSON_MAX_KEY, &o_max) ||
+            json_object_get_type(o_max) != json_type_int)
             goto out;
 
         v = json_object_get_int(o2);

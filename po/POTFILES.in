@@ -6,7 +6,7 @@ src/daemon/dumpmodules.c
 src/daemon/ltdl-bind-now.c
 src/daemon/main.c
 src/daemon/pulseaudio.desktop.in
-src/daemon/pulseaudio-kde.desktop.in
+src/daemon/systemd/user/pulseaudio.service.in
 src/modules/alsa/alsa-mixer.c
 src/modules/alsa/alsa-sink.c
 src/modules/alsa/alsa-source.c
@@ -73,6 +73,7 @@ src/pulse/channelmap.c
 src/pulse/client-conf.c
 src/pulse/client-conf-x11.c
 src/pulse/context.c
+src/pulse/direction.c
 src/pulsecore/asyncmsgq.c
 src/pulsecore/asyncq.c
 src/pulsecore/auth-cookie.c
@@ -88,6 +89,7 @@ src/pulsecore/core-error.c
 src/pulsecore/core-scache.c
 src/pulsecore/core-subscribe.c
 src/pulsecore/core-util.c
+src/pulsecore/core-util.h
 src/pulsecore/dbus-util.c
 src/pulsecore/dllmain.c
 src/pulsecore/dynarray.c

@@ -68,6 +68,12 @@
 /* Define to 1 if you have the <atomic_ops.h> header file. */
 #undef HAVE_ATOMIC_OPS_H
 
+/* Bluez 5 native headset backend enabled */
+#undef HAVE_BLUEZ_5_NATIVE_HEADSET
+
+/* Bluez 5 ofono headset backend enabled */
+#undef HAVE_BLUEZ_5_OFONO_HEADSET
+
 /* Define to 1 if you have the <byteswap.h> header file. */
 #undef HAVE_BYTESWAP_H
 
@@ -107,6 +113,9 @@
 /* Define to 1 if you have the declaration of `environ', and to 0 if you
    don't. */
 #undef HAVE_DECL_ENVIRON
+
+/* Have dladdr? */
+#undef HAVE_DLADDR
 
 /* Define to 1 if you have the <dlfcn.h> header file. */
 #undef HAVE_DLFCN_H
@@ -185,9 +194,6 @@
 
 /* Define this to enable IPv6 connection support */
 #undef HAVE_IPV6
-
-/* Have JOURNAL? */
-#undef HAVE_JOURNAL
 
 /* Define to 1 if you have the <langinfo.h> header file. */
 #undef HAVE_LANGINFO_H
@@ -408,8 +414,14 @@
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
 
-/* Have SYSTEMD? */
-#undef HAVE_SYSTEMD
+/* Have SYSTEMDDAEMON? */
+#undef HAVE_SYSTEMD_DAEMON
+
+/* Have SYSTEMDJOURNAL? */
+#undef HAVE_SYSTEMD_JOURNAL
+
+/* Have SYSTEMDLOGIN? */
+#undef HAVE_SYSTEMD_LOGIN
 
 /* Define to 1 if you have the <sys/atomic.h> header file. */
 #undef HAVE_SYS_ATOMIC_H
@@ -657,9 +669,6 @@
 
 /* Version number of package */
 #undef VERSION
-
-/* Just a test. */
-#undef WIBBLE
 
 /* Needed to avoid including unnecessary headers on Windows */
 #undef WIN32_LEAN_AND_MEAN

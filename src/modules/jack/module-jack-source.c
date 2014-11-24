@@ -51,7 +51,7 @@
 PA_MODULE_AUTHOR("Lennart Poettering");
 PA_MODULE_DESCRIPTION("JACK Source");
 PA_MODULE_VERSION(PACKAGE_VERSION);
-PA_MODULE_LOAD_ONCE(true);
+PA_MODULE_LOAD_ONCE(false);
 PA_MODULE_USAGE(
         "source_name=<name for the source> "
         "source_properties=<properties for the source> "
@@ -198,7 +198,7 @@ static void thread_func(void *userdata) {
     for (;;) {
         int ret;
 
-        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0)
+        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
             goto fail;
 
         if (ret == 0)

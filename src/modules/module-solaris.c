@@ -495,7 +495,7 @@ static void sink_set_volume(pa_sink *s) {
         AUDIO_INITINFO(&info);
 
         info.play.gain = pa_cvolume_max(&s->real_volume) * AUDIO_MAX_GAIN / PA_VOLUME_NORM;
-        assert(info.play.gain <= AUDIO_MAX_GAIN);
+        pa_assert(info.play.gain <= AUDIO_MAX_GAIN);
 
         if (ioctl(u->fd, AUDIO_SETINFO, &info) < 0) {
             if (errno == EINVAL)
@@ -530,7 +530,7 @@ static void source_set_volume(pa_source *s) {
         AUDIO_INITINFO(&info);
 
         info.play.gain = pa_cvolume_max(&s->real_volume) * AUDIO_MAX_GAIN / PA_VOLUME_NORM;
-        assert(info.play.gain <= AUDIO_MAX_GAIN);
+        pa_assert(info.play.gain <= AUDIO_MAX_GAIN);
 
         if (ioctl(u->fd, AUDIO_SETINFO, &info) < 0) {
             if (errno == EINVAL)
@@ -564,25 +564,30 @@ static void sink_set_mute(pa_sink *s) {
     if (u->fd >= 0) {
         AUDIO_INITINFO(&info);
 
-        info.output_muted = !!s->muted;
+        info.output_muted = s->muted;
 
         if (ioctl(u->fd, AUDIO_SETINFO, &info) < 0)
             pa_log("AUDIO_SETINFO: %s", pa_cstrerror(errno));
     }
 }
 
-static void sink_get_mute(pa_sink *s) {
+static int sink_get_mute(pa_sink *s, bool *mute) {
     struct userdata *u = s->userdata;
     audio_info_t info;
 
     pa_assert(u);
 
-    if (u->fd >= 0) {
-        if (ioctl(u->fd, AUDIO_GETINFO, &info) < 0)
-            pa_log("AUDIO_SETINFO: %s", pa_cstrerror(errno));
-        else
-            s->muted = !!info.output_muted;
+    if (u->fd < 0)
+        return -1;
+
+    if (ioctl(u->fd, AUDIO_GETINFO, &info) < 0) {
+        pa_log("AUDIO_GETINFO: %s", pa_cstrerror(errno));
+        return -1;
     }
+
+    *mute = info.output_muted;
+
+    return 0;
 }
 
 static void process_rewind(struct userdata *u) {
@@ -778,7 +783,7 @@ static void thread_func(void *userdata) {
         }
 
         /* Hmm, nothing to do. Let's sleep */
-        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0)
+        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
             goto fail;
 
         if (ret == 0)
@@ -812,7 +817,7 @@ finish:
 static void sig_callback(pa_mainloop_api *api, pa_signal_event*e, int sig, void *userdata) {
     struct userdata *u = userdata;
 
-    assert(u);
+    pa_assert(u);
 
     pa_log_debug("caught signal");
 

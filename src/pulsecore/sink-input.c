@@ -179,7 +179,7 @@ void pa_sink_input_new_data_set_muted(pa_sink_input_new_data *data, bool mute) {
     pa_assert(data);
 
     data->muted_is_set = true;
-    data->muted = !!mute;
+    data->muted = mute;
 }
 
 bool pa_sink_input_new_data_set_sink(pa_sink_input_new_data *data, pa_sink *s, bool save) {
@@ -644,7 +644,7 @@ static void sink_input_set_state(pa_sink_input *i, pa_sink_input_state_t state) 
 /* Called from main context */
 void pa_sink_input_unlink(pa_sink_input *i) {
     bool linked;
-    pa_source_output *o, *p = NULL;
+    pa_source_output *o, PA_UNUSED *p = NULL;
 
     pa_assert(i);
     pa_assert_ctl_context();
@@ -1096,7 +1096,7 @@ void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sam
                 i->process_rewind(i, amount);
             called = true;
 
-            /* Convert back to to sink domain */
+            /* Convert back to sink domain */
             if (i->thread_info.resampler)
                 amount = pa_resampler_result(i->thread_info.resampler, amount);
 
@@ -1260,7 +1260,7 @@ void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume, bool s
         return;
     }
 
-    i->volume = *volume;
+    pa_sink_input_set_volume_direct(i, volume);
     i->save_volume = save;
 
     if (pa_sink_flat_volume_enabled(i->sink)) {
@@ -1273,18 +1273,11 @@ void pa_sink_input_set_volume(pa_sink_input *i, const pa_cvolume *volume, bool s
         /* OK, we are in normal volume mode. The volume only affects
          * ourselves */
         set_real_ratio(i, volume);
-        i->reference_ratio = i->volume;
+        pa_sink_input_set_reference_ratio(i, &i->volume);
 
         /* Copy the new soft_volume to the thread_info struct */
         pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_SOFT_VOLUME, NULL, 0, NULL) == 0);
     }
-
-    /* The volume changed, let's tell people so */
-    if (i->volume_changed)
-        i->volume_changed(i);
-
-    /* The virtual volume changed, let's tell people so */
-    pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
 }
 
 void pa_sink_input_add_volume_factor(pa_sink_input *i, const char *key, const pa_cvolume *volume_factor) {
@@ -1324,12 +1317,8 @@ int pa_sink_input_remove_volume_factor(pa_sink_input *i, const char *key) {
     pa_assert_ctl_context();
     pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
 
-    v = pa_hashmap_remove(i->volume_factor_items, key);
-
-    if (!v)
+    if (pa_hashmap_remove_and_free(i->volume_factor_items, key) < 0)
         return -1;
-
-    volume_factor_entry_free(v);
 
     switch (pa_hashmap_size(i->volume_factor_items)) {
         case 0:
@@ -1410,16 +1399,22 @@ pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i, pa_cvolume *volume, bool 
 
 /* Called from main context */
 void pa_sink_input_set_mute(pa_sink_input *i, bool mute, bool save) {
+    bool old_mute;
+
     pa_sink_input_assert_ref(i);
     pa_assert_ctl_context();
     pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
 
-    if (!i->muted == !mute) {
-        i->save_muted = i->save_muted || mute;
+    old_mute = i->muted;
+
+    if (mute == old_mute) {
+        i->save_muted |= save;
         return;
     }
 
     i->muted = mute;
+    pa_log_debug("The mute of sink input %u changed from %s to %s.", i->index, pa_yes_no(old_mute), pa_yes_no(mute));
+
     i->save_muted = save;
 
     pa_assert_se(pa_asyncmsgq_send(i->sink->asyncmsgq, PA_MSGOBJECT(i), PA_SINK_INPUT_MESSAGE_SET_SOFT_MUTE, NULL, 0, NULL) == 0);
@@ -1429,15 +1424,7 @@ void pa_sink_input_set_mute(pa_sink_input *i, bool mute, bool save) {
         i->mute_changed(i);
 
     pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
-}
-
-/* Called from main context */
-bool pa_sink_input_get_mute(pa_sink_input *i) {
-    pa_sink_input_assert_ref(i);
-    pa_assert_ctl_context();
-    pa_assert(PA_SINK_INPUT_IS_LINKED(i->state));
-
-    return i->muted;
+    pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_MUTE_CHANGED], i);
 }
 
 /* Called from main thread */
@@ -1532,7 +1519,7 @@ bool pa_sink_input_may_move(pa_sink_input *i) {
 }
 
 static bool find_filter_sink_input(pa_sink_input *target, pa_sink *s) {
-    int i = 0;
+    unsigned PA_UNUSED i = 0;
     while (s && s->input_to_master) {
         if (s->input_to_master == target)
             return true;
@@ -1578,7 +1565,7 @@ bool pa_sink_input_may_move_to(pa_sink_input *i, pa_sink *dest) {
 
 /* Called from main context */
 int pa_sink_input_start_move(pa_sink_input *i) {
-    pa_source_output *o, *p = NULL;
+    pa_source_output *o, PA_UNUSED *p = NULL;
     struct volume_factor_entry *v;
     void *state = NULL;
     int r;
@@ -1635,7 +1622,7 @@ int pa_sink_input_start_move(pa_sink_input *i) {
  * then also the origin sink and all streams connected to it need to update
  * their volume - this function does all that by using recursion. */
 static void update_volume_due_to_moving(pa_sink_input *i, pa_sink *dest) {
-    pa_cvolume old_volume;
+    pa_cvolume new_volume;
 
     pa_assert(i);
     pa_assert(dest);
@@ -1684,19 +1671,11 @@ static void update_volume_due_to_moving(pa_sink_input *i, pa_sink *dest) {
              *          always have volume_factor as soft_volume, so no change
              *          should be needed) */
 
-            old_volume = i->volume;
-            pa_cvolume_reset(&i->volume, i->volume.channels);
-            pa_cvolume_reset(&i->reference_ratio, i->reference_ratio.channels);
+            pa_cvolume_reset(&new_volume, i->volume.channels);
+            pa_sink_input_set_volume_direct(i, &new_volume);
+            pa_sink_input_set_reference_ratio(i, &new_volume);
             pa_assert(pa_cvolume_is_norm(&i->real_ratio));
             pa_assert(pa_cvolume_equal(&i->soft_volume, &i->volume_factor));
-
-            /* Notify others about the changed sink input volume. */
-            if (!pa_cvolume_equal(&i->volume, &old_volume)) {
-                if (i->volume_changed)
-                    i->volume_changed(i);
-
-                pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
-            }
         }
 
         /* Additionally, the origin sink volume needs updating:
@@ -1707,33 +1686,27 @@ static void update_volume_due_to_moving(pa_sink_input *i, pa_sink *dest) {
          *         (sinks that use volume sharing should always have
          *          soft_volume of 0 dB) */
 
-        old_volume = i->origin_sink->reference_volume;
-
-        i->origin_sink->reference_volume = root_sink->reference_volume;
-        pa_cvolume_remap(&i->origin_sink->reference_volume, &root_sink->channel_map, &i->origin_sink->channel_map);
+        new_volume = root_sink->reference_volume;
+        pa_cvolume_remap(&new_volume, &root_sink->channel_map, &i->origin_sink->channel_map);
+        pa_sink_set_reference_volume_direct(i->origin_sink, &new_volume);
 
         i->origin_sink->real_volume = root_sink->real_volume;
         pa_cvolume_remap(&i->origin_sink->real_volume, &root_sink->channel_map, &i->origin_sink->channel_map);
 
         pa_assert(pa_cvolume_is_norm(&i->origin_sink->soft_volume));
 
-        /* Notify others about the changed sink volume. If you wonder whether
-         * i->origin_sink->set_volume() should be called somewhere, that's not
-         * the case, because sinks that use volume sharing shouldn't have any
-         * internal volume that set_volume() would update. If you wonder
-         * whether the thread_info variables should be synced, yes, they
-         * should, and it's done by the PA_SINK_MESSAGE_FINISH_MOVE message
-         * handler. */
-        if (!pa_cvolume_equal(&i->origin_sink->reference_volume, &old_volume))
-            pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK|PA_SUBSCRIPTION_EVENT_CHANGE, i->origin_sink->index);
+        /* If you wonder whether i->origin_sink->set_volume() should be called
+         * somewhere, that's not the case, because sinks that use volume
+         * sharing shouldn't have any internal volume that set_volume() would
+         * update. If you wonder whether the thread_info variables should be
+         * synced, yes, they should, and it's done by the
+         * PA_SINK_MESSAGE_FINISH_MOVE message handler. */
 
         /* Recursively update origin sink inputs. */
         PA_IDXSET_FOREACH(origin_sink_input, i->origin_sink->inputs, idx)
             update_volume_due_to_moving(origin_sink_input, dest);
 
     } else {
-        old_volume = i->volume;
-
         if (pa_sink_flat_volume_enabled(i->sink)) {
             /* Ok, so this is a regular stream, and flat volume is enabled. The
              * volume will have to be updated as follows:
@@ -1745,9 +1718,10 @@ static void update_volume_due_to_moving(pa_sink_input *i, pa_sink *dest) {
              *     i->soft_volume := i->real_ratio * i->volume_factor
              *         (handled later by pa_sink_set_volume) */
 
-            i->volume = i->sink->reference_volume;
-            pa_cvolume_remap(&i->volume, &i->sink->channel_map, &i->channel_map);
-            pa_sw_cvolume_multiply(&i->volume, &i->volume, &i->reference_ratio);
+            new_volume = i->sink->reference_volume;
+            pa_cvolume_remap(&new_volume, &i->sink->channel_map, &i->channel_map);
+            pa_sw_cvolume_multiply(&new_volume, &new_volume, &i->reference_ratio);
+            pa_sink_input_set_volume_direct(i, &new_volume);
 
         } else {
             /* Ok, so this is a regular stream, and flat volume is disabled.
@@ -1758,20 +1732,9 @@ static void update_volume_due_to_moving(pa_sink_input *i, pa_sink *dest) {
              *     i->real_ratio := i->reference_ratio
              *     i->soft_volume := i->real_ratio * i->volume_factor */
 
-            i->volume = i->reference_ratio;
+            pa_sink_input_set_volume_direct(i, &i->reference_ratio);
             i->real_ratio = i->reference_ratio;
             pa_sw_cvolume_multiply(&i->soft_volume, &i->real_ratio, &i->volume_factor);
-        }
-
-        /* Notify others about the changed sink input volume. */
-        if (!pa_cvolume_equal(&i->volume, &old_volume)) {
-            /* XXX: In case i->sink has flat volume enabled, then real_ratio
-             * and soft_volume are not updated yet. Let's hope that the
-             * callback implementation doesn't care about those variables... */
-            if (i->volume_changed)
-                i->volume_changed(i);
-
-            pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
         }
     }
 
@@ -2248,4 +2211,54 @@ int pa_sink_input_update_rate(pa_sink_input *i) {
     pa_log_debug("Updated resampler for sink input %d", i->index);
 
     return 0;
+}
+
+/* Called from the main thread. */
+void pa_sink_input_set_volume_direct(pa_sink_input *i, const pa_cvolume *volume) {
+    pa_cvolume old_volume;
+    char old_volume_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+    char new_volume_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+
+    pa_assert(i);
+    pa_assert(volume);
+
+    old_volume = i->volume;
+
+    if (pa_cvolume_equal(volume, &old_volume))
+        return;
+
+    i->volume = *volume;
+    pa_log_debug("The volume of sink input %u changed from %s to %s.", i->index,
+                 pa_cvolume_snprint_verbose(old_volume_str, sizeof(old_volume_str), &old_volume, &i->channel_map, true),
+                 pa_cvolume_snprint_verbose(new_volume_str, sizeof(new_volume_str), volume, &i->channel_map, true));
+
+    if (i->volume_changed)
+        i->volume_changed(i);
+
+    pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
+    pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_VOLUME_CHANGED], i);
+}
+
+/* Called from the main thread. */
+void pa_sink_input_set_reference_ratio(pa_sink_input *i, const pa_cvolume *ratio) {
+    pa_cvolume old_ratio;
+    char old_ratio_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+    char new_ratio_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+
+    pa_assert(i);
+    pa_assert(ratio);
+
+    old_ratio = i->reference_ratio;
+
+    if (pa_cvolume_equal(ratio, &old_ratio))
+        return;
+
+    i->reference_ratio = *ratio;
+
+    if (!PA_SINK_INPUT_IS_LINKED(i->state))
+        return;
+
+    pa_log_debug("Sink input %u reference ratio changed from %s to %s.", i->index,
+                 pa_cvolume_snprint_verbose(old_ratio_str, sizeof(old_ratio_str), &old_ratio, &i->channel_map, true),
+                 pa_cvolume_snprint_verbose(new_ratio_str, sizeof(new_ratio_str), ratio, &i->channel_map, true));
 }

@@ -3,6 +3,8 @@ TAGS
 *.o
 *.la
 *.gcno
+*.trs
+*.log
 .deps
 .libs
 /Makefile
@@ -21,8 +23,8 @@ paplay
 pasuspender
 pax11publish
 pulseaudio
+pulseaudio.service
 start-pulseaudio-x11
-start-pulseaudio-kde
 *-symdef.h
 *-orc-gen.[ch]
 # tests
@@ -35,7 +37,10 @@ close-test
 connect-stress
 cpulimit-test
 cpulimit-test2
-cpu-test
+cpu-sconv-test
+cpu-remap-test
+cpu-mix-test
+cpu-volume-test
 extended-test
 flist-test
 format-test
@@ -51,7 +56,6 @@ mainloop-test-glib
 mcalign-test
 memblockq-test
 memblock-test
-mix-special-test
 mix-test
 once-test
 pacat-simple
@@ -65,6 +69,7 @@ rtstutter
 sig2str-test
 sigbus-test
 smoother-test
+srbchannel-test
 stripnul
 strlist-test
 sync-playback

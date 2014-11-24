@@ -41,11 +41,11 @@ AC_SUBST(PA_MINOR, pa_minor)
 AC_SUBST(PA_MAJORMINOR, pa_major.pa_minor)
 
 AC_SUBST(PA_API_VERSION, 12)
-AC_SUBST(PA_PROTOCOL_VERSION, 29)
+AC_SUBST(PA_PROTOCOL_VERSION, 30)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [17:3:17])
+AC_SUBST(LIBPULSE_VERSION_INFO, [18:0:18])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -73,6 +73,10 @@ AM_SILENT_RULES([yes])
 # mkdir -p
 
 AC_PROG_MKDIR_P
+
+# ln -s
+
+AC_PROG_LN_S
 
 # CC
 
@@ -174,17 +178,23 @@ esac
 #### Compiler flags ####
 
 AX_APPEND_COMPILE_FLAGS(
-    [-Wall -W -Wextra -pipe -Wno-long-long -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -fno-common -fdiagnostics-show-option],
+    [-Wall -W -Wextra -pipe -Wno-long-long -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -fno-common -fdiagnostics-show-option -fdiagnostics-color=auto],
     [], [-pedantic -Werror])
 
-# Only enable fastpath asserts when doing a debug build, e.g. from bootstrap.sh.
-AS_CASE([" $CFLAGS "], [*" -O0 "*], [], [AX_APPEND_FLAG(["-DFASTPATH"], [CPPFLAGS])])
+AS_CASE([" $CFLAGS "], [*" -O0 "*], [], [
+    # Don't append the flag if it already exists.
+    # Only enable fastpath asserts when doing a debug build, e.g. from bootstrap.sh.
+    AX_APPEND_FLAG([-DFASTPATH], [CPPFLAGS])
 
-# Only set _FORTIFY_SOURCE when optimizations are enabled. If optimizations
-# are disabled, _FORTIFY_SOURCE doesn't do anything, and causes tons of
-# warnings during compiling on some distributions (at least Fedora).
-AS_CASE([" $CFLAGS "], [*" -O0 "*], [], [AX_APPEND_FLAG(["-D_FORTIFY_SOURCE=2"], [CPPFLAGS])])
+    # Cannot use AX_APPEND_FLAG here, as it assumes no space inside the added flags.
+    # Cannot append flags with AX_APPEND_FLAG one by one, as this would destroy all fortifications
+    # if CPPFLAGS already contain -D_FORTIFY_SOURCE=2.
 
+    # Warnings to be aware of that appear with -D_FORTIFY_SOURCE=2 but without -U_FORTIFY_SOURCE:
+    # On Fedora 20 with -O0: #warning _FORTIFY_SOURCE requires compiling with optimization (-O) [-Wcpp]
+    # On Gentoo with -O2:    "_FORTIFY_SOURCE" redefined [enabled by default]
+    AS_VAR_APPEND([CPPFLAGS],[" -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2"])
+])
 
 #### Linker flags ####
 
@@ -574,6 +584,8 @@ AC_SYS_LARGEFILE
 # Check for open64 to know if the current system does have open64() and similar functions
 AC_CHECK_FUNCS_ONCE([open64])
 
+AC_SEARCH_LIBS([dladdr], [dl], [HAVE_DLADDR=1], [HAVE_DLADDR=0])
+AC_DEFINE(HAVE_DLADDR, [1], [Have dladdr?])
 
 ###################################
 #      External libraries         #
@@ -636,8 +648,7 @@ AM_CONDITIONAL([HAVE_TESTS], [test "x$HAVE_LIBCHECK" = x1])
 
 #### json parsing ####
 
-PKG_CHECK_MODULES(LIBJSON, [ json-c >= 0.11 ], [],
-		  [PKG_CHECK_MODULES(LIBJSON, [ json >= 0.9 ])])
+PKG_CHECK_MODULES(LIBJSON, [ json-c >= 0.11 ])
 
 #### Sound file ####
 
@@ -672,6 +683,8 @@ AS_IF([test "x$enable_samplerate" = "xyes" && test "x$HAVE_LIBSAMPLERATE" = "x0"
 
 AM_CONDITIONAL([HAVE_LIBSAMPLERATE], [test "x$HAVE_LIBSAMPLERATE" = x1])
 AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], AC_DEFINE([HAVE_LIBSAMPLERATE], 1, [Have libsamplerate?]))
+
+AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], AC_MSG_WARN([Support for libsamplerate is DEPRECATED]))
 
 #### Database support ####
 
@@ -1022,6 +1035,25 @@ AS_IF([test "x$HAVE_BLUEZ_4" = "x1" || test "x$HAVE_BLUEZ_5" = "x1"], HAVE_BLUEZ
 AC_SUBST(HAVE_BLUEZ)
 AM_CONDITIONAL([HAVE_BLUEZ], [test "x$HAVE_BLUEZ" = x1])
 
+## Bluetooth Headset profiles backend ##
+
+AC_ARG_ENABLE([bluez5-ofono-headset],
+    AS_HELP_STRING([--disable-bluez5-ofono-headset],[Disable optional ofono headset backend support (Bluez 5)]))
+AS_IF([test "x$HAVE_BLUEZ_5" = "x1" && test "x$enable_bluez5_ofono_headset" != "xno"], HAVE_BLUEZ_5_OFONO_HEADSET=1)
+AC_SUBST(HAVE_BLUEZ_5_OFONO_HEADSET)
+AM_CONDITIONAL([HAVE_BLUEZ_5_OFONO_HEADSET], [test "x$HAVE_BLUEZ_5_OFONO_HEADSET" = x1])
+AS_IF([test "x$HAVE_BLUEZ_5_OFONO_HEADSET" = "x1"], AC_DEFINE([HAVE_BLUEZ_5_OFONO_HEADSET], 1, [Bluez 5 ofono headset backend enabled]))
+
+AC_ARG_ENABLE([bluez5-native-headset],
+    AS_HELP_STRING([--disable-bluez5-native-headset],[Disable optional native headset backend support (Bluez 5)]))
+AS_IF([test "x$HAVE_BLUEZ_5" = "x1" && test "x$enable_bluez5_native_headset" != "xno"], HAVE_BLUEZ_5_NATIVE_HEADSET=1)
+AS_IF([test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = "x1"], [PKG_CHECK_MODULES(BLUEZ, [ bluez >= 4.101 ], [],
+    [AC_MSG_ERROR([*** Bluez library not found (required by native headset backend)])])])
+
+AC_SUBST(HAVE_BLUEZ_5_NATIVE_HEADSET)
+AM_CONDITIONAL([HAVE_BLUEZ_5_NATIVE_HEADSET], [test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = x1])
+AS_IF([test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = "x1"], AC_DEFINE([HAVE_BLUEZ_5_NATIVE_HEADSET], 1, [Bluez 5 native headset backend enabled]))
+
 #### UDEV support (optional) ####
 
 AC_ARG_ENABLE([udev],
@@ -1154,27 +1186,69 @@ ORC_CHECK([0.4.11])
 
 #### systemd support (optional) ####
 
-AC_ARG_ENABLE([systemd],
-    AS_HELP_STRING([--disable-systemd],[Disable optional systemd support]))
+AC_ARG_ENABLE([systemd-daemon],
+    AS_HELP_STRING([--disable-systemd-daemon],[Disable optional systemd daemon (socket activation) support]))
 
-AS_IF([test "x$enable_systemd" != "xno"],
-    [PKG_CHECK_MODULES(SYSTEMD, [ libsystemd-login ], HAVE_SYSTEMD=1, HAVE_SYSTEMD=0)],
-    HAVE_SYSTEMD=0)
-
-AS_IF([test "x$enable_systemd" = "xyes" && test "x$HAVE_SYSTEMD" = "x0"],
-    [AC_MSG_ERROR([*** Needed systemd support not found])])
-
-AC_SUBST(HAVE_SYSTEMD)
-AM_CONDITIONAL([HAVE_SYSTEMD], [test "x$HAVE_SYSTEMD" = x1])
-AS_IF([test "x$HAVE_SYSTEMD" = "x1"], AC_DEFINE([HAVE_SYSTEMD], 1, [Have SYSTEMD?]))
-
-#### journal support (optional) ####
+AC_ARG_ENABLE([systemd-login],
+    AS_HELP_STRING([--disable-systemd-login],[Disable optional systemd login support]))
 
 AC_ARG_ENABLE([systemd-journal],
     AS_HELP_STRING([--disable-systemd-journal],[Disable optional systemd journal support]))
 
+# Newer systemd's combine their subcomponent libraries into one
+# If it exists, we should use it for the further checks
+
+AS_IF([test "x$enable_systemd_daemon" != "xno" || test "x$enable_systemd_login" != "xno" || test "x$enable_systemd_journal" != "xno"],
+    [PKG_CHECK_MODULES(SYSTEMD, [ libsystemd ], HAVE_SYSTEMD=1, HAVE_SYSTEMD=0)],
+    HAVE_SYSTEMD=0)
+
+AS_IF([test "x$HAVE_SYSTEMD" = "x1"],
+    [
+        HAVE_SYSTEMD_DAEMON=1
+        HAVE_SYSTEMD_LOGIN=1
+        HAVE_SYSTEMD_JOURNAL=1
+    ])
+
+AC_ARG_WITH([systemduserunitdir],
+        AS_HELP_STRING([--with-systemduserunitdir=DIR], [Directory for systemd user service files]),
+        [], [with_systemduserunitdir=$($PKG_CONFIG --variable=systemduserunitdir systemd)])
+if test "x$with_systemduserunitdir" != xno; then
+        AC_SUBST([systemduserunitdir], [$with_systemduserunitdir])
+fi
+
+#### systemd daemon support (optional) ####
+
+AS_IF([test "x$enable_systemd_daemon" != "xno"],
+    [AS_IF([test "x$HAVE_SYSTEMD_DAEMON" != "x1"], [PKG_CHECK_MODULES(SYSTEMDDAEMON, [ libsystemd-daemon ], HAVE_SYSTEMD_DAEMON=1, HAVE_SYSTEMD_DAEMON=0)])],
+    HAVE_SYSTEMD_DAEMON=0)
+
+AS_IF([test "x$enable_systemd_daemon" = "xyes" && test "x$HAVE_SYSTEMD_DAEMON" = "x0"],
+    [AC_MSG_ERROR([*** Needed systemd daemon support not found])])
+
+AS_IF([test "x$HAVE_SYSTEMD_DAEMON" = "x1"], [ PA_DEFAULT_AUTOSPAWN=no ], [ PA_DEFAULT_AUTOSPAWN=yes ])
+AC_SUBST(PA_DEFAULT_AUTOSPAWN)
+
+AC_SUBST(HAVE_SYSTEMD_DAEMON)
+AM_CONDITIONAL([HAVE_SYSTEMD_DAEMON], [test "x$HAVE_SYSTEMD_DAEMON" = x1])
+AS_IF([test "x$HAVE_SYSTEMD_DAEMON" = "x1"], AC_DEFINE([HAVE_SYSTEMD_DAEMON], 1, [Have SYSTEMDDAEMON?]))
+
+#### systemd login support (optional) ####
+
+AS_IF([test "x$enable_systemd_login" != "xno"],
+    [AS_IF([test "x$HAVE_SYSTEMD_LOGIN" != "x1"], [PKG_CHECK_MODULES(SYSTEMDLOGIN, [ libsystemd-login ], HAVE_SYSTEMD_LOGIN=1, HAVE_SYSTEMD_LOGIN=0)])],
+    HAVE_SYSTEMD_LOGIN=0)
+
+AS_IF([test "x$enable_systemd_login" = "xyes" && test "x$HAVE_SYSTEMD_LOGIN" = "x0"],
+    [AC_MSG_ERROR([*** Needed systemd login support not found])])
+
+AC_SUBST(HAVE_SYSTEMD_LOGIN)
+AM_CONDITIONAL([HAVE_SYSTEMD_LOGIN], [test "x$HAVE_SYSTEMD_LOGIN" = x1])
+AS_IF([test "x$HAVE_SYSTEMD_LOGIN" = "x1"], AC_DEFINE([HAVE_SYSTEMD_LOGIN], 1, [Have SYSTEMDLOGIN?]))
+
+#### systemd journal support (optional) ####
+
 AS_IF([test "x$enable_systemd_journal" != "xno"],
-    [PKG_CHECK_MODULES(JOURNAL, [ libsystemd-journal ], HAVE_SYSTEMD_JOURNAL=1, HAVE_SYSTEMD_JOURNAL=0)],
+    [AS_IF([test "x$HAVE_SYSTEMD_JOURNAL" != "x1"], [PKG_CHECK_MODULES(SYSTEMDJOURNAL, [ libsystemd-journal ], HAVE_SYSTEMD_JOURNAL=1, HAVE_SYSTEMD_JOURNAL=0)])],
     HAVE_SYSTEMD_JOURNAL=0)
 
 AS_IF([test "x$enable_systemd_journal" = "xyes" && test "x$HAVE_SYSTEMD_JOURNAL" = "x0"],
@@ -1182,7 +1256,7 @@ AS_IF([test "x$enable_systemd_journal" = "xyes" && test "x$HAVE_SYSTEMD_JOURNAL"
 
 AC_SUBST(HAVE_SYSTEMD_JOURNAL)
 AM_CONDITIONAL([HAVE_SYSTEMD_JOURNAL], [test "x$HAVE_SYSTEMD_JOURNAL" = x1])
-AS_IF([test "x$HAVE_SYSTEMD_JOURNAL" = "x1"], AC_DEFINE([HAVE_JOURNAL], 1, [Have JOURNAL?]))
+AS_IF([test "x$HAVE_SYSTEMD_JOURNAL" = "x1"], AC_DEFINE([HAVE_SYSTEMD_JOURNAL], 1, [Have SYSTEMDJOURNAL?]))
 
 #### Build and Install man pages ####
 
@@ -1312,7 +1386,6 @@ AC_ARG_ENABLE([legacy-database-entry-format],
 if test "x$enable_legacy_database_entry_format" != "xno" ; then
         AC_DEFINE(ENABLE_LEGACY_DATABASE_ENTRY_FORMAT, [1], [Legacy database entry format])
 fi
-AC_DEFINE([WIBBLE], 1, [Just a test.])
 
 AC_ARG_ENABLE([static-bins],
     AS_HELP_STRING([--enable-static-bins],[Statically link executables.]))
@@ -1346,6 +1419,13 @@ AC_ARG_WITH(
         [udevrulesdir=$withval], [udevrulesdir="/lib/udev/rules.d"])
 
 AC_SUBST(udevrulesdir)
+
+AC_ARG_WITH(
+        [zsh-completion-dir],
+        AS_HELP_STRING([--with-zsh-completion-dir], [Zsh completions directory (defaults to ${datadir}/zsh/site-functions)]),
+        [zshcompletiondir=$withval], [zshcompletiondir="${datadir}/zsh/site-functions"])
+
+AC_SUBST(zshcompletiondir)
 
 AC_ARG_ENABLE([force-preopen],
     AS_HELP_STRING([--enable-force-preopen],[Preopen modules, even when dlopen() is supported.]))
@@ -1382,13 +1462,11 @@ man/pulse-daemon.conf.5.xml
 man/pulse-client.conf.5.xml
 man/default.pa.5.xml
 man/pulse-cli-syntax.5.xml
-man/start-pulseaudio-kde.1.xml
 man/start-pulseaudio-x11.1.xml
 ])
 
 AC_CONFIG_FILES([src/esdcompat:src/daemon/esdcompat.in], [chmod +x src/esdcompat])
 AC_CONFIG_FILES([src/start-pulseaudio-x11:src/daemon/start-pulseaudio-x11.in], [chmod +x src/start-pulseaudio-x11])
-AC_CONFIG_FILES([src/start-pulseaudio-kde:src/daemon/start-pulseaudio-kde.in], [chmod +x src/start-pulseaudio-kde])
 AC_CONFIG_FILES([src/client.conf:src/pulse/client.conf.in])
 AC_CONFIG_FILES([src/daemon.conf:src/daemon/daemon.conf.in],
     [m4 src/daemon.conf > src/daemon.conf.gen && mv src/daemon.conf.gen src/daemon.conf])
@@ -1396,6 +1474,10 @@ AC_CONFIG_FILES([src/default.pa:src/daemon/default.pa.in],
     [m4 src/default.pa > src/default.pa.gen && mv src/default.pa.gen src/default.pa])
 AC_CONFIG_FILES([src/system.pa:src/daemon/system.pa.in],
     [m4 src/system.pa > src/system.pa.gen && mv src/system.pa.gen src/system.pa])
+AS_IF([test "x$HAVE_SYSTEMD_DAEMON" = "x1"],
+    [
+        AC_CONFIG_FILES([src/pulseaudio.service:src/daemon/systemd/user/pulseaudio.service.in])
+    ])
 
 # CMake related ProjectConfig files
 PA_LIBDIR="$libdir"
@@ -1428,13 +1510,16 @@ AS_IF([test "x$HAVE_LIRC" = "x1"], ENABLE_LIRC=yes, ENABLE_LIRC=no)
 AS_IF([test "x$HAVE_XEN" = "x1"], ENABLE_XEN=yes, ENABLE_XEN=no)
 AS_IF([test "x$HAVE_DBUS" = "x1"], ENABLE_DBUS=yes, ENABLE_DBUS=no)
 AS_IF([test "x$HAVE_UDEV" = "x1"], ENABLE_UDEV=yes, ENABLE_UDEV=no)
-AS_IF([test "x$HAVE_SYSTEMD" = "x1"], ENABLE_SYSTEMD=yes, ENABLE_SYSTEMD=no)
+AS_IF([test "x$HAVE_SYSTEMD_DAEMON" = "x1"], ENABLE_SYSTEMD_DAEMON=yes, ENABLE_SYSTEMD_DAEMON=no)
+AS_IF([test "x$HAVE_SYSTEMD_LOGIN" = "x1"], ENABLE_SYSTEMD_LOGIN=yes, ENABLE_SYSTEMD_LOGIN=no)
 AS_IF([test "x$HAVE_SYSTEMD_JOURNAL" = "x1"], ENABLE_SYSTEMD_JOURNAL=yes, ENABLE_SYSTEMD_JOURNAL=no)
 AS_IF([test "x$HAVE_BLUEZ_4" = "x1"], ENABLE_BLUEZ_4=yes, ENABLE_BLUEZ_4=no)
 AS_IF([test "x$HAVE_BLUEZ_5" = "x1"], ENABLE_BLUEZ_5=yes, ENABLE_BLUEZ_5=no)
+AS_IF([test "x$HAVE_BLUEZ_5_OFONO_HEADSET" = "x1"], ENABLE_BLUEZ_5_OFONO_HEADSET=yes, ENABLE_BLUEZ_5_OFONO_HEADSET=no)
+AS_IF([test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = "x1"], ENABLE_BLUEZ_5_NATIVE_HEADSET=yes, ENABLE_BLUEZ_5_NATIVE_HEADSET=no)
 AS_IF([test "x$HAVE_HAL_COMPAT" = "x1"], ENABLE_HAL_COMPAT=yes, ENABLE_HAL_COMPAT=no)
 AS_IF([test "x$HAVE_TCPWRAP" = "x1"], ENABLE_TCPWRAP=yes, ENABLE_TCPWRAP=no)
-AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], ENABLE_LIBSAMPLERATE=yes, ENABLE_LIBSAMPLERATE=no)
+AS_IF([test "x$HAVE_LIBSAMPLERATE" = "x1"], ENABLE_LIBSAMPLERATE="yes (DEPRECATED)", ENABLE_LIBSAMPLERATE=no)
 AS_IF([test "x$HAVE_IPV6" = "x1"], ENABLE_IPV6=yes, ENABLE_IPV6=no)
 AS_IF([test "x$HAVE_OPENSSL" = "x1"], ENABLE_OPENSSL=yes, ENABLE_OPENSSL=no)
 AS_IF([test "x$HAVE_FFTW" = "x1"], ENABLE_FFTW=yes, ENABLE_FFTW=no)
@@ -1461,6 +1546,7 @@ echo "
     System Runtime Path:           ${PA_SYSTEM_RUNTIME_PATH}
     System State Path:             ${PA_SYSTEM_STATE_PATH}
     System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
+    Zsh completions directory:     ${zshcompletiondir}
     Compiler:                      ${CC}
     CFLAGS:                        ${CFLAGS}
     CPPFLAGS:                      ${CPPFLAGS}
@@ -1485,10 +1571,14 @@ echo "
     Enable D-Bus:                  ${ENABLE_DBUS}
       Enable BlueZ 4:              ${ENABLE_BLUEZ_4}
       Enable BlueZ 5:              ${ENABLE_BLUEZ_5}
+        Enable ofono headsets:     ${ENABLE_BLUEZ_5_OFONO_HEADSET}
+        Enable native headsets:    ${ENABLE_BLUEZ_5_NATIVE_HEADSET}
     Enable udev:                   ${ENABLE_UDEV}
       Enable HAL->udev compat:     ${ENABLE_HAL_COMPAT}
-    Enable systemd login:          ${ENABLE_SYSTEMD}
-    Enable systemd journal:        ${ENABLE_SYSTEMD_JOURNAL}
+    Enable systemd
+      Daemon (Socket Activation):  ${ENABLE_SYSTEMD_DAEMON}
+      Login (Session Tracking):    ${ENABLE_SYSTEMD_LOGIN}
+      Journal (Logging):           ${ENABLE_SYSTEMD_JOURNAL}
     Enable TCP Wrappers:           ${ENABLE_TCPWRAP}
     Enable libsamplerate:          ${ENABLE_LIBSAMPLERATE}
     Enable IPv6:                   ${ENABLE_IPV6}

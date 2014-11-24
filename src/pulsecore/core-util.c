@@ -336,37 +336,23 @@ again:
         uid = getuid();
     if (gid == (gid_t) -1)
         gid = getgid();
-    if (fchown(fd, uid, gid) < 0) {
+    if (((st.st_uid != uid) || (st.st_gid != gid)) && fchown(fd, uid, gid) < 0) {
         pa_assert_se(pa_close(fd) >= 0);
         goto fail;
     }
 #endif
 
 #ifdef HAVE_FCHMOD
-    (void) fchmod(fd, m);
+    if (fchmod(fd, m) < 0) {
+        pa_assert_se(pa_close(fd) >= 0);
+        goto fail;
+    };
 #endif
 
     pa_assert_se(pa_close(fd) >= 0);
 }
-#endif
-
-#ifdef HAVE_LSTAT
-    if (lstat(dir, &st) < 0)
 #else
-    if (stat(dir, &st) < 0)
-#endif
-        goto fail;
-
-#ifndef OS_IS_WIN32
-    if (!S_ISDIR(st.st_mode) ||
-        (st.st_uid != uid) ||
-        (st.st_gid != gid) ||
-        ((st.st_mode & 0777) != m)) {
-        errno = EACCES;
-        goto fail;
-    }
-#else
-    pa_log_warn("Secure directory creation not supported on Win32.");
+    pa_log_warn("Secure directory creation not supported on this platform.");
 #endif
 
     return 0;
@@ -1563,16 +1549,6 @@ int pa_unlock_lockfile(const char *fn, int fd) {
     return r;
 }
 
-static char *get_config_home(char *home) {
-    char *t;
-
-    t = getenv("XDG_CONFIG_HOME");
-    if (t)
-        return pa_xstrdup(t);
-
-    return pa_sprintf_malloc("%s" PA_PATH_SEP ".config", home);
-}
-
 static int check_ours(const char *p) {
     struct stat st;
 
@@ -1590,7 +1566,7 @@ static int check_ours(const char *p) {
 }
 
 static char *get_pulse_home(void) {
-    char *h, *ret, *config_home;
+    char *h, *ret;
     int t;
 
     h = pa_get_home_dir_malloc();
@@ -1608,17 +1584,14 @@ static char *get_pulse_home(void) {
 
     /* If the old directory exists, use it. */
     ret = pa_sprintf_malloc("%s" PA_PATH_SEP ".pulse", h);
-    if (access(ret, F_OK) >= 0) {
-        free(h);
+    pa_xfree(h);
+    if (access(ret, F_OK) >= 0)
         return ret;
-    }
     free(ret);
 
     /* Otherwise go for the XDG compliant directory. */
-    config_home = get_config_home(h);
-    free(h);
-    ret = pa_sprintf_malloc("%s" PA_PATH_SEP "pulse", config_home);
-    free(config_home);
+    if (pa_get_config_home_dir(&ret) < 0)
+        return NULL;
 
     return ret;
 }
@@ -1665,6 +1638,60 @@ char *pa_get_home_dir_malloc(void) {
     }
 
     return homedir;
+}
+
+int pa_append_to_home_dir(const char *path, char **_r) {
+    char *home_dir;
+
+    pa_assert(path);
+    pa_assert(_r);
+
+    home_dir = pa_get_home_dir_malloc();
+    if (!home_dir) {
+        pa_log("Failed to get home directory.");
+        return -PA_ERR_NOENTITY;
+    }
+
+    *_r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", home_dir, path);
+    pa_xfree(home_dir);
+    return 0;
+}
+
+int pa_get_config_home_dir(char **_r) {
+    const char *e;
+    char *home_dir;
+
+    pa_assert(_r);
+
+    e = getenv("XDG_CONFIG_HOME");
+    if (e && *e) {
+        *_r = pa_sprintf_malloc("%s" PA_PATH_SEP "pulse", e);
+        return 0;
+    }
+
+    home_dir = pa_get_home_dir_malloc();
+    if (!home_dir)
+        return -PA_ERR_NOENTITY;
+
+    *_r = pa_sprintf_malloc("%s" PA_PATH_SEP ".config" PA_PATH_SEP "pulse", home_dir);
+    pa_xfree(home_dir);
+    return 0;
+}
+
+int pa_append_to_config_home_dir(const char *path, char **_r) {
+    int r;
+    char *config_home_dir;
+
+    pa_assert(path);
+    pa_assert(_r);
+
+    r = pa_get_config_home_dir(&config_home_dir);
+    if (r < 0)
+        return r;
+
+    *_r = pa_sprintf_malloc("%s" PA_PATH_SEP "%s", config_home_dir, path);
+    pa_xfree(config_home_dir);
+    return 0;
 }
 
 char *pa_get_binary_name_malloc(void) {
@@ -1789,6 +1816,14 @@ char *pa_get_runtime_dir(void) {
     /* Use the XDG standard for the runtime directory. */
     d = getenv("XDG_RUNTIME_DIR");
     if (d) {
+        struct stat st;
+        if (stat(d, &st) == 0 && st.st_uid != getuid()) {
+            pa_log(_("XDG_RUNTIME_DIR (%s) is not owned by us (uid %d), but by uid %d! "
+                   "(This could e g happen if you try to connect to a non-root PulseAudio as a root user, over the native protocol. Don't do that.)"),
+                   d, getuid(), st.st_uid);
+            goto fail;
+        }
+
         k = pa_sprintf_malloc("%s" PA_PATH_SEP "pulse", d);
 
         if (pa_make_secure_dir(k, m, (uid_t) -1, (gid_t) -1, true) < 0) {
@@ -2824,6 +2859,18 @@ void pa_set_env(const char *key, const char *value) {
 #endif
 }
 
+void pa_unset_env(const char *key) {
+    pa_assert(key);
+
+    /* This is not thread-safe */
+
+#ifdef OS_IS_WIN32
+    SetEnvironmentVariable(key, NULL);
+#else
+    unsetenv(key);
+#endif
+}
+
 void pa_set_env_and_record(const char *key, const char *value) {
     pa_assert(key);
     pa_assert(value);
@@ -2846,11 +2893,7 @@ void pa_unset_env_recorded(void) {
         if (!s)
             break;
 
-#ifdef OS_IS_WIN32
-        SetEnvironmentVariable(s, NULL);
-#else
-        unsetenv(s);
-#endif
+        pa_unset_env(s);
         pa_xfree(s);
     }
 }
@@ -3315,8 +3358,11 @@ int pa_open_cloexec(const char *fn, int flags, mode_t mode) {
         return fd;
 #endif
 
-    if ((fd = open(fn, flags, mode)) < 0)
-        return fd;
+    if ((fd = open(fn, flags, mode)) >= 0)
+        goto finish;
+
+    /* return error */
+    return fd;
 
 finish:
     /* Some implementations might simply ignore O_CLOEXEC if it is not
@@ -3337,8 +3383,11 @@ int pa_socket_cloexec(int domain, int type, int protocol) {
         return fd;
 #endif
 
-    if ((fd = socket(domain, type, protocol)) < 0)
-        return fd;
+    if ((fd = socket(domain, type, protocol)) >= 0)
+        goto finish;
+
+    /* return error */
+    return fd;
 
 finish:
     /* Some implementations might simply ignore SOCK_CLOEXEC if it is
@@ -3360,8 +3409,11 @@ int pa_pipe_cloexec(int pipefd[2]) {
 
 #endif
 
-    if ((r = pipe(pipefd)) < 0)
-        return r;
+    if ((r = pipe(pipefd)) >= 0)
+        goto finish;
+
+    /* return error */
+    return r;
 
 finish:
     pa_make_fd_cloexec(pipefd[0]);
@@ -3382,8 +3434,11 @@ int pa_accept_cloexec(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
 
 #endif
 
-    if ((fd = accept(sockfd, addr, addrlen)) < 0)
-        return fd;
+    if ((fd = accept(sockfd, addr, addrlen)) >= 0)
+        goto finish;
+
+    /* return error */
+    return fd;
 
 finish:
     pa_make_fd_cloexec(fd);
