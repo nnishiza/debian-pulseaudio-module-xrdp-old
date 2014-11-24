@@ -1,3 +1,9 @@
+pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Tue, 25 Nov 2014 09:39:16 +1100
+
 pulseaudio (5.0-13) unstable; urgency=medium
 
   * Replace raop channels patch with proper fix from upstream.
