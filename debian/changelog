@@ -22,6 +22,7 @@ pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
   * Remove all references to start-pulseaudio-kde, it was dropped upstream
   * Pulse now ships zsh completions, so drop install code, and adjust
     pulseaudio.install to match
+  * Update shlibs
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 25 Nov 2014 09:39:16 +1100
 
