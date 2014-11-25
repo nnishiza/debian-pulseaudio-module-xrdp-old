@@ -19,6 +19,7 @@ pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
     - util-Try-finding-out-application-name-using-dladdr.patch
     - zsh-completion-Fix-completion-for-default-sink-sourc.patch
   * Refreshed debian/patches/gnu-kfreebsd.patch
+  * Remove all references to start-pulseaudio-kde, it was dropped upstream
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 25 Nov 2014 09:39:16 +1100
 
