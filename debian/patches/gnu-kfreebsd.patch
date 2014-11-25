@@ -10,8 +10,10 @@ Date:   Sun Aug 3 17:37:03 2014 -0400
     Use the alternative when the functionality tested is for kernel
     features, and keep the __FreeBSD__ one when using freebsd libc headers.
 
---- a/src/pulsecore/atomic.h
-+++ b/src/pulsecore/atomic.h
+Index: pulseaudio/src/pulsecore/atomic.h
+===================================================================
+--- pulseaudio.orig/src/pulsecore/atomic.h
++++ pulseaudio/src/pulsecore/atomic.h
 @@ -180,7 +180,7 @@ static inline bool pa_atomic_ptr_cmpxchg
      return r == old_p;
  }
@@ -21,8 +23,10 @@ Date:   Sun Aug 3 17:37:03 2014 -0400
  
  #include <sys/cdefs.h>
  #include <sys/types.h>
---- a/src/pulsecore/sconv_sse.c
-+++ b/src/pulsecore/sconv_sse.c
+Index: pulseaudio/src/pulsecore/sconv_sse.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/sconv_sse.c
++++ pulseaudio/src/pulsecore/sconv_sse.c
 @@ -33,7 +33,7 @@
  #include "cpu-x86.h"
  #include "sconv.h"
@@ -41,8 +45,10 @@ Date:   Sun Aug 3 17:37:03 2014 -0400
  
      if (flags & PA_CPU_X86_SSE2) {
          pa_log_info("Initialising SSE2 optimized conversions.");
---- a/src/pulsecore/svolume_mmx.c
-+++ b/src/pulsecore/svolume_mmx.c
+Index: pulseaudio/src/pulsecore/svolume_mmx.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/svolume_mmx.c
++++ pulseaudio/src/pulsecore/svolume_mmx.c
 @@ -34,7 +34,7 @@
  
  #include "sample-util.h"
@@ -71,8 +77,10 @@ Date:   Sun Aug 3 17:37:03 2014 -0400
 -#endif /* (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__) */
 +#endif /* (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__) */
  }
---- a/src/pulsecore/svolume_sse.c
-+++ b/src/pulsecore/svolume_sse.c
+Index: pulseaudio/src/pulsecore/svolume_sse.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/svolume_sse.c
++++ pulseaudio/src/pulsecore/svolume_sse.c
 @@ -34,7 +34,7 @@
  
  #include "sample-util.h"
@@ -101,8 +109,10 @@ Date:   Sun Aug 3 17:37:03 2014 -0400
 -#endif /* (!defined(__FreeBSD__) && defined (__i386__)) || defined (__amd64__) */
 +#endif /* (!defined(__FreeBSD__) && !defined(__FreeBSD_kernel__) && defined (__i386__)) || defined (__amd64__) */
  }
---- a/src/tests/once-test.c
-+++ b/src/tests/once-test.c
+Index: pulseaudio/src/tests/once-test.c
+===================================================================
+--- pulseaudio.orig/src/tests/once-test.c
++++ pulseaudio/src/tests/once-test.c
 @@ -24,8 +24,10 @@
  #ifdef HAVE_PTHREAD
  #include <pthread.h>
@@ -124,8 +134,10 @@ Date:   Sun Aug 3 17:37:03 2014 -0400
      cpuset_t mask;
  #else
      cpu_set_t mask;
---- a/src/tests/rtstutter.c
-+++ b/src/tests/rtstutter.c
+Index: pulseaudio/src/tests/rtstutter.c
+===================================================================
+--- pulseaudio.orig/src/tests/rtstutter.c
++++ pulseaudio/src/tests/rtstutter.c
 @@ -31,8 +31,10 @@
  #ifdef HAVE_PTHREAD
  #include <pthread.h>
