@@ -36,11 +36,6 @@ common-install-arch::
 	install -d $(CURDIR)/debian/tmp/usr/share/apport/package-hooks
 	cp $(CURDIR)/debian/apport-hook.py $(CURDIR)/debian/tmp/usr/share/apport/package-hooks/source_pulseaudio.py
 
-install/pulseaudio::
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/zsh/vendor-completions/
-	install -m 644 shell-completion/pulseaudio-zsh-completion.zsh \
-		$(CURDIR)/debian/tmp/usr/share/zsh/vendor-completions/_pulseaudio
-
 common-binary-post-install-arch:: list-missing
 
 clean::

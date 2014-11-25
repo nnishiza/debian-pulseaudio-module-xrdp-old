@@ -20,6 +20,8 @@ pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
     - zsh-completion-Fix-completion-for-default-sink-sourc.patch
   * Refreshed debian/patches/gnu-kfreebsd.patch
   * Remove all references to start-pulseaudio-kde, it was dropped upstream
+  * Pulse now ships zsh completions, so drop install code, and adjust
+    pulseaudio.install to match
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 25 Nov 2014 09:39:16 +1100
 

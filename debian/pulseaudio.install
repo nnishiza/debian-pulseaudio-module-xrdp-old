@@ -81,5 +81,5 @@ usr/share/locale
 usr/share/pulseaudio
 usr/lib/*/libpulsecore-*.so usr/lib
 usr/share/alsa
-usr/share/zsh/vendor-completions/*
+usr/share/zsh
 etc/bash_completion.d/*
