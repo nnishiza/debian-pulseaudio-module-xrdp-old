@@ -829,7 +829,7 @@ Index: pulseaudio/src/modules/droid/droid-sink.c
 +            pa_rtpoll_set_timer_disabled(u->rtpoll);
 +
 +        /* Sleep */
-+        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0)
++        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
 +            goto fail;
 +
 +        if (ret == 0)
@@ -2099,7 +2099,7 @@ Index: pulseaudio/src/modules/droid/droid-source.c
 +            pa_rtpoll_set_timer_disabled(u->rtpoll);
 +
 +        /* Sleep */
-+        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0)
++        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
 +            goto fail;
 +
 +        if (ret == 0)
