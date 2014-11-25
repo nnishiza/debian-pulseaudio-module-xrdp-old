@@ -27,7 +27,7 @@ Index: pulseaudio/src/pulsecore/core.h
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/core.h
 +++ pulseaudio/src/pulsecore/core.h
-@@ -116,6 +116,7 @@ typedef enum pa_core_hook {
+@@ -124,6 +124,7 @@ typedef enum pa_core_hook {
      PA_CORE_HOOK_CARD_PUT,
      PA_CORE_HOOK_CARD_UNLINK,
      PA_CORE_HOOK_CARD_PROFILE_CHANGED,

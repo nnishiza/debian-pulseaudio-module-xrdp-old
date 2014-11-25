@@ -51,6 +51,8 @@ pulseaudio (1:5.0-13ubuntu1) UNRELEASED; urgency=medium
     pulseaudio.install to match
   * Update shlibs
   * Update symbols
+  * Refreshed patches, and dropped patches that were either applied upstream
+    or are obsolete
 
  -- Luke Yelavich <themuso@ubuntu.com>  Wed, 19 Nov 2014 11:21:32 +1100
 

@@ -2,9 +2,9 @@ Description: Avoid abort when poll descriptor is 0 (LP: #1092377)
 
 Index: pulseaudio/src/modules/alsa/alsa-mixer.c
 ===================================================================
---- pulseaudio.orig/src/modules/alsa/alsa-mixer.c	2012-12-20 00:37:53.862456000 -0200
-+++ pulseaudio/src/modules/alsa/alsa-mixer.c	2012-12-20 00:39:58.631080479 -0200
-@@ -160,6 +160,9 @@
+--- pulseaudio.orig/src/modules/alsa/alsa-mixer.c
++++ pulseaudio/src/modules/alsa/alsa-mixer.c
+@@ -217,6 +217,9 @@ static void defer_cb(pa_mainloop_api *a,
      if (n < 0) {
          pa_log("snd_mixer_poll_descriptors_count() failed: %s", pa_alsa_strerror(n));
          return;

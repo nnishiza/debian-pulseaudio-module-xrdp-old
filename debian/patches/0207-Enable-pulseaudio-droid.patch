@@ -2,7 +2,7 @@ Index: pulseaudio/configure.ac
 ===================================================================
 --- pulseaudio.orig/configure.ac
 +++ pulseaudio/configure.ac
-@@ -796,6 +796,21 @@ AM_CONDITIONAL([HAVE_ALSA], [test "x$HAV
+@@ -807,6 +807,21 @@ AM_CONDITIONAL([HAVE_ALSA], [test "x$HAV
  AS_IF([test "x$HAVE_ALSA" = "x1"], AC_DEFINE([HAVE_ALSA], 1, [Have ALSA?]))
  AS_IF([test "x$HAVE_ALSA_UCM" = "x1"], AC_DEFINE([HAVE_ALSA_UCM], 1, [Have ALSA UCM?]))
  
@@ -24,7 +24,7 @@ Index: pulseaudio/configure.ac
  #### EsounD support (optional) ####
  
  AC_ARG_ENABLE([esound],
-@@ -1417,6 +1432,7 @@ AS_IF([test "x$HAVE_X11" = "x1"], ENABLE
+@@ -1497,6 +1512,7 @@ AS_IF([test "x$HAVE_X11" = "x1"], ENABLE
  AS_IF([test "x$HAVE_OSS_OUTPUT" = "x1"], ENABLE_OSS_OUTPUT=yes, ENABLE_OSS_OUTPUT=no)
  AS_IF([test "x$HAVE_OSS_WRAPPER" = "x1"], ENABLE_OSS_WRAPPER=yes, ENABLE_OSS_WRAPPER=no)
  AS_IF([test "x$HAVE_ALSA" = "x1"], ENABLE_ALSA=yes, ENABLE_ALSA=no)
@@ -32,7 +32,7 @@ Index: pulseaudio/configure.ac
  AS_IF([test "x$HAVE_COREAUDIO" = "x1"], ENABLE_COREAUDIO=yes, ENABLE_COREAUDIO=no)
  AS_IF([test "x$HAVE_SOLARIS" = "x1"], ENABLE_SOLARIS=yes, ENABLE_SOLARIS=no)
  AS_IF([test "x$HAVE_WAVEOUT" = "x1"], ENABLE_WAVEOUT=yes, ENABLE_WAVEOUT=no)
-@@ -1473,6 +1489,7 @@ echo "
+@@ -1557,6 +1573,7 @@ echo "
      Enable OSS Wrapper:            ${ENABLE_OSS_WRAPPER}
      Enable EsounD:                 ${ENABLE_ESOUND}
      Enable Alsa:                   ${ENABLE_ALSA}
@@ -44,7 +44,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -1196,6 +1196,16 @@ modlibexec_LTLIBRARIES += \
+@@ -1249,6 +1249,16 @@ modlibexec_LTLIBRARIES += \
  		module-alsa-source.la \
  		module-alsa-card.la
  
@@ -60,8 +60,8 @@ Index: pulseaudio/src/Makefile.am
 +
  dist_alsaprofilesets_DATA = \
  		modules/alsa/mixer/profile-sets/default.conf \
- 		modules/alsa/mixer/profile-sets/extra-hdmi.conf \
-@@ -1459,6 +1469,13 @@ SYMDEF_FILES = \
+ 		modules/alsa/mixer/profile-sets/force-speaker.conf \
+@@ -1518,6 +1528,13 @@ SYMDEF_FILES = \
  		module-filter-apply-symdef.h \
  		module-filter-heuristics-symdef.h
  
@@ -75,7 +75,7 @@ Index: pulseaudio/src/Makefile.am
  if HAVE_ESOUND
  SYMDEF_FILES += \
  		module-esound-protocol-tcp-symdef.h \
-@@ -1768,6 +1785,44 @@ libalsa_util_la_LIBADD += $(DBUS_LIBS)
+@@ -1827,6 +1844,44 @@ libalsa_util_la_LIBADD += $(DBUS_LIBS)
  libalsa_util_la_CFLAGS += $(DBUS_CFLAGS)
  endif
  

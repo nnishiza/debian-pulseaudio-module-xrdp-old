@@ -2,23 +2,11 @@ Index: pulseaudio/src/daemon/start-pulseaudio-x11.in
 ===================================================================
 --- pulseaudio.orig/src/daemon/start-pulseaudio-x11.in
 +++ pulseaudio/src/daemon/start-pulseaudio-x11.in
-@@ -31,6 +31,7 @@ fi
+@@ -22,6 +22,7 @@ set -e
  if [ x"$DISPLAY" != x ] ; then
  
      @PACTL_BINARY@ load-module module-x11-publish "display=$DISPLAY" > /dev/null
 +    @PACTL_BINARY@ load-module module-x11-bell "display=$DISPLAY" "sample=bell.ogg" > /dev/null
      @PACTL_BINARY@ load-module module-x11-cork-request "display=$DISPLAY" > /dev/null
  
-     if [ x"$SESSION_MANAGER" != x ] ; then
-Index: pulseaudio/src/daemon/start-pulseaudio-kde.in
-===================================================================
---- pulseaudio.orig/src/daemon/start-pulseaudio-kde.in
-+++ pulseaudio/src/daemon/start-pulseaudio-kde.in
-@@ -33,6 +33,7 @@ fi
- if [ x"$DISPLAY" != x ] ; then
- 
-     @PACTL_BINARY@ load-module module-device-manager "do_routing=1" > /dev/null
-+    @PACTL_BINARY@ load-module module-x11-bell "display=$DISPLAY" "sample=bell.ogg" > /dev/null
- 
- fi
- 
+     if [ x"$KDE_FULL_SESSION" = x"true" ]; then

@@ -10,5 +10,5 @@ Index: pulseaudio/src/daemon/pulseaudio.desktop.in
 @@ -9,3 +9,4 @@ Categories=
  GenericName=
  X-GNOME-Autostart-Phase=Initialization
- NotShowIn=KDE;
+ X-KDE-autostart-phase=1
 +NoDisplay=true

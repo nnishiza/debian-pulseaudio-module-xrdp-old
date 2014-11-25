@@ -12,19 +12,18 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
 ===================================================================
 --- pulseaudio.orig/src/modules/module-switch-on-connect.c
 +++ pulseaudio/src/modules/module-switch-on-connect.c
-@@ -41,6 +41,8 @@ PA_MODULE_AUTHOR("Michael Terry");
- PA_MODULE_DESCRIPTION("When a sink/source is added, switch to it");
- PA_MODULE_VERSION(PACKAGE_VERSION);
+@@ -43,6 +43,7 @@ PA_MODULE_VERSION(PACKAGE_VERSION);
  PA_MODULE_LOAD_ONCE(true);
-+PA_MODULE_USAGE(
+ PA_MODULE_USAGE(
+         "only_from_unavailable=<boolean, only switch from unavailable ports> "
 +        "skip_abstract=<yes or no>");
+ );
  
  static const char* const valid_modargs[] = {
-     NULL,
-@@ -50,13 +52,15 @@ struct userdata {
-     pa_hook_slot
+@@ -55,13 +56,14 @@ struct userdata {
          *sink_put_slot,
          *source_put_slot;
+     bool only_from_unavailable;
 +    bool skip_abstract;
  };
  
@@ -34,11 +33,10 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
      pa_sink *def;
 -    const char *s;
 +    const char *s, *class;
-+    struct userdata *u = userdata;
+     struct userdata *u = userdata;
  
      pa_assert(c);
-     pa_assert(sink);
-@@ -73,6 +77,12 @@ static pa_hook_result_t sink_put_hook_ca
+@@ -80,6 +82,12 @@ static pa_hook_result_t sink_put_hook_ca
              return PA_HOOK_OK;
      }
  
@@ -51,17 +49,16 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
      def = pa_namereg_get_default_sink(c);
      if (def == sink)
          return PA_HOOK_OK;
-@@ -105,7 +115,8 @@ static pa_hook_result_t source_put_hook_
+@@ -116,7 +124,7 @@ static pa_hook_result_t source_put_hook_
      pa_source_output *o;
      uint32_t idx;
      pa_source *def;
 -    const char *s;
 +    const char *s, *class;
-+    struct userdata *u = userdata;
+     struct userdata *u = userdata;
  
      pa_assert(c);
-     pa_assert(source);
-@@ -126,6 +137,12 @@ static pa_hook_result_t source_put_hook_
+@@ -139,6 +147,12 @@ static pa_hook_result_t source_put_hook_
              return PA_HOOK_OK;
      }
  
@@ -74,9 +71,9 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
      def = pa_namereg_get_default_source(c);
      if (def == source)
          return PA_HOOK_OK;
-@@ -167,6 +184,11 @@ int pa__init(pa_module*m) {
+@@ -184,6 +198,11 @@ int pa__init(pa_module*m) {
  
-     m->userdata = u = pa_xnew(struct userdata, 1);
+     m->userdata = u = pa_xnew0(struct userdata, 1);
  
 +    if (pa_modargs_get_value_boolean(ma, "skip_abstract", &u->skip_abstract) < 0) {
 +        pa_log_error("skip_abstract= expects a boolean argument, assuming false by default");

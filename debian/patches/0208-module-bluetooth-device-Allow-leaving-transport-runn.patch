@@ -155,7 +155,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
  /* Run from IO thread */
  static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *chunk) {
      struct userdata *u = PA_SINK(o)->userdata;
-@@ -1423,6 +1487,10 @@ static int sco_over_pcm_state_update(str
+@@ -1430,6 +1494,10 @@ static int sco_over_pcm_state_update(str
          if (u->stream_fd < 0)
              return 0;
  
@@ -166,7 +166,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
          pa_log_debug("Closing SCO over PCM");
  
          bt_transport_release(u);
-@@ -1466,6 +1534,11 @@ static pa_hook_result_t transport_nrec_c
+@@ -1473,6 +1541,11 @@ static pa_hook_result_t transport_nrec_c
      if (t != u->transport)
          return PA_HOOK_OK;
  
@@ -178,7 +178,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
      p = pa_proplist_new();
      pa_proplist_sets(p, "bluetooth.nrec", t->nrec ? "1" : "0");
      pa_source_update_proplist(u->source, PA_UPDATE_REPLACE, p);
-@@ -1828,7 +1901,7 @@ static int setup_transport(struct userda
+@@ -1835,7 +1908,7 @@ static int setup_transport(struct userda
      pa_bluez4_transport *t;
  
      pa_assert(u);
@@ -187,7 +187,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
      pa_assert(u->profile != PA_BLUEZ4_PROFILE_OFF);
  
      /* check if profile has a transport */
-@@ -1908,7 +1981,8 @@ static void stop_thread(struct userdata
+@@ -1915,7 +1988,8 @@ static void stop_thread(struct userdata
  
      if (u->transport) {
          bt_transport_release(u);
@@ -197,7 +197,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
      }
  
      if (u->sink) {
-@@ -2513,6 +2587,10 @@ int pa__init(pa_module *m) {
+@@ -2520,6 +2594,10 @@ int pa__init(pa_module *m) {
          pa_hook_connect(pa_bluez4_discovery_hook(u->discovery, PA_BLUEZ4_HOOK_TRANSPORT_SPEAKER_GAIN_CHANGED),
                          PA_HOOK_NORMAL, (pa_hook_cb_t) transport_speaker_gain_changed_cb, u);
  
@@ -208,7 +208,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
      /* Add the card structure. This will also initialize the default profile */
      if (add_card(u) < 0)
          goto fail;
-@@ -2592,6 +2670,9 @@ void pa__done(pa_module *m) {
+@@ -2599,6 +2677,9 @@ void pa__done(pa_module *m) {
      if (u->transport_speaker_changed_slot)
          pa_hook_slot_free(u->transport_speaker_changed_slot);
  

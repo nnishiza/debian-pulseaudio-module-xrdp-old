@@ -1,8 +1,8 @@
-Index: pulseaudio-5.0/src/modules/alsa/alsa-ucm.c
+Index: pulseaudio/src/modules/alsa/alsa-ucm.c
 ===================================================================
---- pulseaudio-5.0.orig/src/modules/alsa/alsa-ucm.c	2014-03-19 13:15:43.734768910 +1100
-+++ pulseaudio-5.0/src/modules/alsa/alsa-ucm.c	2014-03-19 13:15:43.730768910 +1100
-@@ -1541,7 +1541,8 @@
+--- pulseaudio.orig/src/modules/alsa/alsa-ucm.c
++++ pulseaudio/src/modules/alsa/alsa-ucm.c
+@@ -1540,7 +1540,8 @@ pa_alsa_profile_set* pa_alsa_ucm_add_pro
          ucm_create_profile(ucm, ps, verb, verb_name, verb_desc);
      }
  
