@@ -50,6 +50,58 @@
 #include "alsa-mixer.h"
 #include "alsa-util.h"
 
+#ifdef HAVE_VALGRIND_MEMCHECK_H
+/* These macros are workarounds for a bug in valgrind, which is not handling the
+ * ALSA TLV syscalls correctly. See
+ * http://valgrind.10908.n7.nabble.com/Missing-ioctl-for-SNDRV-CTL-IOCTL-TLV-READ-td42711.html */
+
+static inline int vgfix_get_capture_dB(snd_mixer_elem_t *a, snd_mixer_selem_channel_id_t b, long *c) {
+    int r = snd_mixer_selem_get_capture_dB(a, b, c);
+    VALGRIND_MAKE_MEM_DEFINED(c, sizeof(*c));
+    return r;
+}
+
+static inline int vgfix_get_playback_dB(snd_mixer_elem_t *a, snd_mixer_selem_channel_id_t b, long *c) {
+    int r = snd_mixer_selem_get_playback_dB(a, b, c);
+    VALGRIND_MAKE_MEM_DEFINED(c, sizeof(*c));
+    return r;
+}
+
+static inline int vgfix_ask_capture_vol_dB(snd_mixer_elem_t *a, long b, long *c) {
+    int r = snd_mixer_selem_ask_capture_vol_dB(a, b, c);
+    VALGRIND_MAKE_MEM_DEFINED(c, sizeof(*c));
+    return r;
+}
+
+static inline int vgfix_ask_playback_vol_dB(snd_mixer_elem_t *a, long b, long *c) {
+    int r = snd_mixer_selem_ask_playback_vol_dB(a, b, c);
+    VALGRIND_MAKE_MEM_DEFINED(c, sizeof(*c));
+    return r;
+}
+
+static inline int vgfix_get_capture_dB_range(snd_mixer_elem_t *a, long *b, long *c) {
+    int r = snd_mixer_selem_get_capture_dB_range(a, b, c);
+    VALGRIND_MAKE_MEM_DEFINED(b, sizeof(*b));
+    VALGRIND_MAKE_MEM_DEFINED(c, sizeof(*c));
+    return r;
+}
+
+static inline int vgfix_get_playback_dB_range(snd_mixer_elem_t *a, long *b, long *c) {
+    int r = snd_mixer_selem_get_playback_dB_range(a, b, c);
+    VALGRIND_MAKE_MEM_DEFINED(b, sizeof(*b));
+    VALGRIND_MAKE_MEM_DEFINED(c, sizeof(*c));
+    return r;
+}
+
+#define snd_mixer_selem_get_capture_dB(a, b, c) vgfix_get_capture_dB(a, b, c)
+#define snd_mixer_selem_get_playback_dB(a, b, c) vgfix_get_playback_dB(a, b, c)
+#define snd_mixer_selem_ask_capture_vol_dB(a, b, c) vgfix_ask_capture_vol_dB(a, b, c)
+#define snd_mixer_selem_ask_playback_vol_dB(a, b, c) vgfix_ask_playback_vol_dB(a, b, c)
+#define snd_mixer_selem_get_capture_dB_range(a, b, c) vgfix_get_capture_dB_range(a, b, c)
+#define snd_mixer_selem_get_playback_dB_range(a, b, c) vgfix_get_playback_dB_range(a, b, c)
+
+#endif
+
 static int setting_select(pa_alsa_setting *s, snd_mixer_t *m);
 
 struct description_map {
@@ -1001,10 +1053,6 @@ static int element_set_volume(pa_alsa_element *e, snd_mixer_t *m, const pa_chann
             if (r < 0)
                 continue;
 
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-            VALGRIND_MAKE_MEM_DEFINED(&value, sizeof(value));
-#endif
-
             f = from_alsa_dB(value);
 
         } else {
@@ -1517,11 +1565,6 @@ static int element_probe(pa_alsa_element *e, snd_mixer_t *m) {
                 }
 
                 if (e->has_dB) {
-#ifdef HAVE_VALGRIND_MEMCHECK_H
-                    VALGRIND_MAKE_MEM_DEFINED(&min_dB, sizeof(min_dB));
-                    VALGRIND_MAKE_MEM_DEFINED(&max_dB, sizeof(max_dB));
-#endif
-
                     e->min_dB = ((double) min_dB) / 100.0;
                     e->max_dB = ((double) max_dB) / 100.0;
 
@@ -1682,12 +1725,11 @@ static int element_probe(pa_alsa_element *e, snd_mixer_t *m) {
     return 0;
 }
 
-static int jack_probe(pa_alsa_jack *j, snd_hctl_t *h) {
-    pa_assert(h);
+static int jack_probe(pa_alsa_jack *j, snd_mixer_t *m) {
     pa_assert(j);
     pa_assert(j->path);
 
-    j->has_control = pa_alsa_find_jack(h, j->alsa_name) != NULL;
+    j->has_control = pa_alsa_mixer_find(m, j->alsa_name, 0) != NULL;
 
     if (j->has_control) {
         if (j->required_absent != PA_ALSA_REQUIRED_IGNORE)
@@ -2615,7 +2657,7 @@ static void path_create_settings(pa_alsa_path *p) {
     element_create_settings(p->elements, NULL);
 }
 
-int pa_alsa_path_probe(pa_alsa_path *p, snd_mixer_t *m, snd_hctl_t *hctl, bool ignore_dB) {
+int pa_alsa_path_probe(pa_alsa_path *p, snd_mixer_t *m, bool ignore_dB) {
     pa_alsa_element *e;
     pa_alsa_jack *j;
     double min_dB[PA_CHANNEL_POSITION_MAX], max_dB[PA_CHANNEL_POSITION_MAX];
@@ -2635,7 +2677,7 @@ int pa_alsa_path_probe(pa_alsa_path *p, snd_mixer_t *m, snd_hctl_t *hctl, bool i
     pa_log_debug("Probing path '%s'", p->name);
 
     PA_LLIST_FOREACH(j, p->jacks) {
-        if (jack_probe(j, hctl) < 0) {
+        if (jack_probe(j, m) < 0) {
             p->supported = false;
             pa_log_debug("Probe of jack '%s' failed.", j->alsa_name);
             return -1;
@@ -3113,8 +3155,7 @@ static bool element_is_subset(pa_alsa_element *a, pa_alsa_element *b, snd_mixer_
             else if (a->volume_use == PA_ALSA_VOLUME_MERGE)
                 a_limit = a->volume_limit;
             else
-                /* This should never be reached */
-                pa_assert(false);
+                pa_assert_not_reached();
 
             if (a_limit > b->volume_limit)
                 return false;
@@ -3218,21 +3259,21 @@ static void path_set_condense(pa_alsa_path_set *ps, snd_mixer_t *m) {
             }
 
             /* Compare the elements of each set... */
-            ea = p->elements;
-            eb = p2->elements;
+            PA_LLIST_FOREACH(ea, p->elements) {
+                bool found_matching_element = false;
 
-            while (is_subset) {
-                if (!ea && !eb)
+                if (!is_subset)
                     break;
-                else if ((ea && !eb) || (!ea && eb))
-                    is_subset = false;
-                else if (pa_streq(ea->alsa_name, eb->alsa_name)) {
-                    if (element_is_subset(ea, eb, m)) {
-                        ea = ea->next;
-                        eb = eb->next;
-                    } else
-                        is_subset = false;
-                } else
+
+                PA_LLIST_FOREACH(eb, p2->elements) {
+                    if (pa_streq(ea->alsa_name, eb->alsa_name)) {
+                        found_matching_element = true;
+                        is_subset = element_is_subset(ea, eb, m);
+                        break;
+                    }
+                }
+
+                if (!found_matching_element)
                     is_subset = false;
             }
 
@@ -3368,6 +3409,7 @@ pa_alsa_mapping *pa_alsa_mapping_get(pa_alsa_profile_set *ps, const char *name) 
 
     m = pa_xnew0(pa_alsa_mapping, 1);
     m->profile_set = ps;
+    m->exact_channels = true;
     m->name = pa_xstrdup(name);
     pa_sample_spec_init(&m->sample_spec);
     pa_channel_map_init(&m->channel_map);
@@ -3485,6 +3527,30 @@ static int mapping_parse_paths(pa_config_parser_state *state) {
     return 0;
 }
 
+static int mapping_parse_exact_channels(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
+    pa_alsa_mapping *m;
+    int b;
+
+    pa_assert(state);
+
+    ps = state->userdata;
+
+    if (!(m = pa_alsa_mapping_get(ps, state->section))) {
+        pa_log("[%s:%u] %s invalid in section %s", state->filename, state->lineno, state->lvalue, state->section);
+        return -1;
+    }
+
+    if ((b = pa_parse_boolean(state->rvalue)) < 0) {
+        pa_log("[%s:%u] %s has invalid value '%s'", state->filename, state->lineno, state->lvalue, state->section);
+        return -1;
+    }
+
+    m->exact_channels = b;
+
+    return 0;
+}
+
 static int mapping_parse_element(pa_config_parser_state *state) {
     pa_alsa_profile_set *ps;
     pa_alsa_mapping *m;
@@ -3585,6 +3651,34 @@ static int mapping_parse_priority(pa_config_parser_state *state) {
 
     return 0;
 }
+
+static int mapping_parse_fallback(pa_config_parser_state *state) {
+    pa_alsa_profile_set *ps;
+    pa_alsa_profile *p;
+    pa_alsa_mapping *m;
+    int k;
+
+    pa_assert(state);
+
+    ps = state->userdata;
+
+    if ((k = pa_parse_boolean(state->rvalue)) < 0) {
+        pa_log("[%s:%u] Fallback invalid of '%s'", state->filename, state->lineno, state->section);
+        return -1;
+    }
+
+    if ((m = pa_alsa_mapping_get(ps, state->section)))
+        m->fallback = k;
+    else if ((p = profile_get(ps, state->section)))
+        p->fallback_input = p->fallback_output = k;
+    else {
+        pa_log("[%s:%u] Section name %s invalid.", state->filename, state->lineno, state->section);
+        return -1;
+    }
+
+    return 0;
+}
+
 
 static int profile_parse_mappings(pa_config_parser_state *state) {
     pa_alsa_profile_set *ps;
@@ -3756,7 +3850,6 @@ static void mapping_paths_probe(pa_alsa_mapping *m, pa_alsa_profile *profile,
     snd_pcm_t *pcm_handle;
     pa_alsa_path_set *ps;
     snd_mixer_t *mixer_handle;
-    snd_hctl_t *hctl_handle;
 
     if (direction == PA_ALSA_DIRECTION_OUTPUT) {
         if (m->output_path_set)
@@ -3775,15 +3868,15 @@ static void mapping_paths_probe(pa_alsa_mapping *m, pa_alsa_profile *profile,
 
     pa_assert(pcm_handle);
 
-    mixer_handle = pa_alsa_open_mixer_for_pcm(pcm_handle, NULL, &hctl_handle);
-    if (!mixer_handle || !hctl_handle) {
-         /* Cannot open mixer, remove all entries */
+    mixer_handle = pa_alsa_open_mixer_for_pcm(pcm_handle, NULL);
+    if (!mixer_handle) {
+        /* Cannot open mixer, remove all entries */
         pa_hashmap_remove_all(ps->paths);
         return;
     }
 
     PA_HASHMAP_FOREACH(p, ps->paths, state) {
-        if (pa_alsa_path_probe(p, mixer_handle, hctl_handle, m->profile_set->ignore_dB) < 0) {
+        if (pa_alsa_path_probe(p, mixer_handle, m->profile_set->ignore_dB) < 0) {
             pa_hashmap_remove(ps->paths, p);
         }
     }
@@ -3806,6 +3899,7 @@ static int mapping_verify(pa_alsa_mapping *m, const pa_channel_map *bonus) {
     static const struct description_map well_known_descriptions[] = {
         { "analog-mono",            N_("Analog Mono") },
         { "analog-stereo",          N_("Analog Stereo") },
+        { "multichannel",           N_("Multichannel") },
         { "analog-surround-21",     N_("Analog Surround 2.1") },
         { "analog-surround-30",     N_("Analog Surround 3.0") },
         { "analog-surround-31",     N_("Analog Surround 3.1") },
@@ -3817,7 +3911,6 @@ static int mapping_verify(pa_alsa_mapping *m, const pa_channel_map *bonus) {
         { "analog-surround-61",     N_("Analog Surround 6.1") },
         { "analog-surround-70",     N_("Analog Surround 7.0") },
         { "analog-surround-71",     N_("Analog Surround 7.1") },
-        { "analog-4-channel-input", N_("Analog 4-channel Input") },
         { "iec958-stereo",          N_("Digital Stereo (IEC958)") },
         { "iec958-passthrough",     N_("Digital Passthrough  (IEC958)") },
         { "iec958-ac3-surround-40", N_("Digital Surround 4.0 (IEC958/AC3)") },
@@ -3914,12 +4007,14 @@ static void profile_set_add_auto_pair(
         p->output_mappings = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
         pa_idxset_put(p->output_mappings, m, NULL);
         p->priority += m->priority * 100;
+        p->fallback_output = m->fallback;
     }
 
     if (n) {
         p->input_mappings = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
         pa_idxset_put(p->input_mappings, n, NULL);
         p->priority += n->priority;
+        p->fallback_input = n->fallback;
     }
 
     pa_hashmap_put(ps->profiles, p->name, p);
@@ -4156,10 +4251,12 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
         { "element-input",          mapping_parse_element,        NULL, NULL },
         { "element-output",         mapping_parse_element,        NULL, NULL },
         { "direction",              mapping_parse_direction,      NULL, NULL },
+        { "exact-channels",         mapping_parse_exact_channels, NULL, NULL },
 
         /* Shared by [Mapping ...] and [Profile ...] */
         { "description",            mapping_parse_description,    NULL, NULL },
         { "priority",               mapping_parse_priority,       NULL, NULL },
+        { "fallback",               mapping_parse_fallback,       NULL, NULL },
 
         /* [Profile ...] */
         { "input-mappings",         profile_parse_mappings,       NULL, NULL },
@@ -4264,10 +4361,12 @@ static void profile_finalize_probing(pa_alsa_profile *to_be_finalized, pa_alsa_p
 static snd_pcm_t* mapping_open_pcm(pa_alsa_mapping *m,
                                    const pa_sample_spec *ss,
                                    const char *dev_id,
+                                   bool exact_channels,
                                    int mode,
                                    unsigned default_n_fragments,
                                    unsigned default_fragment_size_msec) {
 
+    snd_pcm_t* handle;
     pa_sample_spec try_ss = *ss;
     pa_channel_map try_map = m->channel_map;
     snd_pcm_uframes_t try_period_size, try_buffer_size;
@@ -4279,10 +4378,17 @@ static snd_pcm_t* mapping_open_pcm(pa_alsa_mapping *m,
         pa_frame_size(&try_ss);
     try_buffer_size = default_n_fragments * try_period_size;
 
-    return pa_alsa_open_by_template(
+    handle = pa_alsa_open_by_template(
                               m->device_strings, dev_id, NULL, &try_ss,
                               &try_map, mode, &try_period_size,
-                              &try_buffer_size, 0, NULL, NULL, true);
+                              &try_buffer_size, 0, NULL, NULL, exact_channels);
+    if (handle && !exact_channels && m->channel_map.channels != try_map.channels) {
+        char buf[PA_CHANNEL_MAP_SNPRINT_MAX];
+        pa_log_debug("Channel map for mapping '%s' permanently changed to '%s'", m->name,
+                     pa_channel_map_snprint(buf, sizeof(buf), &try_map));
+        m->channel_map = try_map;
+    }
+    return handle;
 }
 
 static void paths_drop_unused(pa_hashmap* h, pa_hashmap *keep) {
@@ -4296,12 +4402,28 @@ static void paths_drop_unused(pa_hashmap* h, pa_hashmap *keep) {
 
     p = pa_hashmap_iterate(h, &state, &key);
     while (p) {
-        if (pa_hashmap_get(keep, p) == NULL) {
-            pa_hashmap_remove(h, key);
-            pa_alsa_path_free(p);
-        }
+        if (pa_hashmap_get(keep, p) == NULL)
+            pa_hashmap_remove_and_free(h, key);
         p = pa_hashmap_iterate(h, &state, &key);
     }
+}
+
+static int add_profiles_to_probe(
+        pa_alsa_profile **list,
+        pa_hashmap *profiles,
+        bool fallback_output,
+        bool fallback_input) {
+
+    int i = 0;
+    void *state;
+    pa_alsa_profile *p;
+    PA_HASHMAP_FOREACH(p, profiles, state)
+        if (p->fallback_input == fallback_input && p->fallback_output == fallback_output) {
+            *list = p;
+            list++;
+            i++;
+        }
+    return i;
 }
 
 void pa_alsa_profile_set_probe(
@@ -4311,8 +4433,10 @@ void pa_alsa_profile_set_probe(
         unsigned default_n_fragments,
         unsigned default_fragment_size_msec) {
 
-    void *state;
+    bool found_output = false, found_input = false;
+
     pa_alsa_profile *p, *last = NULL;
+    pa_alsa_profile **pp, **probe_order;
     pa_alsa_mapping *m;
     pa_hashmap *broken_inputs, *broken_outputs, *used_paths;
 
@@ -4326,9 +4450,22 @@ void pa_alsa_profile_set_probe(
     broken_inputs = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
     broken_outputs = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
     used_paths = pa_hashmap_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
+    pp = probe_order = pa_xnew0(pa_alsa_profile *, pa_hashmap_size(ps->profiles) + 1);
 
-    PA_HASHMAP_FOREACH(p, ps->profiles, state) {
+    pp += add_profiles_to_probe(pp, ps->profiles, false, false);
+    pp += add_profiles_to_probe(pp, ps->profiles, false, true);
+    pp += add_profiles_to_probe(pp, ps->profiles, true, false);
+    pp += add_profiles_to_probe(pp, ps->profiles, true, true);
+
+    for (pp = probe_order; *pp; pp++) {
         uint32_t idx;
+        p = *pp;
+
+        /* Skip if fallback and already found something */
+        if (found_input && p->fallback_input)
+            continue;
+        if (found_output && p->fallback_output)
+            continue;
 
         /* Skip if this is already marked that it is supported (i.e. from the config file) */
         if (!p->supported) {
@@ -4367,7 +4504,7 @@ void pa_alsa_profile_set_probe(
                         continue;
 
                     pa_log_debug("Checking for playback on %s (%s)", m->description, m->name);
-                    if (!(m->output_pcm = mapping_open_pcm(m, ss, dev_id,
+                    if (!(m->output_pcm = mapping_open_pcm(m, ss, dev_id, m->exact_channels,
                                                            SND_PCM_STREAM_PLAYBACK,
                                                            default_n_fragments,
                                                            default_fragment_size_msec))) {
@@ -4388,7 +4525,7 @@ void pa_alsa_profile_set_probe(
                         continue;
 
                     pa_log_debug("Checking for recording on %s (%s)", m->description, m->name);
-                    if (!(m->input_pcm = mapping_open_pcm(m, ss, dev_id,
+                    if (!(m->input_pcm = mapping_open_pcm(m, ss, dev_id, m->exact_channels,
                                                           SND_PCM_STREAM_CAPTURE,
                                                           default_n_fragments,
                                                           default_fragment_size_msec))) {
@@ -4412,13 +4549,17 @@ void pa_alsa_profile_set_probe(
 
         if (p->output_mappings)
             PA_IDXSET_FOREACH(m, p->output_mappings, idx)
-                if (m->output_pcm)
+                if (m->output_pcm) {
+                    found_output |= !p->fallback_output;
                     mapping_paths_probe(m, p, PA_ALSA_DIRECTION_OUTPUT, used_paths);
+                }
 
         if (p->input_mappings)
             PA_IDXSET_FOREACH(m, p->input_mappings, idx)
-                if (m->input_pcm)
+                if (m->input_pcm) {
+                    found_input |= !p->fallback_input;
                     mapping_paths_probe(m, p, PA_ALSA_DIRECTION_INPUT, used_paths);
+                }
     }
 
     /* Clean up */
@@ -4431,6 +4572,7 @@ void pa_alsa_profile_set_probe(
     pa_hashmap_free(broken_inputs);
     pa_hashmap_free(broken_outputs);
     pa_hashmap_free(used_paths);
+    pa_xfree(probe_order);
 
     ps->probed = true;
 }
@@ -4468,17 +4610,13 @@ void pa_alsa_profile_set_drop_unsupported(pa_alsa_profile_set *ps) {
     void *state;
 
     PA_HASHMAP_FOREACH(p, ps->profiles, state) {
-        if (!p->supported) {
-            pa_hashmap_remove(ps->profiles, p->name);
-            profile_free(p);
-        }
+        if (!p->supported)
+            pa_hashmap_remove_and_free(ps->profiles, p->name);
     }
 
     PA_HASHMAP_FOREACH(m, ps->mappings, state) {
-        if (m->supported <= 0) {
-            pa_hashmap_remove(ps->mappings, m->name);
-            mapping_free(m);
-        }
+        if (m->supported <= 0)
+            pa_hashmap_remove_and_free(ps->mappings, m->name);
     }
 }
 

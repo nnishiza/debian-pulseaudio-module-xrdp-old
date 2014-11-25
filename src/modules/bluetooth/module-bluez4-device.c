@@ -881,6 +881,7 @@ static int a2dp_process_push(struct userdata *u) {
         void *d;
         ssize_t l;
         size_t to_write, to_decode;
+        size_t total_written = 0;
 
         a2dp_prepare_buffer(u);
 
@@ -907,16 +908,11 @@ static int a2dp_process_push(struct userdata *u) {
 
         pa_assert((size_t) l <= a2dp->buffer_size);
 
-        u->read_index += (uint64_t) l;
-
         /* TODO: get timestamp from rtp */
         if (!found_tstamp) {
             /* pa_log_warn("Couldn't find SO_TIMESTAMP data in auxiliary recvmsg() data!"); */
             tstamp = pa_rtclock_now();
         }
-
-        pa_smoother_put(u->read_smoother, tstamp, pa_bytes_to_usec(u->read_index, &u->sample_spec));
-        pa_smoother_resume(u->read_smoother, tstamp, true);
 
         p = (uint8_t*) a2dp->buffer + sizeof(*header) + sizeof(*payload);
         to_decode = l - sizeof(*header) - sizeof(*payload);
@@ -937,11 +933,13 @@ static int a2dp_process_push(struct userdata *u) {
                 pa_log_error("SBC decoding error (%li)", (long) decoded);
                 pa_memblock_release(memchunk.memblock);
                 pa_memblock_unref(memchunk.memblock);
-                return -1;
+                return 0;
             }
 
 /*             pa_log_debug("SBC: decoded: %lu; written: %lu", (unsigned long) decoded, (unsigned long) written); */
 /*             pa_log_debug("SBC: frame_length: %lu; codesize: %lu", (unsigned long) a2dp->frame_length, (unsigned long) a2dp->codesize); */
+
+            total_written += written;
 
             /* Reset frame length, it can be changed due to bitpool change */
             a2dp->frame_length = sbc_get_frame_length(&a2dp->sbc);
@@ -957,6 +955,10 @@ static int a2dp_process_push(struct userdata *u) {
             d = (uint8_t*) d + written;
             to_write -= written;
         }
+
+        u->read_index += (uint64_t) total_written;
+        pa_smoother_put(u->read_smoother, tstamp, pa_bytes_to_usec(u->read_index, &u->sample_spec));
+        pa_smoother_resume(u->read_smoother, tstamp, true);
 
         memchunk.length -= to_write;
 
@@ -1039,10 +1041,12 @@ static void thread_func(void *userdata) {
                 if (n_read < 0)
                     goto io_fail;
 
-                /* We just read something, so we are supposed to write something, too */
-                pending_read_bytes += n_read;
-                do_write += pending_read_bytes / u->write_block_size;
-                pending_read_bytes = pending_read_bytes % u->write_block_size;
+                if (n_read > 0) {
+                    /* We just read something, so we are supposed to write something, too */
+                    pending_read_bytes += n_read;
+                    do_write += pending_read_bytes / u->write_block_size;
+                    pending_read_bytes = pending_read_bytes % u->write_block_size;
+                }
             }
         }
 
@@ -1147,7 +1151,7 @@ static void thread_func(void *userdata) {
             pollfd->events = (short) (((u->sink && PA_SINK_IS_LINKED(u->sink->thread_info.state) && !writable) ? POLLOUT : 0) |
                                       (u->source && PA_SOURCE_IS_LINKED(u->source->thread_info.state) ? POLLIN : 0));
 
-        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0) {
+        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0) {
             pa_log_debug("pa_rtpoll_run failed with: %d", ret);
             goto fail;
         }
@@ -1367,7 +1371,7 @@ static void source_set_volume_cb(pa_source *s) {
 }
 
 /* Run from main thread */
-static char *get_name(const char *type, pa_modargs *ma, const char *device_id, bool *namereg_fail) {
+static char *get_name(const char *type, pa_modargs *ma, const char *device_id, const char *profile, bool *namereg_fail) {
     char *t;
     const char *n;
 
@@ -1392,7 +1396,10 @@ static char *get_name(const char *type, pa_modargs *ma, const char *device_id, b
         *namereg_fail = false;
     }
 
-    return pa_sprintf_malloc("bluez_%s.%s", type, n);
+    if (profile)
+        return pa_sprintf_malloc("bluez_%s.%s.%s", type, n, profile);
+    else
+        return pa_sprintf_malloc("bluez_%s.%s", type, n);
 }
 
 static int sco_over_pcm_state_update(struct userdata *u, bool changed) {
@@ -1563,7 +1570,7 @@ static int add_sink(struct userdata *u) {
         if (u->profile == PA_BLUEZ4_PROFILE_HSP)
             pa_proplist_sets(data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
         data.card = u->card;
-        data.name = get_name("sink", u->modargs, u->address, &b);
+        data.name = get_name("sink", u->modargs, u->address, pa_bluez4_profile_to_string(u->profile), &b);
         data.namereg_fail = b;
 
         if (pa_modargs_get_proplist(u->modargs, "sink_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {
@@ -1634,7 +1641,7 @@ static int add_source(struct userdata *u) {
             pa_proplist_sets(data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
 
         data.card = u->card;
-        data.name = get_name("source", u->modargs, u->address, &b);
+        data.name = get_name("source", u->modargs, u->address, pa_bluez4_profile_to_string(u->profile), &b);
         data.namereg_fail = b;
 
         if (pa_modargs_get_proplist(u->modargs, "source_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {
@@ -2263,7 +2270,7 @@ static int add_card(struct userdata *u) {
     pa_proplist_sets(data.proplist, "bluez.path", device->path);
     pa_proplist_setf(data.proplist, "bluez.class", "0x%06x", (unsigned) device->class);
     pa_proplist_sets(data.proplist, "bluez.alias", device->alias);
-    data.name = get_name("card", u->modargs, device->address, &b);
+    data.name = get_name("card", u->modargs, device->address, NULL, &b);
     data.namereg_fail = b;
 
     if (pa_modargs_get_proplist(u->modargs, "card_properties", data.proplist, PA_UPDATE_REPLACE) < 0) {

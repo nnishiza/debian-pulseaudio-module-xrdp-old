@@ -318,7 +318,6 @@ void pa_source_output_set_volume(pa_source_output *o, const pa_cvolume *volume, 
 pa_cvolume *pa_source_output_get_volume(pa_source_output *o, pa_cvolume *volume, bool absolute);
 
 void pa_source_output_set_mute(pa_source_output *o, bool mute, bool save);
-bool pa_source_output_get_mute(pa_source_output *o);
 
 void pa_source_output_update_proplist(pa_source_output *o, pa_update_mode_t mode, pa_proplist *p);
 
@@ -352,6 +351,19 @@ void pa_source_output_set_state_within_thread(pa_source_output *o, pa_source_out
 int pa_source_output_process_msg(pa_msgobject *mo, int code, void *userdata, int64_t offset, pa_memchunk *chunk);
 
 pa_usec_t pa_source_output_set_requested_latency_within_thread(pa_source_output *o, pa_usec_t usec);
+
+/* Called from the main thread, from source.c only. The normal way to set the
+ * source output volume is to call pa_source_output_set_volume(), but the flat
+ * volume logic in source.c needs also a function that doesn't do all the extra
+ * stuff that pa_source_output_set_volume() does. This function simply sets
+ * o->volume and fires change notifications. */
+void pa_source_output_set_volume_direct(pa_source_output *o, const pa_cvolume *volume);
+
+/* Called from the main thread, from source.c only. This shouldn't be a public
+ * function, but the flat volume logic in source.c currently needs a way to
+ * directly set the source output reference ratio. This function simply sets
+ * o->reference_ratio and logs a message if the value changes. */
+void pa_source_output_set_reference_ratio(pa_source_output *o, const pa_cvolume *ratio);
 
 #define pa_source_output_assert_io_context(s) \
     pa_assert(pa_thread_mq_get() || !PA_SOURCE_OUTPUT_IS_LINKED((s)->state))

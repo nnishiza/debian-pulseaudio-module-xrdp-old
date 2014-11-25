@@ -98,7 +98,7 @@ static void dump_block(const char *label, const pa_sample_spec *ss, const pa_mem
             float *u = d;
 
             for (i = 0; i < chunk->length / pa_frame_size(ss); i++) {
-                printf("%4.3g ", ss->format == PA_SAMPLE_FLOAT32NE ? *u : PA_FLOAT32_SWAP(*u));
+                printf("%4.3g ", ss->format == PA_SAMPLE_FLOAT32NE ? *u : PA_READ_FLOAT32RE(u));
                 u++;
             }
 
@@ -222,7 +222,7 @@ static pa_memblock* generate_block(pa_mempool *pool, const pa_sample_spec *ss) {
 
             if (ss->format == PA_SAMPLE_FLOAT32RE)
                 for (i = 0; i < 10; i++)
-                    u[i] = PA_FLOAT32_SWAP(u[i]);
+                    PA_WRITE_FLOAT32RE(&u[i], u[i]);
 
             break;
         }
@@ -415,8 +415,8 @@ int main(int argc, char *argv[]) {
         pa_memchunk i, j;
         pa_usec_t ts;
 
-        pa_log_debug(_("Compilation CFLAGS: %s"), PA_CFLAGS);
-        pa_log_debug(_("=== %d seconds: %d Hz %d ch (%s) -> %d Hz %d ch (%s)"), seconds,
+        pa_log_debug("Compilation CFLAGS: %s", PA_CFLAGS);
+        pa_log_debug("=== %d seconds: %d Hz %d ch (%s) -> %d Hz %d ch (%s)", seconds,
                    a.rate, a.channels, pa_sample_format_to_string(a.format),
                    b.rate, b.channels, pa_sample_format_to_string(b.format));
 

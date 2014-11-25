@@ -41,7 +41,7 @@ static int set_block(int fd, int blocking) {
 
     int v;
 
-    assert(fd >= 0);
+    pa_assert(fd >= 0);
 
     if ((v = fcntl(fd, F_GETFL)) < 0)
         return -1;
@@ -149,7 +149,7 @@ error:
         if (filedes[0] >= 0)
                 pa_close(filedes[0]);
         if (filedes[1] >= 0)
-                pa_close(filedes[0]);
+                pa_close(filedes[1]);
 
         return -1;
 }

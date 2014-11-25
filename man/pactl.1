@@ -27,8 +27,8 @@ Choose the server to connect to.
 Specify the client name \fIpactl\f1 shall pass to the server when connecting.
 .SH COMMANDS
 .TP
-\fBstat\f1 [\fIshort\f1]
-Dump a few statistics about the memory usage of the PulseAudio daemon. (Note: for backwards compatibility, we also show the output of the \fIinfo\f1 command. In order to only show statistics, use the optional \fIshort\f1 argument. In a future version of PA we will make this the default)
+\fBstat\f1
+Dump a few statistics about the memory usage of the PulseAudio daemon.
 .TP
 \fBinfo\f1
 Dump some info about the PulseAudio daemon.
@@ -84,17 +84,17 @@ Set the specified source (identified by its symbolic name or numerical index) to
 \fBset-port-latency-offset\f1 \fICARD\f1 \fIPORT\f1 \fIOFFSET\f1
 Set a latency offset to a specified port (identified by its symbolic name) that belongs to a card (identified by its symbolic name or numerical index). \fIOFFSET\f1 is a number which represents the latency offset in microseconds
 .TP
-\fBset-sink-volume\f1 \fISINK\f1 \fIVOLUME\f1
-Set the volume of the specified sink (identified by its symbolic name or numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current sink volume.
+\fBset-sink-volume\f1 \fISINK\f1 \fIVOLUME [VOLUME ...]\f1
+Set the volume of the specified sink (identified by its symbolic name or numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current sink volume. A single volume value affects all channels; if multiple volume values are given their number has to match the sink's number of channels.
 .TP
-\fBset-source-volume\f1 \fISOURCE\f1 \fIVOLUME\f1
-Set the volume of the specified source (identified by its symbolic name or numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current source volume.
+\fBset-source-volume\f1 \fISOURCE\f1 \fIVOLUME [VOLUME ...]\f1
+Set the volume of the specified source (identified by its symbolic name or numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current source volume. A single volume value affects all channels; if multiple volume values are given their number has to match the source's number of channels.
 .TP
-\fBset-sink-input-volume\f1 \fIINPUT\f1 \fIVOLUME\f1
-Set the volume of the specified sink input (identified by its numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current sink input volume.
+\fBset-sink-input-volume\f1 \fIINPUT\f1 \fIVOLUME [VOLUME ...]\f1
+Set the volume of the specified sink input (identified by its numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current sink input volume. A single volume value affects all channels; if multiple volume values are given their number has to match the sink input's number of channels.
 .TP
-\fBset-source-output-volume\f1 \fIOUTPUT\f1 \fIVOLUME\f1
-Set the volume of the specified source output (identified by its numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current source output volume.
+\fBset-source-output-volume\f1 \fIOUTPUT\f1 \fIVOLUME [VOLUME ...]\f1
+Set the volume of the specified source output (identified by its numerical index). \fIVOLUME\f1 can be specified as an integer (e.g. 2000, 16384), a linear factor (e.g. 0.4, 1.100), a percentage (e.g. 10%, 100%) or a decibel value (e.g. 0dB, 20dB). If the volume specification start with a + or - the volume adjustment will be relative to the current source output volume. A single volume value affects all channels; if multiple volume values are given their number has to match the source output's number of channels.
 .TP
 \fBset-sink-mute\f1 \fISINK\f1 \fI1|0|toggle\f1
 Set the mute status of the specified sink (identified by its symbolic name or numerical index).

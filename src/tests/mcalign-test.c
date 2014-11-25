@@ -21,7 +21,6 @@
 #include <config.h>
 #endif
 
-#include <assert.h>
 #include <unistd.h>
 #include <sys/types.h>
 #include <errno.h>
@@ -56,7 +55,7 @@ int main(int argc, char *argv[]) {
             c.index = c.length = 0;
         }
 
-        assert(c.index < pa_memblock_get_length(c.memblock));
+        pa_assert(c.index < pa_memblock_get_length(c.memblock));
 
         l = pa_memblock_get_length(c.memblock) - c.index;
 
@@ -74,7 +73,7 @@ int main(int argc, char *argv[]) {
 
         c.length = (size_t) r;
         pa_mcalign_push(a, &c);
-        fprintf(stderr, "Read %ld bytes\n", (long)r);
+        fprintf(stderr, "Read %zd bytes\n", r);
 
         c.index += (size_t) r;
 

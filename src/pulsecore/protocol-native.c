@@ -181,6 +181,7 @@ struct pa_native_connection {
     uint32_t rrobin_index;
     pa_subscription *subscription;
     pa_time_event *auth_timeout_event;
+    pa_srbchannel *srbpending;
 };
 
 #define PA_NATIVE_CONNECTION(o) (pa_native_connection_cast(o))
@@ -294,6 +295,7 @@ static void command_extension(pa_pdispatch *pd, uint32_t command, uint32_t tag, 
 static void command_set_card_profile(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 static void command_set_sink_or_source_port(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 static void command_set_port_latency_offset(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
+static void command_enable_srbchannel(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
 
 static const pa_pdispatch_cb_t command_table[PA_COMMAND_MAX] = {
     [PA_COMMAND_ERROR] = NULL,
@@ -396,6 +398,8 @@ static const pa_pdispatch_cb_t command_table[PA_COMMAND_MAX] = {
     [PA_COMMAND_SET_SOURCE_PORT] = command_set_sink_or_source_port,
 
     [PA_COMMAND_SET_PORT_LATENCY_OFFSET] = command_set_port_latency_offset,
+
+    [PA_COMMAND_ENABLE_SRBCHANNEL] = command_enable_srbchannel,
 
     [PA_COMMAND_EXTENSION] = command_extension
 };
@@ -555,8 +559,11 @@ static void fix_record_buffer_attr_pre(record_stream *s) {
     if (s->early_requests) {
 
         /* In early request mode we need to emulate the classic
-         * fragment-based playback model. We do this setting the source
-         * latency to the fragment size. */
+         * fragment-based playback model. Unfortunately we have no
+         * mechanism to tell the source how often we want it to send us
+         * data. The next best thing we can do is to set the source's
+         * total buffer (i.e. its latency) to the fragment size. That
+         * way it will have to send data at least that often. */
 
         source_usec = fragsize_usec;
 
@@ -584,10 +591,12 @@ static void fix_record_buffer_attr_pre(record_stream *s) {
 
     if (s->early_requests) {
 
-        /* Ok, we didn't necessarily get what we were asking for, so
-         * let's tell the user */
+        /* Ok, we didn't necessarily get what we were asking for. We
+         * might still get the proper fragment interval, we just can't
+         * guarantee it. */
 
-        fragsize_usec = s->configured_source_latency;
+        if (fragsize_usec != s->configured_source_latency)
+            pa_log_debug("Could not configure a sufficiently low latency. Early requests might not be satisifed.");
 
     } else if (s->adjust_latency) {
 
@@ -963,8 +972,11 @@ static void fix_playback_buffer_attr(playback_stream *s) {
     if (s->early_requests) {
 
         /* In early request mode we need to emulate the classic
-         * fragment-based playback model. We do this setting the sink
-         * latency to the fragment size. */
+         * fragment-based playback model. Unfortunately we have no
+         * mechanism to tell the sink how often we want to be queried
+         * for data. The next best thing we can do is to set the sink's
+         * total buffer (i.e. its latency) to the fragment size. That
+         * way it will have to query us at least that often. */
 
         sink_usec = minreq_usec;
         pa_log_debug("Early requests mode enabled, configuring sink latency to minreq.");
@@ -1013,10 +1025,12 @@ static void fix_playback_buffer_attr(playback_stream *s) {
 
     if (s->early_requests) {
 
-        /* Ok, we didn't necessarily get what we were asking for, so
-         * let's tell the user */
+        /* Ok, we didn't necessarily get what we were asking for. We
+         * might still get the proper fragment interval, we just can't
+         * guarantee it. */
 
-        minreq_usec = s->configured_sink_latency;
+        if (minreq_usec != s->configured_sink_latency)
+            pa_log_debug("Could not configure a sufficiently low latency. Early requests might not be satisifed.");
 
     } else if (s->adjust_latency) {
 
@@ -1316,6 +1330,9 @@ static void native_connection_unlink(pa_native_connection *c) {
 
     if (c->options)
         pa_native_options_unref(c->options);
+
+    if (c->srbpending)
+        pa_srbchannel_free(c->srbpending);
 
     while ((r = pa_idxset_first(c->record_streams, NULL)))
         record_stream_unlink(r);
@@ -2568,6 +2585,69 @@ static void command_exit(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_ta
     pa_pstream_send_simple_ack(c->pstream, tag); /* nonsense */
 }
 
+static void setup_srbchannel(pa_native_connection *c) {
+    pa_srbchannel_template srbt;
+    pa_srbchannel *srb;
+    pa_memchunk mc;
+    pa_tagstruct *t;
+    int fdlist[2];
+
+    if (!c->options->srbchannel) {
+        pa_log_debug("Disabling srbchannel, reason: Disabled by module parameter");
+        return;
+    }
+
+    if (c->version < 30) {
+        pa_log_debug("Disabling srbchannel, reason: Protocol too old");
+        return;
+    }
+
+    if (!pa_pstream_get_shm(c->pstream)) {
+        pa_log_debug("Disabling srbchannel, reason: No SHM support");
+        return;
+    }
+
+    if (!c->protocol->core->rw_mempool) {
+        pa_log_debug("Disabling srbchannel, reason: No rw memory pool");
+        return;
+    }
+
+    srb = pa_srbchannel_new(c->protocol->core->mainloop, c->protocol->core->rw_mempool);
+    if (!srb) {
+        pa_log_debug("Failed to create srbchannel");
+        return;
+    }
+    pa_log_debug("Enabling srbchannel...");
+    pa_srbchannel_export(srb, &srbt);
+
+    /* Send enable command to client */
+    t = pa_tagstruct_new(NULL, 0);
+    pa_tagstruct_putu32(t, PA_COMMAND_ENABLE_SRBCHANNEL);
+    pa_tagstruct_putu32(t, (size_t) srb); /* tag */
+    fdlist[0] = srbt.readfd;
+    fdlist[1] = srbt.writefd;
+    pa_pstream_send_tagstruct_with_fds(c->pstream, t, 2, fdlist);
+
+    /* Send ringbuffer memblock to client */
+    mc.memblock = srbt.memblock;
+    mc.index = 0;
+    mc.length = pa_memblock_get_length(srbt.memblock);
+    pa_pstream_send_memblock(c->pstream, 0, 0, 0, &mc);
+
+    c->srbpending = srb;
+}
+
+static void command_enable_srbchannel(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
+    pa_native_connection *c = PA_NATIVE_CONNECTION(userdata);
+
+    if (tag != (uint32_t) (size_t) c->srbpending)
+        protocol_error(c);
+
+    pa_log_debug("Client enabled srbchannel.");
+    pa_pstream_set_srbchannel(c->pstream, c->srbpending);
+    c->srbpending = NULL;
+}
+
 static void command_auth(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
     pa_native_connection *c = PA_NATIVE_CONNECTION(userdata);
     const void*cookie;
@@ -2644,7 +2724,7 @@ static void command_auth(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_ta
         }
 
         if (!success) {
-            pa_log_warn("Denied access to client with invalid authorization data.");
+            pa_log_warn("Denied access to client with invalid authentication data.");
             pa_pstream_send_error(c->pstream, tag, PA_ERR_ACCESS);
             return;
         }
@@ -2699,6 +2779,8 @@ static void command_auth(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_ta
 #else
     pa_pstream_send_tagstruct(c->pstream, reply);
 #endif
+
+    setup_srbchannel(c);
 }
 
 static void command_set_client_name(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata) {
@@ -3366,7 +3448,7 @@ static void sink_input_fill_tagstruct(pa_native_connection *c, pa_tagstruct *t, 
     pa_tagstruct_puts(t, pa_resample_method_to_string(pa_sink_input_get_resample_method(s)));
     pa_tagstruct_puts(t, s->driver);
     if (c->version >= 11)
-        pa_tagstruct_put_boolean(t, pa_sink_input_get_mute(s));
+        pa_tagstruct_put_boolean(t, s->muted);
     if (c->version >= 13)
         pa_tagstruct_put_proplist(t, s->proplist);
     if (c->version >= 19)
@@ -3413,7 +3495,7 @@ static void source_output_fill_tagstruct(pa_native_connection *c, pa_tagstruct *
         pa_tagstruct_put_boolean(t, (pa_source_output_get_state(s) == PA_SOURCE_OUTPUT_CORKED));
     if (c->version >= 22) {
         pa_tagstruct_put_cvolume(t, &v);
-        pa_tagstruct_put_boolean(t, pa_source_output_get_mute(s));
+        pa_tagstruct_put_boolean(t, s->muted);
         pa_tagstruct_put_boolean(t, has_volume);
         pa_tagstruct_put_boolean(t, s->volume_writable);
         pa_tagstruct_put_format_info(t, s->format);
@@ -4806,14 +4888,14 @@ static void command_set_port_latency_offset(pa_pdispatch *pd, uint32_t command, 
 
 /*** pstream callbacks ***/
 
-static void pstream_packet_callback(pa_pstream *p, pa_packet *packet, const pa_creds *creds, void *userdata) {
+static void pstream_packet_callback(pa_pstream *p, pa_packet *packet, const pa_cmsg_ancil_data *ancil_data, void *userdata) {
     pa_native_connection *c = PA_NATIVE_CONNECTION(userdata);
 
     pa_assert(p);
     pa_assert(packet);
     pa_native_connection_assert_ref(c);
 
-    if (pa_pdispatch_run(c->pdispatch, packet, creds, c) < 0) {
+    if (pa_pdispatch_run(c->pdispatch, packet, ancil_data, c) < 0) {
         pa_log("invalid packet.");
         native_connection_unlink(c);
     }
@@ -4839,6 +4921,13 @@ static void pstream_memblock_callback(pa_pstream *p, uint32_t channel, int64_t o
 
     if (playback_stream_isinstance(stream)) {
         playback_stream *ps = PLAYBACK_STREAM(stream);
+
+        size_t frame_size = pa_frame_size(&ps->sink_input->sample_spec);
+        if (chunk->index % frame_size != 0 || chunk->length % frame_size != 0) {
+            pa_log_warn("Client sent non-aligned memblock: index %d, length %d, frame size: %d",
+                        (int) chunk->index, (int) chunk->length, (int) frame_size);
+            return;
+        }
 
         pa_atomic_inc(&ps->seek_or_post_in_queue);
         if (chunk->memblock) {
@@ -5007,6 +5096,7 @@ void pa_native_protocol_connect(pa_native_protocol *p, pa_iochannel *io, pa_nati
     c->protocol = p;
     c->options = pa_native_options_ref(o);
     c->authorized = false;
+    c->srbpending = NULL;
 
     if (o->auth_anonymous) {
         pa_log_info("Client authenticated anonymously.");
@@ -5237,6 +5327,12 @@ int pa_native_options_parse(pa_native_options *o, pa_core *c, pa_modargs *ma) {
     pa_assert(PA_REFCNT_VALUE(o) >= 1);
     pa_assert(ma);
 
+    o->srbchannel = true;
+    if (pa_modargs_get_value_boolean(ma, "srbchannel", &o->srbchannel) < 0) {
+        pa_log("srbchannel= expects a boolean argument.");
+        return -1;
+    }
+
     if (pa_modargs_get_value_boolean(ma, "auth-anonymous", &o->auth_anonymous) < 0) {
         pa_log("auth-anonymous= expects a boolean argument.");
         return -1;
@@ -5293,7 +5389,12 @@ int pa_native_options_parse(pa_native_options *o, pa_core *c, pa_modargs *ma) {
         else {
             o->auth_cookie = pa_auth_cookie_get(c, PA_NATIVE_COOKIE_FILE, false, PA_NATIVE_COOKIE_LENGTH);
             if (!o->auth_cookie) {
-                o->auth_cookie = pa_auth_cookie_get(c, PA_NATIVE_COOKIE_FILE_FALLBACK, false, PA_NATIVE_COOKIE_LENGTH);
+                char *fallback_path;
+
+                if (pa_append_to_home_dir(PA_NATIVE_COOKIE_FILE_FALLBACK, &fallback_path) >= 0) {
+                    o->auth_cookie = pa_auth_cookie_get(c, fallback_path, false, PA_NATIVE_COOKIE_LENGTH);
+                    pa_xfree(fallback_path);
+                }
 
                 if (!o->auth_cookie)
                     o->auth_cookie = pa_auth_cookie_get(c, PA_NATIVE_COOKIE_FILE, true, PA_NATIVE_COOKIE_LENGTH);

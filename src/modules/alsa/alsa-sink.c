@@ -127,6 +127,8 @@ struct userdata {
         watermark_dec_threshold,
         rewind_safeguard;
 
+    snd_pcm_uframes_t frames_per_block;
+
     pa_usec_t watermark_dec_not_before;
     pa_usec_t min_latency_ref;
     pa_usec_t tsched_watermark_usec;
@@ -619,8 +621,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, bool polled, bo
             }
 
             /* Make sure that if these memblocks need to be copied they will fit into one slot */
-            if (frames > pa_mempool_block_size_max(u->core->mempool)/u->frame_size)
-                frames = pa_mempool_block_size_max(u->core->mempool)/u->frame_size;
+            frames = PA_MIN(frames, u->frames_per_block);
 
             if (!after_avail && frames == 0)
                 break;
@@ -630,7 +631,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, bool polled, bo
 
             /* Check these are multiples of 8 bit */
             pa_assert((areas[0].first & 7) == 0);
-            pa_assert((areas[0].step & 7)== 0);
+            pa_assert((areas[0].step & 7) == 0);
 
             /* We assume a single interleaved memory buffer */
             pa_assert((areas[0].first >> 3) == 0);
@@ -648,7 +649,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, bool polled, bo
 
             if (PA_UNLIKELY((sframes = snd_pcm_mmap_commit(u->pcm_handle, offset, frames)) < 0)) {
 
-                if (!after_avail && (int) sframes == -EAGAIN)
+                if ((int) sframes == -EAGAIN)
                     break;
 
                 if ((r = try_recover(u, "snd_pcm_mmap_commit", (int) sframes)) == 0)
@@ -1395,18 +1396,17 @@ static void sink_write_volume_cb(pa_sink *s) {
     }
 }
 
-static void sink_get_mute_cb(pa_sink *s) {
+static int sink_get_mute_cb(pa_sink *s, bool *mute) {
     struct userdata *u = s->userdata;
-    bool b;
 
     pa_assert(u);
     pa_assert(u->mixer_path);
     pa_assert(u->mixer_handle);
 
-    if (pa_alsa_path_get_mute(u->mixer_path, u->mixer_handle, &b) < 0)
-        return;
+    if (pa_alsa_path_get_mute(u->mixer_path, u->mixer_handle, mute) < 0)
+        return -1;
 
-    s->muted = b;
+    return 0;
 }
 
 static void sink_set_mute_cb(pa_sink *s) {
@@ -1797,7 +1797,7 @@ static void thread_func(void *userdata) {
             pa_rtpoll_set_timer_disabled(u->rtpoll);
 
         /* Hmm, nothing to do. Let's sleep */
-        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0)
+        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
             goto fail;
 
         if (rtpoll_sleep > 0) {
@@ -1887,12 +1887,10 @@ static void set_sink_name(pa_sink_new_data *data, pa_modargs *ma, const char *de
 }
 
 static void find_mixer(struct userdata *u, pa_alsa_mapping *mapping, const char *element, bool ignore_dB) {
-    snd_hctl_t *hctl;
-
     if (!mapping && !element)
         return;
 
-    if (!(u->mixer_handle = pa_alsa_open_mixer_for_pcm(u->pcm_handle, &u->control_device, &hctl))) {
+    if (!(u->mixer_handle = pa_alsa_open_mixer_for_pcm(u->pcm_handle, &u->control_device))) {
         pa_log_info("Failed to find a working mixer device.");
         return;
     }
@@ -1902,7 +1900,7 @@ static void find_mixer(struct userdata *u, pa_alsa_mapping *mapping, const char 
         if (!(u->mixer_path = pa_alsa_path_synthesize(element, PA_ALSA_DIRECTION_OUTPUT)))
             goto fail;
 
-        if (pa_alsa_path_probe(u->mixer_path, u->mixer_handle, hctl, ignore_dB) < 0)
+        if (pa_alsa_path_probe(u->mixer_path, u->mixer_handle, ignore_dB) < 0)
             goto fail;
 
         pa_log_debug("Probed mixer path %s:", u->mixer_path->name);
@@ -2278,7 +2276,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
             pa_proplist_sets(data.proplist, key, pa_proplist_gets(mapping->proplist, key));
     }
 
-    pa_alsa_init_description(data.proplist);
+    pa_alsa_init_description(data.proplist, card);
 
     if (u->control_device)
         pa_alsa_init_proplist_ctl(data.proplist, u->control_device);
@@ -2331,6 +2329,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     pa_sink_set_rtpoll(u->sink, u->rtpoll);
 
     u->frame_size = frame_size;
+    u->frames_per_block = pa_mempool_block_size_max(m->core->mempool) / frame_size;
     u->fragment_size = frag_size = (size_t) (period_frames * frame_size);
     u->hwbuf_size = buffer_size = (size_t) (buffer_frames * frame_size);
     pa_cvolume_mute(&u->hardware_volume, u->sink->sample_spec.channels);
@@ -2390,8 +2389,12 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         if (u->sink->set_mute)
             u->sink->set_mute(u->sink);
     } else {
-        if (u->sink->get_mute)
-            u->sink->get_mute(u->sink);
+        if (u->sink->get_mute) {
+            bool mute;
+
+            if (u->sink->get_mute(u->sink, &mute) >= 0)
+                pa_sink_set_mute(u->sink, mute, false);
+        }
     }
 
     if ((data.volume_is_set || data.muted_is_set) && u->sink->write_volume)

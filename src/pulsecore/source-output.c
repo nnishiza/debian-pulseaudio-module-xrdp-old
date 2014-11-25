@@ -122,7 +122,7 @@ void pa_source_output_new_data_set_muted(pa_source_output_new_data *data, bool m
     pa_assert(data);
 
     data->muted_is_set = true;
-    data->muted = !!mute;
+    data->muted = mute;
 }
 
 bool pa_source_output_new_data_set_source(pa_source_output_new_data *data, pa_source *s, bool save) {
@@ -972,7 +972,7 @@ void pa_source_output_set_volume(pa_source_output *o, const pa_cvolume *volume, 
         return;
     }
 
-    o->volume = *volume;
+    pa_source_output_set_volume_direct(o, volume);
     o->save_volume = save;
 
     if (pa_source_flat_volume_enabled(o->source)) {
@@ -1057,16 +1057,22 @@ pa_cvolume *pa_source_output_get_volume(pa_source_output *o, pa_cvolume *volume,
 
 /* Called from main context */
 void pa_source_output_set_mute(pa_source_output *o, bool mute, bool save) {
+    bool old_mute;
+
     pa_source_output_assert_ref(o);
     pa_assert_ctl_context();
     pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
 
-    if (!o->muted == !mute) {
-        o->save_muted = o->save_muted || mute;
+    old_mute = o->muted;
+
+    if (mute == old_mute) {
+        o->save_muted |= save;
         return;
     }
 
     o->muted = mute;
+    pa_log_debug("The mute of source output %u changed from %s to %s.", o->index, pa_yes_no(old_mute), pa_yes_no(mute));
+
     o->save_muted = save;
 
     pa_assert_se(pa_asyncmsgq_send(o->source->asyncmsgq, PA_MSGOBJECT(o), PA_SOURCE_OUTPUT_MESSAGE_SET_SOFT_MUTE, NULL, 0, NULL) == 0);
@@ -1076,15 +1082,7 @@ void pa_source_output_set_mute(pa_source_output *o, bool mute, bool save) {
         o->mute_changed(o);
 
     pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
-}
-
-/* Called from main context */
-bool pa_source_output_get_mute(pa_source_output *o) {
-    pa_source_output_assert_ref(o);
-    pa_assert_ctl_context();
-    pa_assert(PA_SOURCE_OUTPUT_IS_LINKED(o->state));
-
-    return o->muted;
+    pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_MUTE_CHANGED], o);
 }
 
 /* Called from main thread */
@@ -1177,7 +1175,7 @@ bool pa_source_output_may_move(pa_source_output *o) {
 }
 
 static bool find_filter_source_output(pa_source_output *target, pa_source *s) {
-    int i = 0;
+    unsigned PA_UNUSED i = 0;
     while (s && s->output_from_master) {
         if (s->output_from_master == target)
             return true;
@@ -1262,7 +1260,7 @@ int pa_source_output_start_move(pa_source_output *o) {
  * then also the origin source and all streams connected to it need to update
  * their volume - this function does all that by using recursion. */
 static void update_volume_due_to_moving(pa_source_output *o, pa_source *dest) {
-    pa_cvolume old_volume;
+    pa_cvolume new_volume;
 
     pa_assert(o);
     pa_assert(dest);
@@ -1313,19 +1311,11 @@ static void update_volume_due_to_moving(pa_source_output *o, pa_source *dest) {
              *          always have volume_factor as soft_volume, so no change
              *          should be needed) */
 
-            old_volume = o->volume;
-            pa_cvolume_reset(&o->volume, o->volume.channels);
-            pa_cvolume_reset(&o->reference_ratio, o->reference_ratio.channels);
+            pa_cvolume_reset(&new_volume, o->volume.channels);
+            pa_source_output_set_volume_direct(o, &new_volume);
+            pa_source_output_set_reference_ratio(o, &new_volume);
             pa_assert(pa_cvolume_is_norm(&o->real_ratio));
             pa_assert(pa_cvolume_equal(&o->soft_volume, &o->volume_factor));
-
-            /* Notify others about the changed source output volume. */
-            if (!pa_cvolume_equal(&o->volume, &old_volume)) {
-                if (o->volume_changed)
-                    o->volume_changed(o);
-
-                pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
-            }
         }
 
         /* Additionally, the origin source volume needs updating:
@@ -1336,33 +1326,27 @@ static void update_volume_due_to_moving(pa_source_output *o, pa_source *dest) {
          *         (sources that use volume sharing should always have
          *          soft_volume of 0 dB) */
 
-        old_volume = o->destination_source->reference_volume;
-
-        o->destination_source->reference_volume = root_source->reference_volume;
-        pa_cvolume_remap(&o->destination_source->reference_volume, &root_source->channel_map, &o->destination_source->channel_map);
+        new_volume = root_source->reference_volume;
+        pa_cvolume_remap(&new_volume, &root_source->channel_map, &o->destination_source->channel_map);
+        pa_source_set_reference_volume_direct(o->destination_source, &new_volume);
 
         o->destination_source->real_volume = root_source->real_volume;
         pa_cvolume_remap(&o->destination_source->real_volume, &root_source->channel_map, &o->destination_source->channel_map);
 
         pa_assert(pa_cvolume_is_norm(&o->destination_source->soft_volume));
 
-        /* Notify others about the changed source volume. If you wonder whether
-         * o->destination_source->set_volume() should be called somewhere, that's not
-         * the case, because sources that use volume sharing shouldn't have any
-         * internal volume that set_volume() would update. If you wonder
-         * whether the thread_info variables should be synced, yes, they
-         * should, and it's done by the PA_SOURCE_MESSAGE_FINISH_MOVE message
-         * handler. */
-        if (!pa_cvolume_equal(&o->destination_source->reference_volume, &old_volume))
-            pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE|PA_SUBSCRIPTION_EVENT_CHANGE, o->destination_source->index);
+        /* If you wonder whether o->destination_source->set_volume() should be
+         * called somewhere, that's not the case, because sources that use
+         * volume sharing shouldn't have any internal volume that set_volume()
+         * would update. If you wonder whether the thread_info variables should
+         * be synced, yes, they should, and it's done by the
+         * PA_SOURCE_MESSAGE_FINISH_MOVE message handler. */
 
         /* Recursively update origin source outputs. */
         PA_IDXSET_FOREACH(destination_source_output, o->destination_source->outputs, idx)
             update_volume_due_to_moving(destination_source_output, dest);
 
     } else {
-        old_volume = o->volume;
-
         if (pa_source_flat_volume_enabled(o->source)) {
             /* Ok, so this is a regular stream, and flat volume is enabled. The
              * volume will have to be updated as follows:
@@ -1374,9 +1358,10 @@ static void update_volume_due_to_moving(pa_source_output *o, pa_source *dest) {
              *     o->soft_volume := o->real_ratio * o->volume_factor
              *         (handled later by pa_source_set_volume) */
 
-            o->volume = o->source->reference_volume;
-            pa_cvolume_remap(&o->volume, &o->source->channel_map, &o->channel_map);
-            pa_sw_cvolume_multiply(&o->volume, &o->volume, &o->reference_ratio);
+            new_volume = o->source->reference_volume;
+            pa_cvolume_remap(&new_volume, &o->source->channel_map, &o->channel_map);
+            pa_sw_cvolume_multiply(&new_volume, &new_volume, &o->reference_ratio);
+            pa_source_output_set_volume_direct(o, &new_volume);
 
         } else {
             /* Ok, so this is a regular stream, and flat volume is disabled.
@@ -1387,20 +1372,9 @@ static void update_volume_due_to_moving(pa_source_output *o, pa_source *dest) {
              *     o->real_ratio := o->reference_ratio
              *     o->soft_volume := o->real_ratio * o->volume_factor */
 
-            o->volume = o->reference_ratio;
+            pa_source_output_set_volume_direct(o, &o->reference_ratio);
             o->real_ratio = o->reference_ratio;
             pa_sw_cvolume_multiply(&o->soft_volume, &o->real_ratio, &o->volume_factor);
-        }
-
-        /* Notify others about the changed source output volume. */
-        if (!pa_cvolume_equal(&o->volume, &old_volume)) {
-            /* XXX: In case o->source has flat volume enabled, then real_ratio
-             * and soft_volume are not updated yet. Let's hope that the
-             * callback implementation doesn't care about those variables... */
-            if (o->volume_changed)
-                o->volume_changed(o);
-
-            pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
         }
     }
 
@@ -1694,4 +1668,54 @@ int pa_source_output_update_rate(pa_source_output *o) {
     pa_log_debug("Updated resampler for source output %d", o->index);
 
     return 0;
+}
+
+/* Called from the main thread. */
+void pa_source_output_set_volume_direct(pa_source_output *o, const pa_cvolume *volume) {
+    pa_cvolume old_volume;
+    char old_volume_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+    char new_volume_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+
+    pa_assert(o);
+    pa_assert(volume);
+
+    old_volume = o->volume;
+
+    if (pa_cvolume_equal(volume, &old_volume))
+        return;
+
+    o->volume = *volume;
+    pa_log_debug("The volume of source output %u changed from %s to %s.", o->index,
+                 pa_cvolume_snprint_verbose(old_volume_str, sizeof(old_volume_str), &old_volume, &o->channel_map, true),
+                 pa_cvolume_snprint_verbose(new_volume_str, sizeof(new_volume_str), volume, &o->channel_map, true));
+
+    if (o->volume_changed)
+        o->volume_changed(o);
+
+    pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
+    pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_VOLUME_CHANGED], o);
+}
+
+/* Called from the main thread. */
+void pa_source_output_set_reference_ratio(pa_source_output *o, const pa_cvolume *ratio) {
+    pa_cvolume old_ratio;
+    char old_ratio_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+    char new_ratio_str[PA_CVOLUME_SNPRINT_VERBOSE_MAX];
+
+    pa_assert(o);
+    pa_assert(ratio);
+
+    old_ratio = o->reference_ratio;
+
+    if (pa_cvolume_equal(ratio, &old_ratio))
+        return;
+
+    o->reference_ratio = *ratio;
+
+    if (!PA_SOURCE_OUTPUT_IS_LINKED(o->state))
+        return;
+
+    pa_log_debug("Source output %u reference ratio changed from %s to %s.", o->index,
+                 pa_cvolume_snprint_verbose(old_ratio_str, sizeof(old_ratio_str), &old_ratio, &o->channel_map, true),
+                 pa_cvolume_snprint_verbose(new_ratio_str, sizeof(new_ratio_str), ratio, &o->channel_map, true));
 }

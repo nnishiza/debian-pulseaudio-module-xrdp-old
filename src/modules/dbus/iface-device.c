@@ -725,7 +725,9 @@ static void handle_get_active_port(DBusConnection *conn, DBusMessage *msg, void 
 static void handle_set_active_port(DBusConnection *conn, DBusMessage *msg, DBusMessageIter *iter, void *userdata) {
     pa_dbusiface_device *d = userdata;
     const char *new_active_path;
-    pa_dbusiface_device_port *new_active;
+    pa_dbusiface_device_port *port;
+    void *state;
+    pa_dbusiface_device_port *new_active = NULL;
     int r;
 
     pa_assert(conn);
@@ -747,7 +749,14 @@ static void handle_set_active_port(DBusConnection *conn, DBusMessage *msg, DBusM
 
     dbus_message_iter_get_basic(iter, &new_active_path);
 
-    if (!(new_active = pa_hashmap_get(d->ports, new_active_path))) {
+    PA_HASHMAP_FOREACH(port, d->ports, state) {
+        if (pa_streq(pa_dbusiface_device_port_get_path(port), new_active_path)) {
+            new_active = port;
+            break;
+        }
+    }
+
+    if (!new_active) {
         pa_dbus_send_error(conn, msg, PA_DBUS_ERROR_NOT_FOUND, "No such port: %s", new_active_path);
         return;
     }
@@ -1248,7 +1257,7 @@ pa_dbusiface_device *pa_dbusiface_device_new_source(pa_dbusiface_core *core, pa_
     d->volume = *pa_source_get_volume(source, false);
     d->mute = pa_source_get_mute(source, false);
     d->source_state = pa_source_get_state(source);
-    d->ports = pa_hashmap_new(pa_idxset_string_hash_func, pa_idxset_string_compare_func);
+    d->ports = pa_hashmap_new_full(pa_idxset_string_hash_func, pa_idxset_string_compare_func, NULL, (pa_free_cb_t) pa_dbusiface_device_port_free);
     d->next_port_index = 0;
     d->active_port = source->active_port;
     d->proplist = pa_proplist_copy(source->proplist);

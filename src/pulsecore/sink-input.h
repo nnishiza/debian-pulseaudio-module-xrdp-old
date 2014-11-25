@@ -375,7 +375,6 @@ int pa_sink_input_remove_volume_factor(pa_sink_input *i, const char *key);
 pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i, pa_cvolume *volume, bool absolute);
 
 void pa_sink_input_set_mute(pa_sink_input *i, bool mute, bool save);
-bool pa_sink_input_get_mute(pa_sink_input *i);
 
 void pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_proplist *p);
 
@@ -416,6 +415,19 @@ bool pa_sink_input_safe_to_remove(pa_sink_input *i);
 bool pa_sink_input_process_underrun(pa_sink_input *i);
 
 pa_memchunk* pa_sink_input_get_silence(pa_sink_input *i, pa_memchunk *ret);
+
+/* Called from the main thread, from sink.c only. The normal way to set the
+ * sink input volume is to call pa_sink_input_set_volume(), but the flat volume
+ * logic in sink.c needs also a function that doesn't do all the extra stuff
+ * that pa_sink_input_set_volume() does. This function simply sets i->volume
+ * and fires change notifications. */
+void pa_sink_input_set_volume_direct(pa_sink_input *i, const pa_cvolume *volume);
+
+/* Called from the main thread, from sink.c only. This shouldn't be a public
+ * function, but the flat volume logic in sink.c currently needs a way to
+ * directly set the sink input reference ratio. This function simply sets
+ * i->reference_ratio and logs a message if the value changes. */
+void pa_sink_input_set_reference_ratio(pa_sink_input *i, const pa_cvolume *ratio);
 
 #define pa_sink_input_assert_io_context(s) \
     pa_assert(pa_thread_mq_get() || !PA_SINK_INPUT_IS_LINKED((s)->state))

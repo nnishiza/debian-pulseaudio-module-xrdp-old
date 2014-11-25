@@ -1464,11 +1464,12 @@ int pa_stream_cancel_write(
     return 0;
 }
 
-int pa_stream_write(
+int pa_stream_write_ext_free(
         pa_stream *s,
         const void *data,
         size_t length,
         pa_free_cb_t free_cb,
+        void *free_cb_data,
         int64_t offset,
         pa_seek_mode_t seek) {
 
@@ -1486,6 +1487,8 @@ int pa_stream_write(
                       ((data >= s->write_data) &&
                        ((const char*) data + length <= (const char*) s->write_data + pa_memblock_get_length(s->write_memblock))),
                       PA_ERR_INVALID);
+    PA_CHECK_VALIDITY(s->context, offset % pa_frame_size(&s->sample_spec) == 0, PA_ERR_INVALID);
+    PA_CHECK_VALIDITY(s->context, length % pa_frame_size(&s->sample_spec) == 0, PA_ERR_INVALID);
     PA_CHECK_VALIDITY(s->context, !free_cb || !s->write_memblock, PA_ERR_INVALID);
 
     if (s->write_memblock) {
@@ -1519,7 +1522,7 @@ int pa_stream_write(
             chunk.index = 0;
 
             if (free_cb && !pa_pstream_get_shm(s->context->pstream)) {
-                chunk.memblock = pa_memblock_new_user(s->context->mempool, (void*) t_data, t_length, free_cb, 1);
+                chunk.memblock = pa_memblock_new_user(s->context->mempool, (void*) t_data, t_length, free_cb, free_cb_data, 1);
                 chunk.length = t_length;
             } else {
                 void *d;
@@ -1544,7 +1547,7 @@ int pa_stream_write(
         }
 
         if (free_cb && pa_pstream_get_shm(s->context->pstream))
-            free_cb((void*) data);
+            free_cb(free_cb_data);
     }
 
     /* This is obviously wrong since we ignore the seeking index . But
@@ -1589,6 +1592,17 @@ int pa_stream_write(
     }
 
     return 0;
+}
+
+int pa_stream_write(
+        pa_stream *s,
+        const void *data,
+        size_t length,
+        pa_free_cb_t free_cb,
+        int64_t offset,
+        pa_seek_mode_t seek) {
+
+    return pa_stream_write_ext_free(s, data, length, free_cb, (void*) data, offset, seek);
 }
 
 int pa_stream_peek(pa_stream *s, const void **data, size_t *length) {

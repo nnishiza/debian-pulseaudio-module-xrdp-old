@@ -116,6 +116,8 @@ struct userdata {
         watermark_inc_threshold,
         watermark_dec_threshold;
 
+    snd_pcm_uframes_t frames_per_block;
+
     pa_usec_t watermark_dec_not_before;
     pa_usec_t min_latency_ref;
     pa_usec_t tsched_watermark_usec;
@@ -576,8 +578,7 @@ static int mmap_read(struct userdata *u, pa_usec_t *sleep_usec, bool polled, boo
             }
 
             /* Make sure that if these memblocks need to be copied they will fit into one slot */
-            if (frames > pa_mempool_block_size_max(u->core->mempool)/u->frame_size)
-                frames = pa_mempool_block_size_max(u->core->mempool)/u->frame_size;
+            frames = PA_MIN(frames, u->frames_per_block);
 
             if (!after_avail && frames == 0)
                 break;
@@ -587,7 +588,7 @@ static int mmap_read(struct userdata *u, pa_usec_t *sleep_usec, bool polled, boo
 
             /* Check these are multiples of 8 bit */
             pa_assert((areas[0].first & 7) == 0);
-            pa_assert((areas[0].step & 7)== 0);
+            pa_assert((areas[0].step & 7) == 0);
 
             /* We assume a single interleaved memory buffer */
             pa_assert((areas[0].first >> 3) == 0);
@@ -1277,18 +1278,17 @@ static void source_write_volume_cb(pa_source *s) {
     }
 }
 
-static void source_get_mute_cb(pa_source *s) {
+static int source_get_mute_cb(pa_source *s, bool *mute) {
     struct userdata *u = s->userdata;
-    bool b;
 
     pa_assert(u);
     pa_assert(u->mixer_path);
     pa_assert(u->mixer_handle);
 
-    if (pa_alsa_path_get_mute(u->mixer_path, u->mixer_handle, &b) < 0)
-        return;
+    if (pa_alsa_path_get_mute(u->mixer_path, u->mixer_handle, mute) < 0)
+        return -1;
 
-    s->muted = b;
+    return 0;
 }
 
 static void source_set_mute_cb(pa_source *s) {
@@ -1516,7 +1516,7 @@ static void thread_func(void *userdata) {
             pa_rtpoll_set_timer_disabled(u->rtpoll);
 
         /* Hmm, nothing to do. Let's sleep */
-        if ((ret = pa_rtpoll_run(u->rtpoll, true)) < 0)
+        if ((ret = pa_rtpoll_run(u->rtpoll)) < 0)
             goto fail;
 
         if (rtpoll_sleep > 0) {
@@ -1605,12 +1605,10 @@ static void set_source_name(pa_source_new_data *data, pa_modargs *ma, const char
 }
 
 static void find_mixer(struct userdata *u, pa_alsa_mapping *mapping, const char *element, bool ignore_dB) {
-    snd_hctl_t *hctl;
-
     if (!mapping && !element)
         return;
 
-    if (!(u->mixer_handle = pa_alsa_open_mixer_for_pcm(u->pcm_handle, &u->control_device, &hctl))) {
+    if (!(u->mixer_handle = pa_alsa_open_mixer_for_pcm(u->pcm_handle, &u->control_device))) {
         pa_log_info("Failed to find a working mixer device.");
         return;
     }
@@ -1620,7 +1618,7 @@ static void find_mixer(struct userdata *u, pa_alsa_mapping *mapping, const char 
         if (!(u->mixer_path = pa_alsa_path_synthesize(element, PA_ALSA_DIRECTION_INPUT)))
             goto fail;
 
-        if (pa_alsa_path_probe(u->mixer_path, u->mixer_handle, hctl, ignore_dB) < 0)
+        if (pa_alsa_path_probe(u->mixer_path, u->mixer_handle, ignore_dB) < 0)
             goto fail;
 
         pa_log_debug("Probed mixer path %s:", u->mixer_path->name);
@@ -1984,7 +1982,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
             pa_proplist_sets(data.proplist, key, pa_proplist_gets(mapping->proplist, key));
     }
 
-    pa_alsa_init_description(data.proplist);
+    pa_alsa_init_description(data.proplist, card);
 
     if (u->control_device)
         pa_alsa_init_proplist_ctl(data.proplist, u->control_device);
@@ -2036,6 +2034,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     pa_source_set_rtpoll(u->source, u->rtpoll);
 
     u->frame_size = frame_size;
+    u->frames_per_block = pa_mempool_block_size_max(m->core->mempool) / frame_size;
     u->fragment_size = frag_size = (size_t) (period_frames * frame_size);
     u->hwbuf_size = buffer_size = (size_t) (buffer_frames * frame_size);
     pa_cvolume_mute(&u->hardware_volume, u->source->sample_spec.channels);
@@ -2088,8 +2087,12 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
         if (u->source->set_mute)
             u->source->set_mute(u->source);
     } else {
-        if (u->source->get_mute)
-            u->source->get_mute(u->source);
+        if (u->source->get_mute) {
+            bool mute;
+
+            if (u->source->get_mute(u->source, &mute) >= 0)
+                pa_source_set_mute(u->source, mute, false);
+        }
     }
 
     if ((data.volume_is_set || data.muted_is_set) && u->source->write_volume)

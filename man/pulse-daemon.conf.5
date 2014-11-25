@@ -4,10 +4,10 @@ pulse-daemon.conf \- PulseAudio daemon configuration file
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/daemon.conf\fB
 
-\fI/etc/pulse/daemon.conf\fB
+\fI/usr/local/etc/pulse/daemon.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a file \fI~/.config/pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
+The PulseAudio sound server reads configuration directives from a file \fI~/.config/pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/usr/local/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -28,7 +28,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBenable-lfe-remixing=\f1 If disabled when upmixing or downmixing ignore LFE channels. When this option is disabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fBno\f1.
 .TP
-\fBuse-pid-file=\f1 Create a PID file in the runtime directory (\fI$XDG_RUNTIMEDIR/pulse/pid\f1). If this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--use-pid-file\f1 command line option takes precedence.
+\fBuse-pid-file=\f1 Create a PID file in the runtime directory (\fI$XDG_RUNTIME_DIR/pulse/pid\f1). If this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--use-pid-file\f1 command line option takes precedence.
 .TP
 \fBcpu-limit=\f1 If disabled do not install the CPU load limiter, even on platforms where it is supported. This option is useful when debugging/profiling PulseAudio to disable disturbing SIGXCPU signals. Takes a boolean argument, defaults to \fBno\f1. The \fB--no-cpu-limit\f1 command line argument takes precedence.
 .TP
@@ -59,9 +59,9 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 \fBscache-idle-time=\f1 Unload autoloaded sample cache entries after being idle for this time in seconds. Defaults to 20. The \fB--scache-idle-time\f1 command line option takes precedence.
 .SH PATHS
 .TP
-\fBdl-search-path=\f1 The path were to look for dynamic shared objects (DSOs/plugins). You may specify more than one path separated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
+\fBdl-search-path=\f1 The path where to look for dynamic shared objects (DSOs/plugins). You may specify more than one path separated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
 .TP
-\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.config/pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
+\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.config/pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/usr/local/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/usr/local/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
 .TP
 \fBload-default-script-file=\f1 Load the default configuration script file as specified in \fBdefault-script-file=\f1. Defaults to \fByes\f1.
 .SH LOGGING
@@ -72,7 +72,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBlog-meta=\f1 With each logged message log the code location the message was generated from. Defaults to \fBno\f1.
 .TP
-\fBlog-time=\f1 With each logged messages log the relative time since startup. Defaults to \fBno\f1.
+\fBlog-time=\f1 With each logged message log the relative time since startup. Defaults to \fBno\f1.
 .TP
 \fBlog-backtrace=\f1 When greater than 0, with each logged message log a code stack trace up the specified number of stack frames. Defaults to \fB0\f1.
 .SH RESOURCE LIMITS
@@ -104,7 +104,7 @@ See \fBgetrlimit(2)\f1 for more information. Set to -1 if PulseAudio shall not t
 .TP
 \fBrlimit-nice\f1 Defaults to 31. Please make sure that the default nice level as configured with \fBnice-level\f1 fits in this resource limit, if \fBhigh-priority\f1 is enabled.
 .TP
-\fBrlimit-rtprio\f1 Defaults to 9. Please make sure that the default real-time priority level as configured with \fBrealtime-priority=\f1 fits in this resource limit, if \fBrealtime-scheduling\f1 is enabled. The JACK client libraries require a real-time prority of 9 by default. 
+\fBrlimit-rtprio\f1 Defaults to 9. Please make sure that the default real-time priority level as configured with \fBrealtime-priority=\f1 fits in this resource limit, if \fBrealtime-scheduling\f1 is enabled. The JACK client libraries require a real-time priority of 9 by default.
 .TP
 \fBrlimit-rttime\f1 Defaults to 1000000.
 .SH DEFAULT DEVICE SETTINGS
@@ -118,9 +118,9 @@ Most drivers try to open the audio device with these settings and then fall back
 .TP
 \fBdefault-channel-map\f1 The default channel map.
 .TP
-\fBalternate-sample-rate\f1 The alternate sample frequency. Sinks and sources will use either the default-rate-rate value or this alternate value, typically 44.1 or 48kHz. Switching between default and alternate values is enabled only when the sinks/sources are suspended. This option is ignored in passthrough mode where the stream rate will be used. If set to the same as the default sample rate, this feature is disabled.
+\fBalternate-sample-rate\f1 The alternate sample frequency. Sinks and sources will use either the default-sample-rate value or this alternate value, typically 44.1 or 48kHz. Switching between default and alternate values is enabled only when the sinks/sources are suspended. This option is ignored in passthrough mode where the stream rate will be used. If set to the same value as the default sample rate, this feature is disabled.
 .SH DEFAULT FRAGMENT SETTINGS
-Some hardware drivers require the hardware playback buffer to be subdivided into several fragments. It is possible to change these buffer metrics for machines with high scheduling latencies. Not all possible values that may be configured here are available in all hardware. The driver will to find the nearest setting supported. Modern drivers that support timer-based scheduling ignore these options.
+Some hardware drivers require the hardware playback buffer to be subdivided into several fragments. It is possible to change these buffer metrics for machines with high scheduling latencies. Not all possible values that may be configured here are available in all hardware. The driver will find the nearest setting supported. Modern drivers that support timer-based scheduling ignore these options.
 .TP
 \fBdefault-fragments=\f1 The default number of fragments. Defaults to 4.
 .TP

@@ -27,6 +27,30 @@ pulseaudio (1:5.0-13ubuntu1) UNRELEASED; urgency=medium
       bindings
     - Add example upstart job to run pulseaudio in system mode
     - Add a build/run autopkgtest for libpulse-dev
+  * New upstream release candidate
+  * Dropped patches, either applied upstream or are now obsolete:
+    - 0001-raop-Don-t-use-incompatible-default-sample-spec-para.patch
+    - 0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
+    - 0003-exit-with-X-session.patch
+    - 0004-dont-start-when-already-running.patch
+    - broken-PA_FLOAT32_SWAP.patch
+    - endianmacros-Fix-PA_MAYBE_INT16_SWAP-macro.patch
+    - kfreebsd_no_lock_and_threads_synchro.patch
+    - misc-cleanups-and-bug-fixes.patch
+    - mix-Fix-mixing-of-S24-samples-stored-as-S32RE.patch
+    - only-autostart-kde-version.patch
+    - rtp-recv-fix-crash-on-empty-UDP-packets-CVE-2014-397.patch
+    - tests-Cleanup-mix-test.patch
+    - tests-Fix-mix-test-on-big-endian-systems.patch
+    - util-Fix-pa_get_binary_name-on-Debian-kFreeBSD.patch
+    - util-Try-finding-out-application-name-using-dladdr.patch
+    - zsh-completion-Fix-completion-for-default-sink-sourc.patch
+  * Refreshed debian/patches/gnu-kfreebsd.patch
+  * Remove all references to start-pulseaudio-kde, it was dropped upstream
+  * Pulse now ships zsh completions, so drop install code, and adjust
+    pulseaudio.install to match
+  * Update shlibs
+  * Update symbols
 
  -- Luke Yelavich <themuso@ubuntu.com>  Wed, 19 Nov 2014 11:21:32 +1100
 
