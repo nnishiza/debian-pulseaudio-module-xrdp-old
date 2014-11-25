@@ -16,7 +16,7 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
  PA_MODULE_LOAD_ONCE(true);
  PA_MODULE_USAGE(
          "only_from_unavailable=<boolean, only switch from unavailable ports> "
-+        "skip_abstract=<yes or no>");
++        "skip_abstract=<yes or no>"
  );
  
  static const char* const valid_modargs[] = {
