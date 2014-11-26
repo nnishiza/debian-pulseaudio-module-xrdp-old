@@ -24,6 +24,7 @@ pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
     pulseaudio.install to match
   * Update shlibs
   * Update symbols
+  * Disable systemd socket activation for now
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 25 Nov 2014 09:39:16 +1100
 
