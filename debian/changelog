@@ -1,4 +1,4 @@
-pulseaudio (1:5.99.1-0ubuntu1) UNRELEASED; urgency=medium
+pulseaudio (1:5.99.1-0ubuntu1~vivid1) UNRELEASED; urgency=medium
 
   * Merge from Debian unstable, remaining changes:
     - epoch (my stupid fault :S)
