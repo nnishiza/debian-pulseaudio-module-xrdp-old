@@ -1,5 +1,6 @@
-pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
+pulseaudio (5.99.1-1) experimental; urgency=medium
 
+  [ Luke Yelavich ]
   * New upstream release candidate
   * Dropped patches, either applied upstream or are now obsolete:
     - 0001-raop-Don-t-use-incompatible-default-sample-spec-para.patch
@@ -26,7 +27,12 @@ pulseaudio (5.99.1-1) UNRELEASED; urgency=medium
   * Update symbols
   * Disable systemd socket activation for now
 
- -- Luke Yelavich <themuso@ubuntu.com>  Tue, 25 Nov 2014 09:39:16 +1100
+  [ Felipe Sateler ]
+  * Install zsh to vendor-completions, site-functions is for the admin
+  * Remove libpulsecommon from symbols file
+  * Trigger a udev reload after install
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 03 Dec 2014 10:14:17 -0300
 
 pulseaudio (5.0-13) unstable; urgency=medium
 
