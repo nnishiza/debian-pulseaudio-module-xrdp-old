@@ -1,5 +1,6 @@
 pulseaudio (1:5.99.1-0ubuntu1~vivid2) UNRELEASED; urgency=medium
 
+  [ Luke Yelavich ]
   * Merge from Debian unstable, remaining changes:
     - epoch (my stupid fault :S)
     - Remove libwebrtc-audio-processing-dev build dep, its in universe
@@ -54,6 +55,9 @@ pulseaudio (1:5.99.1-0ubuntu1~vivid2) UNRELEASED; urgency=medium
   * Refreshed patches, and dropped patches that were either applied upstream
     or are obsolete
   * Disable systemd socket activation for now
+
+  [ Felipe Sateler ]
+  * Bash completion script has moved, add mv_conffile snippet
 
  -- Luke Yelavich <themuso@ubuntu.com>  Wed, 19 Nov 2014 11:21:32 +1100
 

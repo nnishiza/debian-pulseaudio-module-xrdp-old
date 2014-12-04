@@ -1,6 +1,6 @@
 # These are not meant to be executed
 pulseaudio: script-not-executable etc/pulse/*.pa
-pulseaudio: script-not-executable etc/bash_completion.d/pulseaudio-bash-completion.sh
+pulseaudio: script-not-executable etc/bash_completion.d/pulseaudio
 pulseaudio: script-not-executable ./etc/pulse/default.pa
 pulseaudio: description-starts-with-package-name
 pulseaudio: shlib-in-multi-arch-foreign-package usr/lib/libpulsecore-*.so
