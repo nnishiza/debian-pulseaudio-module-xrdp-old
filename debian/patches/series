@@ -1,5 +1,6 @@
 # Debian patches
 gnu-kfreebsd.patch
+disable-srbchannel-test-non-linux.patch
 
 # Ubuntu/Debian specific config/fixes
 0005-dont-load-cork-music-on-phone.patch
