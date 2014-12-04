@@ -1,1 +1,2 @@
 gnu-kfreebsd.patch
+disable-srbchannel-test-non-linux.patch
