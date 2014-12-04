@@ -1,11 +1,11 @@
-pulseaudio (5.99.1-2) UNRELEASED; urgency=medium
+pulseaudio (5.99.1-2) experimental; urgency=medium
 
   * Add patch to disable srbchannel tests when eventfd is not available
   * Bump standards version (no changes)
   * Exclude libpulsecommon from dh_makeshlibs
   * Bash completion script has moved, add mv_conffile snippet
 
- -- Felipe Sateler <fsateler@debian.org>  Wed, 03 Dec 2014 23:56:01 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 04 Dec 2014 00:54:12 -0300
 
 pulseaudio (5.99.1-1) experimental; urgency=medium
 
