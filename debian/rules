@@ -57,7 +57,7 @@ endif
 
 
 DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-$(DEB_UPSTREAM_VERSION)/modules \
-			     --exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pulseaudio/libpulsecommon-$(DEB_UPSTREAM_VERSION).so
+			     --exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pulseaudio
 
 LDFLAGS += -Wl,--no-as-needed
 
