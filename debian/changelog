@@ -1,6 +1,5 @@
-pulseaudio (1:5.99.1-0ubuntu1~vivid3) UNRELEASED; urgency=medium
+pulseaudio (1:5.99.1-2ubuntu1~vivid1) UNRELEASED; urgency=medium
 
-  [ Luke Yelavich ]
   * Merge from Debian unstable, remaining changes:
     - epoch (my stupid fault :S)
     - Remove libwebrtc-audio-processing-dev build dep, its in universe
@@ -28,7 +27,25 @@ pulseaudio (1:5.99.1-0ubuntu1~vivid3) UNRELEASED; urgency=medium
       bindings
     - Add example upstart job to run pulseaudio in system mode
     - Add a build/run autopkgtest for libpulse-dev
+  * Refreshed patches, and dropped patches that were either applied upstream
+    or are obsolete
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 19 Nov 2014 11:21:32 +1100
+
+pulseaudio (5.99.1-2) experimental; urgency=medium
+
+  * Add patch to disable srbchannel tests when eventfd is not available
+  * Bump standards version (no changes)
+  * Exclude libpulsecommon from dh_makeshlibs
+  * Bash completion script has moved, add mv_conffile snippet
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 04 Dec 2014 00:54:12 -0300
+
+pulseaudio (5.99.1-1) experimental; urgency=medium
+
+  [ Luke Yelavich ]
   * New upstream release candidate
+    + Closes: #653320, #758272, #657983
   * Dropped patches, either applied upstream or are now obsolete:
     - 0001-raop-Don-t-use-incompatible-default-sample-spec-para.patch
     - 0002-Use-the-fixed-point-speex-resampler-on-ARM.patch
@@ -52,17 +69,14 @@ pulseaudio (1:5.99.1-0ubuntu1~vivid3) UNRELEASED; urgency=medium
     pulseaudio.install to match
   * Update shlibs
   * Update symbols
-  * Refreshed patches, and dropped patches that were either applied upstream
-    or are obsolete
   * Disable systemd socket activation for now
 
   [ Felipe Sateler ]
-  * Bash completion script has moved, add mv_conffile snippet
-  * Exclude libpulsecommon from dh_makeshlibs
-  * Bump standards version (no changes)
-  * Add patch to disable srbchannel tests when eventfd is not available
+  * Install zsh to vendor-completions, site-functions is for the admin
+  * Remove libpulsecommon from symbols file
+  * Trigger a udev reload after install
 
- -- Luke Yelavich <themuso@ubuntu.com>  Wed, 19 Nov 2014 11:21:32 +1100
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 03 Dec 2014 10:14:17 -0300
 
 pulseaudio (5.0-13) unstable; urgency=medium
 

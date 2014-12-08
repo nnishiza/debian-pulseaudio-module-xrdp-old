@@ -48,7 +48,6 @@ Standards-Version: 3.9.6
 XS-Debian-Vcs-Git: git://anonscm.debian.org/git/pkg-pulseaudio/pulseaudio.git
 XS-Debian-Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-pulseaudio/pulseaudio.git
 XS-Testsuite: autopkgtest
-Vcs-Bzr: http://bazaar.launchpad.net/~ubuntu-audio-dev/pulseaudio/ubuntu
 Homepage: http://www.pulseaudio.org
 
 Package: pulseaudio
