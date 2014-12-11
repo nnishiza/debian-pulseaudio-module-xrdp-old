@@ -46,9 +46,6 @@ if which aplay &>/dev/null ; then
 	include_command aplay -L
 fi
 
-include_command pactl list cards
-include_command pactl list sinks
-include_command pactl list sources
-include_command pactl list modules
+include_command pactl list
 include_command pactl info
 
