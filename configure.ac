@@ -449,6 +449,7 @@ AC_CHECK_HEADERS_ONCE([execinfo.h])
 AC_CHECK_HEADERS_ONCE([langinfo.h])
 AC_CHECK_HEADERS_ONCE([regex.h pcreposix.h])
 
+AM_CONDITIONAL(HAVE_SYS_EVENTFD_H, test "x$ac_cv_header_sys_eventfd_h" = "xyes")
 
 #### Typdefs, structures, etc. ####
 
@@ -1018,20 +1019,22 @@ AS_IF([test "x$enable_bluez4" != "xno" || test "x$enable_bluez5" != "xno"],
     HAVE_SBC=0)
 
 ## BlueZ 4 ##
-AS_IF([test "x$enable_bluez4" != "xno" && test "x$HAVE_DBUS" = "x1" && test "x$HAVE_SBC" = "x1"], HAVE_BLUEZ_4=1)
+AS_IF([test "x$enable_bluez4" != "xno" && test "x$HAVE_DBUS" = "x1" && test "x$HAVE_SBC" = "x1"], HAVE_BLUEZ_4=1,
+      HAVE_BLUEZ_4=0)
 AS_IF([test "x$enable_bluez4" = "xyes" && test "x$HAVE_BLUEZ_4" != "x1"],
     [AC_MSG_ERROR([*** BLUEZ 4 support not found (requires sbc and D-Bus)])])
 AC_SUBST(HAVE_BLUEZ_4)
 AM_CONDITIONAL([HAVE_BLUEZ_4], [test "x$HAVE_BLUEZ_4" = x1])
 
 ## BlueZ 5 ##
-AS_IF([test "x$enable_bluez5" != "xno" && test "x$HAVE_DBUS" = "x1" && test "x$HAVE_SBC" = "x1"], HAVE_BLUEZ_5=1)
+AS_IF([test "x$enable_bluez5" != "xno" && test "x$HAVE_DBUS" = "x1" && test "x$HAVE_SBC" = "x1"], HAVE_BLUEZ_5=1,
+      HAVE_BLUEZ_5=0)
 AS_IF([test "x$enable_bluez5" = "xyes" && test "x$HAVE_BLUEZ_5" != "x1"],
     [AC_MSG_ERROR([*** BLUEZ 5 support not found (requires sbc and D-Bus)])])
 AC_SUBST(HAVE_BLUEZ_5)
 AM_CONDITIONAL([HAVE_BLUEZ_5], [test "x$HAVE_BLUEZ_5" = x1])
 
-AS_IF([test "x$HAVE_BLUEZ_4" = "x1" || test "x$HAVE_BLUEZ_5" = "x1"], HAVE_BLUEZ=1)
+AS_IF([test "x$HAVE_BLUEZ_4" = "x1" || test "x$HAVE_BLUEZ_5" = "x1"], HAVE_BLUEZ=1, HAVE_BLUEZ=0)
 AC_SUBST(HAVE_BLUEZ)
 AM_CONDITIONAL([HAVE_BLUEZ], [test "x$HAVE_BLUEZ" = x1])
 
@@ -1039,17 +1042,19 @@ AM_CONDITIONAL([HAVE_BLUEZ], [test "x$HAVE_BLUEZ" = x1])
 
 AC_ARG_ENABLE([bluez5-ofono-headset],
     AS_HELP_STRING([--disable-bluez5-ofono-headset],[Disable optional ofono headset backend support (Bluez 5)]))
-AS_IF([test "x$HAVE_BLUEZ_5" = "x1" && test "x$enable_bluez5_ofono_headset" != "xno"], HAVE_BLUEZ_5_OFONO_HEADSET=1)
+AS_IF([test "x$HAVE_BLUEZ_5" = "x1" && test "x$enable_bluez5_ofono_headset" != "xno"], HAVE_BLUEZ_5_OFONO_HEADSET=1,
+      HAVE_BLUEZ_5_OFONO_HEADSET=0)
 AC_SUBST(HAVE_BLUEZ_5_OFONO_HEADSET)
 AM_CONDITIONAL([HAVE_BLUEZ_5_OFONO_HEADSET], [test "x$HAVE_BLUEZ_5_OFONO_HEADSET" = x1])
 AS_IF([test "x$HAVE_BLUEZ_5_OFONO_HEADSET" = "x1"], AC_DEFINE([HAVE_BLUEZ_5_OFONO_HEADSET], 1, [Bluez 5 ofono headset backend enabled]))
 
 AC_ARG_ENABLE([bluez5-native-headset],
     AS_HELP_STRING([--disable-bluez5-native-headset],[Disable optional native headset backend support (Bluez 5)]))
-AS_IF([test "x$HAVE_BLUEZ_5" = "x1" && test "x$enable_bluez5_native_headset" != "xno"], HAVE_BLUEZ_5_NATIVE_HEADSET=1)
-AS_IF([test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = "x1"], [PKG_CHECK_MODULES(BLUEZ, [ bluez >= 4.101 ], [],
-    [AC_MSG_ERROR([*** Bluez library not found (required by native headset backend)])])])
-
+AS_IF([test "x$HAVE_BLUEZ_5" = "x1" && test "x$enable_bluez5_native_headset" != "xno"],
+      [PKG_CHECK_MODULES(BLUEZ, [ bluez >= 4.101 ], HAVE_BLUEZ_5_NATIVE_HEADSET=1, HAVE_BLUEZ_5_NATIVE_HEADSET=0)],
+      HAVE_BLUEZ_5_NATIVE_HEADSET=0)
+AS_IF([test "x$enable_bluez5_native_headset" = "xyes" && test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = "x0"],
+      [AC_MSG_ERROR([*** BlueZ 5 native headset backend support not available (requires the libbluetooth headers)])])
 AC_SUBST(HAVE_BLUEZ_5_NATIVE_HEADSET)
 AM_CONDITIONAL([HAVE_BLUEZ_5_NATIVE_HEADSET], [test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = x1])
 AS_IF([test "x$HAVE_BLUEZ_5_NATIVE_HEADSET" = "x1"], AC_DEFINE([HAVE_BLUEZ_5_NATIVE_HEADSET], 1, [Bluez 5 native headset backend enabled]))
@@ -1224,9 +1229,6 @@ AS_IF([test "x$enable_systemd_daemon" != "xno"],
 
 AS_IF([test "x$enable_systemd_daemon" = "xyes" && test "x$HAVE_SYSTEMD_DAEMON" = "x0"],
     [AC_MSG_ERROR([*** Needed systemd daemon support not found])])
-
-AS_IF([test "x$HAVE_SYSTEMD_DAEMON" = "x1"], [ PA_DEFAULT_AUTOSPAWN=no ], [ PA_DEFAULT_AUTOSPAWN=yes ])
-AC_SUBST(PA_DEFAULT_AUTOSPAWN)
 
 AC_SUBST(HAVE_SYSTEMD_DAEMON)
 AM_CONDITIONAL([HAVE_SYSTEMD_DAEMON], [test "x$HAVE_SYSTEMD_DAEMON" = x1])
