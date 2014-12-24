@@ -2,6 +2,8 @@ pulseaudio (5.99.2-1) UNRELEASED; urgency=medium
 
   * New upstream release candidate
   * Remove all patches: applied upstream
+  * Build-Depend on newer libsystemd-dev instead of the older -login and
+    -journal variants
 
  -- Felipe Sateler <fsateler@debian.org>  Tue, 23 Dec 2014 21:16:10 -0300
 
