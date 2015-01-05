@@ -1,4 +1,4 @@
-pulseaudio (1:5.99.1-2ubuntu1~vivid2) UNRELEASED; urgency=medium
+pulseaudio (1:5.99.2-2ubuntu1~vivid1) UNRELEASED; urgency=medium
 
   * Merge from Debian experimental, remaining changes:
     - epoch (my stupid fault :S)
@@ -30,6 +30,31 @@ pulseaudio (1:5.99.1-2ubuntu1~vivid2) UNRELEASED; urgency=medium
     or are obsolete
 
  -- Luke Yelavich <themuso@ubuntu.com>  Wed, 19 Nov 2014 11:21:32 +1100
+
+pulseaudio (5.99.2-2) experimental; urgency=medium
+
+  * Let configure guess if systemd is available. Closes: #773879
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 24 Dec 2014 18:42:30 -0300
+
+pulseaudio (5.99.2-1) experimental; urgency=medium
+
+  * New upstream release candidate
+  * Remove all patches: applied upstream
+  * Build-Depend on newer libsystemd-dev instead of the older -login and
+    -journal variants
+  * Reenable socket activation, as it no longer disables autospawn
+
+ -- Felipe Sateler <fsateler@debian.org>  Tue, 23 Dec 2014 21:28:08 -0300
+
+pulseaudio (5.99.1-3) experimental; urgency=medium
+
+  * Do not fail if udevadm commands fail in postinst. They are provided for
+    convenience only, and will fail when udev is not running
+    (eg, in a chroot or container). Closes: #772212
+  * Simplify bug script: use a single pactl list call
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 10 Dec 2014 23:34:41 -0300
 
 pulseaudio (5.99.1-2) experimental; urgency=medium
 
