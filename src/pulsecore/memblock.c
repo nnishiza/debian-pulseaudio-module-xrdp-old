@@ -15,9 +15,7 @@
   Lesser General Public License for more details
 
   You should have received a copy of the GNU Lesser General Public
-  License along with PulseAudio; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-  USA.
+  License along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 #ifdef HAVE_CONFIG_H
@@ -1088,6 +1086,8 @@ finish:
 pa_memexport* pa_memexport_new(pa_mempool *p, pa_memexport_revoke_cb_t cb, void *userdata) {
     pa_memexport *e;
 
+    static pa_atomic_t export_baseidx = PA_ATOMIC_INIT(0);
+
     pa_assert(p);
     pa_assert(cb);
 
@@ -1106,8 +1106,7 @@ pa_memexport* pa_memexport_new(pa_mempool *p, pa_memexport_revoke_cb_t cb, void 
     pa_mutex_lock(p->mutex);
 
     PA_LLIST_PREPEND(pa_memexport, p->exports, e);
-    e->baseidx = p->export_baseidx;
-    p->export_baseidx += PA_MEMEXPORT_SLOTS_MAX;
+    e->baseidx = (uint32_t) pa_atomic_add(&export_baseidx, PA_MEMEXPORT_SLOTS_MAX);
 
     pa_mutex_unlock(p->mutex);
     return e;

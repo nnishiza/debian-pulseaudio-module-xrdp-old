@@ -1,34 +1,24 @@
-# Swedish translation for pulseaudio.
-# Copyright © 2008-2014 Free Software Foundation, Inc.
-# This file is distributed under the same license as the pulseaudio package.
-# Daniel Nylander <po@danielnylander.se>, 2008, 2012.
-# Josef Andersson <josef.andersson@fripost.org>, 2014.
+# Turkish translation for PulseAudio.
+# Copyright (C) 2014 PulseAudio's COPYRIGHT HOLDER
+# This file is distributed under the same license as the PulseAudio package.
+# Necdet Yücel <necdetyucel@gmail.com>, 2014.
+# Kaan Özdinçer <kaanozdincer@gmail.com>, 2014.
 #
-#
-# Termer:
-# input/output: ingång/utgång (det handlar om ljud)
-# latency: latens
-# delay: fördröjning
-# boost: öka
-# gain: förstärkning
-# channel map: kanalmappning
-# passthrough: genomströmning
-# och en hel del termer som inte översätts inom ljuddomänen, ex. surround.
 msgid ""
 msgstr ""
-"Project-Id-Version: pulseaudio\n"
-"Report-Msgid-Bugs-To: https://bugs.freedesktop.org/enter_bug.cgi?"
-"product=PulseAudio&keywords=I18N+L10N&component=misc\n"
-"POT-Creation-Date: 2014-12-18 11:29+0000\n"
-"PO-Revision-Date: 2014-12-15 11:38+0100\n"
-"Last-Translator: Josef Andersson <josef.andersson@fripost.org>\n"
-"Language-Team: Svenska <tp-sv@listor.tp-sv.se>\n"
-"Language: sv\n"
+"Project-Id-Version: PulseAudio master\n"
+"Report-Msgid-Bugs-To: https://bugs.freedesktop.org/enter_bug.cgi?product=Puls"
+"eAudio&keywords=I18N+L10N&component=misc\n"
+"POT-Creation-Date: 2014-11-10 11:20+0000\n"
+"PO-Revision-Date: 2015-01-10 20:00+0000\n"
+"Last-Translator: Kaan Özdinçer <kaanozdincer@gmail.com>\n"
+"Language-Team: Turkish <gnome-turk@gnome.org>\n"
+"Language: tr\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
-"X-Generator: Gtranslator 2.91.6\n"
+"Plural-Forms: nplurals=1; plural=(n > 1);\n"
+"X-Generator: Pootle 2.5.1.1\n"
 
 #: ../src/daemon/cmdline.c:113
 #, c-format
@@ -101,434 +91,445 @@ msgid ""
 "\n"
 "  -n                                    Don't load default script file\n"
 msgstr ""
-"%s [flaggor]\n"
+"%s [seçenekler]\n"
 "\n"
-"KOMMANDON:\n"
-"  -h, --help                            Visa denna hjälp\n"
-"      --version                         Visa version\n"
-"      --dump-conf                       Dumpa standardkonfiguration\n"
-"      --dump-modules                    Dumpa lista över tillgängliga "
-"moduler\n"
-"      --dump-resample-methods           Dumpa tillgängliga "
-"omsamplingsmetoder\n"
-"      --cleanup-shm                     Städa upp utgångna delade "
-"minnessegment\n"
-"      --start                           Starta demonen om den inte redan "
-"körs\n"
-"  -k  --kill                            Döda en demon\n"
-"      --check                           Kontrollera om det finns någon "
-"körande demon (returnerar bara returkod)\n"
+"KOMUTLAR:\n"
+"  -h, --help                            Bu yardımı gösterir\n"
+"      --version                         Versiyon gösterir\n"
+"      --dump-conf                       Öntanımlı yapılandırmayı döker\n"
+"      --dump-modules                    Mevcut modüllerin listesini döker\n"
+"      --dump-resample-methods           Kullanılabilir yeniden örnekleme "
+"yöntemlerini döker\n"
+"      --cleanup-shm                     Eski paylaşımlı bellek segmentlerini "
+"temizler\n"
+"      --start                           Eğer çalışmıyorsa artalan işlemleri "
+"başlatır\n"
+"  -k  --kill                             Çalışan bir artalan işlemi "
+"sonlandırır\n"
+"      --check                         Çalışan bir artalan işlemi kontrol "
+"eder (sadece çıkış kodu döner)\n"
 "\n"
-"FLAGGOR:\n"
-"      --system[=BOOL]                   Kör som en systemomfattande instans\n"
-"  -D, --daemonize[=BOOL]                Demonisera efter start\n"
-"      --fail[=BOOL]                     Avsluta om start misslyckas\n"
-"      --high-priority[=BOOL]            Försök att sätta en hög nice-nivå\n"
-"                                        (bara tillgängligt som root, när "
-"SUID eller\n"
-"                                        med förhöjd RLIMIT_NICE)\n"
-"      --realtime[=BOOL]                 Försök att aktivera "
-"realtidsschemaläggning\n"
-"                                        (bara tillgängligt som root, när "
-"SUID eller\n"
-"                                        med förhöjd RLIMIT_RTPRIO)\n"
-"      --disallow-module-loading[=BOOL]  Förbjud modulanvändning av "
-"användarbegärd\n"
-"                                        inläsning/urläsning efter start\n"
-"      --disallow-exit[=BOOL]            Förbjud användarbegärt avslut\n"
-"      --exit-idle-time=SECS             Avsluta demonen vid inaktivitet och "
-"efter\n"
-"                                        denna tid\n"
-"      --scache-idle-time=SECS           Inaktivera autoinlästa samplingar "
-"vid inaktivitet och\n"
-"                                        efter denna tid\n"
-"      --log-level[=LEVEL]               Öka eller bestäm informativa nivån\n"
-"  -v  --verbose                         Öka informativa nivån\n"
-"      --log-target={auto,syslog,stderr,file:PATH,newfile:PATH}\n"
-"                                        Ange mål för loggen\n"
-"      --log-meta[=BOOL]                 Inkludera kodplats i "
-"loggmeddelanden\n"
-"      --log-time[=BOOL]                 Inkludera tidsstämpel i "
-"loggmeddelanden\n"
-"      --log-backtrace=FRAMES            Inkluderar bakåtspårning i "
-"loggmeddelanden\n"
-"  -p, --dl-search-path=PATH             Ange sökvägen för dynamiskt delade\n"
-"                                        objekt (insticksmoduler)\n"
-"      --resample-method=METHOD          Använd den angivna "
-"omsamplingsmetoden\n"
-"                                        (Se --dump-resample-methods för\n"
-"                                        möjliga värden)\n"
-"      --use-pid-file[=BOOL]             Skapa en PID-fil\n"
-"      --no-cpu-limit[=BOOL]             Installera inte en CPU-"
-"belastningsbegränsare\n"
-"                                        på plattformar som stöder det.\n"
-"      --disable-shm[=BOOL]              Inaktivera stöd för delat minne.\n"
+"SEÇENEKLER:\n"
+"      --system[=BOOL]                   Sistem çapında örnek olarak "
+"çalıştırır\n"
+"  -D, --daemonize[=BOOL]                Başladıktan sonra bir artalan işlem "
+"gibi çalıştırır\n"
+"      --fail[=BOOL]                     Başlangıç başarısız olduğunda çıkar\n"
+"      --high-priority[=BOOL]            Yüksek seviye ayarlamayı dener\n"
+"                                        (SUID ya da yüksek RLIMIT_NICE ile\n"
+"                                        sadece root olarak kullanılabilir)\n"
+"      --realtime[=BOOL]                 Gerçek zamanlı zamanlamayı "
+"etkinleştirmeyi dener\n"
+"                                        (SUID ya da yüksek RLIMIT_RTPRIO "
+"ile\n"
+"                                        sadece root olarak kullanılabilir)\n"
+"      --disallow-module-loading[=BOOL]  Başlangıçtan sonra kullanıcının\n"
+"                                        yükleme/kaldırma istediği modüllere "
+"izin vermez\n"
+"      --disallow-exit[=BOOL]            Kullanıcının çıkış isteğine izin "
+"vermez\n"
+"      --exit-idle-time=SECS             Boştayken ve  zamanı geçtiğinde\n"
+"                                        artalan işlemi sonlandırır\n"
+"      --scache-idle-time=SECS           Boştayken ve zamanı geçtiğinde "
+"otomatik\n"
+"                                        yüklenmiş örnekleri kaldırır\n"
+"      --log-level[=LEVEL]               Ayrıntı seviyesini ayarlar ya da "
+"artırır\n"
+"  -v  --verbose                         Ayrıntı seviyesini artırır\n"
+"      --log-target={auto,syslog,stderr,dosya:PATH,yenidosya:PATH}\n"
+"                                        Logların bulunacağı hedefi yolu "
+"belirtir\n"
+"      --log-meta[=BOOL]                 Log iletilerinde kod konumları "
+"bulunur\n"
+"      --log-time[=BOOL]                  Log iletilerinde zaman damgası "
+"bulunur\n"
+"      --log-backtrace=FRAMES            Log iletilerinde bir geri izleme "
+"bulunur\n"
+"  -p, --dl-search-path=PATH             Dinamik paylaşımlı nesneler "
+"(eklentiler)\n"
+"                                        için arama yolu ayarlar\n"
+"      --resample-method=METHOD          Belirtilen yeniden "
+"örneklendirme                                          yöntemini kullanır\n"
+"                                        (Olası değerler için şuna bakın\n"
+"                                         --dump-resample-methods)\n"
+"      --use-pid-file[=BOOL]             Bir PID dosyası oluştur\n"
+"      --no-cpu-limit[=BOOL]             Desteklendiği platformlarda\n"
+"                                        CPU yükü sınırlayıcı kurmaz.\n"
+"      --disable-shm[=BOOL]              Paylaşımlı bellek desteğini devre "
+"dışı bırakır.\n"
 "\n"
-"STARTSKRIPT:\n"
-"  -L, --load=”MODUL ARGUMENT”           Läs in den angivna insticksmodulen "
-"med\n"
-"                                        det specificerade argumentet\n"
-"  -F, --file=FILNAMN                    Kör det angivna skriptet\n"
-"  -C                                    Öppna en kommandorad på körande TTY\n"
-"                                        efter start\n"
+"BAŞLATMA KOMUT DOSYALARI:\n"
+"  -L, --load=\"MODÜL DEĞİŞKENLERİ\"         Belirtilen değişkenler ile\n"
+"                                        belirtilen eklenti modüllerini "
+"yükler.\n"
+"  -F, --file=DOSYAADI                   Belirtilen betiği çalıştırır\n"
+"  -C                                  Başlangıçtan sonra çalışan TTY "
+"üzerinde\n"
+"                                        bir komut satırı açar\n"
 "\n"
-"  -n                                    Läs inte in standardskriptfil\n"
+"  -n                                    Öntanımlı betik dosyasını yüklemez\n"
 
 #: ../src/daemon/cmdline.c:245
 msgid "--daemonize expects boolean argument"
-msgstr "--daemonize förväntar sig ett booleskt argument"
+msgstr "--daemonize boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:253
 msgid "--fail expects boolean argument"
-msgstr "--fail förväntar sig ett booleskt argument"
+msgstr "--fail boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:264
 msgid ""
 "--log-level expects log level argument (either numeric in range 0..4 or one "
 "of debug, info, notice, warn, error)."
 msgstr ""
-"--log-level förväntar sig loggnivåargument (antagligen numeriska i "
-"intervallet 0..4 eller en av debug, info, notice, warn, error)."
+"--log-level log seviyesi değişkeni bekler (ya 0..4 aralığında sayısal değer "
+"ya da debug, info, notice, warn, error değişkenlerinden birini)."
 
 #: ../src/daemon/cmdline.c:276
 msgid "--high-priority expects boolean argument"
-msgstr "--high-priority förväntar sig ett booleskt argument"
+msgstr "--high-priority boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:284
 msgid "--realtime expects boolean argument"
-msgstr "--realtime förväntar sig ett booleskt argument"
+msgstr "--realtime boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:292
 msgid "--disallow-module-loading expects boolean argument"
-msgstr "--disallow-module-loading förväntar sig ett booleskt argument"
+msgstr "--disallow-module-loading boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:300
 msgid "--disallow-exit expects boolean argument"
-msgstr "--disallow-exit förväntar sig ett booleskt argument"
+msgstr "--disallow-exit boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:308
 msgid "--use-pid-file expects boolean argument"
-msgstr "--use-pid-file förväntar sig ett booleskt argument"
+msgstr "--use-pid-file boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:327
 msgid ""
 "Invalid log target: use either 'syslog', 'journal','stderr' or 'auto' or a "
 "valid file name 'file:<path>', 'newfile:<path>'."
 msgstr ""
-"Ogiltigt mål för loggen: använd ”syslog”, ”journal”, ”stderr”, ”auto” eller "
-"ett giltigt filnamn ”file:<sökväg>“, ”newfile:<sökväg>”."
+"Geçersiz log hedefi: ya 'syslog', 'journal', 'stderr', 'auto' ya da geçerli "
+"bir dosya adı 'dosya: <path>','yenidosya:<path>' kullan."
 
 #: ../src/daemon/cmdline.c:329
 msgid ""
 "Invalid log target: use either 'syslog', 'stderr' or 'auto' or a valid file "
 "name 'file:<path>', 'newfile:<path>'."
 msgstr ""
-"Ogiltigt mål för loggen: använd ”syslog”, ”journal”, ”stderr”, ”auto” eller "
-"ett giltigt filnamn ”file:<sökväg>“, ”newfile:<sökväg>”."
+"Geçersiz log hedefi: ya 'syslog', 'stderr', 'auto' ya da geçerli bir dosya "
+"adı 'dosya: <path>','yenidosya:<path>' kullan."
 
 #: ../src/daemon/cmdline.c:337
 msgid "--log-time expects boolean argument"
-msgstr "--log-time förväntar sig ett booleskt argument"
+msgstr "--log-time boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:345
 msgid "--log-meta expects boolean argument"
-msgstr "--log-meta förväntar sig ett booleskt argument"
+msgstr "--log-meta boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:365
 #, c-format
 msgid "Invalid resample method '%s'."
-msgstr "Ogiltig omsamplingsmetod ”%s”."
+msgstr "Geçersiz yeniden örneklendirme yöntemi '%s'."
 
 #: ../src/daemon/cmdline.c:372
 msgid "--system expects boolean argument"
-msgstr "--system förväntar sig ett booleskt argument"
+msgstr "--system boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:380
 msgid "--no-cpu-limit expects boolean argument"
-msgstr "--no-cpu-limit förväntar sig ett booleskt argument"
+msgstr "--no-cpu-limit boolean değişken bekler"
 
 #: ../src/daemon/cmdline.c:388
 msgid "--disable-shm expects boolean argument"
-msgstr "--disable-shm förväntar sig ett booleskt argument"
+msgstr "--disable-shm boolean değişken bekler"
 
 #: ../src/daemon/daemon-conf.c:260
 #, c-format
 msgid "[%s:%u] Invalid log target '%s'."
-msgstr "[%s:%u] Ogiltigt mål för loggen ”%s”."
+msgstr "[%s:%u] Geçersiz log hedefi '%s'."
 
 #: ../src/daemon/daemon-conf.c:275
 #, c-format
 msgid "[%s:%u] Invalid log level '%s'."
-msgstr "[%s:%u] Ogiltig loggnivå ”%s”."
+msgstr "[%s:%u] Geçersiz log seviyesi '%s'."
 
 #: ../src/daemon/daemon-conf.c:290
 #, c-format
 msgid "[%s:%u] Invalid resample method '%s'."
-msgstr "[%s:%u] Ogiltig omsamplingsmetod ”%s”."
+msgstr "[%s:%u] Geçersiz yeniden örneklendirme yöntemi '%s'."
 
 #: ../src/daemon/daemon-conf.c:312
 #, c-format
 msgid "[%s:%u] Invalid rlimit '%s'."
-msgstr "[%s:%u] Ogiltig rlimit ”%s”."
+msgstr "[%s:%u] Geçersiz rlimit '%s'."
 
 #: ../src/daemon/daemon-conf.c:332
 #, c-format
 msgid "[%s:%u] Invalid sample format '%s'."
-msgstr "[%s:%u] Ogiltigt samplingsformat ”%s”."
+msgstr "[%s:%u] Geçersiz örnekleme biçimi '%s'."
 
 #: ../src/daemon/daemon-conf.c:349 ../src/daemon/daemon-conf.c:366
 #, c-format
 msgid "[%s:%u] Invalid sample rate '%s'."
-msgstr "[%s:%u] Ogiltig samplingsfrekvens ”%s”."
+msgstr "[%s:%u] Geçersiz örnekleme oranı '%s'."
 
 #: ../src/daemon/daemon-conf.c:389
 #, c-format
 msgid "[%s:%u] Invalid sample channels '%s'."
-msgstr "[%s:%u] Ogiltiga samplingskanaler ”%s”."
+msgstr "[%s:%u] Geçersiz örnekleme kanalları '%s'."
 
 #: ../src/daemon/daemon-conf.c:406
 #, c-format
 msgid "[%s:%u] Invalid channel map '%s'."
-msgstr "[%s:%u] Ogiltig kanalmappning ”%s”."
+msgstr "[%s:%u] Geçersiz kanal adresleme '%s'."
 
 #: ../src/daemon/daemon-conf.c:423
 #, c-format
 msgid "[%s:%u] Invalid number of fragments '%s'."
-msgstr "[%s:%u] Ogiltigt antal fragment ”%s”."
+msgstr "[%s:%u] Geçersiz bölümlenme sayısı '%s'."
 
 #: ../src/daemon/daemon-conf.c:440
 #, c-format
 msgid "[%s:%u] Invalid fragment size '%s'."
-msgstr "[%s:%u] Ogiltig fragmentstorlek ”%s”."
+msgstr "[%s:%u] Geçersiz bölümlenme boyutu '%s'."
 
 #: ../src/daemon/daemon-conf.c:457
 #, c-format
 msgid "[%s:%u] Invalid nice level '%s'."
-msgstr "[%s:%u] Ogiltig nice-nivå ”%s”."
+msgstr "[%s:%u] Geçersiz nice seviyesi '%s'."
 
 #: ../src/daemon/daemon-conf.c:500
 #, c-format
 msgid "[%s:%u] Invalid server type '%s'."
-msgstr "[%s:%u] Ogiltig servertyp ”%s”."
+msgstr "[%s:%u] Geçersiz sunucu türü '%s'."
 
 #: ../src/daemon/daemon-conf.c:613
 #, c-format
 msgid "Failed to open configuration file: %s"
-msgstr "Misslyckades med att öppna konfigurationsfil: %s"
+msgstr "Yapılandırma dosyası açılamadı: %s"
 
 #: ../src/daemon/daemon-conf.c:629
 msgid ""
 "The specified default channel map has a different number of channels than "
 "the specified default number of channels."
 msgstr ""
-"Den angivna standardkanalmappningen har ett annat antal kanaler än den "
-"angivna standardkanalmappningens antal."
+"Belirtilen öntanımlı kanal adresleme belirtilmiş öntanımlı kanal sayısından "
+"farklı sayıda kanala sahiptir."
 
 #: ../src/daemon/daemon-conf.c:716
 #, c-format
 msgid "### Read from configuration file: %s ###\n"
-msgstr "### Läs från konfigurationsfilen: %s ###\n"
+msgstr "### Yapılandırma dosyasından oku: %s ###\n"
 
 #: ../src/daemon/dumpmodules.c:59
 #, c-format
 msgid "Name: %s\n"
-msgstr "Namn: %s\n"
+msgstr "Ad: %s\n"
 
 #: ../src/daemon/dumpmodules.c:62
 #, c-format
 msgid "No module information available\n"
-msgstr "Ingen modulinformation tillgänglig\n"
+msgstr "Hiçbir modül bilgisi bulunamadı\n"
 
 #: ../src/daemon/dumpmodules.c:65
 #, c-format
 msgid "Version: %s\n"
-msgstr "Version: %s\n"
+msgstr "Sürüm: %s\n"
 
 #: ../src/daemon/dumpmodules.c:67
 #, c-format
 msgid "Description: %s\n"
-msgstr "Beskrivning: %s\n"
+msgstr "Açıklama: %s\n"
 
 #: ../src/daemon/dumpmodules.c:69
 #, c-format
 msgid "Author: %s\n"
-msgstr "Upphovsman: %s\n"
+msgstr "Yazar: %s\n"
 
 #: ../src/daemon/dumpmodules.c:71
 #, c-format
 msgid "Usage: %s\n"
-msgstr "Användning: %s\n"
+msgstr "Kullanım: %s\n"
 
 #: ../src/daemon/dumpmodules.c:72
 #, c-format
 msgid "Load Once: %s\n"
-msgstr "Läs in en gång: %s\n"
+msgstr "Bir kez Yükle: %s\n"
 
 #: ../src/daemon/dumpmodules.c:74
 #, c-format
 msgid "DEPRECATION WARNING: %s\n"
-msgstr "FÖRÅLDRADVARNING: %s\n"
+msgstr "UYGUNSUZLUK UYARISI: %s\n"
 
 #: ../src/daemon/dumpmodules.c:78
 #, c-format
 msgid "Path: %s\n"
-msgstr "Sökväg: %s\n"
+msgstr "Yol: %s\n"
 
 #: ../src/daemon/ltdl-bind-now.c:77
 #, c-format
 msgid "Failed to open module %s: %s"
-msgstr "Misslyckades med att öppna modulen %s: %s"
+msgstr "'%s' modülü açılamadı: %s"
 
 #: ../src/daemon/ltdl-bind-now.c:128
 msgid "Failed to find original lt_dlopen loader."
-msgstr "Misslyckades med att hitta original-lt_dlopen loader."
+msgstr "Orjinal lt_dlopen yükleyicisi bulunamadı."
 
 #: ../src/daemon/ltdl-bind-now.c:133
 msgid "Failed to allocate new dl loader."
-msgstr "Misslyckades med att allokera en ny dl loader."
+msgstr "Yeni dl yükleyici ayırma işlemi başarısız oldu."
 
 #: ../src/daemon/ltdl-bind-now.c:146
 msgid "Failed to add bind-now-loader."
-msgstr "Misslyckades med att lägga till bind-now-loader."
+msgstr "Bind-now-loader eklenemedi."
 
 #: ../src/daemon/main.c:162
 #, c-format
 msgid "Failed to find user '%s'."
-msgstr "Misslyckades med att hitta användaren ”%s”."
+msgstr "Kullanıcı '%s' bulunamadı."
 
 #: ../src/daemon/main.c:167
 #, c-format
 msgid "Failed to find group '%s'."
-msgstr "Misslyckades med att hitta gruppen ”%s”."
+msgstr "Grup '%s' bulunamadı."
 
 #: ../src/daemon/main.c:176
 #, c-format
 msgid "GID of user '%s' and of group '%s' don't match."
-msgstr "GID för användare ”%s” och för grupp ”%s” stämmer inte överens."
+msgstr "'%s' kullanıcısı ve '%s' grubunun GID eşleşmiyor."
 
 #: ../src/daemon/main.c:181
 #, c-format
 msgid "Home directory of user '%s' is not '%s', ignoring."
-msgstr "Hemkatalogen för användaren ”%s” är inte ”%s”, ignorerar."
+msgstr "Kullanıcı '%s''nin ev dizini '%s' değildir, yoksayılıyor."
 
 #: ../src/daemon/main.c:184 ../src/daemon/main.c:189
 #, c-format
 msgid "Failed to create '%s': %s"
-msgstr "Misslyckades med att skapa ”%s”: %s"
+msgstr "'%s' oluşturulamadı: %s"
 
 #: ../src/daemon/main.c:196
 #, c-format
 msgid "Failed to change group list: %s"
-msgstr "Misslyckades med att ändra grupplista: %s"
+msgstr "Grup listesi değiştirilemedi: %s"
 
 #: ../src/daemon/main.c:212
 #, c-format
 msgid "Failed to change GID: %s"
-msgstr "Misslyckades med att ändra GID: %s"
+msgstr "GID değiştirilemedi: %s"
 
 #: ../src/daemon/main.c:228
 #, c-format
 msgid "Failed to change UID: %s"
-msgstr "Misslyckades med att ändra UID: %s"
+msgstr "UID değiştirilemedi: %s"
 
 #: ../src/daemon/main.c:257
 msgid "System wide mode unsupported on this platform."
-msgstr "Systemomfattande läge stöds inte på denna plattform."
+msgstr "Sistem geneli kipi bu platformda desteklenmiyor."
 
 #: ../src/daemon/main.c:486
 msgid "Failed to parse command line."
-msgstr "Misslyckades med att tolka kommandoraden."
+msgstr "Komut satırı çözümlenemedi."
 
 #: ../src/daemon/main.c:525
 msgid ""
 "System mode refused for non-root user. Only starting the D-Bus server lookup "
 "service."
 msgstr ""
-"Systemläge vägrades för icke-rootanvändare. Startar bara D-Bus-"
-"serveruppslagningstjänsten."
+"Sistem kipi root olmayan kullanıcıyı reddetti. Sadece D-Bus sunucu arama "
+"servisi başlatıyor."
 
 #: ../src/daemon/main.c:624
 #, c-format
 msgid "Failed to kill daemon: %s"
-msgstr "Misslyckades med att döda demonen: %s"
+msgstr "Artalan işlem durdurulamadı: %s"
 
 #: ../src/daemon/main.c:653
 msgid ""
 "This program is not intended to be run as root (unless --system is "
 "specified)."
 msgstr ""
-"Detta program är inte tänkt att köras som root (såvida inte --system har "
-"angivits)."
+"Bu programın root kullanıcı ile çalıştırılması amaçlanmamıştır (--system "
+"belirtilmediyse)."
 
 #: ../src/daemon/main.c:656
 msgid "Root privileges required."
-msgstr "Root-behörighet krävs."
+msgstr "Root hakları gereklidir."
 
 #: ../src/daemon/main.c:663
 msgid "--start not supported for system instances."
-msgstr "--start stöds inte för systeminstanser."
+msgstr "--start sistem örnekleri için desteklenmiyor."
 
 #: ../src/daemon/main.c:703
 #, c-format
 msgid "User-configured server at %s, refusing to start/autospawn."
-msgstr "Användaranpassad server på %s, vägrar starta/autostarta."
+msgstr ""
+"Kullanıcı tarafından yapılandırılmış şuradaki sunucu: %s, başlamayı/otomatik "
+"başlamayı reddediyor."
 
 #: ../src/daemon/main.c:709
 #, c-format
 msgid ""
 "User-configured server at %s, which appears to be local. Probing deeper."
 msgstr ""
-"Användaranpassad server på %s, som ser ut att vara lokal. Undersöker djupare."
+"Kullanıcı tarafından yapılandırılmış, yerel olarak görülen şuradaki sunucu: %"
+"s. "
 
 #: ../src/daemon/main.c:714
 msgid "Running in system mode, but --disallow-exit not set!"
-msgstr "Kör i systemläge, men --disallow-exit är inte angett!"
+msgstr "Sistem kipinde çalıştırılıyor fakat --disallow-exit ayarlı değil!"
 
 #: ../src/daemon/main.c:717
 msgid "Running in system mode, but --disallow-module-loading not set!"
-msgstr "Kör i systemläge, men --disallow-module-loading är inte angett!"
+msgstr ""
+"Sistem kipinde çalıştırılıyor fakat --disallow-module-loading ayarlı değil!"
 
 #: ../src/daemon/main.c:720
 msgid "Running in system mode, forcibly disabling SHM mode!"
-msgstr "Kör i systemläge, tvingar fram inaktivering av SHM-läge!"
+msgstr "Sistem kipinde çalıştırılıyor, SHM kipi zorla devre dışı bırakılıyor!"
 
 #: ../src/daemon/main.c:725
 msgid "Running in system mode, forcibly disabling exit idle time!"
-msgstr "Kör i systemläge, tvingar fram avslut vid inaktivitet!"
+msgstr ""
+"Sistem kipinde çalıştırılıyor, boşta kalma süresi çıkışı zorla devre dışı "
+"bırakılıyor!"
 
 #: ../src/daemon/main.c:758
 msgid "Failed to acquire stdio."
-msgstr "Misslyckades med att få stdio."
+msgstr "Stdio alınamadı."
 
 #: ../src/daemon/main.c:764 ../src/daemon/main.c:835
 #, c-format
 msgid "pipe() failed: %s"
-msgstr "pipe() misslyckades: %s"
+msgstr "pipe() başarısız oldu: %s"
 
 #: ../src/daemon/main.c:769 ../src/daemon/main.c:840
 #, c-format
 msgid "fork() failed: %s"
-msgstr "fork() misslyckades: %s"
+msgstr "fork() başarısız oldu: %s"
 
 #: ../src/daemon/main.c:784 ../src/daemon/main.c:855 ../src/utils/pacat.c:569
 #, c-format
 msgid "read() failed: %s"
-msgstr "read() misslyckades: %s"
+msgstr "read() başarısız oldu: %s"
 
 #: ../src/daemon/main.c:790
 msgid "Daemon startup failed."
-msgstr "Demonstart misslyckades."
+msgstr "Artalan işlemleri başlatma başarısız oldu."
 
 #: ../src/daemon/main.c:823
 #, c-format
 msgid "setsid() failed: %s"
-msgstr "setsid() misslyckades: %s"
+msgstr "setsid() başarısız oldu: %s"
 
-#: ../src/daemon/main.c:950
+#: ../src/daemon/main.c:946
 msgid "Failed to get machine ID"
-msgstr "Misslyckades med att hämta maskin-ID"
+msgstr "Makine kimliği alınamadı"
 
-#: ../src/daemon/main.c:976
+#: ../src/daemon/main.c:972
 msgid ""
 "OK, so you are running PA in system mode. Please note that you most likely "
 "shouldn't be doing that.\n"
@@ -537,55 +538,56 @@ msgid ""
 "Please read http://pulseaudio.org/wiki/WhatIsWrongWithSystemMode for an "
 "explanation why system mode is usually a bad idea."
 msgstr ""
-"Ok, du kör PA i systemläge. Antagligen borde du inte göra detta.\n"
-"Om du ändå väljer att göra det är det ditt fel om saker inte fungerar som "
-"förväntat.\n"
-"Läs http://pulseaudio.org/wiki/WhatIsWrongWithSystemMode för en förklaring "
-"till varför systemläge är en dålig idé."
+"TAMAM, sistem kipinde PA çalıştırıyorsunuz. Lütfen bunu yapmamanız "
+"gerektiğini aklınızda bulundurun.\n"
+"Eğer bunu yine de yaparsanız, bir şeyler beklenmedik bir şekilde çalışırsa o "
+"zaman bu sizin suçunuzdur.\n"
+"Lütfen sistem kipinin neden genellikle kötü bir fikir olduğunun açıklamasını "
+"http://pulseaudio.org/wiki/WhatIsWrongWithSystemMode adresinden okuyunuz."
 
-#: ../src/daemon/main.c:993
+#: ../src/daemon/main.c:989
 msgid "pa_pid_file_create() failed."
-msgstr "pa_pid_file_create() misslyckades."
+msgstr "pa_pid_file_create() başarısız oldu."
 
-#: ../src/daemon/main.c:1023
+#: ../src/daemon/main.c:1019
 msgid "pa_core_new() failed."
-msgstr "pa_core_new() misslyckades."
+msgstr "pa_core_new() başarısız oldu."
 
-#: ../src/daemon/main.c:1090
+#: ../src/daemon/main.c:1086
 msgid "Failed to initialize daemon."
-msgstr "Misslyckades med att initiera demon."
+msgstr "Artalan işlem başlatılamadı."
 
-#: ../src/daemon/main.c:1095
+#: ../src/daemon/main.c:1091
 msgid "Daemon startup without any loaded modules, refusing to work."
-msgstr "Demonen startade utan inlästa moduler, fungerar inte."
+msgstr "Hiç yüklü modül olmadan artalan işlemlerin çalışması reddediliyor."
 
 #: ../src/daemon/pulseaudio.desktop.in.h:1
 msgid "PulseAudio Sound System"
-msgstr "PulseAudio ljudsystem"
+msgstr "PulseAudio Ses Sistemi"
 
 #: ../src/daemon/pulseaudio.desktop.in.h:2
 msgid "Start the PulseAudio Sound System"
-msgstr "Starta ljudsystemet PulseAudio"
+msgstr "PulseAudio Ses Sistemini Başlat"
 
 #: ../src/modules/alsa/alsa-mixer.c:2293
 msgid "Input"
-msgstr "Ingång"
+msgstr "Giriş"
 
 #: ../src/modules/alsa/alsa-mixer.c:2294
 msgid "Docking Station Input"
-msgstr "Ingång för dockningsstation"
+msgstr "Yerleştirme İstasyonu Girişi"
 
 #: ../src/modules/alsa/alsa-mixer.c:2295
 msgid "Docking Station Microphone"
-msgstr "Mikrofon för dockningsstation"
+msgstr "Yerleştirme İstasyonu Mikrofonu"
 
 #: ../src/modules/alsa/alsa-mixer.c:2296
 msgid "Docking Station Line In"
-msgstr "Linje in för dockningsstation"
+msgstr "Yerleştirme İstasyonu Hat Girişi"
 
 #: ../src/modules/alsa/alsa-mixer.c:2297 ../src/modules/alsa/alsa-mixer.c:2382
 msgid "Line In"
-msgstr "Linje in"
+msgstr "Hat girişi"
 
 #: ../src/modules/alsa/alsa-mixer.c:2298 ../src/modules/alsa/alsa-mixer.c:2376
 #: ../src/modules/bluetooth/module-bluez4-device.c:2104
@@ -595,230 +597,230 @@ msgstr "Mikrofon"
 
 #: ../src/modules/alsa/alsa-mixer.c:2299 ../src/modules/alsa/alsa-mixer.c:2377
 msgid "Front Microphone"
-msgstr "Frontmikrofon"
+msgstr "Ön Mikrofon"
 
 #: ../src/modules/alsa/alsa-mixer.c:2300 ../src/modules/alsa/alsa-mixer.c:2378
 msgid "Rear Microphone"
-msgstr "Bakre mikrofon"
+msgstr "Arka Mikrofon"
 
 #: ../src/modules/alsa/alsa-mixer.c:2301
 msgid "External Microphone"
-msgstr "Extern mikrofon"
+msgstr "Harici Mikrofon"
 
 #: ../src/modules/alsa/alsa-mixer.c:2302 ../src/modules/alsa/alsa-mixer.c:2380
 msgid "Internal Microphone"
-msgstr "Intern mikrofon"
+msgstr "Dahili Mikrofon"
 
 #: ../src/modules/alsa/alsa-mixer.c:2303 ../src/modules/alsa/alsa-mixer.c:2383
 msgid "Radio"
-msgstr "Radio"
+msgstr "Radyo"
 
 #: ../src/modules/alsa/alsa-mixer.c:2304 ../src/modules/alsa/alsa-mixer.c:2384
 msgid "Video"
-msgstr "Video"
+msgstr "Görüntü"
 
 #: ../src/modules/alsa/alsa-mixer.c:2305
 msgid "Automatic Gain Control"
-msgstr "Automatisk förstärkningskontroll"
+msgstr "Otomatik Kazanç Kontrolü"
 
 #: ../src/modules/alsa/alsa-mixer.c:2306
 msgid "No Automatic Gain Control"
-msgstr "Ingen automatisk förstärkningskontroll"
+msgstr "Otomatik Kazanç Kontrolü Yok"
 
 #: ../src/modules/alsa/alsa-mixer.c:2307
 msgid "Boost"
-msgstr "Ökning"
+msgstr "Artır"
 
 #: ../src/modules/alsa/alsa-mixer.c:2308
 msgid "No Boost"
-msgstr "Ingen ökning"
+msgstr "Artırma Yok"
 
 #: ../src/modules/alsa/alsa-mixer.c:2309
 msgid "Amplifier"
-msgstr "Förstärkare"
+msgstr "Yükseltici"
 
 #: ../src/modules/alsa/alsa-mixer.c:2310
 msgid "No Amplifier"
-msgstr "Ingen förstärkare"
+msgstr "Anfi Yok"
 
 #: ../src/modules/alsa/alsa-mixer.c:2311
 msgid "Bass Boost"
-msgstr "Basökning"
+msgstr "Bas Artır"
 
 #: ../src/modules/alsa/alsa-mixer.c:2312
 msgid "No Bass Boost"
-msgstr "Ingen basökning"
+msgstr "Bas Artırma"
 
 #: ../src/modules/alsa/alsa-mixer.c:2313
 #: ../src/modules/bluetooth/module-bluez4-device.c:2109
 #: ../src/modules/bluetooth/module-bluez5-device.c:1719
 msgid "Speaker"
-msgstr "Högtalare"
+msgstr "Hoparlör"
 
 #: ../src/modules/alsa/alsa-mixer.c:2314 ../src/modules/alsa/alsa-mixer.c:2386
 msgid "Headphones"
-msgstr "Hörlurar"
+msgstr "Kulaklıklar"
 
 #: ../src/modules/alsa/alsa-mixer.c:2375
 msgid "Analog Input"
-msgstr "Analog ingång"
+msgstr "Analog Giriş"
 
 #: ../src/modules/alsa/alsa-mixer.c:2379
 msgid "Dock Microphone"
-msgstr "Dockmikrofon"
+msgstr "Yapışık Mikrofon"
 
 #: ../src/modules/alsa/alsa-mixer.c:2381
 msgid "Headset Microphone"
-msgstr "Headset-mikrofon"
+msgstr "Mikrofonlu Kulaklık"
 
 #: ../src/modules/alsa/alsa-mixer.c:2385
 msgid "Analog Output"
-msgstr "Analog utgång"
+msgstr "Analog Çıkış"
 
 #: ../src/modules/alsa/alsa-mixer.c:2387
 msgid "LFE on Separate Mono Output"
-msgstr "LFE på separat monoutgång"
+msgstr "Ayrı Tekli Çıktılar üzerinde LFE"
 
 #: ../src/modules/alsa/alsa-mixer.c:2388
 msgid "Line Out"
-msgstr "Linje ut"
+msgstr "Hat Çıkışı"
 
 #: ../src/modules/alsa/alsa-mixer.c:2389
 msgid "Analog Mono Output"
-msgstr "Analog monoutgång"
+msgstr "Analog Tekli Çıkış"
 
 #: ../src/modules/alsa/alsa-mixer.c:2390
 msgid "Speakers"
-msgstr "Högtalare"
+msgstr "Hoparlörler"
 
 #: ../src/modules/alsa/alsa-mixer.c:2391
 msgid "HDMI / DisplayPort"
-msgstr "HDMI / DisplayPort"
+msgstr "HDMI / ÇıkışıNoktası"
 
 #: ../src/modules/alsa/alsa-mixer.c:2392
 msgid "Digital Output (S/PDIF)"
-msgstr "Digital utgång (S/PDIF)"
+msgstr "Dijital Çıkış (S/PDIF)"
 
 #: ../src/modules/alsa/alsa-mixer.c:2393
 msgid "Digital Input (S/PDIF)"
-msgstr "Digital ingång (S/PDIF)"
+msgstr "Dijital Giriş (S/PDIF)"
 
 #: ../src/modules/alsa/alsa-mixer.c:2394
 msgid "Digital Passthrough (S/PDIF)"
-msgstr "Digital genomströmning (S/PDIF)"
-
-#: ../src/modules/alsa/alsa-mixer.c:3900
-msgid "Analog Mono"
-msgstr "Analog mono"
+msgstr "Sayısal Düzgeçiş (S/PDIF)"
 
 #: ../src/modules/alsa/alsa-mixer.c:3901
-msgid "Analog Stereo"
-msgstr "Analog stereo"
+msgid "Analog Mono"
+msgstr "Analog Mono"
 
 #: ../src/modules/alsa/alsa-mixer.c:3902
-msgid "Multichannel"
-msgstr "Multikanal"
+msgid "Analog Stereo"
+msgstr "Analog Stereo"
 
 #: ../src/modules/alsa/alsa-mixer.c:3903
-msgid "Analog Surround 2.1"
-msgstr "Analog surround 2.1"
+msgid "Multichannel"
+msgstr "Çok kanallı"
 
 #: ../src/modules/alsa/alsa-mixer.c:3904
-msgid "Analog Surround 3.0"
-msgstr "Analog surround 3.0"
+msgid "Analog Surround 2.1"
+msgstr "Analog Çevresel Ses 2.1"
 
 #: ../src/modules/alsa/alsa-mixer.c:3905
-msgid "Analog Surround 3.1"
-msgstr "Analog surround 3.1"
+msgid "Analog Surround 3.0"
+msgstr "Analog Çevresel Ses 3.0"
 
 #: ../src/modules/alsa/alsa-mixer.c:3906
-msgid "Analog Surround 4.0"
-msgstr "Analog surround 4.0"
+msgid "Analog Surround 3.1"
+msgstr "Analog Çevresel Ses 3.1"
 
 #: ../src/modules/alsa/alsa-mixer.c:3907
-msgid "Analog Surround 4.1"
-msgstr "Analog surround 4.1"
+msgid "Analog Surround 4.0"
+msgstr "Analog Çevresel Ses 4.0"
 
 #: ../src/modules/alsa/alsa-mixer.c:3908
-msgid "Analog Surround 5.0"
-msgstr "Analog surround 5.0"
+msgid "Analog Surround 4.1"
+msgstr "Analog Çevresel Ses 4.1"
 
 #: ../src/modules/alsa/alsa-mixer.c:3909
-msgid "Analog Surround 5.1"
-msgstr "Analog surround 5.1"
+msgid "Analog Surround 5.0"
+msgstr "Analog Çevresel Ses 5.0"
 
 #: ../src/modules/alsa/alsa-mixer.c:3910
-msgid "Analog Surround 6.0"
-msgstr "Analog surround 6.0"
+msgid "Analog Surround 5.1"
+msgstr "Analog Çevresel Ses 5.1"
 
 #: ../src/modules/alsa/alsa-mixer.c:3911
-msgid "Analog Surround 6.1"
-msgstr "Analog surround 6.1"
+msgid "Analog Surround 6.0"
+msgstr "Analog Çevresel Ses 6.0"
 
 #: ../src/modules/alsa/alsa-mixer.c:3912
-msgid "Analog Surround 7.0"
-msgstr "Analog surround 7.0"
+msgid "Analog Surround 6.1"
+msgstr "Analog Çevresel Ses 6.1"
 
 #: ../src/modules/alsa/alsa-mixer.c:3913
-msgid "Analog Surround 7.1"
-msgstr "Analog surround 7.1"
+msgid "Analog Surround 7.0"
+msgstr "Analog Çevresel Ses 7.0"
 
 #: ../src/modules/alsa/alsa-mixer.c:3914
-msgid "Digital Stereo (IEC958)"
-msgstr "Digital stereo (IEC958)"
+msgid "Analog Surround 7.1"
+msgstr "Analog Çevresel Ses 7.1"
 
 #: ../src/modules/alsa/alsa-mixer.c:3915
-msgid "Digital Passthrough  (IEC958)"
-msgstr "Digital genomströmning (IEC958)"
+msgid "Digital Stereo (IEC958)"
+msgstr "Dijital İki Kanallı (IEC958)"
 
 #: ../src/modules/alsa/alsa-mixer.c:3916
-msgid "Digital Surround 4.0 (IEC958/AC3)"
-msgstr "Digital surround 4.0 (IEC958/AC3)"
+msgid "Digital Passthrough  (IEC958)"
+msgstr "Sayısal Düzgeçiş  (IEC958)"
 
 #: ../src/modules/alsa/alsa-mixer.c:3917
-msgid "Digital Surround 5.1 (IEC958/AC3)"
-msgstr "Digital surround 5.1 (IEC958/AC3)"
+msgid "Digital Surround 4.0 (IEC958/AC3)"
+msgstr "Dijital Çevresel Ses 4.0 (IEC958/AC3)"
 
 #: ../src/modules/alsa/alsa-mixer.c:3918
-msgid "Digital Surround 5.1 (IEC958/DTS)"
-msgstr "Digital surround 5.1 (IEC958/DTS)"
+msgid "Digital Surround 5.1 (IEC958/AC3)"
+msgstr "Dijital Çevresel Ses 5.1 (IEC958/AC3)"
 
 #: ../src/modules/alsa/alsa-mixer.c:3919
-msgid "Digital Stereo (HDMI)"
-msgstr "Digital stereo (HDMI)"
+msgid "Digital Surround 5.1 (IEC958/DTS)"
+msgstr "Dijital Çevresel Ses 5.1 (IEC958/DTS)"
 
 #: ../src/modules/alsa/alsa-mixer.c:3920
-msgid "Digital Surround 5.1 (HDMI)"
-msgstr "Digital surround 5.1 (HDMI)"
+msgid "Digital Stereo (HDMI)"
+msgstr "Dijital İki Kanallı (HDMI)"
 
-#: ../src/modules/alsa/alsa-mixer.c:4051
-msgid "Analog Mono Duplex"
-msgstr "Analog mono duplex"
+#: ../src/modules/alsa/alsa-mixer.c:3921
+msgid "Digital Surround 5.1 (HDMI)"
+msgstr "Dijital Çevresel Ses 5.1 (HDMI)"
 
 #: ../src/modules/alsa/alsa-mixer.c:4052
-msgid "Analog Stereo Duplex"
-msgstr "Analog stereo duplex"
+msgid "Analog Mono Duplex"
+msgstr "Analog Tekli İkili"
 
 #: ../src/modules/alsa/alsa-mixer.c:4053
-msgid "Digital Stereo Duplex (IEC958)"
-msgstr "Digital stereo duplex (IEC958)"
+msgid "Analog Stereo Duplex"
+msgstr "Analog İkili Stereo"
 
 #: ../src/modules/alsa/alsa-mixer.c:4054
+msgid "Digital Stereo Duplex (IEC958)"
+msgstr "Sayısal İkili Stereo (IEC958)"
+
+#: ../src/modules/alsa/alsa-mixer.c:4055
 #: ../src/modules/alsa/module-alsa-card.c:192
 #: ../src/modules/bluetooth/module-bluez4-device.c:2300
 #: ../src/modules/bluetooth/module-bluez5-device.c:1943
 msgid "Off"
-msgstr "Av"
+msgstr "Kapalı"
 
-#: ../src/modules/alsa/alsa-mixer.c:4153
+#: ../src/modules/alsa/alsa-mixer.c:4154
 #, c-format
 msgid "%s Output"
-msgstr "%s utgång"
+msgstr "%s Çıkışı"
 
-#: ../src/modules/alsa/alsa-mixer.c:4161
+#: ../src/modules/alsa/alsa-mixer.c:4162
 #, c-format
 msgid "%s Input"
-msgstr "%s ingång"
+msgstr "%s Girişi"
 
 #: ../src/modules/alsa/alsa-sink.c:572 ../src/modules/alsa/alsa-sink.c:749
 #, c-format
@@ -830,12 +832,12 @@ msgid ""
 "We were woken up with POLLOUT set -- however a subsequent snd_pcm_avail() "
 "returned 0 or another value < min_avail."
 msgstr ""
-"ALSA väckte oss för att skriva ny data till enheten, men det fanns inget att "
-"skriva!\n"
-"Förmodligen är detta ett fel i ALSA-drivrutinen ”%s”. Vänligen rapportera "
-"detta problem till ALSA-utvecklarna.\n"
-"We were woken up with POLLOUT set -- however a subsequent snd_pcm_avail() "
-"returned 0 or another value < min_avail."
+"ALSA aygıta yeni veri yazmamız için bizi uyardı fakat aslında yazılacak "
+"hiçbir şey yok!\n"
+"Büyük ihtimalle bu ALSA '%s' sürücüsünde bir hatadır. Lütfen bu sorunu ALSA "
+"geliştiricilerine bildirin.\n"
+"Biz POLLOUT ayarı ile anladık -- ayrıca sonraki snd_pcm_avail() 0 ya da "
+"min_avail değerinden küçük başka bir değer döndü."
 
 #: ../src/modules/alsa/alsa-source.c:531 ../src/modules/alsa/alsa-source.c:682
 #, c-format
@@ -847,14 +849,14 @@ msgid ""
 "We were woken up with POLLIN set -- however a subsequent snd_pcm_avail() "
 "returned 0 or another value < min_avail."
 msgstr ""
-"ALSA väckte oss för att läsa ny data från enheten, men det fanns inget att "
-"läsa!\n"
-"Förmodligen är detta ett fel i ALSA-drivrutinen ”%s”. Vänligen rapportera "
-"detta problem till ALSA-utvecklarna.\n"
-"We were woken up with POLLIN set -- however a subsequent snd_pcm_avail() "
-"returned 0 or another value < min_avail."
+"ALSA aygıttan yeni veri okumamız için bizi uyardı fakat aslında okunacak "
+"hiçbir şey yok!\n"
+"Büyük ihtimalle bu bir ALSA '%s' sürücüsü hatasıdır. Lütfen bu sorunu ALSA "
+"geliştiricilerine bildirin.\n"
+"Biz POLLIN ayarı ile anladık -- ayrıca sonraki snd_pcm_avail() 0 ya da "
+"min_avail değerinden küçük başka bir değer döndü."
 
-#: ../src/modules/alsa/alsa-util.c:1136 ../src/modules/alsa/alsa-util.c:1211
+#: ../src/modules/alsa/alsa-util.c:1135 ../src/modules/alsa/alsa-util.c:1210
 #, c-format
 msgid ""
 "snd_pcm_avail() returned a value that is exceptionally large: %lu bytes (%lu "
@@ -862,12 +864,11 @@ msgid ""
 "Most likely this is a bug in the ALSA driver '%s'. Please report this issue "
 "to the ALSA developers."
 msgstr ""
-"snd_pcm_avail() returnerade ett värde som är exceptionellt stort: %lu byte "
-"(%lu ms).\n"
-"Förmodligen är detta ett fel i ALSA-drivrutinen ”%s”. Vänligen rapportera "
-"problemet till ALSA-utvecklarna."
+"snd_pcm_avail() son derece büyük bir değer döndü: %lu bayt (%lu ms).\n"
+"Büyük ihtimalle bu bir ALSA sürücüsü '%s' hatasıdır. Lütfen bu sorunu ALSA "
+"geliştiricilerine bildirin."
 
-#: ../src/modules/alsa/alsa-util.c:1186
+#: ../src/modules/alsa/alsa-util.c:1185
 #, c-format
 msgid ""
 "snd_pcm_delay() returned a value that is exceptionally large: %li bytes (%s"
@@ -875,12 +876,11 @@ msgid ""
 "Most likely this is a bug in the ALSA driver '%s'. Please report this issue "
 "to the ALSA developers."
 msgstr ""
-"snd_pcm_delay() returnerade ett värde som är exceptionellt stort: %li byte "
-"(%s%lu ms).\n"
-"Förmodligen är detta ett fel i ALSA-drivrutinen ”%s”. Vänligen rapportera "
-"problemet till ALSA-utvecklarna."
+"snd_pcm_avail() son derece büyük bir değer döndü: %li bayt (%s%lu ms).\n"
+"Büyük ihtimalle bu bir ALSA sürücüsü '%s' hatasıdır. Lütfen bu sorunu ALSA "
+"geliştiricilerine bildirin."
 
-#: ../src/modules/alsa/alsa-util.c:1227
+#: ../src/modules/alsa/alsa-util.c:1226
 #, c-format
 msgid ""
 "snd_pcm_avail_delay() returned strange values: delay %lu is less than avail "
@@ -888,12 +888,12 @@ msgid ""
 "Most likely this is a bug in the ALSA driver '%s'. Please report this issue "
 "to the ALSA developers."
 msgstr ""
-"snd_pcm_avail_delay() returnerade konstiga värden: fördröjningen %lu är "
-"mindre än tillgängliga %lu.\n"
-"Förmodligen är detta ett fel i ALSA-drivrutinen ”%s”. Vänligen rapportera "
-"problemet till ALSA-utvecklarna."
+"snd_pcm_avail_delay() garip değerler döndü: gecikme %lu kazançtan %lu daha "
+"azdır.\n"
+"Büyük ihtimalle bu bir ALSA sürücüsü '%s' hatasıdır. Lütfen bu sorunu ALSA "
+"geliştiricilerine bildirin."
 
-#: ../src/modules/alsa/alsa-util.c:1270
+#: ../src/modules/alsa/alsa-util.c:1269
 #, c-format
 msgid ""
 "snd_pcm_mmap_begin() returned a value that is exceptionally large: %lu bytes "
@@ -901,40 +901,39 @@ msgid ""
 "Most likely this is a bug in the ALSA driver '%s'. Please report this issue "
 "to the ALSA developers."
 msgstr ""
-"snd_pcm_mmap_begin() returnerade ett värde som är exceptionellt stort: %lu "
-"byte (%lu ms).\n"
-"Förmodligen är detta ett fel i ALSA-drivrutinen ”%s”. Vänligen rapportera "
-"problemet till ALSA-utvecklarna."
+"snd_pcm_mmap_begin() son derece büyük bir değer döndü: %lu bayt (%lu ms).\n"
+"Büyük ihtimalle bu bir ALSA sürücüsü '%s' hatasıdır. Lütfen bu sorunu ALSA "
+"geliştiricilerine bildirin."
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2094
 #: ../src/modules/bluetooth/module-bluez5-device.c:1702
 msgid "Headset"
-msgstr "Headset"
+msgstr "Kulaklık"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2099
 #: ../src/modules/bluetooth/module-bluez5-device.c:1707
 msgid "Handsfree"
-msgstr "Handsfree"
+msgstr "Ahizesiz"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2114
 #: ../src/modules/bluetooth/module-bluez5-device.c:1725
 msgid "Headphone"
-msgstr "Hörlurar"
+msgstr "Kulaklık"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2119
 #: ../src/modules/bluetooth/module-bluez5-device.c:1730
 msgid "Portable"
-msgstr "Bärbar"
+msgstr "Taşınabilir"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2124
 #: ../src/modules/bluetooth/module-bluez5-device.c:1735
 msgid "Car"
-msgstr "Bil"
+msgstr "Araba"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2129
 #: ../src/modules/bluetooth/module-bluez5-device.c:1740
 msgid "HiFi"
-msgstr "HiFi"
+msgstr "Yüksek duyarlılık"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2134
 #: ../src/modules/bluetooth/module-bluez5-device.c:1745
@@ -946,7 +945,7 @@ msgstr "Telefon"
 #: ../src/modules/bluetooth/module-bluez5-device.c:1713
 #: ../src/modules/bluetooth/module-bluez5-device.c:1751
 msgid "Bluetooth Output"
-msgstr "Bluetooth-utgång"
+msgstr "Bluetooth Çıkışı"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2145
 #: ../src/modules/bluetooth/module-bluez5-device.c:1696
@@ -954,39 +953,39 @@ msgstr "Bluetooth-utgång"
 #: ../src/modules/bluetooth/module-bluez5-device.c:1724
 #: ../src/modules/bluetooth/module-bluez5-device.c:1750
 msgid "Bluetooth Input"
-msgstr "Bluetooth-ingång"
+msgstr "Bluetooth Girişi"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2181
 msgid "High Fidelity Playback (A2DP)"
-msgstr "High fidelity playback (A2DP)"
+msgstr "Yüksek Kaliteli Çalma (A2DP)"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2192
 msgid "High Fidelity Capture (A2DP)"
-msgstr "High fidelity capture (A2DP)"
+msgstr "Yüksek Kaliteli Yakalama (A2DP)"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2203
 msgid "Telephony Duplex (HSP/HFP)"
-msgstr "Telephony duplex (HSP/HFP)"
+msgstr "Çift yönlü Telefon (HSP/HFP)"
 
 #: ../src/modules/bluetooth/module-bluez4-device.c:2215
 msgid "Handsfree Gateway"
-msgstr "Handsfree gateway"
+msgstr "Eller Serbest Geçidi"
 
 #: ../src/modules/bluetooth/module-bluez5-device.c:1788
 msgid "High Fidelity Playback (A2DP Sink)"
-msgstr "High fidelity playback (A2DP Sink)"
+msgstr "Yüksek Kaliteli Çalma (A2DP Alıcı)"
 
 #: ../src/modules/bluetooth/module-bluez5-device.c:1799
 msgid "High Fidelity Capture (A2DP Source)"
-msgstr "High fidelity capture (A2DP Source)"
+msgstr "Yüksek Kaliteli Yakalama (A2DP Kaynak)"
 
 #: ../src/modules/bluetooth/module-bluez5-device.c:1810
 msgid "Headset Head Unit (HSP/HFP)"
-msgstr "Headset head unit (HSP/HFP)"
+msgstr "Kulaklık Ana Birimi (HSP/HFP)"
 
 #: ../src/modules/bluetooth/module-bluez5-device.c:1822
 msgid "Headset Audio Gateway (HSP/HFP)"
-msgstr "Headset audio gateway (HSP/HFP)"
+msgstr "Kulanlık Ses Geçidi (HSP/HFP)"
 
 #: ../src/modules/echo-cancel/module-echo-cancel.c:63
 msgid ""
@@ -1000,33 +999,32 @@ msgid ""
 "save_aec=<save AEC data in /tmp> autoloaded=<set if this module is being "
 "loaded automatically> use_volume_sharing=<yes or no> "
 msgstr ""
-"source_name=<namn på källa> source_properties=<egenskaper för källa> "
-"source_master=<namn på källa att filtrera> sink_name=<namn på mottagare> "
-"sink_properties=<egenskaper för mottagare> sink_master=<namn på mottagare "
-"att filtrera> adjust_time=<hur ofta frekvens ska justeras> "
-"adjust_threshold=<hur mycket avsteg ska justeras i ms> "
-"format=<samplingsformat> rate=<samplingshastighet> channels=<antal kanaler> "
-"channel_map=<kanalmappning> aec_method=<implementation att använda> "
-"aec_args=<parametrar för AEC-motorn> save_aec=<spara AEC-data i /tmp> "
-"autoloaded=<ange om denna modul läses in automatiskt> use_volume_sharing=<ja "
-"eller nej> "
+"kaynak_adı=<name for the source> kaynak_özellikleri=<properties for the "
+"source> ana_kaynak=<name of source to filter> alıcı_ad=<name for the sink> "
+"alıcı_özellikleri=<properties for the sink> ana_alıcı=<name of sink to "
+"filter> zamanı_ayarla=<how often to readjust rates in s> eşikdeğer_ayarla=<"
+"how much drift to readjust after in ms> biçim=<sample format> hız=<sample "
+"rate> kanallar=<number of channels> kanal_adresleme=<channel map> "
+"aec_yöntemi=<implementation to use> aec_değişkenleri=<parameters for the AEC "
+"engine> aec_kaydet=<save AEC data in /tmp> otomatikyüklenmiş=<set if this "
+"module is being loaded automatically>ses_paylaşım_kullan=<yes or no> "
 
 #. add on profile
 #: ../src/modules/macosx/module-coreaudio-device.c:756
 msgid "On"
-msgstr "På"
+msgstr "Açık"
 
 #: ../src/modules/module-always-sink.c:38
 msgid "Always keeps at least one sink loaded even if it's a null one"
-msgstr "Håll alltid minst en mottagare inläst även om den är null"
+msgstr "Yüklenen alıcı boş bile olsa her zaman en az bir tanesini korur"
 
 #: ../src/modules/module-always-sink.c:82
 msgid "Dummy Output"
-msgstr "Attrapputgång"
+msgstr "Sahte Çıkış"
 
 #: ../src/modules/module-equalizer-sink.c:72
 msgid "General Purpose Equalizer"
-msgstr "Allmän equalizer"
+msgstr "Genel Amaçlı Denkleştirici"
 
 #: ../src/modules/module-equalizer-sink.c:76
 msgid ""
@@ -1035,19 +1033,19 @@ msgid ""
 "channels=<number of channels> channel_map=<channel map> autoloaded=<set if "
 "this module is being loaded automatically> use_volume_sharing=<yes or no> "
 msgstr ""
-"sink_name=<namn på mottagare> sink_properties=<egenskaper för mottagare> "
-"sink_master=<mottagare att ansluta till> format=<samplingsformat> "
-"rate=<samplingshastighet> channels=<antal kanaler> "
-"channel_map=<kanalmappning> autoloaded=<om denna modul läses in automatiskt> "
-"use_volume_sharing=<ja eller nej> "
+"alıcı_adı=<name of the sink> alıcı_özellikleri=<properties for the sink> "
+"ana_alıcı=<sink to connect to> biçim=<sample format> hız=<sample rate> "
+"kanallar=<number of channels> kanal_adresleme=<channel map> "
+"otomatikyüklenmiş=<set if this module is being loaded automatically> "
+"ses_paylaşım_kullan=<yes or no> "
 
 #: ../src/modules/module-filter-apply.c:48
 msgid "autoclean=<automatically unload unused filters?>"
-msgstr "autoclean=<automatiskt inaktivera oanvända filter?>"
+msgstr "otomatik temizle=<automatically unload unused filters?>"
 
 #: ../src/modules/module-ladspa-sink.c:53
 msgid "Virtual LADSPA sink"
-msgstr "Virtual LADSPA-mottagare"
+msgstr "Sanal LADSPA alıcısı"
 
 #: ../src/modules/module-ladspa-sink.c:57
 msgid ""
@@ -1059,38 +1057,37 @@ msgid ""
 "LADSPA port names> output_ladspaport_map=<comma separated list of output "
 "LADSPA port names> "
 msgstr ""
-"sink_name=<namn på mottagare> sink_properties=<egenskaper för mottagare> "
-"master=<namn på mottagare att filtrera> format=<samplingsformat> "
-"rate=<samplingshastighet> channels=<antal kanaler> "
-"channel_map=<ingångskanalmappning> plugin=<namn på ladspa-instick> "
-"label=<etikett för ladspa-instick> control=<kommaseparerad lista över "
-"ingångskontrollvärden> input_ladspaport_map=<kommaseparerad lista över "
-"LADSPA-portnamn för ingång> output_ladspaport_map=<kommaseparerad lista över "
-"LADSPA-portnamn för utgång> "
+"alıcı_adı=<name for the sink> alıcı_özellikleri=<properties for the sink> "
+"ana=<name of sink to filter> biçim=<sample format> hız=<sample rate> "
+"kanallar=<number of channels> kanal_adresleme=<input channel map> eklenti=<"
+"ladspa plugin name> etiket=<ladspa plugin label> kontrol=<comma separated "
+"list of input control values> ladspaport_giriş_listesi=<comma separated list "
+"of input LADSPA port names> ladspaport_çıkış_listesi=<comma separated list "
+"of output LADSPA port names> "
 
 #: ../src/modules/module-null-sink.c:49
 msgid "Clocked NULL sink"
-msgstr "Klockad NULL-mottagare"
+msgstr "Zamanlanmış BOŞ alıcı"
 
 #: ../src/modules/module-null-sink.c:280
 msgid "Null Output"
-msgstr "Nullutgång"
+msgstr "Boş Çıkış"
 
 #: ../src/modules/module-rygel-media-server.c:510
 #: ../src/modules/module-rygel-media-server.c:548
 #: ../src/modules/module-rygel-media-server.c:907
 msgid "Output Devices"
-msgstr "Utgångsenheter"
+msgstr "Çıkış Aygıtları"
 
 #: ../src/modules/module-rygel-media-server.c:511
 #: ../src/modules/module-rygel-media-server.c:549
 #: ../src/modules/module-rygel-media-server.c:908
 msgid "Input Devices"
-msgstr "Ingångsenheter"
+msgstr "Girdi Aygıtları"
 
 #: ../src/modules/module-rygel-media-server.c:1065
 msgid "Audio on @HOSTNAME@"
-msgstr "Ljud på @HOSTNAME@"
+msgstr "@HOSTNAME@ üzerindeki SES"
 
 #. TODO: old tunnel put here the remote sink_name into stream name e.g. 'Null Output for lynxis@lazus'
 #. TODO: old tunnel put here the remote source_name into stream name e.g. 'Null Output for lynxis@lazus'
@@ -1098,17 +1095,17 @@ msgstr "Ljud på @HOSTNAME@"
 #: ../src/modules/module-tunnel-source-new.c:307
 #, c-format
 msgid "Tunnel for %s@%s"
-msgstr "Tunnel för %s@%s"
+msgstr "s@%s için tünel"
 
 #: ../src/modules/module-tunnel-sink-new.c:510
 #: ../src/modules/module-tunnel-source-new.c:518
 #, c-format
 msgid "Tunnel to %s/%s"
-msgstr "Tunnel till %s/%s"
+msgstr "%s/%s tünel"
 
 #: ../src/modules/module-virtual-surround-sink.c:49
 msgid "Virtual surround sink"
-msgstr "Virtual surround-mottagare"
+msgstr "Sanal çevresel ses alıcısı"
 
 #: ../src/modules/module-virtual-surround-sink.c:53
 msgid ""
@@ -1118,219 +1115,219 @@ msgid ""
 "use_volume_sharing=<yes or no> force_flat_volume=<yes or no> hrir=/path/to/"
 "left_hrir.wav "
 msgstr ""
-"sink_name=<namn för mottagaren> sink_properties=<egenskaper för mottagaren> "
-"master=<namn på mottagare att filtrera> format=<samplingsformat> "
-"rate=<samplingshastighet> channels=<antal kanaler> "
-"channel_map=<kanalmappning> use_volume_sharing=<ja eller nej> "
-"force_flat_volume=<ja eller nej> hrir=/path/to/left_hrir.wav "
+"alıcı_adı=<name for the sink> alıcı_özellikleri=<properties for the sink> "
+"ana=<name of sink to filter> biçim=<sample format> hız=<sample rate> "
+"kanallar=<number of channels> kanal_adresleme=<channel map> "
+"ses_paylaşımı_kullan=<yes or no> force_flat_volume=<yes or no> hrir=/path/to/"
+"left_hrir.wav "
 
 #: ../src/modules/reserve-wrap.c:151
 msgid "PulseAudio Sound Server"
-msgstr "PulseAudio ljudserver"
+msgstr "PulseAudio Ses Sunucusu"
 
 #: ../src/pulse/channelmap.c:105 ../src/pulse/channelmap.c:760
 msgid "Mono"
-msgstr "Mono"
+msgstr "Tek Kanallı"
 
 #: ../src/pulse/channelmap.c:107
 msgid "Front Center"
-msgstr "Center fram"
+msgstr "Ön Orta"
 
 #: ../src/pulse/channelmap.c:108
 msgid "Front Left"
-msgstr "Vänster fram"
+msgstr "Ön Sol"
 
 #: ../src/pulse/channelmap.c:109
 msgid "Front Right"
-msgstr "Höger fram"
+msgstr "Ön Sağ"
 
 #: ../src/pulse/channelmap.c:111
 msgid "Rear Center"
-msgstr "Center bak"
+msgstr "Arka Orta"
 
 #: ../src/pulse/channelmap.c:112
 msgid "Rear Left"
-msgstr "Vänster bak"
+msgstr "Arka Sol"
 
 #: ../src/pulse/channelmap.c:113
 msgid "Rear Right"
-msgstr "Höger bak"
+msgstr "Arka Sağ"
 
 #: ../src/pulse/channelmap.c:115
 msgid "Subwoofer"
-msgstr "Subwoofer"
+msgstr "Derin Bas Hoparlör"
 
 #: ../src/pulse/channelmap.c:117
 msgid "Front Left-of-center"
-msgstr "Vänster-om-center fram"
+msgstr "Ön Ortanın Solu"
 
 #: ../src/pulse/channelmap.c:118
 msgid "Front Right-of-center"
-msgstr "Höger-om-center fram"
+msgstr "Ön Ortanın Sağı"
 
 #: ../src/pulse/channelmap.c:120
 msgid "Side Left"
-msgstr "Vänster sida"
+msgstr "Sol Yan"
 
 #: ../src/pulse/channelmap.c:121
 msgid "Side Right"
-msgstr "Höger sida"
+msgstr "Sağ Yan"
 
 #: ../src/pulse/channelmap.c:123
 msgid "Auxiliary 0"
-msgstr "Auxiliary 0"
+msgstr "Harici 0"
 
 #: ../src/pulse/channelmap.c:124
 msgid "Auxiliary 1"
-msgstr "Auxiliary 1"
+msgstr "Harici 1"
 
 #: ../src/pulse/channelmap.c:125
 msgid "Auxiliary 2"
-msgstr "Auxiliary 2"
+msgstr "Harici 2"
 
 #: ../src/pulse/channelmap.c:126
 msgid "Auxiliary 3"
-msgstr "Auxiliary 3"
+msgstr "Harici 3"
 
 #: ../src/pulse/channelmap.c:127
 msgid "Auxiliary 4"
-msgstr "Auxiliary 4"
+msgstr "Harici 4"
 
 #: ../src/pulse/channelmap.c:128
 msgid "Auxiliary 5"
-msgstr "Auxiliary 5"
+msgstr "Harici 5"
 
 #: ../src/pulse/channelmap.c:129
 msgid "Auxiliary 6"
-msgstr "Auxiliary 6"
+msgstr "Harici 6"
 
 #: ../src/pulse/channelmap.c:130
 msgid "Auxiliary 7"
-msgstr "Auxiliary 7"
+msgstr "Harici 7"
 
 #: ../src/pulse/channelmap.c:131
 msgid "Auxiliary 8"
-msgstr "Auxiliary 8"
+msgstr "Harici 8"
 
 #: ../src/pulse/channelmap.c:132
 msgid "Auxiliary 9"
-msgstr "Auxiliary 9"
+msgstr "Harici 9"
 
 #: ../src/pulse/channelmap.c:133
 msgid "Auxiliary 10"
-msgstr "Auxiliary 10"
+msgstr "Harici 10"
 
 #: ../src/pulse/channelmap.c:134
 msgid "Auxiliary 11"
-msgstr "Auxiliary 11"
+msgstr "Harici 11"
 
 #: ../src/pulse/channelmap.c:135
 msgid "Auxiliary 12"
-msgstr "Auxiliary 12"
+msgstr "Harici 12"
 
 #: ../src/pulse/channelmap.c:136
 msgid "Auxiliary 13"
-msgstr "Auxiliary 13"
+msgstr "Harici 13"
 
 #: ../src/pulse/channelmap.c:137
 msgid "Auxiliary 14"
-msgstr "Auxiliary 14"
+msgstr "Harici 14"
 
 #: ../src/pulse/channelmap.c:138
 msgid "Auxiliary 15"
-msgstr "Auxiliary 15"
+msgstr "Harici 15"
 
 #: ../src/pulse/channelmap.c:139
 msgid "Auxiliary 16"
-msgstr "Auxiliary 16"
+msgstr "Harici 16"
 
 #: ../src/pulse/channelmap.c:140
 msgid "Auxiliary 17"
-msgstr "Auxiliary 17"
+msgstr "Harici 17"
 
 #: ../src/pulse/channelmap.c:141
 msgid "Auxiliary 18"
-msgstr "Auxiliary 18"
+msgstr "Harici 18"
 
 #: ../src/pulse/channelmap.c:142
 msgid "Auxiliary 19"
-msgstr "Auxiliary 19"
+msgstr "Harici 19"
 
 #: ../src/pulse/channelmap.c:143
 msgid "Auxiliary 20"
-msgstr "Auxiliary 20"
+msgstr "Harici 20"
 
 #: ../src/pulse/channelmap.c:144
 msgid "Auxiliary 21"
-msgstr "Auxiliary 21"
+msgstr "Harici 21"
 
 #: ../src/pulse/channelmap.c:145
 msgid "Auxiliary 22"
-msgstr "Auxiliary 22"
+msgstr "Harici 22"
 
 #: ../src/pulse/channelmap.c:146
 msgid "Auxiliary 23"
-msgstr "Auxiliary 23"
+msgstr "Harici 23"
 
 #: ../src/pulse/channelmap.c:147
 msgid "Auxiliary 24"
-msgstr "Auxiliary 24"
+msgstr "Harici 24"
 
 #: ../src/pulse/channelmap.c:148
 msgid "Auxiliary 25"
-msgstr "Auxiliary 25"
+msgstr "Harici 25"
 
 #: ../src/pulse/channelmap.c:149
 msgid "Auxiliary 26"
-msgstr "Auxiliary 26"
+msgstr "Harici 26"
 
 #: ../src/pulse/channelmap.c:150
 msgid "Auxiliary 27"
-msgstr "Auxiliary 27"
+msgstr "Harici 27"
 
 #: ../src/pulse/channelmap.c:151
 msgid "Auxiliary 28"
-msgstr "Auxiliary 28"
+msgstr "Harici 28"
 
 #: ../src/pulse/channelmap.c:152
 msgid "Auxiliary 29"
-msgstr "Auxiliary 29"
+msgstr "Harici 29"
 
 #: ../src/pulse/channelmap.c:153
 msgid "Auxiliary 30"
-msgstr "Auxiliary 30"
+msgstr "Harici 30"
 
 #: ../src/pulse/channelmap.c:154
 msgid "Auxiliary 31"
-msgstr "Auxiliary 31"
+msgstr "Harici 31"
 
 #: ../src/pulse/channelmap.c:156
 msgid "Top Center"
-msgstr "Topp mitten"
+msgstr "Üst Orta"
 
 #: ../src/pulse/channelmap.c:158
 msgid "Top Front Center"
-msgstr "Topp fram mitten"
+msgstr "Üst Ön Orta"
 
 #: ../src/pulse/channelmap.c:159
 msgid "Top Front Left"
-msgstr "Topp fram vänster"
+msgstr "Üst Ön Sol"
 
 #: ../src/pulse/channelmap.c:160
 msgid "Top Front Right"
-msgstr "Upp fram höger"
+msgstr "Üst Ön Sağ"
 
 #: ../src/pulse/channelmap.c:162
 msgid "Top Rear Center"
-msgstr "Topp bak mitten"
+msgstr "Üst Arka Orta"
 
 #: ../src/pulse/channelmap.c:163
 msgid "Top Rear Left"
-msgstr "Topp bak vänster"
+msgstr "Üst Arka Sol"
 
 #: ../src/pulse/channelmap.c:164
 msgid "Top Rear Right"
-msgstr "Topp bak höger"
+msgstr "Üst Arka Sağ"
 
 #: ../src/pulse/channelmap.c:481 ../src/pulse/format.c:123
 #: ../src/pulse/sample.c:177 ../src/pulse/volume.c:296
@@ -1338,7 +1335,7 @@ msgstr "Topp bak höger"
 #: ../src/pulse/volume.c:374 ../src/pulse/volume.c:414
 #: ../src/pulse/volume.c:433
 msgid "(invalid)"
-msgstr "(ogiltig)"
+msgstr "(geçersiz)"
 
 #: ../src/pulse/channelmap.c:764
 msgid "Stereo"
@@ -1346,35 +1343,35 @@ msgstr "Stereo"
 
 #: ../src/pulse/channelmap.c:769
 msgid "Surround 4.0"
-msgstr "Surround 4.0"
+msgstr "Çevresel Ses 4.0"
 
 #: ../src/pulse/channelmap.c:775
 msgid "Surround 4.1"
-msgstr "Surround 4.1"
+msgstr "Çevresel Ses 4.1"
 
 #: ../src/pulse/channelmap.c:781
 msgid "Surround 5.0"
-msgstr "Surround 5.0"
+msgstr "Çevresel Ses 5.0"
 
 #: ../src/pulse/channelmap.c:787
 msgid "Surround 5.1"
-msgstr "Surround 5.1"
+msgstr "Çevresel Ses 5.1"
 
 #: ../src/pulse/channelmap.c:794
 msgid "Surround 7.1"
-msgstr "Surround 7.1"
+msgstr "Çevresel Ses 7.1"
 
 #: ../src/pulse/client-conf-x11.c:55 ../src/utils/pax11publish.c:99
 msgid "xcb_connect() failed"
-msgstr "xcb_connect() misslyckades"
+msgstr "xcb_connect() başarısız oldu"
 
 #: ../src/pulse/client-conf-x11.c:60 ../src/utils/pax11publish.c:104
 msgid "xcb_connection_has_error() returned true"
-msgstr "xcb_connection_has_error() returnerade true"
+msgstr "xcb_connection_has_error() doğru değer döndü"
 
 #: ../src/pulse/client-conf-x11.c:96
 msgid "Failed to parse cookie data"
-msgstr "Misslyckades med att tolka kakdata"
+msgstr "Çerez veri ayrıştırılamadı"
 
 #: ../src/pulse/context.c:658
 #, c-format
@@ -1389,66 +1386,67 @@ msgstr "waitpid(): %s"
 #: ../src/pulse/context.c:1414
 #, c-format
 msgid "Received message for unknown extension '%s'"
-msgstr "Tog emot meddelande för okända tillägget ”%s”"
+msgstr "Bilinmeyen eklenti '%s' için ileti alındı"
 
 #: ../src/pulse/direction.c:39
 msgid "input"
-msgstr "ingång"
+msgstr "girdi"
 
 #: ../src/pulse/direction.c:41
 msgid "output"
-msgstr "utgång"
+msgstr "çıktı"
 
 #: ../src/pulse/direction.c:43
 msgid "bidirectional"
-msgstr "dubbelriktad"
+msgstr "çift yönlü"
 
 #: ../src/pulse/direction.c:45
 msgid "invalid"
-msgstr "ogiltig"
+msgstr "geçersiz"
 
-#: ../src/pulsecore/core-util.c:1822
+#: ../src/pulsecore/core-util.c:1821
 #, c-format
 msgid ""
 "XDG_RUNTIME_DIR (%s) is not owned by us (uid %d), but by uid %d! (This could "
 "e g happen if you try to connect to a non-root PulseAudio as a root user, "
 "over the native protocol. Don't do that.)"
 msgstr ""
-"XDG_RUNTIME_DIR (%s) ägs inte av oss (uid %d), utan av %d! (Det kan hända om "
-"du exempelvis försöker att ansluta till en icke-root PulseAudio som en root-"
-"användare över det interna protokollet. Gör inte det.)"
+"XDG_RUNTIME_DIR (%s) bize ait değil (uid %d), ancak şunun uid %d! (Eğer bir "
+"root kullanıcısı olarak root olmayan bir PulseAudio ya bağlanmaya "
+"çalışırsanız, doğal protokol üstüne bu bir örnek olabilirdi. Bunu yapmayın.)"
 
 #: ../src/pulsecore/core-util.h:95
 msgid "yes"
-msgstr "ja"
+msgstr "evet"
 
 #: ../src/pulsecore/core-util.h:95
 msgid "no"
-msgstr "nej"
+msgstr "hayır"
 
 #: ../src/pulsecore/lock-autospawn.c:143 ../src/pulsecore/lock-autospawn.c:229
 msgid "Cannot access autospawn lock."
-msgstr "Kan inte komma åt låset för autospawn."
+msgstr "Otomatik oluşturma kilidine erişim yok."
 
 #: ../src/pulsecore/log.c:155
 #, c-format
 msgid "Failed to open target file '%s'."
-msgstr "Misslyckades med att öppna målfilen ”%s”."
+msgstr "Hedef dosya '%s' açılamadı."
 
 #: ../src/pulsecore/log.c:178
 #, c-format
 msgid ""
 "Tried to open target file '%s', '%s.1', '%s.2' ... '%s.%d', but all failed."
 msgstr ""
-"Försökte att öppna målfilen ”%s”, ”%s.1”, ”%s.2” … ”%s.%d” men misslyckades."
+"Hedef dosyaları '%s', '%s.1', '%s.2' ... '%s.%d' açmayı denedi fakat hiçbiri "
+"açılamadı."
 
 #: ../src/pulsecore/log.c:633
 msgid "Invalid log target."
-msgstr "Ogiltigt mål för logg."
+msgstr "Geçersiz log hedefi."
 
 #: ../src/pulsecore/sink.c:3429
 msgid "Built-in Audio"
-msgstr "Inbyggt ljud"
+msgstr "Dahili Ses"
 
 #: ../src/pulsecore/sink.c:3434
 msgid "Modem"
@@ -1456,116 +1454,116 @@ msgstr "Modem"
 
 #: ../src/pulse/error.c:40
 msgid "OK"
-msgstr "OK"
+msgstr "TAMAM"
 
 #: ../src/pulse/error.c:41
 msgid "Access denied"
-msgstr "Åtkomst nekad"
+msgstr "Erişim engellendi"
 
 #: ../src/pulse/error.c:42
 msgid "Unknown command"
-msgstr "Okänt kommando"
+msgstr "Bilinmeyen komut"
 
 #: ../src/pulse/error.c:43
 msgid "Invalid argument"
-msgstr "Ogiltigt argument"
+msgstr "Geçersiz değişken"
 
 #: ../src/pulse/error.c:44
 msgid "Entity exists"
-msgstr "Entiteten finns"
+msgstr "Giriş var"
 
 #: ../src/pulse/error.c:45
 msgid "No such entity"
-msgstr "Ingen sådan entitet"
+msgstr "Hiçbir giriş yok"
 
 #: ../src/pulse/error.c:46
 msgid "Connection refused"
-msgstr "Anslutning nekades"
+msgstr "Bağlantı reddedildi"
 
 #: ../src/pulse/error.c:47
 msgid "Protocol error"
-msgstr "Protokollfel"
+msgstr "Protokol hatası"
 
 #: ../src/pulse/error.c:48
 msgid "Timeout"
-msgstr "Tidsgräns nåddes"
+msgstr "Zaman aşımı"
 
 #: ../src/pulse/error.c:49
 msgid "No authentication key"
-msgstr "Ingen autentiseringsnyckel"
+msgstr "Kimlik doğrulama anahtarı yok"
 
 #: ../src/pulse/error.c:50
 msgid "Internal error"
-msgstr "Internt fel"
+msgstr "İç hata"
 
 #: ../src/pulse/error.c:51
 msgid "Connection terminated"
-msgstr "Anslutningen terminerad"
+msgstr "Bağlantı sonlandırıldı"
 
 #: ../src/pulse/error.c:52
 msgid "Entity killed"
-msgstr "Entitet dödad"
+msgstr "Giriş durduruldu"
 
 #: ../src/pulse/error.c:53
 msgid "Invalid server"
-msgstr "Ogiltig server"
+msgstr "Geçersiz sunucu"
 
 #: ../src/pulse/error.c:54
 msgid "Module initialization failed"
-msgstr "Misslyckades med att starta modul"
+msgstr "Modül başlatma başarısız oldu"
 
 #: ../src/pulse/error.c:55
 msgid "Bad state"
-msgstr "Felaktigt tillstånd"
+msgstr "Kötü durum"
 
 #: ../src/pulse/error.c:56
 msgid "No data"
-msgstr "Ingen data"
+msgstr "Veri yok"
 
 #: ../src/pulse/error.c:57
 msgid "Incompatible protocol version"
-msgstr "Inkompatibel protokollversion"
+msgstr "Uyumsuz protokol sürümü"
 
 #: ../src/pulse/error.c:58
 msgid "Too large"
-msgstr "För stor"
+msgstr "Çok büyük"
 
 #: ../src/pulse/error.c:59
 msgid "Not supported"
-msgstr "Stöds inte"
+msgstr "Desteklenmeyen"
 
 #: ../src/pulse/error.c:60
 msgid "Unknown error code"
-msgstr "Okänd felkod"
+msgstr "Bilinmeyen hata kodu"
 
 #: ../src/pulse/error.c:61
 msgid "No such extension"
-msgstr "Det finns inget sådant tillägg"
+msgstr "Böyle bir uzantı yok"
 
 #: ../src/pulse/error.c:62
 msgid "Obsolete functionality"
-msgstr "Föråldrad funktionalitet"
+msgstr "Kullanılmayan işlev"
 
 #: ../src/pulse/error.c:63
 msgid "Missing implementation"
-msgstr "Implementering saknas"
+msgstr "Eksik uygulama"
 
 #: ../src/pulse/error.c:64
 msgid "Client forked"
-msgstr "Klienten förgrenad"
+msgstr "Müşteri çatallandı"
 
 #: ../src/pulse/error.c:65
 msgid "Input/Output error"
-msgstr "In-/utgångsfel"
+msgstr "Giriş/Çıkış hatası"
 
 #: ../src/pulse/error.c:66
 msgid "Device or resource busy"
-msgstr "Enhet eller resurs upptagen"
+msgstr "Aygıt ya da kaynak meşgul"
 
 #: ../src/pulse/sample.c:179
 #, c-format
 msgid "%s %uch %uHz"
-msgstr "%s %u kan. %u Hz"
+msgstr "%s %uch %uHz"
 
 #: ../src/pulse/sample.c:191
 #, c-format
@@ -1616,29 +1614,33 @@ msgid ""
 "\n"
 "See --dump-resample-methods for possible values of resample methods.\n"
 msgstr ""
-"%s [flaggor]\n"
+"%s [seçenekler]\n"
 "\n"
-"-h, --help                            Visa denna hjälp\n"
-"-v, --verbose                         Skriv ut felmeddelanden\n"
-"      --from-rate=SAMPLINGSFREKVENS   Från samplingsfrekvens i Hz (standard "
-"44100)\n"
-"      --from-format=SAMPLINGSFORMAT   Från samplingstyp (standard s16le)\n"
-"      --from-channels=KANALER         Från antal kanaler (standard 1)\n"
-"      --to-rate=SAMPLINGSFREKVENS     Till samplingsfrekvens i Hz (standard "
-"44100)\n"
-"      --to-format=SAMPLINGSFORMAT     Till samplingstyp (standard s16le)\n"
-"      --to-channels=KANALER           Till antal kanaler (standard 1)\n"
-"      --resample-method=METOD         Omsamplingsmetod (standard auto)\n"
-"      --seconds=SEKUNDER              Från strömuthållighet (standard 60)\n"
+"-h, --help                            Yardımı gösterir\n"
+"-v, --verbose                         Hata ayıklama iletilerini yazdırır\n"
+"      --from-rate=ÖRNEKLEMEHIZ          Hz cinsinde örnekleme hızından ("
+"varsayılan - 44100)\n"
+"      --from-format=ÖRNEKLEMEBİÇİMİ      Örnekleme türünden (varsayılan - "
+"s16le)\n"
+"      --from-channels=KANALLAR        Kanal sayılarından (varsayılan - 1)\n"
+"      --to-rate=ÖRNEKLEMEHIZI            Hz cinsinde örnekleme hızına ("
+"varsayılan - 44100)\n"
+"      --to-format=ÖRNEKLEMEBİÇİMİ        Örnekleme türüne (varsayılan - "
+"s16le)\n"
+"      --to-channels=KANALLAR          Kanal sayılarına (varsayılan - 1)\n"
+"      --resample-method=YÖNTEM        Yöntemi yeniden örnekleme (varsayılan "
+"otomatik)\n"
+"      --seconds=SANİYE               Akış süresinden (varsayılan - 60)\n"
 "\n"
-"Om formaten inte är angivna utför testet alla formatkombinationer,\n"
-"fram och tillbaka.\n"
+"Eğer biçimler belirtilmezse, test bütün biçimlerin birleşiminde ileri geri\n"
+"gerçekleştirilir.\n"
 "\n"
-"Samplingstyp måste vare en av s16le, s16be, u8, float32le, float32be, ulaw, "
-"alaw,\n"
-"s24le, s24be, s24-32le, s24-32be, s32le, s32be (standard s16ne)\n"
+"Örnek tür şunlardan biri olmalıdır; s16le, s16be, u8, float32le, float32be, "
+"ulaw, alaw,\n"
+"s24le, s24be, s24-32le, s24-32be, s32le, s32be (defaults to s16ne)\n"
 "\n"
-"Se --dump-resample-methods för möjliga värden på omsamplingsmetoder.\n"
+"Yeniden örnekleme yöntemlerinin olası değerlerini --dump-resample-methods "
+"gösterir.\n"
 
 #: ../src/tests/resampler-test.c:356
 #, c-format
@@ -1648,15 +1650,15 @@ msgstr "%s %s\n"
 #: ../src/utils/pacat.c:118
 #, c-format
 msgid "Failed to drain stream: %s"
-msgstr "Misslyckades med att dränera strömmen: %s"
+msgstr "Akış boşaltma başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:123
 msgid "Playback stream drained."
-msgstr "Uppspelningsströmmen dränerad."
+msgstr "Playback akışı boşaltıldı."
 
 #: ../src/utils/pacat.c:134
 msgid "Draining connection to server."
-msgstr "Dränerar anslutning till servern."
+msgstr "Sunucuya akış bağlantısı."
 
 #: ../src/utils/pacat.c:147
 #, c-format
@@ -1666,160 +1668,160 @@ msgstr "pa_stream_drain(): %s"
 #: ../src/utils/pacat.c:170
 #, c-format
 msgid "pa_stream_write() failed: %s"
-msgstr "pa_stream_write() misslyckades: %s"
+msgstr "pa_stream_write() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:211
 #, c-format
 msgid "pa_stream_begin_write() failed: %s"
-msgstr "pa_stream_begin_write() misslyckades: %s"
+msgstr "pa_stream_begin_write() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:261 ../src/utils/pacat.c:291
 #, c-format
 msgid "pa_stream_peek() failed: %s"
-msgstr "pa_stream_peek() misslyckades: %s"
+msgstr "pa_stream_peek() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:341
 msgid "Stream successfully created."
-msgstr "Strömmen skapad."
+msgstr "Akış başarılı bir şekilde oluşturuldu."
 
 #: ../src/utils/pacat.c:344
 #, c-format
 msgid "pa_stream_get_buffer_attr() failed: %s"
-msgstr "pa_stream_get_buffer_attr() misslyckades: %s"
+msgstr "pa_stream_get_buffer_attr() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:348
 #, c-format
 msgid "Buffer metrics: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u"
-msgstr "Buffertmått: maxlength=%u tlength=%u prebuf=%u minreq=%u"
+msgstr "Tampon ölçüleri: maxlength=%u, tlength=%u, prebuf=%u, minreq=%u"
 
 #: ../src/utils/pacat.c:351
 #, c-format
 msgid "Buffer metrics: maxlength=%u, fragsize=%u"
-msgstr "Buffertmått: maxlength=%u fragsize=%u"
+msgstr "Tampon ölçüleri: maxlength=%u, fragsize=%u"
 
 #: ../src/utils/pacat.c:355
 #, c-format
 msgid "Using sample spec '%s', channel map '%s'."
-msgstr "Använder samplingsspec ”%s”, kanalmappning ”%s”."
+msgstr "Örnekleme tanımı '%s', kanal listesi '%s' kullanma."
 
 #: ../src/utils/pacat.c:359
 #, c-format
 msgid "Connected to device %s (index: %u, suspended: %s)."
-msgstr "Ansluten till enheten %s (index:%u, vänteläge: %s)."
+msgstr "Aygıta %s bağlanıldı (dizin: %u, askıda kalan: %s)."
 
 #: ../src/utils/pacat.c:369
 #, c-format
 msgid "Stream error: %s"
-msgstr "Strömfel: %s"
+msgstr "Akış hatası: %s"
 
 #: ../src/utils/pacat.c:379
 #, c-format
 msgid "Stream device suspended.%s"
-msgstr "Strömenheten avstängd.%s"
+msgstr "Akış aygıtı askıda. %s"
 
 #: ../src/utils/pacat.c:381
 #, c-format
 msgid "Stream device resumed.%s"
-msgstr "Strömenheten återaktiverad.%s"
+msgstr "Akış aygıtı devam ettirildi.%s"
 
 #: ../src/utils/pacat.c:389
 #, c-format
 msgid "Stream underrun.%s"
-msgstr "Strömmen underskriden.%s"
+msgstr "Akış yetersiz.%s"
 
 #: ../src/utils/pacat.c:396
 #, c-format
 msgid "Stream overrun.%s"
-msgstr "Strömmen överskriden.%s"
+msgstr "Akış taşması.%s"
 
 #: ../src/utils/pacat.c:403
 #, c-format
 msgid "Stream started.%s"
-msgstr "Strömmen startad.%s"
+msgstr "Akış başladı. %s"
 
 #: ../src/utils/pacat.c:410
 #, c-format
 msgid "Stream moved to device %s (%u, %ssuspended).%s"
-msgstr "Strömmen flyttad till enhet %s (%u, %savstängd).%s"
+msgstr "Akış %s aygıtına taşındı (%u, %sertelenmiş).%s"
 
 #: ../src/utils/pacat.c:410
 msgid "not "
-msgstr "inte "
+msgstr "değil "
 
 #: ../src/utils/pacat.c:417
 #, c-format
 msgid "Stream buffer attributes changed.%s"
-msgstr "Strömbuffertattribut ändrade.%s"
+msgstr "Akış tampon bellek özellikleri değişti. %s"
 
 #: ../src/utils/pacat.c:432
 msgid "Cork request stack is empty: corking stream"
-msgstr "Korkningsbegäransstacken är tom: Korkar igen ström"
+msgstr "Durdurma isteği yığını boş: akış durduruluyor"
 
 #: ../src/utils/pacat.c:438
 msgid "Cork request stack is empty: uncorking stream"
-msgstr "Korkningsbegäransstacken är tom: Korkar ur ström"
+msgstr "Durdurma isteği yığını boş: akış durdurma sonlandırılıyor"
 
 #: ../src/utils/pacat.c:442
 msgid "Warning: Received more uncork requests than cork requests!"
-msgstr "Varning: Mottog fler urkorkningsbegäran än korkningsbegäran!"
+msgstr "Uyarı: Durdurma isteğinden daha fazla devam ettirme isteği alındı!"
 
 #: ../src/utils/pacat.c:467
 #, c-format
 msgid "Connection established.%s"
-msgstr "Anslutning etablerad.%s"
+msgstr "Bağlantı kuruldu.%s"
 
 #: ../src/utils/pacat.c:470
 #, c-format
 msgid "pa_stream_new() failed: %s"
-msgstr "pa_stream_new() misslyckades: %s"
+msgstr "pa_stream_new() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:508
 #, c-format
 msgid "pa_stream_connect_playback() failed: %s"
-msgstr "pa_stream_connect_playback() misslyckades: %s"
+msgstr "pa_stream_connect_playback() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:514
 #, c-format
 msgid "Failed to set monitor stream: %s"
-msgstr "Misslyckades med att ange övervakningsströmmen: ”%s”."
+msgstr "Akış izleme ayarlanamadı: %s"
 
 #: ../src/utils/pacat.c:518
 #, c-format
 msgid "pa_stream_connect_record() failed: %s"
-msgstr "pa_stream_connect_record() misslyckades: %s"
+msgstr "pa_stream_connect_record() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:531 ../src/utils/pactl.c:1448
 #, c-format
 msgid "Connection failure: %s"
-msgstr "Anslutningsfel: %s"
+msgstr "Bağlantı hatası: %s"
 
 #: ../src/utils/pacat.c:564
 msgid "Got EOF."
-msgstr "Fick filslut."
+msgstr "EOF Al."
 
 #: ../src/utils/pacat.c:601
 #, c-format
 msgid "write() failed: %s"
-msgstr "write() misslyckades: %s"
+msgstr "write() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:622
 msgid "Got signal, exiting."
-msgstr "Fick signal, avslutar."
+msgstr "Sinyal alındı, çıkılıyor."
 
 #: ../src/utils/pacat.c:636
 #, c-format
 msgid "Failed to get latency: %s"
-msgstr "Misslyckades med att avgöra latens: %s"
+msgstr "Gecikme alınamadı: %s"
 
 #: ../src/utils/pacat.c:641
 #, c-format
 msgid "Time: %0.3f sec; Latency: %0.0f usec."
-msgstr "Tid: %0.3f s; Latens: %0.0f μs."
+msgstr "Zaman: %0.3f saniye; Gecikme: %0.0f usec."
 
 #: ../src/utils/pacat.c:662
 #, c-format
 msgid "pa_stream_update_timing_info() failed: %s"
-msgstr "pa_stream_update_timing_info() misslyckades: %s"
+msgstr "pa_stream_update_timing_info() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:672
 #, c-format
@@ -1887,66 +1889,70 @@ msgid ""
 "      --monitor-stream=INDEX            Record from the sink input with "
 "index INDEX.\n"
 msgstr ""
-"%s [flaggor]\n"
+"%s [seçenekler]\n"
 "\n"
-"  -h, --help                            Visa denna hjälp\n"
-"      --version                         Visa version\n"
+"  -h, --help                            Yardımı gösterir\n"
+"      --version                         Sürümü gösterir\n"
 "\n"
-"  -r, --record                          Skapa en anslutning för inspelning\n"
-"  -p, --playback                        Skapa en anslutning för uppspelning\n"
+"  -r, --record                          Kayıt için bir bağlantı oluşturur\n"
+"  -p, --playback                        Çalmak için bir bağlantı oluşturur\n"
 "\n"
-"  -v, --verbose                         Aktivera informativa åtgärder\n"
+"  -v, --verbose                         Ayrıntılı işlemleri etkinleştirir\n"
 "\n"
-"  -s, --server=SERVER                   Namn på server att ansluta till\n"
-"  -d, --device=ENHET                    Namn på mottagare/källa att ansluta "
-"till\n"
-"  -n, --client-name=NAMN                Hur denna klient ska anropas på "
-"servern\n"
-"      --stream-name=NAMN                Hur denna ström ska anropas på "
-"servern\n"
-"      --volume=VOLUM                    Ange initiala (linjära) volymen i "
-"intervallet 0...65536\n"
-"      --rate=SAMPLINGSFREKVENS          Samplingsfrekvens i Hz (standard "
-"44100)\n"
-"      --format=SAMPLINGSFORMAT          Samplingstyp, en av s16le, s16be, "
-"u8, float32le,\n"
+"  -s, --server=SUNUCU                   Bağlanılacak sunucunun adı\n"
+"  -d, --device=AYGIT                   Bağlanılacak alıcı/kaynak adı\n"
+"  -n, --client-name=AD                Sunucu üzerindeki istemci nasıl "
+"çağrılacağı bilgisi\n"
+"      --stream-name=AD                Sunucu üzerindeki bu akışın nasıl "
+"çağrılacağı bilgisi\n"
+"      --volume=HACİM                   0...65536 aralığında başlangıç "
+"(doğrusal) hacmi belirtir\n"
+"      --rate=ÖRNEKLEMEHIZI                 Hz cinsinde örnekleme oranı ("
+"varsayılan - 44100)\n"
+"      --format=ÖRNEKLEMEBİÇİMİ             s16le, s16be, u8, float32le,\n"
 "                                        float32be, ulaw, alaw, s32le, s32be, "
 "s24le, s24be,\n"
 "                                        s24-32le, s24-32be (defaults to "
 "s16ne)\n"
-"      --channels=KANALER                Antalet kanaler, 1 för mono, 2 för "
-"stereo\n"
-"                                        (standard 2)\n"
-"      --channel-map=KANALMAPPNING       Kanalmappning att använda istället "
-"för standard\n"
-"      --fix-format                      Ta samplingsformatet från mottagaren/"
-"källan strömmen är\n"
-"                                        ansluten till.\n"
-"      --fix-rate                        Ta samplingsfrekvensen från "
-"mottagaren/källan strömmen är\n"
-"                                        ansluten till.\n"
-"      --fix-channels                    Ta antalet kanaler och "
-"kanalmappning\n"
-"                                        från mottagaren/källan strömmen är "
-"ansluten till.\n"
-"      --no-remix                        Mixa inte ner eller upp kanaler.\n"
-"      --no-remap                        Mappa kanaler med index istället för "
-"med namn.\n"
-"      --latency=BYTE                    Begär angiven latens i byte.\n"
-"      --process-time=BYTE               Begär angiven processtid per begäran "
-"i byte.\n"
-"      --latency-msec=ms                 Begär angiven latens i ms.\n"
-"      --process-time-msec=ms            Begär angiven processtid per begäran "
-"i ms.\n"
-"      --property=EGENSKAP=VÄRDE         Sätt angiven egenskap till angivet "
-"värde.\n"
-"      --raw                             Spela in/spela upp rå PCM-data.\n"
-"      --passthrough                     Genomströmningsdata.\n"
-"      --file-format[=FFORMAT]           Spela in/spela upp formaterad PCM-"
-"data.\n"
-"      --list-file-formats               Lista tillgängliga filformat.\n"
-"      --monitor-stream=INDEX            Spela in från mottagaringången med "
-"index INDEX.\n"
+"                                        biçimlerinden biri örnekleme "
+"türü       --channels=KANALLAR               Kanal sayısı, tek için 1, çift "
+"için 2\n"
+"                                        (varsayılan - 2)\n"
+"      --channel-map=KANALADRESLEME          Varsayılan yerine kullanmak için "
+"kanal adresleme\n"
+"      --fix-format                      Alıcı/kaynaktan bağlı olunan akışın "
+"örnekleme türünü alır.\n"
+"      --fix-rate                        Alıcı/kaynaktan bağlı olunan akışın "
+"örnekleme türünü alır.\n"
+"      --fix-channels                    Alıcı/kaynaktan bağlı olunan akışın "
+"kanal eşlemesini\n"
+"                                                        ve kanal sayısını "
+"alır.\n"
+"      --no-remix                        Kanalları indirgemez ya da "
+"çoğaltamaz.\n"
+"      --no-remap                        Ad yerine dizin ile kanalları eşler."
+"\n"
+"      --latency=BAYT                   Bayt cinsinden belirtilen gecikmeyi "
+"ister.\n"
+"      --process-time=BAYT              Bayt cinsinden her talep başına "
+"belirtilen işlem\n"
+"                                                                   zamanını "
+"ister.\n"
+"      --latency-msec=MİLİSANİYE               Milisaniye cinsinde belirtilen "
+"gecikmeyi ister.\n"
+"      --process-time-msec=MİLİSANİYE          Milisaniye cinsinde her talep "
+"başına belirtilen\n"
+"                                                                             "
+"işlem zamanını ister.\n"
+"      --property=ÖZELLİK=DEĞER         Belirtilen değere belirtilen "
+"özellikleri ayarlar.\n"
+"      --raw                             Ham PCM veri kaydeder/çalar.\n"
+"      --passthrough                     Doğrudan veri geçişi.\n"
+"      --file-format[=FFORMAT]           Biçimlendirilmiş PCM verilerini "
+"kaydeder/çalar.\n"
+"      --list-file-formats               Mevcut dosya biçimlerini listeler.\n"
+"      --monitor-stream=INDEX            Alıcı girdisinden INDEX indeksi ile "
+"kaydeder.\n"
 
 #: ../src/utils/pacat.c:810
 #, c-format
@@ -1956,51 +1962,51 @@ msgid ""
 "Linked with libpulse %s\n"
 msgstr ""
 "pacat %s\n"
-"Kompilerade med libpulse %s\n"
-"Länkade med libpulse %s\n"
+"Libpulse %s ile derlendi\n"
+"Libpulse %s ile bağlantılı\n"
 
 #: ../src/utils/pacat.c:843 ../src/utils/pactl.c:1644
 #, c-format
 msgid "Invalid client name '%s'"
-msgstr "Ogiltigt klientnamn ”%s”"
+msgstr "Geçersiz istemci adı '%s'"
 
 #: ../src/utils/pacat.c:858
 #, c-format
 msgid "Invalid stream name '%s'"
-msgstr "Ogiltigt namn på strömmen ”%s”"
+msgstr "Geçersiz akış adı '%s'"
 
 #: ../src/utils/pacat.c:895
 #, c-format
 msgid "Invalid channel map '%s'"
-msgstr "Ogiltig kanalmappning ”%s”"
+msgstr "Geçersiz kanal adresleme '%s'"
 
 #: ../src/utils/pacat.c:924 ../src/utils/pacat.c:938
 #, c-format
 msgid "Invalid latency specification '%s'"
-msgstr "Ogiltig latensangivelse ”%s”"
+msgstr "Geçersiz gecikme tanımı '%s'"
 
 #: ../src/utils/pacat.c:931 ../src/utils/pacat.c:945
 #, c-format
 msgid "Invalid process time specification '%s'"
-msgstr "Ogiltig angivelse av processtid ”%s”"
+msgstr "Geçersiz işlem zaman tanımı '%s'"
 
 #: ../src/utils/pacat.c:957
 #, c-format
 msgid "Invalid property '%s'"
-msgstr "Ogiltig egenskap ”%s”"
+msgstr "Geçersiz özellik '%s'"
 
 #: ../src/utils/pacat.c:976
 #, c-format
 msgid "Unknown file format %s."
-msgstr "Okänt filformat %s."
+msgstr "Bilinmeyen dosya biçimi %s."
 
 #: ../src/utils/pacat.c:991
 msgid "Failed to parse the argument for --monitor-stream"
-msgstr "Misslyckades med att tolka argumentet för --monitor-stream"
+msgstr "--monitor-stream için değişken ayrıştırılamadı"
 
 #: ../src/utils/pacat.c:1002
 msgid "Invalid sample specification"
-msgstr "Ogiltig samplingsspecifikation"
+msgstr "Geçersiz örnekleme tanımı"
 
 #: ../src/utils/pacat.c:1012
 #, c-format
@@ -2014,145 +2020,144 @@ msgstr "dup2(): %s"
 
 #: ../src/utils/pacat.c:1024
 msgid "Too many arguments."
-msgstr "För många argument."
+msgstr "Çok fazla değişken."
 
 #: ../src/utils/pacat.c:1035
 msgid "Failed to generate sample specification for file."
-msgstr "Misslyckades med att generera samplingsspecifikation för filen."
+msgstr "Dosya için örnekleme tanımı oluşturulamadı."
 
 #: ../src/utils/pacat.c:1061
 msgid "Failed to open audio file."
-msgstr "Misslyckades med att öppna ljudfilen."
+msgstr "Ses dosyası açılamadı."
 
 #: ../src/utils/pacat.c:1067
 msgid ""
 "Warning: specified sample specification will be overwritten with "
 "specification from file."
 msgstr ""
-"Varning: angiven samplingsspecifikation kommer att skrivas över med "
-"specifikation från filen."
+"Uyarı: belirtilmiş örnek tanımlama, dosyadan alınacak başka bir tanımlama "
+"ile üzerine yazılacak."
 
 #: ../src/utils/pacat.c:1070 ../src/utils/pactl.c:1708
 msgid "Failed to determine sample specification from file."
-msgstr "Misslyckades med att avgöra samplingsspecifikation från filen."
+msgstr "Dosyadan örnekleme tanımı belirlenemedi."
 
 #: ../src/utils/pacat.c:1079
 msgid "Warning: Failed to determine channel map from file."
-msgstr "Varning: Misslyckades med att avgöra kanalmappningen från filen."
+msgstr "Uyarı: Dosyadan kanal adresleme belirlenemedi."
 
 #: ../src/utils/pacat.c:1090
 msgid "Channel map doesn't match sample specification"
-msgstr "Kanalmappning stämmer inte överens med samplingsspecifikationen"
+msgstr "Kanal adresleme örnekleme tanımı ile eşleşmiyor"
 
 #: ../src/utils/pacat.c:1101
 msgid "Warning: failed to write channel map to file."
-msgstr "Varning: Misslyckades med att skriva kanalmappningen till filen."
+msgstr "Uyarı: kanal adresleme dosyaya yazılamadı."
 
 #: ../src/utils/pacat.c:1116
 #, c-format
 msgid ""
 "Opening a %s stream with sample specification '%s' and channel map '%s'."
 msgstr ""
-"Öppnar en %s-ström med samplingsspecifikationen ”%s” och kanalmappningen "
-"”%s”."
+"Örnekleme tanımı '%s' ve kanal adresleme '%s' ile bir %s akışı açılıyor."
 
 #: ../src/utils/pacat.c:1117
 msgid "recording"
-msgstr "inspelning"
+msgstr "kaydediliyor"
 
 #: ../src/utils/pacat.c:1117
 msgid "playback"
-msgstr "uppspelning"
+msgstr "çal"
 
 #: ../src/utils/pacat.c:1141
 msgid "Failed to set media name."
-msgstr "Misslyckades med att ange medienamn."
+msgstr "Ortam adı ayarlanamadı."
 
 #: ../src/utils/pacat.c:1148 ../src/utils/pactl.c:2058
 msgid "pa_mainloop_new() failed."
-msgstr "pa_mainloop_new() misslyckades."
+msgstr "pa_mainloop_new() başarısız oldu."
 
 #: ../src/utils/pacat.c:1171
 msgid "io_new() failed."
-msgstr "io_new() misslyckades."
+msgstr "io_new() başarısız oldu."
 
 #: ../src/utils/pacat.c:1178 ../src/utils/pactl.c:2070
 msgid "pa_context_new() failed."
-msgstr "pa_context_new() misslyckades."
+msgstr "pa_context_new() başarısız oldu."
 
 #: ../src/utils/pacat.c:1186 ../src/utils/pactl.c:2076
 #, c-format
 msgid "pa_context_connect() failed: %s"
-msgstr "pa_context_connect() misslyckades: %s"
+msgstr "pa_context_connect() başarısız oldu: %s"
 
 #: ../src/utils/pacat.c:1192
 msgid "pa_context_rttime_new() failed."
-msgstr "pa_context_rttime_new() misslyckades."
+msgstr "pa_context_rttime_new() başarısız oldu."
 
 #: ../src/utils/pacat.c:1199 ../src/utils/pactl.c:2081
 msgid "pa_mainloop_run() failed."
-msgstr "pa_mainloop_run() misslyckades."
+msgstr "pa_mainloop_run() başarısız oldu."
 
 #: ../src/utils/pacmd.c:53 ../src/utils/pactl.c:1566
 msgid "NAME [ARGS ...]"
-msgstr "NAMN [ARG …]"
+msgstr "AD [DEĞİŞKENLER ...]"
 
 #: ../src/utils/pacmd.c:54 ../src/utils/pacmd.c:62 ../src/utils/pactl.c:1567
 msgid "NAME|#N"
-msgstr "NAMN|#N"
+msgstr "AD|#A"
 
 #: ../src/utils/pacmd.c:55 ../src/utils/pacmd.c:65 ../src/utils/pactl.c:1565
 #: ../src/utils/pactl.c:1571
 msgid "NAME"
-msgstr "NAMN"
+msgstr "AD"
 
 #: ../src/utils/pacmd.c:56
 msgid "NAME|#N VOLUME"
-msgstr "NAMN|#N VOLYM"
+msgstr "AD|#A SES"
 
 #: ../src/utils/pacmd.c:57
 msgid "#N VOLUME"
-msgstr "#N VOLYM"
+msgstr "#N SES"
 
 #: ../src/utils/pacmd.c:58 ../src/utils/pacmd.c:72 ../src/utils/pactl.c:1569
 msgid "NAME|#N 1|0"
-msgstr "NAMN|#N 1|0"
+msgstr "AD|#A 1|0"
 
 #: ../src/utils/pacmd.c:59
 msgid "#N 1|0"
-msgstr "#N 1|0"
+msgstr "#A 1|0"
 
 #: ../src/utils/pacmd.c:60
 msgid "NAME|#N KEY=VALUE"
-msgstr "NAMN|#N NYCKEL=VÄRDE"
+msgstr "AD|#A ANAHTAR=DEĞER"
 
 #: ../src/utils/pacmd.c:61
 msgid "#N KEY=VALUE"
-msgstr "#N NYCKEL=VÄRDE"
+msgstr "#A ANAHTAR=DEĞER"
 
 #: ../src/utils/pacmd.c:63
 msgid "#N"
-msgstr "#N"
+msgstr "#A"
 
 #: ../src/utils/pacmd.c:64
 msgid "NAME SINK|#N"
-msgstr "NAMN MOTTAGARE|#N"
+msgstr "AD ALICI|#A"
 
 #: ../src/utils/pacmd.c:66 ../src/utils/pacmd.c:67
 msgid "NAME FILENAME"
-msgstr "NAMN FILNAMN"
+msgstr "AD DOSYAADI"
 
 #: ../src/utils/pacmd.c:68
 msgid "PATHNAME"
-msgstr "SÖKVÄGSNAMN"
+msgstr "YOLADI"
 
 #: ../src/utils/pacmd.c:69
 msgid "FILENAME SINK|#N"
-msgstr "FILNAMN MOTTAGARE|#N"
+msgstr "DOSYAADI ALICI|#A"
 
 #: ../src/utils/pacmd.c:71 ../src/utils/pactl.c:1568
 msgid "#N SINK|SOURCE"
-msgstr "#N MOTTAGARE|KÄLLA"
+msgstr "#A ALICI|KAYNAK"
 
 #: ../src/utils/pacmd.c:73 ../src/utils/pacmd.c:79 ../src/utils/pacmd.c:80
 msgid "1|0"
@@ -2160,27 +2165,27 @@ msgstr "1|0"
 
 #: ../src/utils/pacmd.c:74 ../src/utils/pactl.c:1570
 msgid "CARD PROFILE"
-msgstr "KORT PROFIL"
+msgstr "KART PROFİLİ"
 
 #: ../src/utils/pacmd.c:75 ../src/utils/pactl.c:1572
 msgid "NAME|#N PORT"
-msgstr "NAMN|#N PORT"
+msgstr "AD|#A BAĞLANTI NOKTASI"
 
 #: ../src/utils/pacmd.c:76 ../src/utils/pactl.c:1578
 msgid "CARD-NAME|CARD-#N PORT OFFSET"
-msgstr "KORT-NAMN|KORT-#N PORT OFFSET"
+msgstr "KART-ADI|KART-#N PORT UZAKLIK"
 
 #: ../src/utils/pacmd.c:77
 msgid "TARGET"
-msgstr "MÅL"
+msgstr "HEDEF"
 
 #: ../src/utils/pacmd.c:78
 msgid "NUMERIC LEVEL"
-msgstr "NUMERISK NIVÅ"
+msgstr "SAYISAL SEVİYE"
 
 #: ../src/utils/pacmd.c:81
 msgid "FRAMES"
-msgstr "LJUDRUTOR"
+msgstr "KARELER"
 
 #: ../src/utils/pacmd.c:83
 #, c-format
@@ -2191,9 +2196,9 @@ msgid ""
 "When no command is given pacmd starts in the interactive mode.\n"
 msgstr ""
 "\n"
-"  -h, --help                            Visa denna hjälp\n"
-"      --version                         Visa version\n"
-"När inget kommando anges startar pacmd i det interaktiva läget.\n"
+"  -h, --help                            Yardım gösterir\n"
+"      --version                         Sürüm gösterir\n"
+"pacmd için komut verilmediğinde karşılıklı konuşma kipinde başlar.\n"
 
 #: ../src/utils/pacmd.c:130
 #, c-format
@@ -2203,12 +2208,14 @@ msgid ""
 "Linked with libpulse %s\n"
 msgstr ""
 "pacmd %s\n"
-"Kompilerad med libpulse %s\n"
-"Länkad med libpulse %s\n"
+"libpulse %s ile derlendi\n"
+"libpulse %s ile bağlantılı\n"
 
 #: ../src/utils/pacmd.c:144
 msgid "No PulseAudio daemon running, or not running as session daemon."
-msgstr "Ingen PulseAudio-demon körs, eller körs ej som en sessionsdemon."
+msgstr ""
+"Hiçbir PulseAudio artalan işlemi çalıştırılmıyor ya da bir artalan işlem "
+"oturumu olarak çalıştırılmıyor."
 
 #: ../src/utils/pacmd.c:149
 #, c-format
@@ -2222,11 +2229,11 @@ msgstr "connect(): %s"
 
 #: ../src/utils/pacmd.c:174
 msgid "Failed to kill PulseAudio daemon."
-msgstr "Misslyckades med att döda PulseAudio-demon."
+msgstr "PulseAudio artalan işlemi durdurulamadı."
 
 #: ../src/utils/pacmd.c:182
 msgid "Daemon not responding."
-msgstr "Demon svarar ej."
+msgstr "Artalan işlem yanıt vermiyor."
 
 #: ../src/utils/pacmd.c:214 ../src/utils/pacmd.c:323 ../src/utils/pacmd.c:341
 #, c-format
@@ -2246,28 +2253,27 @@ msgstr "read(): %s"
 #: ../src/utils/pactl.c:166
 #, c-format
 msgid "Failed to get statistics: %s"
-msgstr "Misslyckades med att hämta statistik: %s"
+msgstr "İstatistikler alınamadı: %s"
 
 #: ../src/utils/pactl.c:172
 #, c-format
 msgid "Currently in use: %u blocks containing %s bytes total.\n"
-msgstr "Används för närvarande: %u block innehållande %s byte totalt.\n"
+msgstr "Şu anda kullanımda: %u bloklar toplamda %s bayt içeriyor.\n"
 
 #: ../src/utils/pactl.c:175
 #, c-format
 msgid "Allocated during whole lifetime: %u blocks containing %s bytes total.\n"
-msgstr ""
-"Allokerade under hela livstiden: %u block innehållande %s byte totalt.\n"
+msgstr "Tüm ömrü boyunca ayrılmış: %u blokları toplamda %s bayt içeriyor.\n"
 
 #: ../src/utils/pactl.c:178
 #, c-format
 msgid "Sample cache size: %s\n"
-msgstr "Samplingscachestorlek: %s\n"
+msgstr "Örnekleme ön bellek boyutu: %s\n"
 
 #: ../src/utils/pactl.c:187
 #, c-format
 msgid "Failed to get server information: %s"
-msgstr "Misslyckades med att hämta serverinformation: %s"
+msgstr "Sunucu bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:192
 #, c-format
@@ -2279,12 +2285,12 @@ msgid ""
 "Client Index: %u\n"
 "Tile Size: %zu\n"
 msgstr ""
-"Serversträng: %s\n"
-"Biblioteksprotokollversion: %u\n"
-"Serverprotokollversion: %u\n"
-"Lokal: %s\n"
-"Klientindex: %u\n"
-"Blockstorlek: %zu\n"
+"Sunucu Karakter Dizisi: %s\n"
+"Kütüphane Protokol Sürümü: %u\n"
+"Sunucu Protokol Sürümü: %u\n"
+"Yerelde Mi: %s\n"
+"İstemci Dizini: %u\n"
+"Desen Boyutu: %zu\n"
 
 #: ../src/utils/pactl.c:208
 #, c-format
@@ -2299,20 +2305,20 @@ msgid ""
 "Default Source: %s\n"
 "Cookie: %04x:%04x\n"
 msgstr ""
-"Användarnamn: %s\n"
-"Värdnamn: %s\n"
-"Servernamn: %s\n"
-"Serverversion: %s\n"
-"Förvald samplingsspecifikation: %s\n"
-"Förvald kanalmappning: %s\n"
-"Förvald mottagare: %s\n"
-"Förvald källa: %s\n"
-"Kaka: %04x:%04x\n"
+"Kullanıcı Adı: %s\n"
+"Makine Adı: %s\n"
+"Sunucu Adı: %s\n"
+"Sunucu Sürümü: %s\n"
+"Varsayılan Örnekleme Tanımı: %s\n"
+"Varsayılan Kanal Adresleme: %s\n"
+"Varsayılan Alıcı: %s\n"
+"Varsayılan Kaynak: %s\n"
+"Çerez: %04x:%04x\n"
 
 #: ../src/utils/pactl.c:257 ../src/utils/pactl.c:902 ../src/utils/pactl.c:980
 #, c-format
 msgid "Failed to get sink information: %s"
-msgstr "Misslyckades med att få information om mottagare: %s"
+msgstr "Alıcı bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:283
 #, c-format
@@ -2335,43 +2341,43 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Mottagare #%u\n"
-"\tTillstånd: %s\n"
-"\tNamn: %s\n"
-"\tBeskrivning: %s\n"
-"\tDrivrutin: %s\n"
-"\tSamplingsspecifikation: %s\n"
-"\tKanalmappning: %s\n"
-"\tÄgarmodul: %u\n"
-"\tTyst: %s\n"
-"\tVolym: %s\n"
-"\t        balans %0.2f\n"
-"\tBasvolym: %s\n"
-"\tÖvervakarkälla: %s\n"
-"\tLatens: %0.0f µs, anpassad %0.0f µs\n"
-"\tFlaggor: %s%s%s%s%s%s%s\n"
-"\tEgenskaper:\n"
+"Alıcı #%u\n"
+"\tDurum: %s\n"
+"\tAd: %s\n"
+"\tAçıklama: %s\n"
+"\tSürücü: %s\n"
+"\tÖrnekleme Tanımı: %s\n"
+"\tKanal Adresleme: %s\n"
+"\tModül Sahibi: %u\n"
+"\tSessiz: %s\n"
+"\tSes: %s\n"
+"\t        denge %0.2f\n"
+"\tTemel Ses: %s\n"
+"\tİzleme Kaynağı: %s\n"
+"\tGecikme: %0.0f usec, yapılandırılmış %0.0f usec\n"
+"\tBayraklar: %s%s%s%s%s%s%s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:327 ../src/utils/pactl.c:433 ../src/utils/pactl.c:594
 #, c-format
 msgid "\tPorts:\n"
-msgstr "\tPortar:\n"
+msgstr "\tBağlantı Noktaları:\n"
 
 #: ../src/utils/pactl.c:334 ../src/utils/pactl.c:440
 #, c-format
 msgid "\tActive Port: %s\n"
-msgstr "\tAktiv port: %s\n"
+msgstr "\tEtkin Bağlantı Noktası: %s\n"
 
 #: ../src/utils/pactl.c:340 ../src/utils/pactl.c:446
 #, c-format
 msgid "\tFormats:\n"
-msgstr "\tFormat:\n"
+msgstr "\tBiçimler:\n"
 
 #: ../src/utils/pactl.c:364 ../src/utils/pactl.c:922 ../src/utils/pactl.c:995
 #, c-format
 msgid "Failed to get source information: %s"
-msgstr "Misslyckades med att få information om källa: %s"
+msgstr "Kaynak bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:390
 #, c-format
@@ -2394,22 +2400,22 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Källa nr %u\n"
-"\tTillstånd: %s\n"
-"\tNamn: %s\n"
-"\tBeskrivning: %s\n"
-"\tDrivrutin: %s\n"
-"\tSamplingsspecifikation: %s\n"
-"\tKanalmappning: %s\n"
-"\tÄgarmodul: %u\n"
-"\tTystad: %s\n"
-"\tVolym: %s\n"
-"\t       balans %0.2f\n"
-"\tBasvolym: %s\n"
-"\tÖvervakare för mottagare: %s\n"
-"\tLatens: %0.0f µs, konfigurerad %0.0f µs\n"
-"\tFlaggor: %s%s%s%s%s%s\n"
-"\tEgenskaper:\n"
+"Kaynak #%u\n"
+"\tDurum: %s\n"
+"\tAd: %s\n"
+"\tAçıklama: %s\n"
+"\tSürücü: %s\n"
+"\tÖrnekleme Tanımı: %s\n"
+"\tKanal Adresleme: %s\n"
+"\tModül Sahibi: %u\n"
+"\tSessiz: %s\n"
+"\tSes: %s\n"
+"\t        denge %0.2f\n"
+"\tTemel Ses: %s\n"
+"\tAlıcı İzleme: %s\n"
+"\tGecikme: %0.0f usec, yapılandırılmış %0.0f usec\n"
+"\tBayraklar: %s%s%s%s%s%s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:418 ../src/utils/pactl.c:488 ../src/utils/pactl.c:531
@@ -2418,12 +2424,12 @@ msgstr ""
 #: ../src/utils/pactl.c:753 ../src/utils/pactl.c:804 ../src/utils/pactl.c:805
 #: ../src/utils/pactl.c:811
 msgid "n/a"
-msgstr "ej tillämpligt"
+msgstr "yok"
 
 #: ../src/utils/pactl.c:457 ../src/utils/pactl.c:861
 #, c-format
 msgid "Failed to get module information: %s"
-msgstr "Misslyckades med att få modulinformation: %s"
+msgstr "Modül bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:480
 #, c-format
@@ -2435,17 +2441,17 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Modul nr. %u\n"
-"\tNamn: %s\n"
-"\tArgument: %s\n"
-"\tAnvändningsräknare: %s\n"
-"\tEgenskaper:\n"
+"Modül #%u\n"
+"\tAdı: %s\n"
+"\tDeğişken: %s\n"
+"\tKullanım Sayacı: %s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:499
 #, c-format
 msgid "Failed to get client information: %s"
-msgstr "Misslyckades med att få klientinformation: %s"
+msgstr "İstemci bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:525
 #, c-format
@@ -2456,16 +2462,16 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Klient #%u\n"
-"\tDrivrutin: %s\n"
-"\tÄgarmodul: %s\n"
-"\tEgenskaper:\n"
+"İstemci #%u\n"
+"\tSürücü: %s\n"
+"\tModül Sahibi: %s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:542
 #, c-format
 msgid "Failed to get card information: %s"
-msgstr "Misslyckades med att få kortinformation: %s"
+msgstr "Kart bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:565
 #, c-format
@@ -2477,22 +2483,22 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Kort #%u\n"
-"\tNamn: %s\n"
-"\tDrivrutin: %s\n"
-"\tÄgarmodul: %s\n"
-"\tEgenskaper:\n"
+"Kart #%u\n"
+"\tAdı: %s\n"
+"\tSürücü: %s\n"
+"\tModül Sahibi: %s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:581
 #, c-format
 msgid "\tProfiles:\n"
-msgstr "\tProfiler:\n"
+msgstr "\tProfiller:\n"
 
 #: ../src/utils/pactl.c:588
 #, c-format
 msgid "\tActive Profile: %s\n"
-msgstr "\tAktiv profil: %s\n"
+msgstr "\tEtkin Profil: %s\n"
 
 #: ../src/utils/pactl.c:602
 #, c-format
@@ -2500,18 +2506,18 @@ msgid ""
 "\t\t\tProperties:\n"
 "\t\t\t\t%s\n"
 msgstr ""
-"\t\t\tEgenskaper:\n"
+"\t\t\tÖzellikler:\n"
 "\t\t\t\t%s\n"
 
 #: ../src/utils/pactl.c:607
 #, c-format
 msgid "\t\t\tPart of profile(s): %s"
-msgstr "\t\t\tDel av profil(er): %s"
+msgstr "\t\t\\Profil(ler)in parçası: %s"
 
 #: ../src/utils/pactl.c:624 ../src/utils/pactl.c:942 ../src/utils/pactl.c:1010
 #, c-format
 msgid "Failed to get sink input information: %s"
-msgstr "Misslyckades med att få ingångsinformation för mottagaren: %s"
+msgstr "Alıcı giriş bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:653
 #, c-format
@@ -2534,28 +2540,28 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Mottagaringång #%u\n"
-"\tDrivrutin: %s\n"
-"\tÄgarmodul: %s\n"
-"\tKlient: %s\n"
-"\tMottagare: %u\n"
-"\tSamplingsspecifikation: %s\n"
-"\tKanalmappning: %s\n"
-"\tFormat: %s\n"
-"\tKorkad: %s\n"
-"\tTyst: %s\n"
-"\tVolym: %s\n"
-"\t        balans %0.2f\n"
-"\tBuffertlatens: %0.0f µs\n"
-"\tMottagarlatens: %0.0f µs\n"
-"\tOmsamplingsmetod: %s\n"
-"\tEgenskaper:\n"
+"Alıcı Girişi #%u\n"
+"\tSürücü: %s\n"
+"\tModül Sahibi: %s\n"
+"\tİstemci: %s\n"
+"\tAlıcı: %u\n"
+"\tÖrnekleme Tanımı: %s\n"
+"\tKanal Adresleme: %s\n"
+"\tBiçim: %s\n"
+"\tDurduruldu: %s\n"
+"\tSessiz: %s\n"
+"\tSes: %s\n"
+"\t        denge %0.2f\n"
+"\tTampon Bellek Gecikmesi: %0.0f usec\n"
+"\tAlıcı Gecikmesi: %0.0f usec\n"
+"\tÖrnekleme Yöntemi: %s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:694 ../src/utils/pactl.c:962 ../src/utils/pactl.c:1025
 #, c-format
 msgid "Failed to get source output information: %s"
-msgstr "Misslyckades med att få information om källutgång: %s"
+msgstr "Kaynak çıktı bilgileri alınamadı: %s"
 
 #: ../src/utils/pactl.c:723
 #, c-format
@@ -2578,28 +2584,28 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Källutgång #%u\n"
-"\tDrivrutin: %s\n"
-"\tÄgarmodul: %s\n"
-"\tKlient: %s\n"
-"\tKälla: %u\n"
-"\tSamplingsspecifikation: %s\n"
-"\tKanalmappning: %s\n"
-"\tFormat: %s\n"
-"\tKorkad: %s\n"
-"\tTyst: %s\n"
-"\tVolym: %s\n"
-"\t        balans %0.2f\n"
-"\tBuffertlatens: %0.0f µs\n"
-"\tKällatens: %0.0f µs\n"
-"\tOmsamplingsmetod: %s\n"
-"\tEgenskaper:\n"
+"Kaynak Çıktısı #%u\n"
+"\tSürücü: %s\n"
+"\tModül Sahibi: %s\n"
+"\tİstemci: %s\n"
+"\tKaynak: %u\n"
+"\tÖrnekleme Tanımı: %s\n"
+"\tKanal Adresleme: %s\n"
+"\tBiçim: %s\n"
+"\tVeri Akışı Durduruldu: %s\n"
+"\tSessiz: %s\n"
+"\tSes: %s\n"
+"\t        denge %0.2f\n"
+"\tTampon Bellek Gecikmesi: %0.0f usec\n"
+"\tKaynak Gecikmesi: %0.0f usec\n"
+"\tYeniden Örnekleme yöntemi: %s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:764
 #, c-format
 msgid "Failed to get sample information: %s"
-msgstr "Misslyckades med att få samplingsinformation: %s"
+msgstr "Örnekleme bilgisi alınamadı: %s"
 
 #: ../src/utils/pactl.c:791
 #, c-format
@@ -2617,28 +2623,28 @@ msgid ""
 "\tProperties:\n"
 "\t\t%s\n"
 msgstr ""
-"Sampling nr. %u\n"
-"\tNamn: %s\n"
-"\tSamplingsspecifikation: %s\n"
-"\tKanalmappning: %s\n"
-"\tVolym: %s\n"
-"\t       balans %0.2f\n"
-"\tVaraktighet: %0.1f s\n"
-"\tStorlek: %s\n"
-"\tLat: %s\n"
-"\tFilnamn: %s\n"
-"\tEgenskaper:\n"
+"Örnekleme #%u\n"
+"\tAd: %s\n"
+"\tÖrnekleme Tanımı: %s\n"
+"\tKanal Adresleme: %s\n"
+"\tSes: %s\n"
+"\t        denge %0.2f\n"
+"\tSüre: %0.1fs\n"
+"\tBoyut: %s\n"
+"\tYavaş: %s\n"
+"\tDosya adı: %s\n"
+"\tÖzellikler:\n"
 "\t\t%s\n"
 
 #: ../src/utils/pactl.c:819 ../src/utils/pactl.c:829
 #, c-format
 msgid "Failure: %s"
-msgstr "Misslyckande: %s"
+msgstr "Hata: %s"
 
 #: ../src/utils/pactl.c:868
 #, c-format
 msgid "Failed to unload module: Module %s not loaded"
-msgstr "Misslyckades med att stänga modul: Modulen %s är inte aktiv"
+msgstr "Modül kaldırılamadı: Modül %s yüklenemedi"
 
 #: ../src/utils/pactl.c:886
 #, c-format
@@ -2646,99 +2652,99 @@ msgid ""
 "Failed to set volume: You tried to set volumes for %d channels, whereas "
 "channel/s supported = %d\n"
 msgstr ""
-"Misslyckades att sätta volym: Du försökte att sätta volymer för %d kanaler, "
-"medan antalet kanaler som stöds = %d\n"
+"Ses ayarlanamadı: Halbuki desteklenen %d kanalları için sesleri ayarlamayı "
+"denediniz\n"
 
 #: ../src/utils/pactl.c:1052
 #, c-format
 msgid "Failed to set format: invalid format string %s"
-msgstr "Misslyckades med att ange format: ogiltig formatsträng %s"
+msgstr "Biçim ayarlanamadı: geçersiz biçim dizisi %s"
 
 #: ../src/utils/pactl.c:1095
 #, c-format
 msgid "Failed to upload sample: %s"
-msgstr "Misslyckades med att skicka upp samplingen: %s"
+msgstr "Örnekleme yüklenemedi: %s"
 
 #: ../src/utils/pactl.c:1112
 msgid "Premature end of file"
-msgstr "För tidigt filslut"
+msgstr "Dosyanın erken bitişi"
 
 #: ../src/utils/pactl.c:1132
 msgid "new"
-msgstr "ny"
+msgstr "yeni"
 
 #: ../src/utils/pactl.c:1135
 msgid "change"
-msgstr "ändra"
+msgstr "değiştir"
 
 #: ../src/utils/pactl.c:1138
 msgid "remove"
-msgstr "ta bort"
+msgstr "kaldır"
 
 #: ../src/utils/pactl.c:1141 ../src/utils/pactl.c:1176
 msgid "unknown"
-msgstr "okänd"
+msgstr "bilinmeyen"
 
 #: ../src/utils/pactl.c:1149
 msgid "sink"
-msgstr "mottagare"
+msgstr "alıcı"
 
 #: ../src/utils/pactl.c:1152
 msgid "source"
-msgstr "källa"
+msgstr "kaynak"
 
 #: ../src/utils/pactl.c:1155
 msgid "sink-input"
-msgstr "mottagaringång"
+msgstr "alıcı-girişi"
 
 #: ../src/utils/pactl.c:1158
 msgid "source-output"
-msgstr "källutgång"
+msgstr "alıcı-çıkışı"
 
 #: ../src/utils/pactl.c:1161
 msgid "module"
-msgstr "modul"
+msgstr "modül"
 
 #: ../src/utils/pactl.c:1164
 msgid "client"
-msgstr "klient"
+msgstr "istemci"
 
 #: ../src/utils/pactl.c:1167
 msgid "sample-cache"
-msgstr "sample-cache"
+msgstr "örnek-önbellek"
 
 #: ../src/utils/pactl.c:1170
 msgid "server"
-msgstr "server"
+msgstr "sunucu"
 
 #: ../src/utils/pactl.c:1173
 msgid "card"
-msgstr "kort"
+msgstr "kart"
 
 #: ../src/utils/pactl.c:1182
 #, c-format
 msgid "Event '%s' on %s #%u\n"
-msgstr "Händelse '%s' på %s #%u\n"
+msgstr "%s #%u üzerinde '%s' olayı\n"
 
 #: ../src/utils/pactl.c:1454
 msgid "Got SIGINT, exiting."
-msgstr "Fick SIGINT, avslutar."
+msgstr "SIGINT alındı, çıkılıyor."
 
 #: ../src/utils/pactl.c:1481
 msgid "Invalid volume specification"
-msgstr "Ogiltig volymangivelse"
+msgstr "Geçersiz ses tanımı"
 
 #: ../src/utils/pactl.c:1504
 msgid "Volume outside permissible range.\n"
-msgstr "Volym utanför tillåtet intervall.\n"
+msgstr "İzin verilebilir aralık dışındaki ses.\n"
 
 #: ../src/utils/pactl.c:1517
 msgid "Invalid number of volume specifications.\n"
-msgstr "Ogiltigt antal volymspecifikationer.\n"
+msgstr "Geçersiz ses tanımı numarası.\n"
 
 #: ../src/utils/pactl.c:1529
 msgid "Inconsistent volume specification.\n"
-msgstr "Inkonsekvent volymspecifikation.\n"
+msgstr "Tutarsız ses tanımı.\n"
 
 #: ../src/utils/pactl.c:1559 ../src/utils/pactl.c:1560
 #: ../src/utils/pactl.c:1561 ../src/utils/pactl.c:1562
@@ -2752,39 +2758,39 @@ msgstr "Inkonsekvent volymspecifikation.\n"
 #: ../src/utils/pactl.c:1577 ../src/utils/pactl.c:1578
 #: ../src/utils/pactl.c:1579
 msgid "[options]"
-msgstr "[flaggor]"
+msgstr "[seçenekler]"
 
 #: ../src/utils/pactl.c:1561
 msgid "[TYPE]"
-msgstr "[TYP]"
+msgstr "[TÜR]"
 
 #: ../src/utils/pactl.c:1563
 msgid "FILENAME [NAME]"
-msgstr "FILNAMN [NAMN]"
+msgstr "DOSYAADI [AD]"
 
 #: ../src/utils/pactl.c:1564
 msgid "NAME [SINK]"
-msgstr "NAMN [MOTTAGARE]"
+msgstr "AD [ALICI]"
 
 #: ../src/utils/pactl.c:1573
 msgid "NAME|#N VOLUME [VOLUME ...]"
-msgstr "NAMN|#N VOLYM [VOLYM …]"
+msgstr "AD|#A SES [SES ...]"
 
 #: ../src/utils/pactl.c:1574
 msgid "#N VOLUME [VOLUME ...]"
-msgstr "#N VOLYM [VOLYM …]"
+msgstr "#A SES [SES ...]"
 
 #: ../src/utils/pactl.c:1575
 msgid "NAME|#N 1|0|toggle"
-msgstr "NAMN|#N 1|0|växla"
+msgstr "İSİM|#N 1|0|geçiş"
 
 #: ../src/utils/pactl.c:1576
 msgid "#N 1|0|toggle"
-msgstr "#N 1|0|växla"
+msgstr "#N 1|0|geçiş"
 
 #: ../src/utils/pactl.c:1577
 msgid "#N FORMATS"
-msgstr "#N FORMAT"
+msgstr "#A BİÇİMLER"
 
 #: ../src/utils/pactl.c:1580
 #, c-format
@@ -2794,8 +2800,8 @@ msgid ""
 "can be used to specify the default sink, source and monitor.\n"
 msgstr ""
 "\n"
-"Specialnamnen @DEFAULT_SINK@, @DEFAULT_SOURCE och @DEFAULT_MONITOR@\n"
-"kan användas för att ange standardmottagare, källa och övervakare.\n"
+"Özel isimler @DEFAULT_SINK@, @DEFAULT_SOURCE@ ve @DEFAULT_MONITOR@\n"
+"varsayılan alıcıyı, kaynağı ve ekranı belirtmek için kullanılabilir.\n"
 
 #: ../src/utils/pactl.c:1583
 #, c-format
@@ -2810,11 +2816,12 @@ msgid ""
 "server\n"
 msgstr ""
 "\n"
-"  -h, --help                            Visa detta hjälpmeddelande\n"
-"      --version                         Visa version\n"
+"  -h, --help                            Yardım gösterir\n"
+"      --version                         Sürüm gösterir\n"
 "\n"
-"  -s, --server=SERVER                   Namnet på servern att ansluta till\n"
-"  -n, --client-name=NAMN                Vad klienten ska kallas på servern\n"
+"  -s, --server=SUNUCU                   Bağlantı kurulacak sunucu adı\n"
+"  -n, --client-name=AD                Sunucu üzerinde bu istemci nasıl "
+"çağrılacak\n"
 
 #: ../src/utils/pactl.c:1624
 #, c-format
@@ -2824,160 +2831,166 @@ msgid ""
 "Linked with libpulse %s\n"
 msgstr ""
 "pactl %s\n"
-"Kompilerad med libpulse %s\n"
-"Länkad med libpulse %s\n"
+"Libpulse %s ile derlendi\n"
+"Libpulse %s ile bağlantılı\n"
 
 #: ../src/utils/pactl.c:1680
 #, c-format
 msgid "Specify nothing, or one of: %s"
-msgstr "Specificera inget, eller endera av: %s"
+msgstr "Şunlardan birini belirtin ya da hiçbir şey belirtmeyin: %s"
 
 #: ../src/utils/pactl.c:1690
 msgid "Please specify a sample file to load"
-msgstr "Ange en samplingsfil att ladda"
+msgstr "Lütfen yüklemek için bir örnekleme dosyası belirtin"
 
 #: ../src/utils/pactl.c:1703
 msgid "Failed to open sound file."
-msgstr "Misslyckades med att öppna ljudfilen."
+msgstr "Ses dosyası açılamadı."
 
 #: ../src/utils/pactl.c:1715
 msgid "Warning: Failed to determine sample specification from file."
-msgstr ""
-"Varning: Misslyckades med att avgöra samplingsspecifikationen från filen."
+msgstr "Uyarı: Dosyadan örnekleme tanımı belirlenemedi."
 
 #: ../src/utils/pactl.c:1725
 msgid "You have to specify a sample name to play"
-msgstr "Du måste ange ett samplingsnamn att spela"
+msgstr "Çalmak için örnek ad belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1737
 msgid "You have to specify a sample name to remove"
-msgstr "Du måste ange ett samplingsnamn att ta bort"
+msgstr "Kaldırmak için örnek ad belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1746
 msgid "You have to specify a sink input index and a sink"
-msgstr "Du måste ange ett index för en ingångsmottagare och en mottagare"
+msgstr "Bir alıcı giriş göstergesi ve alıcı belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1756
 msgid "You have to specify a source output index and a source"
-msgstr "Du måste ange ett index för en källutgång och en källa"
+msgstr "Bir kaynak çıkış indeksi ve kaynak belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1771
 msgid "You have to specify a module name and arguments."
-msgstr "Du måste ange ett modulnamn och argument."
+msgstr "Bir modül adı ve değişken belirtmelisiniz."
 
 #: ../src/utils/pactl.c:1791
 msgid "You have to specify a module index or name"
-msgstr "Du måste ange ett modulindex eller namn"
+msgstr "Bir modül dizini ya da adı belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1804
 msgid ""
 "You may not specify more than one sink. You have to specify a boolean value."
 msgstr ""
-"Du får inte ange fler än en mottagare. Du måste ange ett booleskt värde."
+"Birden daha fazla alıcı belirtemezsiniz. Bir boolean değer belirtmelisiniz."
 
 #: ../src/utils/pactl.c:1809 ../src/utils/pactl.c:1829
 msgid "Invalid suspend specification."
-msgstr "Ogiltig avstängningsspecifikation."
+msgstr "Geçersiz bekletme tanımlaması"
 
 #: ../src/utils/pactl.c:1824
 msgid ""
 "You may not specify more than one source. You have to specify a boolean "
 "value."
-msgstr "Du får inte ange fler än en källa. Du måste ange ett booleskt värde."
+msgstr ""
+"Bir kaynaktan daha fazlasını belirtemezsiniz. Bir boolean değer "
+"belirtmelisiniz."
 
 #: ../src/utils/pactl.c:1841
 msgid "You have to specify a card name/index and a profile name"
-msgstr "Du måste ange ett kortnamn/-index och ett profilnamn"
+msgstr "Bir kart adı/dizin ve bir profil adı belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1852
 msgid "You have to specify a sink name/index and a port name"
-msgstr "Du måste ange ett mottagarnamn/-index och ett portnamn"
+msgstr "Bir alıcı adı/indeksi ve bağlantı noktası adı belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1863
 msgid "You have to specify a sink name"
-msgstr "Du måste ange namn på en mottagare"
+msgstr "Bir alıcı adı belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1873
 msgid "You have to specify a source name/index and a port name"
-msgstr "Du måste ange ett källnamn/-index och ett portnamn"
+msgstr "Bir kaynak adı/dizini ve bir bağlantı noktası adı belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1884
 msgid "You have to specify a source name"
-msgstr "Du måste ange namn på en källa"
+msgstr "Bir kaynak adı belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1894
 msgid "You have to specify a sink name/index and a volume"
-msgstr "Du måste ange ett mottagarnamn/-index och en volym"
+msgstr "Bir alıcı adı/indeksi ve ses belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1907
 msgid "You have to specify a source name/index and a volume"
-msgstr "Du måste ange ett källnamn/-index och en volym"
+msgstr "Bir kaynak adı/dizini ve bir ses belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1920
 msgid "You have to specify a sink input index and a volume"
-msgstr "Du måste ange ett index för en mottagaringång och en volym"
+msgstr "Bir alıcı girdisi indeksi ve bir ses belirtmek zorundasınız"
 
 #: ../src/utils/pactl.c:1925
 msgid "Invalid sink input index"
-msgstr "Ogiltigt index för mottagaringång"
+msgstr "Geçersiz alıcı giriş indeksi"
 
 #: ../src/utils/pactl.c:1936
 msgid "You have to specify a source output index and a volume"
-msgstr "Du måste ange ett källutgångsindex och en volym"
+msgstr "Bir kaynak çıktı dizini ve bir ses belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1941
 msgid "Invalid source output index"
-msgstr "Ogiltigt källutgångsindex"
+msgstr "Geçersiz kaynak çıktı dizini"
 
 #: ../src/utils/pactl.c:1952
 msgid "You have to specify a sink name/index and a mute boolean"
-msgstr "Du måste ange en mottagarnamn/-index och ett booleskt dämpningsvärde"
+msgstr ""
+"Bir alıcı adı/indeksi ve bir sessizlik boole değeri belirtmek zorundasınız"
 
 #: ../src/utils/pactl.c:1957 ../src/utils/pactl.c:1972
 #: ../src/utils/pactl.c:1992 ../src/utils/pactl.c:2010
 msgid "Invalid mute specification"
-msgstr "Ogiltig dämpningsspecifikation"
+msgstr "Geçersiz sessiz tanımı"
 
 #: ../src/utils/pactl.c:1967
 msgid "You have to specify a source name/index and a mute boolean"
-msgstr "Du måste ange ett källnamn/-index och ett booleskt dämpningsvärde"
+msgstr "Bir kaynak adı/dizini ve bir sessiz mantıksal değer belirtmelisiniz"
 
 #: ../src/utils/pactl.c:1982
 msgid "You have to specify a sink input index and a mute boolean"
 msgstr ""
-"Du måste ange ett index för en mottagaringång och ett booleskt dämpningsvärde"
+"Bir alıcı girdi indeksi ve bir sessizlik boole değeri belirtmek zorundasınız"
 
 #: ../src/utils/pactl.c:1987
 msgid "Invalid sink input index specification"
-msgstr "Ogiltig angivelse av index för mottagaringång"
+msgstr "Geçersiz alıcı girişi indeks tanımı"
 
 #: ../src/utils/pactl.c:2000
 msgid "You have to specify a source output index and a mute boolean"
-msgstr "Du måste ange ett källutgångsindex och ett booleskt dämpningsvärde"
+msgstr ""
+"Bir çıktı kaynağı indeksi ve bir sessizlik boole değeri belirtmek "
+"zorundasınız"
 
 #: ../src/utils/pactl.c:2005
 msgid "Invalid source output index specification"
-msgstr "Ogiltig specificering av källutgångsindex"
+msgstr "Geçersiz kaynak çıktısı indeksi tanımlaması"
 
 #: ../src/utils/pactl.c:2022
 msgid ""
 "You have to specify a sink index and a semicolon-separated list of supported "
 "formats"
 msgstr ""
-"Du måste ange ett mottagarindex och en semikolonavskild lista med format som "
-"stöds"
+"Bir alıcı indeksi ve desteklenen biçimlerin, noktalı virgülle ayrılmış "
+"listesini belirtmek zorundasınız"
 
 #: ../src/utils/pactl.c:2034
 msgid "You have to specify a card name/index, a port name and a latency offset"
-msgstr "Du måste ange ett kortnamn/-index, ett portnamn och en latensoffset"
+msgstr ""
+"Bir kart adı/indeksi, bir bağlantı noktası adı ve bir gecikme uzaklığı "
+"belirtmek zorundasınız"
 
 #: ../src/utils/pactl.c:2041
 msgid "Could not parse latency offset"
-msgstr "Kunde inte tolka latensoffset"
+msgstr "Gecikme uzaklığı ayrıştırılamadı"
 
 #: ../src/utils/pactl.c:2053
 msgid "No valid command specified."
-msgstr "Inget giltigt kommando angett."
+msgstr "Belirtilen geçerli komut yok."
 
 #: ../src/utils/pasuspender.c:81
 #, c-format
@@ -2992,32 +3005,32 @@ msgstr "execvp(): %s\n"
 #: ../src/utils/pasuspender.c:113
 #, c-format
 msgid "Failure to resume: %s\n"
-msgstr "Misslyckades med att återuppta: %s\n"
+msgstr "Devam edilemedi: %s\n"
 
 #: ../src/utils/pasuspender.c:147
 #, c-format
 msgid "Failure to suspend: %s\n"
-msgstr "Misslyckades med vänteläge: %s\n"
+msgstr "Bekletilemedi: %s\n"
 
 #: ../src/utils/pasuspender.c:172
 #, c-format
 msgid "WARNING: Sound server is not local, not suspending.\n"
-msgstr "VARNING: Ljudservern är inte lokal, försätter ej i vänteläge.\n"
+msgstr "UYARI: Ses sunucusu yerel değil, askıya alınamıyor.\n"
 
 #: ../src/utils/pasuspender.c:185
 #, c-format
 msgid "Connection failure: %s\n"
-msgstr "Anslutningsfel: %s\n"
+msgstr "Bağlantı hatası: %s\n"
 
 #: ../src/utils/pasuspender.c:203
 #, c-format
 msgid "Got SIGINT, exiting.\n"
-msgstr "Erhöll SIGINT, avslutar.\n"
+msgstr "SIGINT sinyali alındı, çıkılıyor.\n"
 
 #: ../src/utils/pasuspender.c:221
 #, c-format
 msgid "WARNING: Child process terminated by signal %u\n"
-msgstr "VARNING: Underordnad process avslutad av signalen %u\n"
+msgstr "UYARI: Alt işlem %u sinyali ile sonlandırıldı\n"
 
 #: ../src/utils/pasuspender.c:230
 #, c-format
@@ -3030,11 +3043,11 @@ msgid ""
 "to\n"
 "\n"
 msgstr ""
-"%s [flaggor] … \n"
+"%s [seçenekler] ... \n"
 "\n"
-"  -h, --help                            Visa denna hjälp\n"
-"      --version                         Visa version\n"
-"  -s, --server=SERVER                   Namnet på servern att ansluta till\n"
+"  -h, --help                            Yardımı gösterir\n"
+"      --version                         Sürüm gösterir\n"
+"  -s, --server=SUNUCU                   Bağlanılacak sunucunun adı\n"
 "\n"
 
 #: ../src/utils/pasuspender.c:268
@@ -3045,23 +3058,23 @@ msgid ""
 "Linked with libpulse %s\n"
 msgstr ""
 "pasuspender %s\n"
-"Kompilerad med libpulse %s\n"
-"Länkad med libpulse %s\n"
+"Libpulse %s ile derlendi\n"
+"Libpulse %s ile bağlantılı\n"
 
 #: ../src/utils/pasuspender.c:297
 #, c-format
 msgid "pa_mainloop_new() failed.\n"
-msgstr "pa_mainloop_new() misslyckades.\n"
+msgstr "pa_mainloop_new() başarısız oldu.\n"
 
 #: ../src/utils/pasuspender.c:310
 #, c-format
 msgid "pa_context_new() failed.\n"
-msgstr "pa_context_new() misslyckades.\n"
+msgstr "pa_context_new() başarısız oldu.\n"
 
 #: ../src/utils/pasuspender.c:322
 #, c-format
 msgid "pa_mainloop_run() failed.\n"
-msgstr "pa_mainloop_run() misslyckades.\n"
+msgstr "pa_mainloop_run() başarısız oldu.\n"
 
 #: ../src/utils/pax11publish.c:60
 #, c-format
@@ -3074,61 +3087,61 @@ msgid ""
 "variables and cookie file.\n"
 " -r    Remove PulseAudio data from X11 display\n"
 msgstr ""
-"%s [-D display] [-S server] [-O mottagare] [-I källa] [-c fil]  [-d|-e|-i|-"
-"r]\n"
+"%s [-D ekran] [-S sunucu] [-O alıcı] [-I kaynak] [-c dosya]  [-d|-e|-i|-r]\n"
 "\n"
-" -d    Visa aktuell PulseAudio-data som hör till X11-display (standard)\n"
-" -e    Exportera lokal PulseAudio-data till X11-display\n"
-" -i    Importera PulseAudio-data från X11-display till lokala miljövariabler "
-"och kakfil.\n"
-" -r    Ta bort PulseAudio-data från X11-display\n"
+" -d    X11 ekranına bağlı mevcut PulseAudio verilerini gösterir (varsayılan)"
+"\n"
+" -e    X11 ekranına bağlı yerel PulseAudio verilerini dışa aktarır\n"
+" -i    X11 ekranından PulseAudio verilerini yerel çevresel değişkenlere ve "
+"çerez dosyalarına aktarır.\n"
+" -r    X11 ekranından PulseAudio verilerini kaldırır\n"
 
 #: ../src/utils/pax11publish.c:93
 #, c-format
 msgid "Failed to parse command line.\n"
-msgstr "Misslyckades med att tolka kommandorad.\n"
+msgstr "Komut satırı ayrıştırılamadı.\n"
 
 #: ../src/utils/pax11publish.c:112
 #, c-format
 msgid "Server: %s\n"
-msgstr "Server: %s\n"
+msgstr "Sunucu: %s\n"
 
 #: ../src/utils/pax11publish.c:114
 #, c-format
 msgid "Source: %s\n"
-msgstr "Källa: %s\n"
+msgstr "Kaynak: %s\n"
 
 #: ../src/utils/pax11publish.c:116
 #, c-format
 msgid "Sink: %s\n"
-msgstr "Mottagare: %s\n"
+msgstr "Alıcı: %s\n"
 
 #: ../src/utils/pax11publish.c:118
 #, c-format
 msgid "Cookie: %s\n"
-msgstr "Kaka: %s\n"
+msgstr "Çerez: %s\n"
 
 #: ../src/utils/pax11publish.c:136
 #, c-format
 msgid "Failed to parse cookie data\n"
-msgstr "Misslyckades med att tolka kakdata\n"
+msgstr "Çerez veriler çözümlenemedi\n"
 
 #: ../src/utils/pax11publish.c:141
 #, c-format
 msgid "Failed to save cookie data\n"
-msgstr "Misslyckades med att spara kakdata\n"
+msgstr "Çerez veriler kaydedilemedi\n"
 
 #: ../src/utils/pax11publish.c:170
 #, c-format
 msgid "Failed to get FQDN.\n"
-msgstr "Misslyckades med att hämta FQDN.\n"
+msgstr "FQDN alınamadı.\n"
 
 #: ../src/utils/pax11publish.c:190
 #, c-format
 msgid "Failed to load cookie data\n"
-msgstr "Misslyckades med att läsa in kakdata\n"
+msgstr "Çerez veriler yüklenemedi\n"
 
 #: ../src/utils/pax11publish.c:208
 #, c-format
 msgid "Not yet implemented.\n"
-msgstr "Ännu inte implementerad.\n"
+msgstr "Henüz uygulanmadı.\n"

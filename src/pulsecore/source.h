@@ -18,9 +18,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with PulseAudio; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-  USA.
+  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 typedef struct pa_source pa_source;
@@ -90,7 +88,7 @@ struct pa_source {
     pa_volume_t base_volume; /* shall be constant */
     unsigned n_volume_steps; /* shall be constant */
 
-    /* Also see http://pulseaudio.org/wiki/InternalVolumes */
+    /* Also see http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/Volumes/ */
     pa_cvolume reference_volume; /* The volume exported and taken as reference base for relative source output volumes */
     pa_cvolume real_volume;      /* The volume that the hardware is configured to  */
     pa_cvolume soft_volume;      /* The internal software volume we apply to all PCM data while it passes through */

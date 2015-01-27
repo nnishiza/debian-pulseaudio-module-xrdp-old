@@ -15,9 +15,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with PulseAudio; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-  USA.
+  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 #ifdef HAVE_CONFIG_H
@@ -2593,7 +2591,7 @@ static void setup_srbchannel(pa_native_connection *c) {
     int fdlist[2];
 
     if (!c->options->srbchannel) {
-        pa_log_debug("Disabling srbchannel, reason: Disabled by module parameter");
+        pa_log_debug("Disabling srbchannel, reason: Must be enabled by module parameter");
         return;
     }
 
@@ -5327,7 +5325,7 @@ int pa_native_options_parse(pa_native_options *o, pa_core *c, pa_modargs *ma) {
     pa_assert(PA_REFCNT_VALUE(o) >= 1);
     pa_assert(ma);
 
-    o->srbchannel = true;
+    o->srbchannel = false;
     if (pa_modargs_get_value_boolean(ma, "srbchannel", &o->srbchannel) < 0) {
         pa_log("srbchannel= expects a boolean argument.");
         return -1;
