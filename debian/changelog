@@ -1,4 +1,4 @@
-pulseaudio (5.99.3-0ubuntu1~vivid1) UNRELEASED; urgency=medium
+pulseaudio (1:5.99.3-0ubuntu1~vivid1) UNRELEASED; urgency=medium
 
   * New upstream release candidate
   * Remove pulseaudio-kde autostart file on upgrade (Closes: #776331)
