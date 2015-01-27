@@ -149,7 +149,6 @@ struct pa_mempool {
     size_t block_size;
     unsigned n_blocks;
     bool is_remote_writable;
-    unsigned export_baseidx;
 
     pa_atomic_t n_init;
 
