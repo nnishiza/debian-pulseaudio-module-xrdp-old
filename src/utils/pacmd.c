@@ -14,9 +14,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with PulseAudio; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-  USA.
+  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 #ifdef HAVE_CONFIG_H
@@ -333,7 +331,7 @@ int main(int argc, char*argv[]) {
             if (watch_socket->revents & POLLHUP) {
                 ibuf_eof = true;
                 ibuf_length = 0;
-            } if (watch_socket->revents & POLLOUT) {
+            } else if (watch_socket->revents & POLLOUT) {
                 ssize_t r;
                 pa_assert(ibuf_length > 0);
 

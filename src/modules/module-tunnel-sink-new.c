@@ -14,9 +14,7 @@
     General Public License for more details.
 
     You should have received a copy of the GNU Lesser General Public License
-    along with PulseAudio; if not, write to the Free Software
-    Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-    USA.
+    along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 #ifdef HAVE_CONFIG_H
@@ -108,6 +106,15 @@ static void cork_stream(struct userdata *u, bool cork) {
 
     pa_assert(u);
     pa_assert(u->stream);
+
+    if (cork) {
+        /* When the sink becomes suspended (which is the only case where we
+         * cork the stream), we don't want to keep any old data around, because
+         * the old data is most likely unrelated to the audio that will be
+         * played at the time when the sink starts running again. */
+        if ((operation = pa_stream_flush(u->stream, NULL, NULL)))
+            pa_operation_unref(operation);
+    }
 
     if ((operation = pa_stream_cork(u->stream, cork, NULL, NULL)))
         pa_operation_unref(operation);

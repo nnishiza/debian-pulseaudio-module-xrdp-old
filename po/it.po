@@ -409,15 +409,17 @@ msgid ""
 "shouldn't be doing that.\n"
 "If you do it nonetheless then it's your own fault if things don't work as "
 "expected.\n"
-"Please read http://pulseaudio.org/wiki/WhatIsWrongWithSystemMode for an "
-"explanation why system mode is usually a bad idea."
+"Please read http://www.freedesktop.org/wiki/Software/PulseAudio/"
+"Documentation/User/WhatIsWrongWithSystemWide/ for an explanation why system "
+"mode is usually a bad idea."
 msgstr ""
 "PulseAudio è in esecuzione in modalità sistema. È sconsigliato eseguire "
 "PulseAudio in questa modalità.\n"
 "Continuando a usarlo in questo modo molte cose potrebbero non funzionare "
 "come atteso.\n"
-"Consultare http://pulseaudio.org/wiki/WhatIsWrongWithSystemMode per maggiori "
-"informazioni sul perché la modalità sistema è una pessima idea."
+"Consultare http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/"
+"User/WhatIsWrongWithSystemWide/ per maggiori informazioni sul perché la "
+"modalità sistema è una pessima idea."
 
 #: ../src/daemon/main.c:981
 msgid "pa_pid_file_create() failed."
@@ -2044,7 +2046,7 @@ msgstr "\tProfilo attivo: %s\n"
 # Sink input
 # A stream that is connected to an output device, i.e. an input for a sink.
 #
-# from http://pulseaudio.org/wiki/WritingVolumeControlUIs
+# from http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/Clients/WritingVolumeControlUIs/
 #: ../src/utils/pactl.c:593 ../src/utils/pactl.c:868
 #, c-format
 msgid "Failed to get sink input information: %s"
@@ -2091,7 +2093,7 @@ msgstr ""
 # Source output
 # A stream that is connected to an input device, i.e. an output of a source.
 #
-# from http://pulseaudio.org/wiki/WritingVolumeControlUIs
+# from http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/Developer/Clients/WritingVolumeControlUIs/
 #: ../src/utils/pactl.c:663 ../src/utils/pactl.c:887
 #, c-format
 msgid "Failed to get source output information: %s"

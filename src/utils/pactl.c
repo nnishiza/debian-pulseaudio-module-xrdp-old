@@ -14,9 +14,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with PulseAudio; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-  USA.
+  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 #ifdef HAVE_CONFIG_H
@@ -1897,7 +1895,7 @@ int main(int argc, char *argv[]) {
 
             sink_name = pa_xstrdup(argv[optind+1]);
 
-            if (parse_volumes(argv+optind+2, argc-3) < 0)
+            if (parse_volumes(argv+optind+2, argc-(optind+2)) < 0)
                 goto quit;
 
         } else if (pa_streq(argv[optind], "set-source-volume")) {
@@ -1910,7 +1908,7 @@ int main(int argc, char *argv[]) {
 
             source_name = pa_xstrdup(argv[optind+1]);
 
-            if (parse_volumes(argv+optind+2, argc-3) < 0)
+            if (parse_volumes(argv+optind+2, argc-(optind+2)) < 0)
                 goto quit;
 
         } else if (pa_streq(argv[optind], "set-sink-input-volume")) {
@@ -1926,7 +1924,7 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            if (parse_volumes(argv+optind+2, argc-3) < 0)
+            if (parse_volumes(argv+optind+2, argc-(optind+2)) < 0)
                 goto quit;
 
         } else if (pa_streq(argv[optind], "set-source-output-volume")) {
@@ -1942,7 +1940,7 @@ int main(int argc, char *argv[]) {
                 goto quit;
             }
 
-            if (parse_volumes(argv+optind+2, argc-3) < 0)
+            if (parse_volumes(argv+optind+2, argc-(optind+2)) < 0)
                 goto quit;
 
         } else if (pa_streq(argv[optind], "set-sink-mute")) {

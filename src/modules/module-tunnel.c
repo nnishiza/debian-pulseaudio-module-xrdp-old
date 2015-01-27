@@ -15,9 +15,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with PulseAudio; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-  USA.
+  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 #ifdef HAVE_CONFIG_H
@@ -691,7 +689,7 @@ static int source_set_state(pa_source *s, pa_source_state_t state) {
 
         case PA_SOURCE_UNLINKED:
         case PA_SOURCE_INIT:
-        case PA_SINK_INVALID_STATE:
+        case PA_SOURCE_INVALID_STATE:
             ;
     }
 
