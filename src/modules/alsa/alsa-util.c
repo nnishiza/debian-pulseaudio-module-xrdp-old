@@ -15,9 +15,7 @@
   General Public License for more details.
 
   You should have received a copy of the GNU Lesser General Public License
-  along with PulseAudio; if not, write to the Free Software
-  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-  USA.
+  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
 #ifdef HAVE_CONFIG_H
@@ -443,7 +441,7 @@ int pa_alsa_set_sw_params(snd_pcm_t *pcm, snd_pcm_uframes_t avail_min, bool peri
 
     snd_pcm_sw_params_alloca(&swparams);
 
-    if ((err = snd_pcm_sw_params_current(pcm, swparams) < 0)) {
+    if ((err = snd_pcm_sw_params_current(pcm, swparams)) < 0) {
         pa_log_warn("Unable to determine current swparams: %s\n", pa_alsa_strerror(err));
         return err;
     }

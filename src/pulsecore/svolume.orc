@@ -15,9 +15,7 @@
 #  General Public License for more details.
 #
 #  You should have received a copy of the GNU Lesser General Public License
-#  along with PulseAudio; if not, write to the Free Software
-#  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
-#  USA.
+#  along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 
 # S16NE 1- and 2-channel volume scaling work as follows:
 #
@@ -45,13 +43,15 @@
 
 .function pa_volume_s16ne_orc_1ch
 .dest 2 samples int16_t
-.param 4 v int32_t
+.param 4 vols int32_t
+.temp 4 v
 .temp 2 vh
 .temp 4 s
 .temp 4 mh
 .temp 4 ml
 .temp 4 signc
 
+loadpl v, vols
 convuwl s, samples
 x2 cmpgtsw signc, 0, s
 x2 andw signc, signc, v
