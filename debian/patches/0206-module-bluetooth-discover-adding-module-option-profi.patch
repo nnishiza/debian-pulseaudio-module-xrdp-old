@@ -8,11 +8,11 @@ Signed-off-by: Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>
  src/modules/bluetooth/module-bluez4-discover.c | 13 ++++++++++++-
  1 file changed, 12 insertions(+), 1 deletion(-)
 
-Index: pulseaudio-5.0/src/modules/bluetooth/module-bluez4-discover.c
+Index: pulseaudio/src/modules/bluetooth/module-bluez4-discover.c
 ===================================================================
---- pulseaudio-5.0.orig/src/modules/bluetooth/module-bluez4-discover.c
-+++ pulseaudio-5.0/src/modules/bluetooth/module-bluez4-discover.c
-@@ -40,11 +40,13 @@
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez4-discover.c
++++ pulseaudio/src/modules/bluetooth/module-bluez4-discover.c
+@@ -38,11 +38,13 @@
  PA_MODULE_AUTHOR("João Paulo Rechi Vita");
  PA_MODULE_DESCRIPTION("Detect available BlueZ 4 Bluetooth audio devices and load BlueZ 4 Bluetooth audio drivers");
  PA_MODULE_VERSION(PACKAGE_VERSION);
@@ -27,7 +27,7 @@ Index: pulseaudio-5.0/src/modules/bluetooth/module-bluez4-discover.c
      "sco_sink",
      "sco_source",
      "async", /* deprecated */
-@@ -83,6 +85,15 @@ static pa_hook_result_t load_module_for_
+@@ -81,6 +83,15 @@ static pa_hook_result_t load_module_for_
  
              args = pa_sprintf_malloc("address=\"%s\" path=\"%s\"", d->address, d->path);
  

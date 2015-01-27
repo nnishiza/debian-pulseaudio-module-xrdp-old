@@ -12,7 +12,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
 ===================================================================
 --- pulseaudio.orig/src/modules/module-device-restore.c
 +++ pulseaudio/src/modules/module-device-restore.c
-@@ -53,6 +53,7 @@
+@@ -51,6 +51,7 @@
  #include <pulsecore/pstream-util.h>
  #include <pulsecore/database.h>
  #include <pulsecore/tagstruct.h>
@@ -20,7 +20,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
  
  #include "module-device-restore-symdef.h"
  
-@@ -67,6 +68,7 @@ PA_MODULE_USAGE(
+@@ -65,6 +66,7 @@ PA_MODULE_USAGE(
          "restore_formats=<Save/restore saved formats?>");
  
  #define SAVE_INTERVAL (10 * PA_USEC_PER_SEC)
@@ -28,7 +28,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
  
  static const char* const valid_modargs[] = {
      "restore_volume",
-@@ -613,6 +615,9 @@ static void subscribe_callback(pa_core *
+@@ -611,6 +613,9 @@ static void subscribe_callback(pa_core *
          if (!(sink = pa_idxset_get_by_index(c->sinks, idx)))
              return;
  
@@ -38,7 +38,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
          type = PA_DEVICE_TYPE_SINK;
          name = pa_sprintf_malloc("sink:%s", sink->name);
          if (sink->active_port)
-@@ -652,6 +657,9 @@ static void subscribe_callback(pa_core *
+@@ -650,6 +655,9 @@ static void subscribe_callback(pa_core *
          if (!(source = pa_idxset_get_by_index(c->sources, idx)))
              return;
  
@@ -48,7 +48,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
          type = PA_DEVICE_TYPE_SOURCE;
          name = pa_sprintf_malloc("source:%s", source->name);
          if (source->active_port)
-@@ -818,6 +826,9 @@ static pa_hook_result_t sink_port_hook_c
+@@ -816,6 +824,9 @@ static pa_hook_result_t sink_port_hook_c
      pa_assert(u);
      pa_assert(u->restore_volume || u->restore_muted);
  
@@ -58,7 +58,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
      name = pa_sprintf_malloc("sink:%s", sink->name);
  
      if ((e = perportentry_read(u, name, (sink->active_port ? sink->active_port->name : NULL)))) {
-@@ -960,6 +971,9 @@ static pa_hook_result_t source_port_hook
+@@ -958,6 +969,9 @@ static pa_hook_result_t source_port_hook
      pa_assert(u);
      pa_assert(u->restore_volume || u->restore_muted);
  

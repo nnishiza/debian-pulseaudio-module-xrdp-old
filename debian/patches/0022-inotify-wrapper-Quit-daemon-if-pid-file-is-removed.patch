@@ -29,7 +29,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -920,6 +920,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES
+@@ -922,6 +922,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES
  		pulsecore/core-subscribe.c pulsecore/core-subscribe.h \
  		pulsecore/core.c pulsecore/core.h \
  		pulsecore/hook-list.c pulsecore/hook-list.h \
@@ -41,7 +41,7 @@ Index: pulseaudio/src/daemon/main.c
 ===================================================================
 --- pulseaudio.orig/src/daemon/main.c
 +++ pulseaudio/src/daemon/main.c
-@@ -75,6 +75,7 @@
+@@ -73,6 +73,7 @@
  #include <pulsecore/core-rtclock.h>
  #include <pulsecore/core-scache.h>
  #include <pulsecore/core.h>
@@ -49,7 +49,7 @@ Index: pulseaudio/src/daemon/main.c
  #include <pulsecore/module.h>
  #include <pulsecore/cli-command.h>
  #include <pulsecore/log.h>
-@@ -334,6 +335,15 @@ static char *check_configured_address(vo
+@@ -332,6 +333,15 @@ static char *check_configured_address(vo
      return default_server;
  }
  
@@ -65,7 +65,7 @@ Index: pulseaudio/src/daemon/main.c
  #ifdef HAVE_DBUS
  static pa_dbus_connection *register_dbus_name(pa_core *c, DBusBusType bus, const char* name) {
      DBusError error;
-@@ -376,7 +386,6 @@ int main(int argc, char *argv[]) {
+@@ -374,7 +384,6 @@ int main(int argc, char *argv[]) {
      char *s;
      char *configured_address;
      int r = 0, retval = 1, d = 0;
@@ -73,7 +73,7 @@ Index: pulseaudio/src/daemon/main.c
      bool ltdl_init = false;
      int n_fds = 0, *passed_fds = NULL;
      const char *e;
-@@ -384,6 +393,7 @@ int main(int argc, char *argv[]) {
+@@ -382,6 +391,7 @@ int main(int argc, char *argv[]) {
      int daemon_pipe[2] = { -1, -1 };
      int daemon_pipe2[2] = { -1, -1 };
  #endif
@@ -81,7 +81,7 @@ Index: pulseaudio/src/daemon/main.c
      int autospawn_fd = -1;
      bool autospawn_locked = false;
  #ifdef HAVE_DBUS
-@@ -1024,6 +1034,9 @@ int main(int argc, char *argv[]) {
+@@ -1022,6 +1032,9 @@ int main(int argc, char *argv[]) {
          goto finish;
      }
  
@@ -91,7 +91,7 @@ Index: pulseaudio/src/daemon/main.c
      c->default_sample_spec = conf->default_sample_spec;
      c->alternate_sample_rate = conf->alternate_sample_rate;
      c->default_channel_map = conf->default_channel_map;
-@@ -1155,6 +1168,9 @@ finish:
+@@ -1153,6 +1166,9 @@ finish:
          pa_autospawn_lock_done(false);
      }
  
@@ -231,7 +231,7 @@ Index: pulseaudio/src/pulsecore/pid.c
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/pid.c
 +++ pulseaudio/src/pulsecore/pid.c
-@@ -183,6 +183,11 @@ static int proc_name_ours(pid_t pid, con
+@@ -181,6 +181,11 @@ static int proc_name_ours(pid_t pid, con
  
  }
  
@@ -247,8 +247,8 @@ Index: pulseaudio/src/pulsecore/pid.h
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/pid.h
 +++ pulseaudio/src/pulsecore/pid.h
-@@ -22,6 +22,7 @@
-   USA.
+@@ -20,6 +20,7 @@
+   License along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
  ***/
  
 +char *pa_pid_file_name(void);
