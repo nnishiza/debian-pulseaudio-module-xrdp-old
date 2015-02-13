@@ -1084,6 +1084,7 @@ librtp_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(librtp_la_LDFLAGS) $(LDFLAGS) -o $@
 @OS_IS_WIN32_FALSE@am_librtp_la_rpath = -rpath $(modlibexecdir)
 @HAVE_WEBRTC_TRUE@libwebrtc_util_la_DEPENDENCIES =  \
+@HAVE_WEBRTC_TRUE@	libpulsecore-@PA_MAJORMINOR@.la \
 @HAVE_WEBRTC_TRUE@	$(am__DEPENDENCIES_1)
 am__libwebrtc_util_la_SOURCES_DIST = modules/echo-cancel/webrtc.cc
 @HAVE_WEBRTC_TRUE@am_libwebrtc_util_la_OBJECTS = modules/echo-cancel/libwebrtc_util_la-webrtc.lo
@@ -4659,7 +4660,7 @@ module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
 # even conditional ones).
 @HAVE_WEBRTC_TRUE@libwebrtc_util_la_SOURCES = modules/echo-cancel/webrtc.cc
 @HAVE_WEBRTC_TRUE@libwebrtc_util_la_CXXFLAGS = $(AM_CXXFLAGS) $(SERVER_CFLAGS) $(WEBRTC_CFLAGS) -DHAVE_WEBRTC=1
-@HAVE_WEBRTC_TRUE@libwebrtc_util_la_LIBADD = $(WEBRTC_LIBS)
+@HAVE_WEBRTC_TRUE@libwebrtc_util_la_LIBADD = libpulsecore-@PA_MAJORMINOR@.la $(WEBRTC_LIBS)
 @HAVE_WEBRTC_TRUE@libwebrtc_util_la_LDFLAGS = -avoid-version
 
 # RTP modules
