@@ -30,6 +30,7 @@ pulseaudio (1:6.0-0ubuntu1~vivid1) UNRELEASED; urgency=medium
     - Add a build/run autopkgtest for libpulse-dev
   * Refreshed patches, and dropped patches that were either applied upstream
     or are obsolete
+  * Build with bluez4 support, and explicitly disable bluez5
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 27 Jan 2015 12:09:03 +1100
 
