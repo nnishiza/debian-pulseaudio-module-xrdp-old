@@ -12,7 +12,7 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
 ===================================================================
 --- pulseaudio.orig/src/modules/module-switch-on-connect.c
 +++ pulseaudio/src/modules/module-switch-on-connect.c
-@@ -41,6 +41,7 @@ PA_MODULE_VERSION(PACKAGE_VERSION);
+@@ -41,10 +41,12 @@ PA_MODULE_VERSION(PACKAGE_VERSION);
  PA_MODULE_LOAD_ONCE(true);
  PA_MODULE_USAGE(
          "only_from_unavailable=<boolean, only switch from unavailable ports> "
@@ -20,7 +20,12 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
  );
  
  static const char* const valid_modargs[] = {
-@@ -53,13 +54,14 @@ struct userdata {
+     "only_from_unavailable",
++    "skip_abstract",
+     NULL,
+ };
+ 
+@@ -53,13 +55,14 @@ struct userdata {
          *sink_put_slot,
          *source_put_slot;
      bool only_from_unavailable;
@@ -36,7 +41,7 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
      struct userdata *u = userdata;
  
      pa_assert(c);
-@@ -78,6 +80,12 @@ static pa_hook_result_t sink_put_hook_ca
+@@ -78,6 +81,12 @@ static pa_hook_result_t sink_put_hook_ca
              return PA_HOOK_OK;
      }
  
@@ -49,7 +54,7 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
      def = pa_namereg_get_default_sink(c);
      if (def == sink)
          return PA_HOOK_OK;
-@@ -114,7 +122,7 @@ static pa_hook_result_t source_put_hook_
+@@ -114,7 +123,7 @@ static pa_hook_result_t source_put_hook_
      pa_source_output *o;
      uint32_t idx;
      pa_source *def;
@@ -58,7 +63,7 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
      struct userdata *u = userdata;
  
      pa_assert(c);
-@@ -137,6 +145,12 @@ static pa_hook_result_t source_put_hook_
+@@ -137,6 +146,12 @@ static pa_hook_result_t source_put_hook_
              return PA_HOOK_OK;
      }
  
@@ -71,7 +76,7 @@ Index: pulseaudio/src/modules/module-switch-on-connect.c
      def = pa_namereg_get_default_source(c);
      if (def == source)
          return PA_HOOK_OK;
-@@ -182,6 +196,11 @@ int pa__init(pa_module*m) {
+@@ -182,6 +197,11 @@ int pa__init(pa_module*m) {
  
      m->userdata = u = pa_xnew0(struct userdata, 1);
  
