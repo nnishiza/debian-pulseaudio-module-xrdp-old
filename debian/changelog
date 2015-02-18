@@ -1,3 +1,9 @@
+pulseaudio (1:6.0-0ubuntu3) vivid; urgency=medium
+
+  * Adding libwebrtc-audio-processing-dev as build dep again, now in main
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Wed, 18 Feb 2015 20:42:43 -0200
+
 pulseaudio (1:6.0-0ubuntu2) vivid; urgency=medium
 
   * Remove libwebrtc-audio-processing-dev build dep, its in universe
