@@ -1,4 +1,4 @@
-pulseaudio (1:6.0-0ubuntu1~vivid1) UNRELEASED; urgency=medium
+pulseaudio (1:6.0-0ubuntu1) vivid; urgency=medium
 
   * New upstream release
   * Remove pulseaudio-kde autostart file on upgrade (Closes: #776331)
@@ -32,7 +32,7 @@ pulseaudio (1:6.0-0ubuntu1~vivid1) UNRELEASED; urgency=medium
     or are obsolete
   * Build with bluez4 support, and explicitly disable bluez5
 
- -- Luke Yelavich <themuso@ubuntu.com>  Tue, 27 Jan 2015 12:09:03 +1100
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 18 Feb 2015 17:00:14 +1100
 
 pulseaudio (5.99.2-2) experimental; urgency=medium
 
