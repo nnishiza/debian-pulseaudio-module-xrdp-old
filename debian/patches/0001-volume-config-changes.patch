@@ -1,0 +1,20 @@
+Index: pulseaudio/src/daemon/daemon.conf.in
+===================================================================
+--- pulseaudio.orig/src/daemon/daemon.conf.in
++++ pulseaudio/src/daemon/daemon.conf.in
+@@ -56,7 +56,7 @@ ifelse(@HAVE_DBUS@, 1, [dnl
+ ; enable-remixing = yes
+ ; enable-lfe-remixing = no
+ 
+-; flat-volumes = yes
++flat-volumes = no
+ 
+ ifelse(@HAVE_SYS_RESOURCE_H@, 1, [dnl
+ ; rlimit-fsize = -1
+@@ -86,5 +86,5 @@ ifelse(@HAVE_SYS_RESOURCE_H@, 1, [dnl
+ ; default-fragment-size-msec = 25
+ 
+ ; enable-deferred-volume = yes
+-; deferred-volume-safety-margin-usec = 8000
++deferred-volume-safety-margin-usec = 1
+ ; deferred-volume-extra-delay-usec = 0
