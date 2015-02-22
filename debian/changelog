@@ -1,4 +1,4 @@
-pulseaudio (1:6.0-0ubuntu4) UNRELEASED; urgency=medium
+pulseaudio (1:6.0-0ubuntu4) vivid; urgency=medium
 
   * Move the previously tweaked volume config changes from the rules file
     to a patch. We are no longer tweaking settings based on architecture,
@@ -6,7 +6,7 @@ pulseaudio (1:6.0-0ubuntu4) UNRELEASED; urgency=medium
     were also not being applied since the merge with Debian and updating to
     pulse 6. (LP: #1424195)
 
- -- Luke Yelavich <themuso@ubuntu.com>  Mon, 23 Feb 2015 09:41:40 +1100
+ -- Luke Yelavich <themuso@ubuntu.com>  Mon, 23 Feb 2015 10:03:37 +1100
 
 pulseaudio (1:6.0-0ubuntu3) vivid; urgency=medium
 
