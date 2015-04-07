@@ -1,3 +1,11 @@
+pulseaudio (1:6.0-0ubuntu5) vivid; urgency=medium
+
+  * debian/patches/0211-corking-a-sink-input-stream-when-stalled.patch:
+    - Identifying and corking a sink-input stream when it gets stalled
+      (LP: #1391230)
+
+ -- Ricardo Salveti de Araujo <ricardo.salveti@canonical.com>  Tue, 07 Apr 2015 00:40:56 -0300
+
 pulseaudio (1:6.0-0ubuntu4) vivid; urgency=medium
 
   * Move the previously tweaked volume config changes from the rules file
