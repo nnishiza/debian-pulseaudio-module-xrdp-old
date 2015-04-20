@@ -5,6 +5,7 @@
 0016-nodisplay-autostart.patch
 0022-inotify-wrapper-Quit-daemon-if-pid-file-is-removed.patch
 0023-fixing_snd_mixer_poll_descriptors_count_when_zero.patch
+0099-pa_yes_no.patch
 
 # Ubuntu touch stuff
 0202-dont-probe-ucm.patch

@@ -1,3 +1,11 @@
+pulseaudio (1:6.0-0ubuntu6) vivid; urgency=medium
+
+  * debian/patches/0099-pa-yes-no.patch:
+    - Fix pulseaudio failure to load in some non-English
+    locales (LP: #1445358)
+
+ -- David Henningsson <david.henningsson@canonical.com>  Mon, 20 Apr 2015 16:19:10 +0200
+
 pulseaudio (1:6.0-0ubuntu5) vivid; urgency=medium
 
   * debian/patches/0211-corking-a-sink-input-stream-when-stalled.patch:
