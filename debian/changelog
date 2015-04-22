@@ -1,3 +1,11 @@
+pulseaudio (6.0-2) UNRELEASED; urgency=medium
+
+  * Pick upstream patch that creates a localised version of pa_yes_no
+    - This fixes a problem when that function was used to create module
+      loading arguments.
+
+ -- Felipe Sateler <fsateler@debian.org>  Tue, 21 Apr 2015 21:10:11 -0300
+
 pulseaudio (6.0-1) experimental; urgency=medium
 
   [ Luke Yelavich ]
