@@ -16,3 +16,16 @@
 0209-module-switch-on-connect-adding-parameter-to-allow-s.patch
 0210-module-device-restore-adding-property-to-skip.patch
 0211-corking-a-sink-input-stream-when-stalled.patch
+
+# add lfe filter patchset
+0300-lfe-filter-Import-code-from-the-Chrome-OS-audio-serv.patch
+0301-lfe-filter-Enable-LFE-filter-in-the-resampler.patch
+0302-lfe-filter-Cleanup-and-refactor.patch
+0303-lfe-filter-change-the-crossover-frequency-as-a-param.patch
+0304-memblock-Change-pa_memblock_new_malloced-to-an-inlin.patch
+0305-lfe-filter-Add-rewind-support.patch
+0306-resampler-Make-some-basic-functions-for-rewinding.patch
+0307-tests-adding-lfe-filter-test.patch
+0308-daemon-conf-enable-the-lfe-remixing-by-default.patch
+0309-resampler-Allow-disabling-the-LFE-filter-by-setting-.patch
+0310-resampler-Rename-lfe_filter_required-to-lfe_remixed.patch

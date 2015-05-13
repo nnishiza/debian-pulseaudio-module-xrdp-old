@@ -1,0 +1,42 @@
+From d0e8b0fe077b2d59e111c57ed5ed75b7a7d3e92d Mon Sep 17 00:00:00 2001
+From: David Henningsson <david.henningsson@canonical.com>
+Date: Wed, 25 Mar 2015 10:13:13 +0100
+Subject: [PATCH 304/311] memblock: Change pa_memblock_new_malloced to an
+ inline function
+
+To avoid the macro trap: I call pa_memblock_new_malloced with
+"pa_xmemdup" as data parameter, and that would expand to *two*
+calls to pa_xmemdup in case that remains a macro, which is clearly
+not intended.
+
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+---
+ src/pulsecore/memblock.h | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/src/pulsecore/memblock.h b/src/pulsecore/memblock.h
+index dbea213..4faef75 100644
+--- a/src/pulsecore/memblock.h
++++ b/src/pulsecore/memblock.h
+@@ -27,6 +27,7 @@ typedef struct pa_memblock pa_memblock;
+ #include <inttypes.h>
+ 
+ #include <pulse/def.h>
++#include <pulse/xmalloc.h>
+ #include <pulsecore/atomic.h>
+ #include <pulsecore/memchunk.h>
+ 
+@@ -86,7 +87,9 @@ pa_memblock *pa_memblock_new_pool(pa_mempool *, size_t length);
+ pa_memblock *pa_memblock_new_user(pa_mempool *, void *data, size_t length, pa_free_cb_t free_cb, void *free_cb_data, bool read_only);
+ 
+ /* A special case of pa_memblock_new_user: take a memory buffer previously allocated with pa_xmalloc()  */
+-#define pa_memblock_new_malloced(p,data,length) pa_memblock_new_user(p, data, length, pa_xfree, data, 0)
++static inline pa_memblock *pa_memblock_new_malloced(pa_mempool *p, void *data, size_t length) {
++    return pa_memblock_new_user(p, data, length, pa_xfree, data, 0);
++}
+ 
+ /* Allocate a new memory block of type PA_MEMBLOCK_FIXED */
+ pa_memblock *pa_memblock_new_fixed(pa_mempool *, void *data, size_t length, bool read_only);
+-- 
+1.9.1
+

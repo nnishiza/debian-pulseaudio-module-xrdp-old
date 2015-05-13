@@ -1,0 +1,96 @@
+From 7fb531d9369bb8a8edcdf84633e5e455b0fa7e40 Mon Sep 17 00:00:00 2001
+From: David Henningsson <david.henningsson@canonical.com>
+Date: Tue, 24 Mar 2015 10:29:18 +0100
+Subject: [PATCH 306/311] resampler: Make some basic functions for rewinding
+
+The resampler framework just forwards the request to the lfe filter.
+There are no resampler impl that can rewind yet, so just reset the
+resampler impl instead of properly rewinding yet.
+
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+---
+ src/pulsecore/resampler.c     | 18 ++++++++++++++++--
+ src/pulsecore/resampler.h     |  3 +++
+ src/pulsecore/sink-input.c    |  4 ++--
+ src/pulsecore/source-output.c |  2 +-
+ 4 files changed, 22 insertions(+), 5 deletions(-)
+
+Index: pulseaudio/src/pulsecore/resampler.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/resampler.c	2015-05-13 15:00:12.066147988 +0800
++++ pulseaudio/src/pulsecore/resampler.c	2015-05-13 15:00:12.062147988 +0800
+@@ -556,6 +556,20 @@
+     *r->have_leftover = false;
+ }
+ 
++void pa_resampler_rewind(pa_resampler *r, size_t out_frames) {
++    pa_assert(r);
++
++    /* For now, we don't have any rewindable resamplers, so we just
++       reset the resampler instead (and hope that nobody hears the difference). */
++    if (r->impl.reset)
++        r->impl.reset(r);
++
++    if (r->lfe_filter)
++        pa_lfe_filter_rewind(r->lfe_filter, out_frames);
++
++    *r->have_leftover = false;
++}
++
+ pa_resample_method_t pa_resampler_get_method(pa_resampler *r) {
+     pa_assert(r);
+ 
+@@ -793,8 +807,8 @@
+     } else {
+ 
+         /* OK, we shall do the full monty: upmixing and downmixing. Our
+-         * algorithm is relatively simple, does not do spacialization, delay
+-         * elements or apply lowpass filters for LFE. Patches are always
++         * algorithm is relatively simple, does not do spacialization, or delay
++         * elements. LFE filters are done after the remap step. Patches are always
+          * welcome, though. Oh, and it doesn't do any matrix decoding. (Which
+          * probably wouldn't make any sense anyway.)
+          *
+Index: pulseaudio/src/pulsecore/resampler.h
+===================================================================
+--- pulseaudio.orig/src/pulsecore/resampler.h	2015-05-13 15:00:12.066147988 +0800
++++ pulseaudio/src/pulsecore/resampler.h	2015-05-13 15:00:12.062147988 +0800
+@@ -142,6 +142,9 @@
+ /* Reinitialize state of the resampler, possibly due to seeking or other discontinuities */
+ void pa_resampler_reset(pa_resampler *r);
+ 
++/* Rewind resampler */
++void pa_resampler_rewind(pa_resampler *r, size_t out_frames);
++
+ /* Return the resampling method of the resampler object */
+ pa_resample_method_t pa_resampler_get_method(pa_resampler *r);
+ 
+Index: pulseaudio/src/pulsecore/sink-input.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/sink-input.c	2015-05-13 15:00:12.066147988 +0800
++++ pulseaudio/src/pulsecore/sink-input.c	2015-05-13 15:00:12.062147988 +0800
+@@ -1106,9 +1106,9 @@
+             if (i->thread_info.rewrite_flush)
+                 pa_memblockq_silence(i->thread_info.render_memblockq);
+ 
+-            /* And reset the resampler */
++            /* And rewind the resampler */
+             if (i->thread_info.resampler)
+-                pa_resampler_reset(i->thread_info.resampler);
++                pa_resampler_rewind(i->thread_info.resampler, amount);
+         }
+     }
+ 
+Index: pulseaudio/src/pulsecore/source-output.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/source-output.c	2015-05-13 15:00:12.066147988 +0800
++++ pulseaudio/src/pulsecore/source-output.c	2015-05-13 15:00:12.062147988 +0800
+@@ -851,7 +851,7 @@
+             o->process_rewind(o, nbytes);
+ 
+         if (o->thread_info.resampler)
+-            pa_resampler_reset(o->thread_info.resampler);
++            pa_resampler_rewind(o->thread_info.resampler, nbytes);
+ 
+     } else
+         pa_memblockq_rewind(o->thread_info.delay_memblockq, nbytes);
