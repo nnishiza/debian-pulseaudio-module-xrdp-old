@@ -29,3 +29,4 @@
 0308-daemon-conf-enable-the-lfe-remixing-by-default.patch
 0309-resampler-Allow-disabling-the-LFE-filter-by-setting-.patch
 0310-resampler-Rename-lfe_filter_required-to-lfe_remixed.patch
+0311-tests-add-tolerant-variation-for-comparing-the-rewin.patch

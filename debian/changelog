@@ -1,3 +1,10 @@
+pulseaudio (1:6.0-0ubuntu8) wily; urgency=medium
+
+  * 0311-tests-add-tolerant-variation-for-comparing-the-rewin.patch:
+    Fix build failure on i386
+
+ -- David Henningsson <david.henningsson@canonical.com>  Mon, 25 May 2015 14:45:41 +0200
+
 pulseaudio (1:6.0-0ubuntu7) wily; urgency=medium
 
   * debian/patches/0300-lfe-filter-Import-code-from-the-Chrome-OS-audio-serv.patch
