@@ -45,7 +45,7 @@ clean::
 
 # Libs should be in the multi-arch path, but the modules should be in the
 # normal directory as pulseaudio is foreign
-DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 \
+DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal-compat \
   --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
   --with-module-dir=\$${prefix}/lib/pulse-$(DEB_UPSTREAM_VERSION)/modules \
   --with-zsh-completion-dir=\$${datadir}/zsh/vendor-completions \
