@@ -1,8 +1,10 @@
+etc/bash_completion.d/*
 etc/pulse/default.pa
 etc/pulse/system.pa
 etc/pulse/daemon.conf
 etc/dbus-1/system.d/pulseaudio-system.conf
 etc/xdg/autostart/pulseaudio.desktop
+lib/udev/rules.d/90-pulseaudio.rules
 usr/bin/pulseaudio
 usr/bin/start-pulseaudio-x11
 usr/lib/pulse-*/modules/libalsa-util.so
@@ -39,7 +41,6 @@ usr/lib/pulse-*/modules/module-native-protocol-tcp.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
 usr/lib/pulse-*/modules/module-udev-detect.so
 usr/lib/pulse-*/modules/module-loopback.so
-usr/share/apport
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-oss.so
 usr/lib/pulse-*/modules/liboss-util.so
@@ -76,10 +77,9 @@ usr/lib/pulse-*/modules/module-virtual-source.so
 usr/lib/pulse-*/modules/module-switch-on-port-available.so
 usr/lib/pulse-*/modules/module-virtual-surround-sink.so
 usr/lib/pulse-*/modules/module-systemd-login.so
-lib/udev/rules.d/90-pulseaudio.rules
 usr/share/locale
-usr/share/pulseaudio
+usr/share/pulseaudio/alsa-mixer
 usr/lib/*/libpulsecore-*.so usr/lib
 usr/share/alsa
+usr/share/apport
 usr/share/zsh
-etc/bash_completion.d/*
