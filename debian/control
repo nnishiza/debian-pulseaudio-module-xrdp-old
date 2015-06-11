@@ -286,7 +286,7 @@ Description: RAOP module for PulseAudio sound server (debugging symbols)
 Package: pulseaudio-module-bluetooth
 Architecture: linux-any
 Priority: extra
-Depends: ${shlibs:Depends}, ${misc:Depends}, bluez (>= 4.40)
+Depends: ${shlibs:Depends}, ${misc:Depends}, bluez (>= 5.23)
 Breaks: pulseaudio (<< 0.9.14-2)
 Description: Bluetooth module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
