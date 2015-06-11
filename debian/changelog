@@ -1,3 +1,15 @@
+pulseaudio (6.0-3) UNRELEASED; urgency=medium
+
+  * Do not build bluez4 module, it is no longer available.
+    Closes: #788293
+  * Pass --disable-hal-compat to configure instead of building a module wie do
+    not install
+  * Use dh-exec instead of manual .install mangling
+  * Do not use dh_installman to install manpages, upstream already installs
+    them correctly.
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 11 Jun 2015 00:51:36 -0300
+
 pulseaudio (6.0-2) unstable; urgency=medium
 
   * Pick upstream patch that creates a localised version of pa_yes_no
