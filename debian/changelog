@@ -1,15 +1,18 @@
-pulseaudio (6.0-3) UNRELEASED; urgency=medium
+pulseaudio (6.0-3) unstable; urgency=medium
 
   * Do not build bluez4 module, it is no longer available.
     Closes: #788293
-  * Pass --disable-hal-compat to configure instead of building a module wie do
+  * Pass --disable-hal-compat to configure instead of building a module we do
     not install
   * Use dh-exec instead of manual .install mangling
   * Do not use dh_installman to install manpages, upstream already installs
     them correctly.
   * libpulse-dev: drop Depends on libavahi-client-dev
+  * debian/rules: use DEB_DH_INSTALL_SOURCEDIR instead of deprecated DEB_DH_INSTALL_ARGS
+  * Install (but not enable) systemd user units on linux archs.
+    Closes: #794226
 
- -- Felipe Sateler <fsateler@debian.org>  Thu, 11 Jun 2015 00:51:36 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 31 Jul 2015 19:53:59 -0300
 
 pulseaudio (6.0-2) unstable; urgency=medium
 
