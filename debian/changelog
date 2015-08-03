@@ -1,3 +1,11 @@
+pulseaudio (6.0-4) unstable; urgency=medium
+
+  * Specify systemd user unit dir explicitly.
+    The pkgconfig file lives in package systemd, which we don't want to
+    build-depend on.
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 03 Aug 2015 10:17:23 -0300
+
 pulseaudio (6.0-3) unstable; urgency=medium
 
   * Do not build bluez4 module, it is no longer available.
