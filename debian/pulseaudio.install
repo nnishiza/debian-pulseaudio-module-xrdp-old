@@ -41,7 +41,7 @@ usr/lib/pulse-*/modules/module-match.so
 usr/lib/pulse-*/modules/module-native-protocol-fd.so
 usr/lib/pulse-*/modules/module-native-protocol-tcp.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
-usr/lib/pulse-*/modules/module-udev-detect.so
+[linux-any] usr/lib/pulse-*/modules/module-udev-detect.so
 usr/lib/pulse-*/modules/module-loopback.so
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-oss.so
