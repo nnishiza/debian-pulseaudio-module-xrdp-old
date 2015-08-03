@@ -1,3 +1,9 @@
+pulseaudio (6.0-5) unstable; urgency=medium
+
+  * Module udev detect is linux-only, so don't install on !linux.
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 03 Aug 2015 14:29:09 -0300
+
 pulseaudio (6.0-4) unstable; urgency=medium
 
   * Specify systemd user unit dir explicitly.
