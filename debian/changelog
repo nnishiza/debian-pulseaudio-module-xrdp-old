@@ -1,3 +1,20 @@
+pulseaudio (1:6.0-0ubuntu9) UNRELEASED; urgency=medium
+
+  [ Alfonso Sanchez-Beato (email Canonical) ]
+  * debian/patches/0401-access-Add-access-control-hooks.patch
+  * debian/patches/0402-protocol-native-add-access-checks.patch
+  * debian/patches/0403-Trust-store-patch.patch
+  * debian/patches/0404-Add-thread-to-activate-trust-store-interface.patch
+  * debian/patches/0406-tagstruct-add-copy-method.patch
+  * debian/patches/0407-access-Add-access-control-hooks.patch
+  * debian/patches/0408-protocol-native-add-access-checks.patch
+  * debian/patches/0409-Trust-store-patch.patch
+  * debian/patches/0410-Add-thread-to-activate-trust-store-interface.patch
+  * debian/patches/0415-dynarray-Add-PA_DYNARRAY_FOREACH.patch
+  Add support for trust-store in Ubuntu touch
+
+ -- Alfonso Sanchez-Beato (email Canonical) <alfonso.sanchez-beato@canonical.com>  Fri, 07 Aug 2015 09:26:24 +0200
+
 pulseaudio (1:6.0-0ubuntu8) wily; urgency=medium
 
   * 0311-tests-add-tolerant-variation-for-comparing-the-rewin.patch:

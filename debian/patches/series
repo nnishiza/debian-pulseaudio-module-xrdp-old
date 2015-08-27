@@ -30,3 +30,13 @@
 0309-resampler-Allow-disabling-the-LFE-filter-by-setting-.patch
 0310-resampler-Rename-lfe_filter_required-to-lfe_remixed.patch
 0311-tests-add-tolerant-variation-for-comparing-the-rewin.patch
+
+# Ubuntu touch: support for trust-store
+0406-tagstruct-add-copy-method.patch
+0407-access-Add-access-control-hooks.patch
+0408-protocol-native-add-access-checks.patch
+0409-Trust-store-patch.patch
+0410-Add-thread-to-activate-trust-store-interface.patch
+0415-dynarray-Add-PA_DYNARRAY_FOREACH.patch
+0417-increase-timeout-check-apparmor.patch
+

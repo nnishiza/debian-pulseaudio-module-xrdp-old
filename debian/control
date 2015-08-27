@@ -13,6 +13,7 @@ Build-Depends: debhelper (>= 9),
     check,
     dh-autoreconf,
     intltool,
+    libapparmor-dev [linux-any],
     libasound2-dev (>= 1.0.24) [linux-any],
     libasyncns-dev,
     libatomic-ops-dev,
@@ -20,6 +21,7 @@ Build-Depends: debhelper (>= 9),
     libbluetooth-dev (>= 4.40) [linux-any],
     libsbc-dev [linux-any],
     libcap-dev [linux-any],
+    libdbus-cpp-dev [armhf i386 amd64],
     libfftw3-dev,
     libgconf2-dev,
     libglib2.0-dev,
@@ -38,6 +40,7 @@ Build-Depends: debhelper (>= 9),
     libssl-dev,
     libsystemd-dev [linux-any],
     libtdb-dev [!hurd-any],
+    libtrust-store-dev [armhf i386 amd64],
     libudev-dev (>= 143) [linux-any],
     libwebrtc-audio-processing-dev,
     libwrap0-dev,
@@ -312,6 +315,32 @@ Description: Android Audio HAL module for PulseAudio sound server (debugging)
  much better latency, mixing/re-sampling quality and overall architecture.
  .
  This package contains debugging symbols for the PulseAudio droid module.
+
+Package: pulseaudio-module-trust-store
+Architecture: armhf i386 amd64
+Priority: extra
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Conflicts: pulseaudio (<< 0.9.14-2)
+Description: trust-store module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This module enables PulseAudio to use the trust-store in Ubuntu touch systems.
+ .
+ The module is called module-trust-store.
+
+Package: pulseaudio-module-trust-store-dbg
+Architecture: armhf i386 amd64
+Priority: extra
+Section: debug
+Depends: ${misc:Depends}, pulseaudio-module-trust-store (= ${binary:Version})
+Description: trust-store module for PulseAudio sound server (debugging)
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This package contains debugging symbols for the PulseAudio trust-store module.
 
 Package: pulseaudio-module-bluetooth
 Architecture: linux-any

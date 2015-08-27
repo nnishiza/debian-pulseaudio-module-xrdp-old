@@ -1,0 +1,92 @@
+--- a/src/modules/trust-store/module-trust-store.c
++++ b/src/modules/trust-store/module-trust-store.c
+@@ -31,6 +31,8 @@
+ #include <pulsecore/dynarray.h>
+ #include <pulse/mainloop-api.h>
+ 
++#include <sys/apparmor.h>
++
+ #include "module-trust-store-symdef.h"
+ 
+ PA_MODULE_AUTHOR("David Henningsson");
+@@ -76,9 +78,37 @@
+     }
+ 
+     pc = pa_xnew0(struct per_client, 1);
+-    // TODO: Do we need something else than the application name here -
+-    // the application can probably spoof it
+-    pc->appname = pa_xstrdup(pa_proplist_gets(client->proplist, PA_PROP_APPLICATION_NAME));
++
++    pa_log_info("Client application name is: '%s'", pa_proplist_gets(client->proplist, PA_PROP_APPLICATION_NAME));
++
++    // ask apparmor about the context of the client, later this will be used to decide if the
++    // app should be or not using the trust store
++
++    if (aa_is_enabled()) {
++        char *context = NULL;
++        char *mode = NULL;
++
++       /* XXX: The mode string is *NOT* be freed since it forms
++        * part of the allocation returned in context.
++        *
++        * See aa_gettaskcon(2) for details.
++        */
++        if (aa_gettaskcon (client->creds.pid, &context, &mode) >= 0) {
++            pc->appname = pa_xstrdup(context);
++            pa_log_info("Client apparmor profile is: '%s'", context);
++        } else {
++            pa_log_error("AppArmo profile could not be retrieved.");
++        }
++
++        if (context)
++            free(context);
++
++    } else {
++        // while we do leave the appname as empty if we fail, if apparmor is not present we should
++        // assume that the app is not confined
++        pc->appname = pa_xstrdup("unconfined");
++    }
++
+     pc->index = client_index;
+     pc->uid = client->creds.uid;
+     pc->pid = client->creds.pid;
+@@ -102,10 +132,25 @@
+ static void thread_func(void *data) {
+     struct per_client *pc = data;
+ 
+-    bool result = pa_trust_store_check(pc->userdata->ts, pc->appname, pc->uid, pc->pid,
+-        _("%1% wants to record audio."));
++    // there are 3 possible values for the app name that we will consider at this point
++    //  * empty string: there was an error when retrieving the value and therefore we will
++    //                  automatically deny access
++    //  * uncofined: the app is unconfined and therefore we will automatically grant access
++    //  * appname: we need the user to decide what to do.
++
++    if (pc->appname == NULL) {
++        pa_log_info("Client apparmor could not retrieved.");
++        pa_atomic_store(&pc->result, REQUEST_DENIED);
++    } else if (pa_streq(pc->appname, "unconfined")) {
++        pa_log_info("Conected client is unconfined.");
++        pa_atomic_store(&pc->result, REQUEST_GRANTED);
++    } else {
++        pa_log_info("User needs to authorize the application..");
++        bool result = pa_trust_store_check(pc->userdata->ts, pc->appname, pc->uid, pc->pid,
++            _("%1% wants to record audio."));
++        pa_atomic_store(&pc->result, result ? REQUEST_GRANTED : REQUEST_DENIED);
++    }
+ 
+-    pa_atomic_store(&pc->result, result ? REQUEST_GRANTED : REQUEST_DENIED);
+     pa_fdsem_post(pc->userdata->fdsem);
+ }
+ 
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -2122,7 +2122,7 @@
+ libtruststore_util_la_LDFLAGS = -avoid-version
+ 
+ module_trust_store_la_SOURCES = modules/trust-store/module-trust-store.c
+-module_trust_store_la_LDFLAGS = $(MODULE_LDFLAGS)
++module_trust_store_la_LDFLAGS = $(MODULE_LDFLAGS) -lapparmor
+ module_trust_store_la_LIBADD = $(MODULE_LIBADD) libtruststore-util.la
+ module_trust_store_la_CFLAGS = $(AM_CFLAGS) -DHAVE_TRUST_STORE=1
+ endif
