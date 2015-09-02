@@ -1,0 +1,29 @@
+From c72c1df911ac6e5f6601aeb39a5e92a84c9d33c7 Mon Sep 17 00:00:00 2001
+From: David Henningsson <david.henningsson@canonical.com>
+Date: Tue, 26 May 2015 08:47:46 +0200
+Subject: [PATCH] lfe-filter-test: Use S16NE format
+
+...otherwise this code will fail on big-endian architectures.
+
+Cc: Hui Wang <hui.wang@canonical.com>
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+---
+ src/tests/lfe-filter-test.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/tests/lfe-filter-test.c b/src/tests/lfe-filter-test.c
+index ea8108c..389a2b9 100644
+--- a/src/tests/lfe-filter-test.c
++++ b/src/tests/lfe-filter-test.c
+@@ -133,7 +133,7 @@ START_TEST (lfe_filter_test) {
+ 
+     a.channels = 1;
+     a.rate = 44100;
+-    a.format = PA_SAMPLE_S16LE;
++    a.format = PA_SAMPLE_S16NE;
+ 
+     lft.ss = &a;
+     pa_assert_se(lft.pool = pa_mempool_new(false, 0));
+-- 
+1.9.1
+

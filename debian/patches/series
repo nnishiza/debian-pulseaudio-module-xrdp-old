@@ -30,6 +30,7 @@
 0309-resampler-Allow-disabling-the-LFE-filter-by-setting-.patch
 0310-resampler-Rename-lfe_filter_required-to-lfe_remixed.patch
 0311-tests-add-tolerant-variation-for-comparing-the-rewin.patch
+0312-lfe-filter-test-Use-S16NE-format.patch
 
 # Ubuntu touch: support for trust-store
 0406-tagstruct-add-copy-method.patch
