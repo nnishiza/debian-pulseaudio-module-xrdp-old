@@ -1,3 +1,28 @@
+pulseaudio (1:6.0-0ubuntu10~gcc5.3) wily; urgency=medium
+
+  * debian/rules: don't disable bluez5
+
+ -- Sebastien Bacher <seb128@ubuntu.com>  Thu, 13 Aug 2015 17:34:42 +0200
+
+pulseaudio (1:6.0-0ubuntu10~gcc5.2) wily; urgency=medium
+
+  * No-change rebuild against libjack-jackd2-0v5
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Tue, 11 Aug 2015 07:01:56 +0000
+
+pulseaudio (1:6.0-0ubuntu10~gcc5.1) wily; urgency=medium
+
+  * No-change test rebuild for g++5 ABI transition
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Wed, 15 Jul 2015 15:57:11 +0000
+
+pulseaudio (1:6.0-0ubuntu9) wily; urgency=medium
+
+  * 0312-lfe-filter-test-Use-S16NE-format.patch:
+    Fix build failure on powerpc
+
+ -- David Henningsson <david.henningsson@canonical.com>  Thu, 28 May 2015 11:02:48 +0200
+
 pulseaudio (1:6.0-0ubuntu8) wily; urgency=medium
 
   * 0311-tests-add-tolerant-variation-for-comparing-the-rewin.patch:

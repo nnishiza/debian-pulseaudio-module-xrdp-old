@@ -53,8 +53,6 @@ DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 \
   --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
   --with-module-dir=\$${prefix}/lib/pulse-$(DEB_UPSTREAM_VERSION)/modules \
   --with-zsh-completion-dir=\$${datadir}/zsh/vendor-completions \
-  --disable-bluez5 \
-
 
 ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
   DEB_CONFIGURE_EXTRA_FLAGS += --disable-bluez
