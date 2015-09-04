@@ -1,11 +1,11 @@
-pulseaudio (6.99.1-1) UNRELEASED; urgency=medium
+pulseaudio (6.99.1-1) experimental; urgency=medium
 
   * New upstream release candidate
      - Drop 0001-core-util-pactl-Make-one-localised-and-one-non-
        local.patch, was picked from upstream
   * Change the bash completion install dir to /usr/share
 
- -- Felipe Sateler <fsateler@debian.org>  Thu, 03 Sep 2015 21:27:17 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 03 Sep 2015 23:29:12 -0300
 
 pulseaudio (6.0-5) unstable; urgency=medium
 
