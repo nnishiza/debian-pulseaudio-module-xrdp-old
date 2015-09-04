@@ -50,6 +50,7 @@
 #define CLEAR_LINE "\x1B[K"
 
 static enum { RECORD, PLAYBACK } mode = PLAYBACK;
+static const char *purpose = NULL;
 
 static pa_context *context = NULL;
 static pa_stream *stream = NULL;
@@ -240,7 +241,7 @@ static void stream_write_callback(pa_stream *s, size_t length, void *userdata) {
     }
 }
 
-/* This is called whenever new data may is available */
+/* This is called whenever new data is available */
 static void stream_read_callback(pa_stream *s, size_t length, void *userdata) {
 
     pa_assert(s);
@@ -437,7 +438,7 @@ static void stream_event_callback(pa_stream *s, const char *name, pa_proplist *p
             pa_operation_unref(pa_stream_cork(s, 0, NULL, NULL));
         }
         if (cork_requests == 0)
-            pa_log(_("Warning: Received more uncork requests than cork requests!"));
+            pa_log(_("Warning: Received more uncork requests than cork requests."));
         else
             cork_requests--;
     }
@@ -667,7 +668,8 @@ static void time_event_callback(pa_mainloop_api *m, pa_time_event *e, const stru
 
 static void help(const char *argv0) {
 
-    printf(_("%s [options]\n\n"
+    printf(_("%s [options]\n"
+             "%s\n\n"
              "  -h, --help                            Show this help\n"
              "      --version                         Show version\n\n"
              "  -r, --record                          Create a connection for recording\n"
@@ -703,7 +705,7 @@ static void help(const char *argv0) {
              "      --file-format[=FFORMAT]           Record/play formatted PCM data.\n"
              "      --list-file-formats               List available file formats.\n"
              "      --monitor-stream=INDEX            Record from the sink input with index INDEX.\n")
-           , argv0);
+           , argv0, purpose);
 }
 
 enum {
@@ -783,15 +785,19 @@ int main(int argc, char *argv[]) {
     if (strstr(bn, "play")) {
         mode = PLAYBACK;
         raw = false;
+        purpose = _("Play back encoded audio files on a PulseAudio sound server.");
     } else if (strstr(bn, "record")) {
         mode = RECORD;
         raw = false;
-    } else if (strstr(bn, "cat")) {
-        mode = PLAYBACK;
-        raw = true;
+        purpose = _("Capture audio data from a PulseAudio sound server and write it to a file.");
     } else if (strstr(bn, "rec") || strstr(bn, "mon")) {
         mode = RECORD;
         raw = true;
+        purpose = _("Capture audio data from a PulseAudio sound server and write it to STDOUT or the specified file.");
+    } else { /* pacat */
+        mode = PLAYBACK;
+        raw = true;
+        purpose = _("Play back audio data from STDIN or the specified file on a PulseAudio sound server.");
     }
 
     proplist = pa_proplist_new();

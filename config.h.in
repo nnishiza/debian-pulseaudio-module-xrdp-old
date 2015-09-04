@@ -372,6 +372,9 @@
 /* Have Solaris audio? */
 #undef HAVE_SOLARIS
 
+/* Have soxr */
+#undef HAVE_SOXR
+
 /* Have speex */
 #undef HAVE_SPEEX
 

@@ -333,7 +333,7 @@ static void increase_watermark(struct userdata *u) {
         pa_source_set_latency_range_within_thread(u->source, new_min_latency, u->source->thread_info.max_latency);
     }
 
-    /* When we reach this we're officialy fucked! */
+    /* When we reach this we're officially fucked! */
 }
 
 static void decrease_watermark(struct userdata *u) {
@@ -526,7 +526,7 @@ static int mmap_read(struct userdata *u, pa_usec_t *sleep_usec, bool polled, boo
             if (polled)
                 PA_ONCE_BEGIN {
                     char *dn = pa_alsa_get_driver_name_by_pcm(u->pcm_handle);
-                    pa_log(_("ALSA woke us up to read new data from the device, but there was actually nothing to read!\n"
+                    pa_log(_("ALSA woke us up to read new data from the device, but there was actually nothing to read.\n"
                              "Most likely this is a bug in the ALSA driver '%s'. Please report this issue to the ALSA developers.\n"
                              "We were woken up with POLLIN set -- however a subsequent snd_pcm_avail() returned 0 or another value < min_avail."),
                            pa_strnull(dn));
@@ -1728,6 +1728,8 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     size_t frame_size;
     bool use_mmap = true, b, use_tsched = true, d, ignore_dB = false, namereg_fail = false, deferred_volume = false, fixed_latency_range = false;
     pa_source_new_data data;
+    bool volume_is_set;
+    bool mute_is_set;
     pa_alsa_profile_set *profile_set = NULL;
     void *state = NULL;
 
@@ -1997,6 +1999,8 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
         pa_alsa_add_ports(&data, u->mixer_path_set, card);
 
     u->source = pa_source_new(m->core, &data, PA_SOURCE_HARDWARE|PA_SOURCE_LATENCY|(u->use_tsched ? PA_SOURCE_DYNAMIC_LATENCY : 0));
+    volume_is_set = data.volume_is_set;
+    mute_is_set = data.muted_is_set;
     pa_source_new_data_done(&data);
 
     if (!u->source) {
@@ -2073,7 +2077,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     thread_name = NULL;
 
     /* Get initial mixer settings */
-    if (data.volume_is_set) {
+    if (volume_is_set) {
         if (u->source->set_volume)
             u->source->set_volume(u->source);
     } else {
@@ -2081,7 +2085,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
             u->source->get_volume(u->source);
     }
 
-    if (data.muted_is_set) {
+    if (mute_is_set) {
         if (u->source->set_mute)
             u->source->set_mute(u->source);
     } else {
@@ -2093,7 +2097,7 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
         }
     }
 
-    if ((data.volume_is_set || data.muted_is_set) && u->source->write_volume)
+    if ((volume_is_set || mute_is_set) && u->source->write_volume)
         u->source->write_volume(u->source);
 
     pa_source_put(u->source);
