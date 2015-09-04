@@ -1,3 +1,9 @@
+pulseaudio (6.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 03 Sep 2015 21:27:17 -0300
+
 pulseaudio (6.0-5) unstable; urgency=medium
 
   * Module udev detect is linux-only, so don't install on !linux.
