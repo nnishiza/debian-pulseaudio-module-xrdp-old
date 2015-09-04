@@ -44,7 +44,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 30)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [18:0:18])
+AC_SUBST(LIBPULSE_VERSION_INFO, [18:1:18])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -1139,6 +1139,21 @@ AS_IF([test "x$with_speex" = "xyes" && test "x$HAVE_SPEEX" = "x0"],
 AM_CONDITIONAL([HAVE_SPEEX], [test "x$HAVE_SPEEX" = "x1"])
 AS_IF([test "x$HAVE_SPEEX" = "x1"], AC_DEFINE([HAVE_SPEEX], 1, [Have speex]))
 
+#### soxr (optional) ####
+
+AC_ARG_WITH([soxr],
+    AS_HELP_STRING([--without-soxr],[Omit soxr (resampling)]))
+
+AS_IF([test "x$with_soxr" != "xno"],
+    [PKG_CHECK_MODULES(LIBSOXR, [ soxr >= 0.1.1 ], HAVE_SOXR=1, HAVE_SOXR=0)],
+    HAVE_SOXR=0)
+
+AS_IF([test "x$with_soxr" = "xyes" && test "x$HAVE_SOXR" = "x0"],
+    [AC_MSG_ERROR([*** soxr support not found])])
+
+AM_CONDITIONAL([HAVE_SOXR], [test "x$HAVE_SOXR" = "x1"])
+AS_IF([test "x$HAVE_SOXR" = "x1"], AC_DEFINE([HAVE_SOXR], 1, [Have soxr]))
+
 #### Xen support (optional) ####
 
 AC_ARG_ENABLE([xen],
@@ -1421,6 +1436,15 @@ AC_ARG_WITH(
 
 AC_SUBST(udevrulesdir)
 
+AC_ARG_WITH([bash-completion-dir],
+        AS_HELP_STRING([--with-bash-completion-dir=DIR], [Directory for bash completion files]),
+        [bashcompletiondir=$withval], [bashcompletiondir=$($PKG_CONFIG --variable=completionsdir bash-completion)])
+if test "x$bashcompletionsdir" = ""; then
+	bashcompletiondir="${datadir}/bash-completion/completions"
+fi
+
+AC_SUBST(bashcompletiondir)
+
 AC_ARG_WITH(
         [zsh-completion-dir],
         AS_HELP_STRING([--with-zsh-completion-dir], [Zsh completions directory (defaults to ${datadir}/zsh/site-functions)]),
@@ -1453,7 +1477,6 @@ po/Makefile.in
 man/pulseaudio.1.xml
 man/esdcompat.1.xml
 man/pax11publish.1.xml
-man/paplay.1.xml
 man/pacat.1.xml
 man/pacmd.1.xml
 man/pactl.1.xml
@@ -1527,6 +1550,7 @@ AS_IF([test "x$HAVE_FFTW" = "x1"], ENABLE_FFTW=yes, ENABLE_FFTW=no)
 AS_IF([test "x$HAVE_ORC" = "xyes"], ENABLE_ORC=yes, ENABLE_ORC=no)
 AS_IF([test "x$HAVE_ADRIAN_EC" = "x1"], ENABLE_ADRIAN_EC=yes, ENABLE_ADRIAN_EC=no)
 AS_IF([test "x$HAVE_SPEEX" = "x1"], ENABLE_SPEEX=yes, ENABLE_SPEEX=no)
+AS_IF([test "x$HAVE_SOXR" = "x1"], ENABLE_SOXR=yes, ENABLE_SOXR=no)
 AS_IF([test "x$HAVE_WEBRTC" = "x1"], ENABLE_WEBRTC=yes, ENABLE_WEBRTC=no)
 AS_IF([test "x$HAVE_TDB" = "x1"], ENABLE_TDB=yes, ENABLE_TDB=no)
 AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
@@ -1548,6 +1572,7 @@ echo "
     System State Path:             ${PA_SYSTEM_STATE_PATH}
     System Config Path:            ${PA_SYSTEM_CONFIG_PATH}
     Zsh completions directory:     ${zshcompletiondir}
+    Bash completions directory:    ${bashcompletiondir}
     Compiler:                      ${CC}
     CFLAGS:                        ${CFLAGS}
     CPPFLAGS:                      ${CPPFLAGS}
@@ -1588,6 +1613,7 @@ echo "
     Enable orc:                    ${ENABLE_ORC}
     Enable Adrian echo canceller:  ${ENABLE_ADRIAN_EC}
     Enable speex (resampler, AEC): ${ENABLE_SPEEX}
+    Enable soxr (resampler):       ${ENABLE_SOXR}
     Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
     Enable gcov coverage:          ${ENABLE_GCOV}
     Enable unit tests:             ${ENABLE_TESTS}

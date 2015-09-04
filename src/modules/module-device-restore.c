@@ -78,15 +78,6 @@ struct userdata {
     pa_core *core;
     pa_module *module;
     pa_subscription *subscription;
-    pa_hook_slot
-        *sink_new_hook_slot,
-        *sink_fixate_hook_slot,
-        *sink_port_hook_slot,
-        *sink_put_hook_slot,
-        *source_new_hook_slot,
-        *source_fixate_hook_slot,
-        *source_port_hook_slot,
-        *connection_unlink_hook_slot;
     pa_time_event *save_time_event;
     pa_database *database;
 
@@ -151,7 +142,7 @@ static void trigger_save(struct userdata *u, pa_device_type_t type, uint32_t sin
         PA_IDXSET_FOREACH(c, u->subscribed, idx) {
             pa_tagstruct *t;
 
-            t = pa_tagstruct_new(NULL, 0);
+            t = pa_tagstruct_new();
             pa_tagstruct_putu32(t, PA_COMMAND_EXTENSION);
             pa_tagstruct_putu32(t, 0);
             pa_tagstruct_putu32(t, u->module->index);
@@ -200,7 +191,7 @@ static bool entry_write(struct userdata *u, const char *name, const struct entry
     pa_assert(name);
     pa_assert(e);
 
-    t = pa_tagstruct_new(NULL, 0);
+    t = pa_tagstruct_new();
     pa_tagstruct_putu8(t, e->version);
     pa_tagstruct_put_boolean(t, e->port_valid);
     pa_tagstruct_puts(t, e->port);
@@ -236,7 +227,7 @@ static struct entry* entry_read(struct userdata *u, const char *name) {
         return NULL;
     }
 
-    t = pa_tagstruct_new(data.data, data.size);
+    t = pa_tagstruct_new_fixed(data.data, data.size);
     e = entry_new();
 
     if (pa_tagstruct_getu8(t, &e->version) < 0 ||
@@ -371,7 +362,7 @@ static bool perportentry_write(struct userdata *u, const char *basekeyname, cons
     n_formats = pa_idxset_size(e->formats);
     pa_assert(n_formats > 0);
 
-    t = pa_tagstruct_new(NULL, 0);
+    t = pa_tagstruct_new();
     pa_tagstruct_putu8(t, e->version);
     pa_tagstruct_put_boolean(t, e->volume_valid);
     pa_tagstruct_put_channel_map(t, &e->channel_map);
@@ -417,7 +408,7 @@ static struct perportentry* perportentry_read(struct userdata *u, const char *ba
     if (!pa_database_get(u->database, &key, &data))
         goto fail;
 
-    t = pa_tagstruct_new(data.data, data.size);
+    t = pa_tagstruct_new_fixed(data.data, data.size);
     e = perportentry_new(false);
 
     if (pa_tagstruct_getu8(t, &e->version) < 0 ||
@@ -1041,7 +1032,7 @@ static int extension_cb(pa_native_protocol *p, pa_module *m, pa_native_connectio
     if (pa_tagstruct_getu32(t, &command) < 0)
         goto fail;
 
-    reply = pa_tagstruct_new(NULL, 0);
+    reply = pa_tagstruct_new();
     pa_tagstruct_putu32(reply, PA_COMMAND_REPLY);
     pa_tagstruct_putu32(reply, tag);
 
@@ -1243,25 +1234,25 @@ int pa__init(pa_module*m) {
     u->protocol = pa_native_protocol_get(m->core);
     pa_native_protocol_install_ext(u->protocol, m, extension_cb);
 
-    u->connection_unlink_hook_slot = pa_hook_connect(&pa_native_protocol_hooks(u->protocol)[PA_NATIVE_HOOK_CONNECTION_UNLINK], PA_HOOK_NORMAL, (pa_hook_cb_t) connection_unlink_hook_cb, u);
+    pa_module_hook_connect(m, &pa_native_protocol_hooks(u->protocol)[PA_NATIVE_HOOK_CONNECTION_UNLINK], PA_HOOK_NORMAL, (pa_hook_cb_t) connection_unlink_hook_cb, u);
 
     u->subscription = pa_subscription_new(m->core, PA_SUBSCRIPTION_MASK_SINK|PA_SUBSCRIPTION_MASK_SOURCE, subscribe_callback, u);
 
     if (restore_port) {
-        u->sink_new_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) sink_new_hook_callback, u);
-        u->source_new_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) source_new_hook_callback, u);
+        pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_SINK_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) sink_new_hook_callback, u);
+        pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_SOURCE_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) source_new_hook_callback, u);
     }
 
     if (restore_muted || restore_volume) {
-        u->sink_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_fixate_hook_callback, u);
-        u->source_fixate_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) source_fixate_hook_callback, u);
+        pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_SINK_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) sink_fixate_hook_callback, u);
+        pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_SOURCE_FIXATE], PA_HOOK_EARLY, (pa_hook_cb_t) source_fixate_hook_callback, u);
 
-        u->sink_port_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PORT_CHANGED], PA_HOOK_EARLY, (pa_hook_cb_t) sink_port_hook_callback, u);
-        u->source_port_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SOURCE_PORT_CHANGED], PA_HOOK_EARLY, (pa_hook_cb_t) source_port_hook_callback, u);
+        pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_SINK_PORT_CHANGED], PA_HOOK_EARLY, (pa_hook_cb_t) sink_port_hook_callback, u);
+        pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_SOURCE_PORT_CHANGED], PA_HOOK_EARLY, (pa_hook_cb_t) source_port_hook_callback, u);
     }
 
     if (restore_formats)
-        u->sink_put_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_SINK_PUT], PA_HOOK_EARLY, (pa_hook_cb_t) sink_put_hook_callback, u);
+        pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_SINK_PUT], PA_HOOK_EARLY, (pa_hook_cb_t) sink_put_hook_callback, u);
 
     if (!(fname = pa_state_path("device-volumes", true)))
         goto fail;
@@ -1303,24 +1294,6 @@ void pa__done(pa_module*m) {
 
     if (u->subscription)
         pa_subscription_free(u->subscription);
-
-    if (u->sink_fixate_hook_slot)
-        pa_hook_slot_free(u->sink_fixate_hook_slot);
-    if (u->source_fixate_hook_slot)
-        pa_hook_slot_free(u->source_fixate_hook_slot);
-    if (u->sink_new_hook_slot)
-        pa_hook_slot_free(u->sink_new_hook_slot);
-    if (u->source_new_hook_slot)
-        pa_hook_slot_free(u->source_new_hook_slot);
-    if (u->sink_port_hook_slot)
-        pa_hook_slot_free(u->sink_port_hook_slot);
-    if (u->source_port_hook_slot)
-        pa_hook_slot_free(u->source_port_hook_slot);
-    if (u->sink_put_hook_slot)
-        pa_hook_slot_free(u->sink_put_hook_slot);
-
-    if (u->connection_unlink_hook_slot)
-        pa_hook_slot_free(u->connection_unlink_hook_slot);
 
     if (u->save_time_event) {
         u->core->mainloop->time_free(u->save_time_event);

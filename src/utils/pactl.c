@@ -196,7 +196,7 @@ static void get_server_info_callback(pa_context *c, const pa_server_info *i, voi
              pa_context_get_server(c),
              pa_context_get_protocol_version(c),
              pa_context_get_server_protocol_version(c),
-             pa_yes_no(pa_context_is_local(c)),
+             pa_yes_no_localised(pa_context_is_local(c)),
              pa_context_get_index(c),
              pa_context_get_tile_size(c, NULL));
 
@@ -302,7 +302,7 @@ static void get_sink_info_callback(pa_context *c, const pa_sink_info *i, int is_
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            i->owner_module,
-           pa_yes_no(i->mute),
+           pa_yes_no_localised(i->mute),
            pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, i->flags & PA_SINK_DECIBEL_VOLUME),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            pa_volume_snprint_verbose(v, sizeof(v), i->base_volume, i->flags & PA_SINK_DECIBEL_VOLUME),
@@ -409,7 +409,7 @@ static void get_source_info_callback(pa_context *c, const pa_source_info *i, int
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            i->owner_module,
-           pa_yes_no(i->mute),
+           pa_yes_no_localised(i->mute),
            pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, i->flags & PA_SOURCE_DECIBEL_VOLUME),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            pa_volume_snprint_verbose(v, sizeof(v), i->base_volume, i->flags & PA_SOURCE_DECIBEL_VOLUME),
@@ -578,8 +578,8 @@ static void get_card_info_callback(pa_context *c, const pa_card_info *i, int is_
 
         printf(_("\tProfiles:\n"));
         for (p = i->profiles2; *p; p++)
-            printf("\t\t%s: %s (sinks: %u, sources: %u, priority: %u, available: %s)\n", (*p)->name,
-                (*p)->description, (*p)->n_sinks, (*p)->n_sources, (*p)->priority, pa_yes_no((*p)->available));
+            printf(_("\t\t%s: %s (sinks: %u, sources: %u, priority: %u, available: %s)\n"), (*p)->name,
+                (*p)->description, (*p)->n_sinks, (*p)->n_sources, (*p)->priority, pa_yes_no_localised((*p)->available));
     }
 
     if (i->active_profile)
@@ -672,8 +672,8 @@ static void get_sink_input_info_callback(pa_context *c, const pa_sink_input_info
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            pa_format_info_snprint(f, sizeof(f), i->format),
-           pa_yes_no(i->corked),
-           pa_yes_no(i->mute),
+           pa_yes_no_localised(i->corked),
+           pa_yes_no_localised(i->mute),
            pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, true),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            (double) i->buffer_usec,
@@ -742,8 +742,8 @@ static void get_source_output_info_callback(pa_context *c, const pa_source_outpu
            pa_sample_spec_snprint(s, sizeof(s), &i->sample_spec),
            pa_channel_map_snprint(cm, sizeof(cm), &i->channel_map),
            pa_format_info_snprint(f, sizeof(f), i->format),
-           pa_yes_no(i->corked),
-           pa_yes_no(i->mute),
+           pa_yes_no_localised(i->corked),
+           pa_yes_no_localised(i->mute),
            pa_cvolume_snprint_verbose(cv, sizeof(cv), &i->volume, &i->channel_map, true),
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            (double) i->buffer_usec,
@@ -805,7 +805,7 @@ static void get_sample_info_callback(pa_context *c, const pa_sample_info *i, int
            pa_cvolume_get_balance(&i->volume, &i->channel_map),
            (double) i->duration/1000000.0,
            t,
-           pa_yes_no(i->lazy),
+           pa_yes_no_localised(i->lazy),
            i->filename ? i->filename : _("n/a"),
            pl = pa_proplist_to_string_sep(i->proplist, "\n\t\t"));
 
@@ -1456,6 +1456,7 @@ static void exit_signal_callback(pa_mainloop_api *m, pa_signal_event *e, int sig
 static int parse_volume(const char *vol_spec, pa_volume_t *vol, enum volume_flags *vol_flags) {
     double v;
     char *vs;
+    const char *atod_input;
 
     pa_assert(vol_spec);
     pa_assert(vol);
@@ -1475,7 +1476,12 @@ static int parse_volume(const char *vol_spec, pa_volume_t *vol, enum volume_flag
         vs[strlen(vs)-2] = 0;
     }
 
-    if (pa_atod(vs, &v) < 0) {
+    atod_input = vs;
+
+    if (atod_input[0] == '+')
+        atod_input++; /* pa_atod() doesn't accept leading '+', so skip it. */
+
+    if (pa_atod(atod_input, &v) < 0) {
         pa_log(_("Invalid volume specification"));
         pa_xfree(vs);
         return -1;
@@ -1947,7 +1953,7 @@ int main(int argc, char *argv[]) {
             action = SET_SINK_MUTE;
 
             if (argc != optind+3) {
-                pa_log(_("You have to specify a sink name/index and a mute boolean"));
+                pa_log(_("You have to specify a sink name/index and a mute action (0, 1, or 'toggle')"));
                 goto quit;
             }
 
@@ -1962,7 +1968,7 @@ int main(int argc, char *argv[]) {
             action = SET_SOURCE_MUTE;
 
             if (argc != optind+3) {
-                pa_log(_("You have to specify a source name/index and a mute boolean"));
+                pa_log(_("You have to specify a source name/index and a mute action (0, 1, or 'toggle')"));
                 goto quit;
             }
 
@@ -1977,7 +1983,7 @@ int main(int argc, char *argv[]) {
             action = SET_SINK_INPUT_MUTE;
 
             if (argc != optind+3) {
-                pa_log(_("You have to specify a sink input index and a mute boolean"));
+                pa_log(_("You have to specify a sink input index and a mute action (0, 1, or 'toggle')"));
                 goto quit;
             }
 
@@ -1995,7 +2001,7 @@ int main(int argc, char *argv[]) {
             action = SET_SOURCE_OUTPUT_MUTE;
 
             if (argc != optind+3) {
-                pa_log(_("You have to specify a source output index and a mute boolean"));
+                pa_log(_("You have to specify a source output index and a mute action (0, 1, or 'toggle')"));
                 goto quit;
             }
 

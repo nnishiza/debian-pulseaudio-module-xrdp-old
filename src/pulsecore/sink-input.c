@@ -451,6 +451,7 @@ int pa_sink_input_new(
                           core->mempool,
                           &data->sample_spec, &data->channel_map,
                           &data->sink->sample_spec, &data->sink->channel_map,
+                          core->lfe_crossover_freq,
                           data->resample_method,
                           ((data->flags & PA_SINK_INPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
                           ((data->flags & PA_SINK_INPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |
@@ -1105,9 +1106,9 @@ void pa_sink_input_process_rewind(pa_sink_input *i, size_t nbytes /* in sink sam
             if (i->thread_info.rewrite_flush)
                 pa_memblockq_silence(i->thread_info.render_memblockq);
 
-            /* And reset the resampler */
+            /* And rewind the resampler */
             if (i->thread_info.resampler)
-                pa_resampler_reset(i->thread_info.resampler);
+                pa_resampler_rewind(i->thread_info.resampler, amount);
         }
     }
 
@@ -2010,8 +2011,8 @@ bool pa_sink_input_safe_to_remove(pa_sink_input *i) {
 void pa_sink_input_request_rewind(
         pa_sink_input *i,
         size_t nbytes  /* in our sample spec */,
-        bool rewrite,
-        bool flush,
+        bool rewrite,  /* rewrite what we have, or get fresh data? */
+        bool flush,    /* flush render memblockq? */
         bool dont_rewind_render) {
 
     size_t lbq;
@@ -2168,6 +2169,7 @@ int pa_sink_input_update_rate(pa_sink_input *i) {
         new_resampler = pa_resampler_new(i->core->mempool,
                                      &i->sample_spec, &i->channel_map,
                                      &i->sink->sample_spec, &i->sink->channel_map,
+                                     i->core->lfe_crossover_freq,
                                      i->requested_resample_method,
                                      ((i->flags & PA_SINK_INPUT_VARIABLE_RATE) ? PA_RESAMPLER_VARIABLE_RATE : 0) |
                                      ((i->flags & PA_SINK_INPUT_NO_REMAP) ? PA_RESAMPLER_NO_REMAP : 0) |

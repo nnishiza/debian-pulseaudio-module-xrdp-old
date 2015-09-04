@@ -531,7 +531,7 @@ void pa_source_put(pa_source *s) {
     pa_assert_ctl_context();
 
     pa_assert(s->state == PA_SOURCE_INIT);
-    pa_assert(!(s->flags & PA_SOURCE_SHARE_VOLUME_WITH_MASTER) || s->output_from_master);
+    pa_assert(!(s->flags & PA_SOURCE_SHARE_VOLUME_WITH_MASTER) || pa_source_is_filter(s));
 
     /* The following fields must be initialized properly when calling _put() */
     pa_assert(s->asyncmsgq);
@@ -596,7 +596,7 @@ void pa_source_put(pa_source *s) {
               || (s->base_volume == PA_VOLUME_NORM
                   && ((s->flags & PA_SOURCE_DECIBEL_VOLUME || (s->flags & PA_SOURCE_SHARE_VOLUME_WITH_MASTER)))));
     pa_assert(!(s->flags & PA_SOURCE_DECIBEL_VOLUME) || s->n_volume_steps == PA_VOLUME_NORM+1);
-    pa_assert(!(s->flags & PA_SOURCE_DYNAMIC_LATENCY) == (s->thread_info.fixed_latency != 0));
+    pa_assert(!(s->flags & PA_SOURCE_DYNAMIC_LATENCY) == !(s->thread_info.fixed_latency == 0));
 
     if (s->suspend_cause)
         pa_assert_se(source_set_state(s, PA_SOURCE_SUSPENDED) == 0);
@@ -661,6 +661,8 @@ static void source_free(pa_object *o) {
         pa_source_unlink(s);
 
     pa_log_info("Freeing source %u \"%s\"", s->index, s->name);
+
+    pa_source_volume_change_flush(s);
 
     pa_idxset_free(s->outputs, NULL);
     pa_hashmap_free(s->thread_info.outputs);
@@ -1168,6 +1170,13 @@ pa_source *pa_source_get_master(pa_source *s) {
     }
 
     return s;
+}
+
+/* Called from main context */
+bool pa_source_is_filter(pa_source *s) {
+    pa_source_assert_ref(s);
+
+    return (s->output_from_master != NULL);
 }
 
 /* Called from main context */

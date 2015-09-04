@@ -76,6 +76,25 @@ struct ucm_info {
     unsigned priority;
 };
 
+static void device_set_jack(pa_alsa_ucm_device *device, pa_alsa_jack *jack);
+static void device_add_hw_mute_jack(pa_alsa_ucm_device *device, pa_alsa_jack *jack);
+
+static pa_alsa_ucm_device *verb_find_device(pa_alsa_ucm_verb *verb, const char *device_name);
+
+struct ucm_port {
+    pa_alsa_ucm_config *ucm;
+    pa_device_port *core_port;
+
+    /* A single port will be associated with multiple devices if it represents
+     * a combination of devices. */
+    pa_dynarray *devices; /* pa_alsa_ucm_device */
+};
+
+static struct ucm_port *ucm_port_new(pa_alsa_ucm_config *ucm, pa_device_port *core_port, pa_alsa_ucm_device **devices,
+                                     unsigned n_devices);
+static void ucm_port_free(struct ucm_port *port);
+static void ucm_port_update_available(struct ucm_port *port);
+
 static struct ucm_items item[] = {
     {"PlaybackPCM", PA_ALSA_PROP_UCM_SINK},
     {"CapturePCM", PA_ALSA_PROP_UCM_SOURCE},
@@ -90,6 +109,8 @@ static struct ucm_items item[] = {
     {"CaptureRate", PA_ALSA_PROP_UCM_CAPTURE_RATE},
     {"CaptureChannels", PA_ALSA_PROP_UCM_CAPTURE_CHANNELS},
     {"TQ", PA_ALSA_PROP_UCM_QOS},
+    {"JackControl", PA_ALSA_PROP_UCM_JACK_CONTROL},
+    {"JackHWMute", PA_ALSA_PROP_UCM_JACK_HW_MUTE},
     {NULL, NULL},
 };
 
@@ -396,6 +417,9 @@ static int ucm_get_devices(pa_alsa_ucm_verb *verb, snd_use_case_mgr_t *uc_mgr) {
         d->proplist = pa_proplist_new();
         pa_proplist_sets(d->proplist, PA_ALSA_PROP_UCM_NAME, pa_strnull(dev_list[i]));
         pa_proplist_sets(d->proplist, PA_ALSA_PROP_UCM_DESCRIPTION, pa_strna(dev_list[i + 1]));
+        d->ucm_ports = pa_dynarray_new(NULL);
+        d->hw_mute_jacks = pa_dynarray_new(NULL);
+        d->available = PA_AVAILABLE_UNKNOWN;
 
         PA_LLIST_PREPEND(pa_alsa_ucm_device, verb->devices, d);
     }
@@ -551,6 +575,8 @@ int pa_alsa_ucm_query_profiles(pa_alsa_ucm_config *ucm, int card_index) {
     char *card_name;
     const char **verb_list;
     int num_verbs, i, err = 0;
+
+    ucm->ports = pa_dynarray_new((pa_free_cb_t) ucm_port_free);
 
     /* is UCM available for this card ? */
     err = snd_card_get_name(card_index, &card_name);
@@ -734,6 +760,8 @@ static void ucm_add_port_combination(
 
     port = pa_hashmap_get(ports, name);
     if (!port) {
+        struct ucm_port *ucm_port;
+
         pa_device_port_new_data port_data;
 
         pa_device_port_new_data_init(&port_data);
@@ -741,9 +769,12 @@ static void ucm_add_port_combination(
         pa_device_port_new_data_set_description(&port_data, desc);
         pa_device_port_new_data_set_direction(&port_data, is_sink ? PA_DIRECTION_OUTPUT : PA_DIRECTION_INPUT);
 
-        port = pa_device_port_new(core, &port_data, 0);
+        port = pa_device_port_new(core, &port_data, sizeof(struct ucm_port *));
         pa_device_port_new_data_done(&port_data);
-        pa_assert(port);
+
+        ucm_port = ucm_port_new(context->ucm, port, pdevices, num);
+        pa_dynarray_append(context->ucm->ports, ucm_port);
+        *((struct ucm_port **) PA_DEVICE_PORT_DATA(port)) = ucm_port;
 
         pa_hashmap_put(ports, port->name, port);
         pa_log_debug("Add port %s: %s", port->name, port->description);
@@ -1262,24 +1293,43 @@ static int ucm_create_mapping(
     return ret;
 }
 
-static pa_alsa_jack* ucm_get_jack(pa_alsa_ucm_config *ucm, const char *dev_name, const char *pre_tag) {
+static pa_alsa_jack* ucm_get_jack(pa_alsa_ucm_config *ucm, pa_alsa_ucm_device *device) {
     pa_alsa_jack *j;
-    char *name = pa_sprintf_malloc("%s%s", pre_tag, dev_name);
+    const char *device_name;
+    const char *jack_control;
+    char *name;
+
+    pa_assert(ucm);
+    pa_assert(device);
+
+    device_name = pa_proplist_gets(device->proplist, PA_ALSA_PROP_UCM_NAME);
+
+    jack_control = pa_proplist_gets(device->proplist, PA_ALSA_PROP_UCM_JACK_CONTROL);
+    if (jack_control) {
+        if (!pa_endswith(jack_control, " Jack")) {
+            pa_log("[%s] Invalid JackControl value: \"%s\"", device_name, jack_control);
+            return NULL;
+        }
+
+        /* pa_alsa_jack_new() expects a jack name without " Jack" at the
+         * end, so drop the trailing " Jack". */
+        name = pa_xstrndup(jack_control, strlen(jack_control) - 5);
+    } else {
+        /* The jack control hasn't been explicitly configured - try a jack name
+         * that is the same as the device name. */
+        name = pa_xstrdup(device_name);
+    }
 
     PA_LLIST_FOREACH(j, ucm->jacks)
         if (pa_streq(j->name, name))
-            goto out;
+            goto finish;
 
-    j = pa_xnew0(pa_alsa_jack, 1);
-    j->state_unplugged = PA_AVAILABLE_NO;
-    j->state_plugged = PA_AVAILABLE_YES;
-    j->name = pa_xstrdup(name);
-    j->alsa_name = pa_sprintf_malloc("%s Jack", dev_name);
-
+    j = pa_alsa_jack_new(NULL, name);
     PA_LLIST_PREPEND(pa_alsa_jack, ucm->jacks, j);
 
-out:
+finish:
     pa_xfree(name);
+
     return j;
 }
 
@@ -1335,6 +1385,9 @@ static int ucm_create_profile(
         p->priority = 1000;
 
     PA_LLIST_FOREACH(dev, verb->devices) {
+        pa_alsa_jack *jack;
+        const char *jack_hw_mute;
+
         name = pa_proplist_gets(dev->proplist, PA_ALSA_PROP_UCM_NAME);
 
         sink = pa_proplist_gets(dev->proplist, PA_ALSA_PROP_UCM_SINK);
@@ -1342,10 +1395,39 @@ static int ucm_create_profile(
 
         ucm_create_mapping(ucm, ps, p, dev, verb_name, name, sink, source);
 
-        if (sink)
-            dev->output_jack = ucm_get_jack(ucm, name, PA_UCM_PRE_TAG_OUTPUT);
-        if (source)
-            dev->input_jack = ucm_get_jack(ucm, name, PA_UCM_PRE_TAG_INPUT);
+        jack = ucm_get_jack(ucm, dev);
+        device_set_jack(dev, jack);
+
+        /* JackHWMute contains a list of device names. Each listed device must
+         * be associated with the jack object that we just created. */
+        jack_hw_mute = pa_proplist_gets(dev->proplist, PA_ALSA_PROP_UCM_JACK_HW_MUTE);
+        if (jack_hw_mute) {
+            char *hw_mute_device_name;
+            const char *state = NULL;
+
+            while ((hw_mute_device_name = pa_split_spaces(jack_hw_mute, &state))) {
+                pa_alsa_ucm_verb *verb2;
+                bool device_found = false;
+
+                /* Search the referenced device from all verbs. If there are
+                 * multiple verbs that have a device with this name, we add the
+                 * hw mute association to each of those devices. */
+                PA_LLIST_FOREACH(verb2, ucm->verbs) {
+                    pa_alsa_ucm_device *hw_mute_device;
+
+                    hw_mute_device = verb_find_device(verb2, hw_mute_device_name);
+                    if (hw_mute_device) {
+                        device_found = true;
+                        device_add_hw_mute_jack(hw_mute_device, jack);
+                    }
+                }
+
+                if (!device_found)
+                    pa_log("[%s] JackHWMute references an unknown device: %s", name, hw_mute_device_name);
+
+                pa_xfree(hw_mute_device_name);
+            }
+        }
     }
 
     /* Now find modifiers that have their own PlaybackPCM and create
@@ -1434,11 +1516,11 @@ static void ucm_mapping_jack_probe(pa_alsa_mapping *m) {
         return;
 
     PA_IDXSET_FOREACH(dev, context->ucm_devices, idx) {
-        pa_alsa_jack *jack;
-        jack = m->direction == PA_ALSA_DIRECTION_OUTPUT ? dev->output_jack : dev->input_jack;
-        pa_assert (jack);
-        jack->has_control = pa_alsa_mixer_find(mixer_handle, jack->alsa_name, 0) != NULL;
-        pa_log_info("UCM jack %s has_control=%d", jack->name, jack->has_control);
+        bool has_control;
+
+        has_control = pa_alsa_mixer_find(mixer_handle, dev->jack->alsa_name, 0) != NULL;
+        pa_alsa_jack_set_has_control(dev->jack, has_control);
+        pa_log_info("UCM jack %s has_control=%d", dev->jack->name, dev->jack->has_control);
     }
 
     snd_mixer_close(mixer_handle);
@@ -1550,6 +1632,13 @@ static void free_verb(pa_alsa_ucm_verb *verb) {
 
     PA_LLIST_FOREACH_SAFE(di, dn, verb->devices) {
         PA_LLIST_REMOVE(pa_alsa_ucm_device, verb->devices, di);
+
+        if (di->hw_mute_jacks)
+            pa_dynarray_free(di->hw_mute_jacks);
+
+        if (di->ucm_ports)
+            pa_dynarray_free(di->ucm_ports);
+
         pa_proplist_free(di->proplist);
         if (di->conflicting_devices)
             pa_idxset_free(di->conflicting_devices, NULL);
@@ -1572,9 +1661,29 @@ static void free_verb(pa_alsa_ucm_verb *verb) {
     pa_xfree(verb);
 }
 
+static pa_alsa_ucm_device *verb_find_device(pa_alsa_ucm_verb *verb, const char *device_name) {
+    pa_alsa_ucm_device *device;
+
+    pa_assert(verb);
+    pa_assert(device_name);
+
+    PA_LLIST_FOREACH(device, verb->devices) {
+        const char *name;
+
+        name = pa_proplist_gets(device->proplist, PA_ALSA_PROP_UCM_NAME);
+        if (pa_streq(name, device_name))
+            return device;
+    }
+
+    return NULL;
+}
+
 void pa_alsa_ucm_free(pa_alsa_ucm_config *ucm) {
     pa_alsa_ucm_verb *vi, *vn;
     pa_alsa_jack *ji, *jn;
+
+    if (ucm->ports)
+        pa_dynarray_free(ucm->ports);
 
     PA_LLIST_FOREACH_SAFE(vi, vn, ucm->verbs) {
         PA_LLIST_REMOVE(pa_alsa_ucm_verb, ucm->verbs, vi);
@@ -1582,9 +1691,7 @@ void pa_alsa_ucm_free(pa_alsa_ucm_config *ucm) {
     }
     PA_LLIST_FOREACH_SAFE(ji, jn, ucm->jacks) {
         PA_LLIST_REMOVE(pa_alsa_jack, ucm->jacks, ji);
-        pa_xfree(ji->alsa_name);
-        pa_xfree(ji->name);
-        pa_xfree(ji);
+        pa_alsa_jack_free(ji);
     }
     if (ucm->ucm_mgr) {
         snd_use_case_mgr_close(ucm->ucm_mgr);
@@ -1668,6 +1775,120 @@ void pa_alsa_ucm_roled_stream_end(pa_alsa_ucm_config *ucm, const char *role, pa_
             break;
         }
     }
+}
+
+static void device_add_ucm_port(pa_alsa_ucm_device *device, struct ucm_port *port) {
+    pa_assert(device);
+    pa_assert(port);
+
+    pa_dynarray_append(device->ucm_ports, port);
+}
+
+static void device_set_jack(pa_alsa_ucm_device *device, pa_alsa_jack *jack) {
+    pa_assert(device);
+    pa_assert(jack);
+
+    device->jack = jack;
+    pa_alsa_jack_add_ucm_device(jack, device);
+
+    pa_alsa_ucm_device_update_available(device);
+}
+
+static void device_add_hw_mute_jack(pa_alsa_ucm_device *device, pa_alsa_jack *jack) {
+    pa_assert(device);
+    pa_assert(jack);
+
+    pa_dynarray_append(device->hw_mute_jacks, jack);
+    pa_alsa_jack_add_ucm_hw_mute_device(jack, device);
+
+    pa_alsa_ucm_device_update_available(device);
+}
+
+static void device_set_available(pa_alsa_ucm_device *device, pa_available_t available) {
+    struct ucm_port *port;
+    unsigned idx;
+
+    pa_assert(device);
+
+    if (available == device->available)
+        return;
+
+    device->available = available;
+
+    PA_DYNARRAY_FOREACH(port, device->ucm_ports, idx)
+        ucm_port_update_available(port);
+}
+
+void pa_alsa_ucm_device_update_available(pa_alsa_ucm_device *device) {
+    pa_available_t available = PA_AVAILABLE_UNKNOWN;
+    pa_alsa_jack *jack;
+    unsigned idx;
+
+    pa_assert(device);
+
+    if (device->jack && device->jack->has_control)
+        available = device->jack->plugged_in ? PA_AVAILABLE_YES : PA_AVAILABLE_NO;
+
+    PA_DYNARRAY_FOREACH(jack, device->hw_mute_jacks, idx) {
+        if (jack->plugged_in) {
+            available = PA_AVAILABLE_NO;
+            break;
+        }
+    }
+
+    device_set_available(device, available);
+}
+
+static struct ucm_port *ucm_port_new(pa_alsa_ucm_config *ucm, pa_device_port *core_port, pa_alsa_ucm_device **devices,
+                                     unsigned n_devices) {
+    struct ucm_port *port;
+    unsigned i;
+
+    pa_assert(ucm);
+    pa_assert(core_port);
+    pa_assert(devices);
+
+    port = pa_xnew0(struct ucm_port, 1);
+    port->ucm = ucm;
+    port->core_port = core_port;
+    port->devices = pa_dynarray_new(NULL);
+
+    for (i = 0; i < n_devices; i++) {
+        pa_dynarray_append(port->devices, devices[i]);
+        device_add_ucm_port(devices[i], port);
+    }
+
+    ucm_port_update_available(port);
+
+    return port;
+}
+
+static void ucm_port_free(struct ucm_port *port) {
+    pa_assert(port);
+
+    if (port->devices)
+        pa_dynarray_free(port->devices);
+
+    pa_xfree(port);
+}
+
+static void ucm_port_update_available(struct ucm_port *port) {
+    pa_alsa_ucm_device *device;
+    unsigned idx;
+    pa_available_t available = PA_AVAILABLE_YES;
+
+    pa_assert(port);
+
+    PA_DYNARRAY_FOREACH(device, port->devices, idx) {
+        if (device->available == PA_AVAILABLE_UNKNOWN)
+            available = PA_AVAILABLE_UNKNOWN;
+        else if (device->available == PA_AVAILABLE_NO) {
+            available = PA_AVAILABLE_NO;
+            break;
+        }
+    }
+
+    pa_device_port_set_available(port->core_port, available);
 }
 
 #else /* HAVE_ALSA_UCM */

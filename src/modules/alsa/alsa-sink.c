@@ -358,7 +358,7 @@ static void increase_watermark(struct userdata *u) {
         pa_sink_set_latency_range_within_thread(u->sink, new_min_latency, u->sink->thread_info.max_latency);
     }
 
-    /* When we reach this we're officialy fucked! */
+    /* When we reach this we're officially fucked! */
 }
 
 static void decrease_watermark(struct userdata *u) {
@@ -567,7 +567,7 @@ static int mmap_write(struct userdata *u, pa_usec_t *sleep_usec, bool polled, bo
             if (polled)
                 PA_ONCE_BEGIN {
                     char *dn = pa_alsa_get_driver_name_by_pcm(u->pcm_handle);
-                    pa_log(_("ALSA woke us up to write new data to the device, but there was actually nothing to write!\n"
+                    pa_log(_("ALSA woke us up to write new data to the device, but there was actually nothing to write.\n"
                              "Most likely this is a bug in the ALSA driver '%s'. Please report this issue to the ALSA developers.\n"
                              "We were woken up with POLLOUT set -- however a subsequent snd_pcm_avail() returned 0 or another value < min_avail."),
                            pa_strnull(dn));
@@ -2011,6 +2011,8 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     size_t frame_size;
     bool use_mmap = true, b, use_tsched = true, d, ignore_dB = false, namereg_fail = false, deferred_volume = false, set_formats = false, fixed_latency_range = false;
     pa_sink_new_data data;
+    bool volume_is_set;
+    bool mute_is_set;
     pa_alsa_profile_set *profile_set = NULL;
     void *state = NULL;
 
@@ -2292,6 +2294,8 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
 
     u->sink = pa_sink_new(m->core, &data, PA_SINK_HARDWARE | PA_SINK_LATENCY | (u->use_tsched ? PA_SINK_DYNAMIC_LATENCY : 0) |
                           (set_formats ? PA_SINK_SET_FORMATS : 0));
+    volume_is_set = data.volume_is_set;
+    mute_is_set = data.muted_is_set;
     pa_sink_new_data_done(&data);
 
     if (!u->sink) {
@@ -2375,7 +2379,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     thread_name = NULL;
 
     /* Get initial mixer settings */
-    if (data.volume_is_set) {
+    if (volume_is_set) {
         if (u->sink->set_volume)
             u->sink->set_volume(u->sink);
     } else {
@@ -2383,7 +2387,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
             u->sink->get_volume(u->sink);
     }
 
-    if (data.muted_is_set) {
+    if (mute_is_set) {
         if (u->sink->set_mute)
             u->sink->set_mute(u->sink);
     } else {
@@ -2395,7 +2399,7 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
         }
     }
 
-    if ((data.volume_is_set || data.muted_is_set) && u->sink->write_volume)
+    if ((volume_is_set || mute_is_set) && u->sink->write_volume)
         u->sink->write_volume(u->sink);
 
     if (set_formats) {
