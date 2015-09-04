@@ -1,6 +1,5 @@
 #!/usr/bin/dh-exec
 
-etc/bash_completion.d/*
 etc/pulse/default.pa
 etc/pulse/system.pa
 etc/pulse/daemon.conf
@@ -80,6 +79,7 @@ usr/lib/pulse-*/modules/module-switch-on-port-available.so
 usr/lib/pulse-*/modules/module-virtual-surround-sink.so
 [linux-any] usr/lib/pulse-*/modules/module-systemd-login.so
 [linux-any] usr/lib/systemd/user/pulseaudio.*
+usr/share/bash-completion/completions/*
 usr/share/locale
 usr/share/man/man1/pulseaudio.1
 usr/share/man/man5/default.pa.5
