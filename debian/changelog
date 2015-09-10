@@ -1,9 +1,9 @@
-pulseaudio (6.99.1-2) UNRELEASED; urgency=medium
+pulseaudio (6.99.1-2) experimental; urgency=medium
 
   * Fix test suite failure on alpha. Patch from Michael Cree. 
     Closes: #798248
 
- -- Felipe Sateler <fsateler@debian.org>  Thu, 10 Sep 2015 20:44:12 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 10 Sep 2015 20:44:53 -0300
 
 pulseaudio (6.99.1-1) experimental; urgency=medium
 
