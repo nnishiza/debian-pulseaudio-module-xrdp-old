@@ -173,7 +173,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      pa_tagstruct_puts(reply, def_source ? def_source->name : NULL);
  
      pa_tagstruct_putu32(reply, c->protocol->core->cookie);
-@@ -3892,6 +3938,8 @@ static void command_set_volume(
+@@ -3889,6 +3935,8 @@ static void command_set_volume(
  
      client_name = pa_strnull(pa_proplist_gets(c->client->proplist, PA_PROP_APPLICATION_PROCESS_BINARY));
  
@@ -182,7 +182,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      if (sink) {
          CHECK_VALIDITY(c->pstream, volume.channels == 1 || pa_cvolume_compatible(&volume, &sink->sample_spec), tag, PA_ERR_INVALID);
  
-@@ -3987,6 +4035,8 @@ static void command_set_mute(
+@@ -3984,6 +4032,8 @@ static void command_set_mute(
  
      CHECK_VALIDITY(c->pstream, si || so || sink || source, tag, PA_ERR_NOENTITY);
  
@@ -191,7 +191,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      client_name = pa_strnull(pa_proplist_gets(c->client->proplist, PA_PROP_APPLICATION_PROCESS_BINARY));
  
      if (sink) {
-@@ -4450,6 +4500,7 @@ static void command_set_default_sink_or_
+@@ -4447,6 +4497,7 @@ static void command_set_default_sink_or_
  
          source = pa_namereg_get(c->protocol->core, s, PA_NAMEREG_SOURCE);
          CHECK_VALIDITY(c->pstream, source, tag, PA_ERR_NOENTITY);
@@ -199,7 +199,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
  
          pa_namereg_set_default_source(c->protocol->core, source);
      } else {
-@@ -4458,6 +4509,7 @@ static void command_set_default_sink_or_
+@@ -4455,6 +4506,7 @@ static void command_set_default_sink_or_
  
          sink = pa_namereg_get(c->protocol->core, s, PA_NAMEREG_SINK);
          CHECK_VALIDITY(c->pstream, sink, tag, PA_ERR_NOENTITY);
@@ -207,7 +207,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
  
          pa_namereg_set_default_sink(c->protocol->core, sink);
      }
-@@ -4525,6 +4577,7 @@ static void command_kill(pa_pdispatch *p
+@@ -4522,6 +4574,7 @@ static void command_kill(pa_pdispatch *p
  
          client = pa_idxset_get_by_index(c->protocol->core->clients, idx);
          CHECK_VALIDITY(c->pstream, client, tag, PA_ERR_NOENTITY);
@@ -215,7 +215,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
  
          pa_native_connection_ref(c);
          pa_client_kill(client);
-@@ -4534,6 +4587,7 @@ static void command_kill(pa_pdispatch *p
+@@ -4531,6 +4584,7 @@ static void command_kill(pa_pdispatch *p
  
          s = pa_idxset_get_by_index(c->protocol->core->sink_inputs, idx);
          CHECK_VALIDITY(c->pstream, s, tag, PA_ERR_NOENTITY);
@@ -223,7 +223,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
  
          pa_native_connection_ref(c);
          pa_sink_input_kill(s);
-@@ -4544,6 +4598,7 @@ static void command_kill(pa_pdispatch *p
+@@ -4541,6 +4595,7 @@ static void command_kill(pa_pdispatch *p
  
          s = pa_idxset_get_by_index(c->protocol->core->source_outputs, idx);
          CHECK_VALIDITY(c->pstream, s, tag, PA_ERR_NOENTITY);
@@ -231,7 +231,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
  
          pa_native_connection_ref(c);
          pa_source_output_kill(s);
-@@ -4573,6 +4628,8 @@ static void command_load_module(pa_pdisp
+@@ -4570,6 +4625,8 @@ static void command_load_module(pa_pdisp
      CHECK_VALIDITY(c->pstream, name && *name && pa_utf8_valid(name) && !strchr(name, '/'), tag, PA_ERR_INVALID);
      CHECK_VALIDITY(c->pstream, !argument || pa_utf8_valid(argument), tag, PA_ERR_INVALID);
  
@@ -240,7 +240,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      if (!(m = pa_module_load(c->protocol->core, name, argument))) {
          pa_pstream_send_error(c->pstream, tag, PA_ERR_MODINITFAILED);
          return;
-@@ -4601,6 +4658,8 @@ static void command_unload_module(pa_pdi
+@@ -4598,6 +4655,8 @@ static void command_unload_module(pa_pdi
      m = pa_idxset_get_by_index(c->protocol->core->modules, idx);
      CHECK_VALIDITY(c->pstream, m, tag, PA_ERR_NOENTITY);
  
@@ -249,7 +249,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      pa_module_unload_request(m, false);
      pa_pstream_send_simple_ack(c->pstream, tag);
  }
-@@ -4639,6 +4698,7 @@ static void command_move_stream(pa_pdisp
+@@ -4636,6 +4695,7 @@ static void command_move_stream(pa_pdisp
              sink = pa_namereg_get(c->protocol->core, name_device, PA_NAMEREG_SINK);
  
          CHECK_VALIDITY(c->pstream, si && sink, tag, PA_ERR_NOENTITY);
@@ -257,7 +257,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
  
          if (pa_sink_input_move_to(si, sink, true) < 0) {
              pa_pstream_send_error(c->pstream, tag, PA_ERR_INVALID);
-@@ -4658,6 +4718,7 @@ static void command_move_stream(pa_pdisp
+@@ -4655,6 +4715,7 @@ static void command_move_stream(pa_pdisp
              source = pa_namereg_get(c->protocol->core, name_device, PA_NAMEREG_SOURCE);
  
          CHECK_VALIDITY(c->pstream, so && source, tag, PA_ERR_NOENTITY);
@@ -265,7 +265,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
  
          if (pa_source_output_move_to(so, source, true) < 0) {
              pa_pstream_send_error(c->pstream, tag, PA_ERR_INVALID);
-@@ -4693,6 +4754,8 @@ static void command_suspend(pa_pdispatch
+@@ -4690,6 +4751,8 @@ static void command_suspend(pa_pdispatch
  
          if (idx == PA_INVALID_INDEX && name && !*name) {
  
@@ -274,7 +274,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
              pa_log_debug("%s all sinks", b ? "Suspending" : "Resuming");
  
              if (pa_sink_suspend_all(c->protocol->core, b, PA_SUSPEND_USER) < 0) {
-@@ -4709,6 +4772,8 @@ static void command_suspend(pa_pdispatch
+@@ -4706,6 +4769,8 @@ static void command_suspend(pa_pdispatch
  
              CHECK_VALIDITY(c->pstream, sink, tag, PA_ERR_NOENTITY);
  
@@ -283,7 +283,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
              pa_log_debug("%s of sink %s requested by client %" PRIu32 ".",
                           b ? "Suspending" : "Resuming", sink->name, c->client->index);
  
-@@ -4723,6 +4788,8 @@ static void command_suspend(pa_pdispatch
+@@ -4720,6 +4785,8 @@ static void command_suspend(pa_pdispatch
  
          if (idx == PA_INVALID_INDEX && name && !*name) {
  
@@ -292,7 +292,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
              pa_log_debug("%s all sources", b ? "Suspending" : "Resuming");
  
              if (pa_source_suspend_all(c->protocol->core, b, PA_SUSPEND_USER) < 0) {
-@@ -4740,6 +4807,8 @@ static void command_suspend(pa_pdispatch
+@@ -4737,6 +4804,8 @@ static void command_suspend(pa_pdispatch
  
              CHECK_VALIDITY(c->pstream, source, tag, PA_ERR_NOENTITY);
  
@@ -301,7 +301,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
              pa_log_debug("%s of source %s requested by client %" PRIu32 ".",
                           b ? "Suspending" : "Resuming", source->name, c->client->index);
  
-@@ -4783,6 +4852,8 @@ static void command_extension(pa_pdispat
+@@ -4780,6 +4849,8 @@ static void command_extension(pa_pdispat
      CHECK_VALIDITY(c->pstream, m, tag, PA_ERR_NOEXTENSION);
      CHECK_VALIDITY(c->pstream, m->load_once || idx != PA_INVALID_INDEX, tag, PA_ERR_INVALID);
  
@@ -310,7 +310,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      cb = (pa_native_protocol_ext_cb_t) (unsigned long) pa_hashmap_get(c->protocol->extensions, m);
      CHECK_VALIDITY(c->pstream, cb, tag, PA_ERR_NOEXTENSION);
  
-@@ -4825,6 +4896,8 @@ static void command_set_card_profile(pa_
+@@ -4822,6 +4893,8 @@ static void command_set_card_profile(pa_
  
      CHECK_VALIDITY(c->pstream, profile, tag, PA_ERR_NOENTITY);
  
@@ -319,7 +319,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      if ((ret = pa_card_set_profile(card, profile, true)) < 0) {
          pa_pstream_send_error(c->pstream, tag, -ret);
          return;
-@@ -4865,6 +4938,8 @@ static void command_set_sink_or_source_p
+@@ -4862,6 +4935,8 @@ static void command_set_sink_or_source_p
  
          CHECK_VALIDITY(c->pstream, sink, tag, PA_ERR_NOENTITY);
  
@@ -328,7 +328,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
          if ((ret = pa_sink_set_port(sink, port, true)) < 0) {
              pa_pstream_send_error(c->pstream, tag, -ret);
              return;
-@@ -4881,6 +4956,8 @@ static void command_set_sink_or_source_p
+@@ -4878,6 +4953,8 @@ static void command_set_sink_or_source_p
  
          CHECK_VALIDITY(c->pstream, source, tag, PA_ERR_NOENTITY);
  
@@ -337,7 +337,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
          if ((ret = pa_source_set_port(source, port, true)) < 0) {
              pa_pstream_send_error(c->pstream, tag, -ret);
              return;
-@@ -4925,6 +5002,8 @@ static void command_set_port_latency_off
+@@ -4922,6 +4999,8 @@ static void command_set_port_latency_off
      port = pa_hashmap_get(card->ports, port_name);
      CHECK_VALIDITY(c->pstream, port, tag, PA_ERR_NOENTITY);
  
@@ -346,7 +346,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      pa_device_port_set_latency_offset(port, offset);
  
      pa_pstream_send_simple_ack(c->pstream, tag);
-@@ -5465,3 +5544,136 @@ pa_client* pa_native_connection_get_clie
+@@ -5462,3 +5541,136 @@ pa_client* pa_native_connection_get_clie
  
      return c->client;
  }

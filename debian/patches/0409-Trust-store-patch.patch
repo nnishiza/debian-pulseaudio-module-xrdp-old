@@ -571,7 +571,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      if (do_shm) {
          /* Only enable SHM if both sides are owned by the same
           * user. This is a security measure because otherwise data
-@@ -5624,6 +5631,7 @@ typedef struct pa_protocol_native_access
+@@ -5621,6 +5628,7 @@ typedef struct pa_protocol_native_access
  } pa_protocol_native_access_data;
  
  static void check_access_finish_cb(pa_access_data *data, bool res) {
@@ -579,7 +579,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      pa_protocol_native_access_data *d = (pa_protocol_native_access_data *) data;
      pa_native_connection *c = PA_NATIVE_CONNECTION(d->userdata);
  
-@@ -5632,6 +5640,11 @@ static void check_access_finish_cb(pa_ac
+@@ -5629,6 +5637,11 @@ static void check_access_finish_cb(pa_ac
          goto finish;
      }
  

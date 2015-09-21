@@ -25,7 +25,7 @@ Index: pulseaudio/src/pulsecore/tagstruct.c
 +    tc->allocated = t->length;
 +    tc->length = t->length;
 +    tc->rindex = 0;
-+    tc->dynamic = true;
++    tc->type = PA_TAGSTRUCT_DYNAMIC;
 +
 +    return tc;
 +}
