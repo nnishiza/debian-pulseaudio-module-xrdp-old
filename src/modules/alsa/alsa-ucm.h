@@ -84,6 +84,12 @@ typedef void snd_use_case_mgr_t;
 /** For devices: The modifier (if any) that this device corresponds to */
 #define PA_ALSA_PROP_UCM_MODIFIER "alsa.ucm.modifier"
 
+/* Corresponds to the "JackControl" UCM value. */
+#define PA_ALSA_PROP_UCM_JACK_CONTROL               "alsa.ucm.jack_control"
+
+/* Corresponds to the "JackHWMute" UCM value. */
+#define PA_ALSA_PROP_UCM_JACK_HW_MUTE               "alsa.ucm.jack_hw_mute"
+
 typedef struct pa_alsa_ucm_verb pa_alsa_ucm_verb;
 typedef struct pa_alsa_ucm_modifier pa_alsa_ucm_modifier;
 typedef struct pa_alsa_ucm_device pa_alsa_ucm_device;
@@ -139,9 +145,17 @@ struct pa_alsa_ucm_device {
     pa_idxset *conflicting_devices;
     pa_idxset *supported_devices;
 
-    pa_alsa_jack *input_jack;
-    pa_alsa_jack *output_jack;
+    /* One device may be part of multiple ports, since each device has
+     * a dedicated port, and in addition to that we sometimes generate ports
+     * that represent combinations of devices. */
+    pa_dynarray *ucm_ports; /* struct ucm_port */
+
+    pa_alsa_jack *jack;
+    pa_dynarray *hw_mute_jacks; /* pa_alsa_jack */
+    pa_available_t available;
 };
+
+void pa_alsa_ucm_device_update_available(pa_alsa_ucm_device *device);
 
 struct pa_alsa_ucm_modifier {
     PA_LLIST_FIELDS(pa_alsa_ucm_modifier);
@@ -182,6 +196,7 @@ struct pa_alsa_ucm_config {
 
     PA_LLIST_HEAD(pa_alsa_ucm_verb, verbs);
     PA_LLIST_HEAD(pa_alsa_jack, jacks);
+    pa_dynarray *ports; /* struct ucm_port */
 };
 
 struct pa_alsa_ucm_mapping_context {

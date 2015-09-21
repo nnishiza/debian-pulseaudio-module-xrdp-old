@@ -491,14 +491,16 @@ static void prepare_next_write_item(pa_pstream *p) {
     p->write.descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS] = 0;
 
     if (p->write.current->type == PA_PSTREAM_ITEM_PACKET) {
+        size_t plen;
 
         pa_assert(p->write.current->packet);
-        p->write.data = p->write.current->packet->data;
-        p->write.descriptor[PA_PSTREAM_DESCRIPTOR_LENGTH] = htonl((uint32_t) p->write.current->packet->length);
 
-        if (p->write.current->packet->length <= MINIBUF_SIZE - PA_PSTREAM_DESCRIPTOR_SIZE) {
-            memcpy(&p->write.minibuf[PA_PSTREAM_DESCRIPTOR_SIZE], p->write.data, p->write.current->packet->length);
-            p->write.minibuf_validsize = PA_PSTREAM_DESCRIPTOR_SIZE + p->write.current->packet->length;
+        p->write.data = (void *) pa_packet_data(p->write.current->packet, &plen);
+        p->write.descriptor[PA_PSTREAM_DESCRIPTOR_LENGTH] = htonl((uint32_t) plen);
+
+        if (plen <= MINIBUF_SIZE - PA_PSTREAM_DESCRIPTOR_SIZE) {
+            memcpy(&p->write.minibuf[PA_PSTREAM_DESCRIPTOR_SIZE], p->write.data, plen);
+            p->write.minibuf_validsize = PA_PSTREAM_DESCRIPTOR_SIZE + plen;
         }
 
     } else if (p->write.current->type == PA_PSTREAM_ITEM_SHMRELEASE) {
@@ -680,6 +682,30 @@ fail:
     return -1;
 }
 
+static void memblock_complete(pa_pstream *p, struct pstream_read *re) {
+    pa_memchunk chunk;
+    int64_t offset;
+
+    if (!p->receive_memblock_callback)
+        return;
+
+    chunk.memblock = re->memblock;
+    chunk.index = 0;
+    chunk.length = re->index - PA_PSTREAM_DESCRIPTOR_SIZE;
+
+    offset = (int64_t) (
+             (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_HI])) << 32) |
+             (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_LO]))));
+
+    p->receive_memblock_callback(
+        p,
+        ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_CHANNEL]),
+        offset,
+        ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS]) & PA_FLAG_SEEKMASK,
+        &chunk,
+        p->receive_memblock_callback_userdata);
+}
+
 static int do_read(pa_pstream *p, struct pstream_read *re) {
     void *d;
     size_t l;
@@ -787,6 +813,7 @@ static int do_read(pa_pstream *p, struct pstream_read *re) {
         channel = ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_CHANNEL]);
 
         if (channel == (uint32_t) -1) {
+            size_t plen;
 
             if (flags != 0) {
                 pa_log_warn("Received packet frame with invalid flags value.");
@@ -795,7 +822,7 @@ static int do_read(pa_pstream *p, struct pstream_read *re) {
 
             /* Frame is a packet frame */
             re->packet = pa_packet_new(length);
-            re->data = re->packet->data;
+            re->data = (void *) pa_packet_data(re->packet, &plen);
 
         } else {
 
@@ -827,107 +854,69 @@ static int do_read(pa_pstream *p, struct pstream_read *re) {
             }
         }
 
-    } else if (re->index > PA_PSTREAM_DESCRIPTOR_SIZE) {
-        /* Frame payload available */
+    } else if (re->index >= ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_LENGTH]) + PA_PSTREAM_DESCRIPTOR_SIZE) {
+        /* Frame complete */
 
-        if (re->memblock && p->receive_memblock_callback) {
+        if (re->memblock) {
+            memblock_complete(p, re);
 
-            /* Is this memblock data? Than pass it to the user */
-            l = (re->index - (size_t) r) < PA_PSTREAM_DESCRIPTOR_SIZE ? (size_t) (re->index - PA_PSTREAM_DESCRIPTOR_SIZE) : (size_t) r;
+            /* This was a memblock frame. We can unref the memblock now */
+            pa_memblock_unref(re->memblock);
 
-            if (l > 0) {
+        } else if (re->packet) {
+
+            if (p->receive_packet_callback)
+#ifdef HAVE_CREDS
+                p->receive_packet_callback(p, re->packet, &p->read_ancil_data, p->receive_packet_callback_userdata);
+#else
+                p->receive_packet_callback(p, re->packet, NULL, p->receive_packet_callback_userdata);
+#endif
+
+            pa_packet_unref(re->packet);
+        } else {
+            pa_memblock *b;
+            uint32_t flags = ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS]);
+            pa_assert((flags & PA_FLAG_SHMMASK) == PA_FLAG_SHMDATA);
+
+            pa_assert(p->import);
+
+            if (!(b = pa_memimport_get(p->import,
+                                       ntohl(re->shm_info[PA_PSTREAM_SHM_BLOCKID]),
+                                       ntohl(re->shm_info[PA_PSTREAM_SHM_SHMID]),
+                                       ntohl(re->shm_info[PA_PSTREAM_SHM_INDEX]),
+                                       ntohl(re->shm_info[PA_PSTREAM_SHM_LENGTH]),
+                                       !!(flags & PA_FLAG_SHMWRITABLE)))) {
+
+                if (pa_log_ratelimit(PA_LOG_DEBUG))
+                    pa_log_debug("Failed to import memory block.");
+            }
+
+            if (p->receive_memblock_callback) {
+                int64_t offset;
                 pa_memchunk chunk;
 
-                chunk.memblock = re->memblock;
-                chunk.index = re->index - PA_PSTREAM_DESCRIPTOR_SIZE - l;
-                chunk.length = l;
+                chunk.memblock = b;
+                chunk.index = 0;
+                chunk.length = b ? pa_memblock_get_length(b) : ntohl(re->shm_info[PA_PSTREAM_SHM_LENGTH]);
 
-                if (p->receive_memblock_callback) {
-                    int64_t offset;
+                offset = (int64_t) (
+                        (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_HI])) << 32) |
+                        (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_LO]))));
 
-                    offset = (int64_t) (
-                            (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_HI])) << 32) |
-                            (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_LO]))));
-
-                    p->receive_memblock_callback(
+                p->receive_memblock_callback(
                         p,
                         ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_CHANNEL]),
                         offset,
                         ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS]) & PA_FLAG_SEEKMASK,
                         &chunk,
                         p->receive_memblock_callback_userdata);
-                }
-
-                /* Drop seek info for following callbacks */
-                re->descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS] =
-                    re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_HI] =
-                    re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_LO] = 0;
-            }
-        }
-
-        /* Frame complete */
-        if (re->index >= ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_LENGTH]) + PA_PSTREAM_DESCRIPTOR_SIZE) {
-
-            if (re->memblock) {
-
-                /* This was a memblock frame. We can unref the memblock now */
-                pa_memblock_unref(re->memblock);
-
-            } else if (re->packet) {
-
-                if (p->receive_packet_callback)
-#ifdef HAVE_CREDS
-                    p->receive_packet_callback(p, re->packet, &p->read_ancil_data, p->receive_packet_callback_userdata);
-#else
-                    p->receive_packet_callback(p, re->packet, NULL, p->receive_packet_callback_userdata);
-#endif
-
-                pa_packet_unref(re->packet);
-            } else {
-                pa_memblock *b;
-                uint32_t flags = ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS]);
-                pa_assert((flags & PA_FLAG_SHMMASK) == PA_FLAG_SHMDATA);
-
-                pa_assert(p->import);
-
-                if (!(b = pa_memimport_get(p->import,
-                                          ntohl(re->shm_info[PA_PSTREAM_SHM_BLOCKID]),
-                                          ntohl(re->shm_info[PA_PSTREAM_SHM_SHMID]),
-                                          ntohl(re->shm_info[PA_PSTREAM_SHM_INDEX]),
-                                          ntohl(re->shm_info[PA_PSTREAM_SHM_LENGTH]),
-                                          !!(flags & PA_FLAG_SHMWRITABLE)))) {
-
-                    if (pa_log_ratelimit(PA_LOG_DEBUG))
-                        pa_log_debug("Failed to import memory block.");
-                }
-
-                if (p->receive_memblock_callback) {
-                    int64_t offset;
-                    pa_memchunk chunk;
-
-                    chunk.memblock = b;
-                    chunk.index = 0;
-                    chunk.length = b ? pa_memblock_get_length(b) : ntohl(re->shm_info[PA_PSTREAM_SHM_LENGTH]);
-
-                    offset = (int64_t) (
-                            (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_HI])) << 32) |
-                            (((uint64_t) ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_OFFSET_LO]))));
-
-                    p->receive_memblock_callback(
-                            p,
-                            ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_CHANNEL]),
-                            offset,
-                            ntohl(re->descriptor[PA_PSTREAM_DESCRIPTOR_FLAGS]) & PA_FLAG_SEEKMASK,
-                            &chunk,
-                            p->receive_memblock_callback_userdata);
-                }
-
-                if (b)
-                    pa_memblock_unref(b);
             }
 
-            goto frame_done;
+            if (b)
+                pa_memblock_unref(b);
         }
+
+        goto frame_done;
     }
 
     return 0;

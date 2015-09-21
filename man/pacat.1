@@ -17,7 +17,7 @@ pacat --help\fB
 pacat --version\fB
 \f1
 .SH DESCRIPTION
-\fIpacat\f1 is a simple tool for playing back or capturing raw or encoded audio files on a PulseAudio sound server.
+\fIpacat\f1 is a simple tool for playing back or capturing raw or encoded audio files on a PulseAudio sound server. It understands all audio file formats supported by \fIlibsndfile\f1.
 .SH OPTIONS
 .TP
 \fB-h | --help\f1
@@ -111,6 +111,8 @@ parecord
 .TP
 \fB--list-file-formats\f1
 List supported file formats.
+.SH LIMITATIONS
+Due to a limitation in \fIlibsndfile\f1 \fIpaplay\f1 currently does not always set the correct channel mapping for playback of multichannel (i.e. surround) audio files, even if the channel mapping information is available in the audio file.
 .SH AUTHORS
 The PulseAudio Developers <pulseaudio-discuss (at) lists (dot) freedesktop (dot) org>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO

@@ -1,4 +1,5 @@
 # Ubuntu/Debian specific config/fixes
+0001-Fix-test-suite-failure-on-Alpha.patch
 0001-volume-config-changes.patch
 0005-dont-load-cork-music-on-phone.patch
 0006-load-module-x11-bell.patch
@@ -40,4 +41,3 @@
 0410-Add-thread-to-activate-trust-store-interface.patch
 0415-dynarray-Add-PA_DYNARRAY_FOREACH.patch
 0417-increase-timeout-check-apparmor.patch
-

@@ -12,6 +12,7 @@ Build-Depends: debhelper (>= 9),
     cdbs (>= 0.4.93),
     check,
     dh-autoreconf,
+    dh-exec,
     intltool,
     libapparmor-dev [linux-any],
     libasound2-dev (>= 1.0.24) [linux-any],
@@ -29,7 +30,6 @@ Build-Depends: debhelper (>= 9),
     libgtk-3-dev,
     libice-dev,
     libjack-dev,
-    libjson0-dev,
     libjson-c-dev (>= 0.11),
     liblircclient-dev,
     libltdl-dev (>= 2.2.6a-2),
@@ -345,7 +345,7 @@ Description: trust-store module for PulseAudio sound server (debugging)
 Package: pulseaudio-module-bluetooth
 Architecture: linux-any
 Priority: extra
-Depends: ${shlibs:Depends}, ${misc:Depends}, bluez (>= 4.40)
+Depends: ${shlibs:Depends}, ${misc:Depends}, bluez (>= 5.23)
 Breaks: pulseaudio (<< 0.9.14-2)
 Description: Bluetooth module for PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -462,7 +462,6 @@ Depends: ${misc:Depends},
   libpulse0 (= ${binary:Version}),
   libpulse-mainloop-glib0 (= ${binary:Version}),
   libglib2.0-dev,
-  libavahi-client-dev
 Description: PulseAudio client development headers and libraries
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
