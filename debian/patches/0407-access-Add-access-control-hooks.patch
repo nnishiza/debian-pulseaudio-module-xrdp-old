@@ -12,10 +12,10 @@ Add hooks to core to check if certain operations are allowed.
  4 files changed, 111 insertions(+)
  create mode 100644 src/pulsecore/access.h
 
-diff --git a/src/Makefile.am b/src/Makefile.am
-index f96f527..f6897de 100644
---- a/src/Makefile.am
-+++ b/src/Makefile.am
+Index: pulseaudio/src/Makefile.am
+===================================================================
+--- pulseaudio.orig/src/Makefile.am
++++ pulseaudio/src/Makefile.am
 @@ -637,6 +637,7 @@ pkglib_LTLIBRARIES = \
  # to the existing libpulse being linked to libpulsecommon). Duplicating the
  # code allows us to prevent this circular linking.
@@ -24,11 +24,10 @@ index f96f527..f6897de 100644
  		pulse/client-conf.c pulse/client-conf.h \
  		pulse/fork-detect.c pulse/fork-detect.h \
  		pulse/format.c pulse/format.h \
-diff --git a/src/pulsecore/access.h b/src/pulsecore/access.h
-new file mode 100644
-index 0000000..7cd2751
+Index: pulseaudio/src/pulsecore/access.h
+===================================================================
 --- /dev/null
-+++ b/src/pulsecore/access.h
++++ pulseaudio/src/pulsecore/access.h
 @@ -0,0 +1,102 @@
 +#ifndef fooaccesshfoo
 +#define fooaccesshfoo
@@ -132,11 +131,11 @@ index 0000000..7cd2751
 +};
 +
 +#endif
-diff --git a/src/pulsecore/core.c b/src/pulsecore/core.c
-index 0e63bac..9135311 100644
---- a/src/pulsecore/core.c
-+++ b/src/pulsecore/core.c
-@@ -151,6 +151,9 @@ pa_core* pa_core_new(pa_mainloop_api *m, bool shared, size_t shm_size) {
+Index: pulseaudio/src/pulsecore/core.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/core.c
++++ pulseaudio/src/pulsecore/core.c
+@@ -151,6 +151,9 @@ pa_core* pa_core_new(pa_mainloop_api *m,
      for (j = 0; j < PA_CORE_HOOK_MAX; j++)
          pa_hook_init(&c->hooks[j], c);
  
@@ -155,10 +154,10 @@ index 0e63bac..9135311 100644
  
      pa_xfree(c);
  }
-diff --git a/src/pulsecore/core.h b/src/pulsecore/core.h
-index e69a130..6e7feb4 100644
---- a/src/pulsecore/core.h
-+++ b/src/pulsecore/core.h
+Index: pulseaudio/src/pulsecore/core.h
+===================================================================
+--- pulseaudio.orig/src/pulsecore/core.h
++++ pulseaudio/src/pulsecore/core.h
 @@ -50,6 +50,7 @@ typedef enum pa_suspend_cause {
  #include <pulsecore/source.h>
  #include <pulsecore/core-subscribe.h>
@@ -167,7 +166,7 @@ index e69a130..6e7feb4 100644
  
  typedef enum pa_server_type {
      PA_SERVER_TYPE_UNSET,
-@@ -199,6 +200,8 @@ struct pa_core {
+@@ -207,6 +208,8 @@ struct pa_core {
  
      /* hooks */
      pa_hook hooks[PA_CORE_HOOK_MAX];
@@ -176,6 +175,3 @@ index e69a130..6e7feb4 100644
  };
  
  PA_DECLARE_PUBLIC_CLASS(pa_core);
--- 
-2.1.4
-

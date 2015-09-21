@@ -11,10 +11,10 @@ Originally by Wim Taymans, backported by David Henningsson
 
 Index: pulseaudio/src/pulsecore/tagstruct.c
 ===================================================================
---- pulseaudio.orig/src/pulsecore/tagstruct.c	2015-08-27 17:06:31.000000000 +0200
-+++ pulseaudio/src/pulsecore/tagstruct.c	2015-08-27 17:10:53.302118854 +0200
-@@ -83,6 +83,19 @@
-     return p;
+--- pulseaudio.orig/src/pulsecore/tagstruct.c
++++ pulseaudio/src/pulsecore/tagstruct.c
+@@ -97,6 +97,19 @@ void pa_tagstruct_free(pa_tagstruct*t) {
+         pa_xfree(t);
  }
  
 +pa_tagstruct *pa_tagstruct_copy(pa_tagstruct*t) {
@@ -30,16 +30,16 @@ Index: pulseaudio/src/pulsecore/tagstruct.c
 +    return tc;
 +}
 +
- static void extend(pa_tagstruct*t, size_t l) {
+ static inline void extend(pa_tagstruct*t, size_t l) {
      pa_assert(t);
-     pa_assert(t->dynamic);
+     pa_assert(t->type != PA_TAGSTRUCT_FIXED);
 Index: pulseaudio/src/pulsecore/tagstruct.h
 ===================================================================
---- pulseaudio.orig/src/pulsecore/tagstruct.h	2015-08-27 17:06:31.000000000 +0200
-+++ pulseaudio/src/pulsecore/tagstruct.h	2015-08-27 17:06:39.000000000 +0200
-@@ -64,6 +64,8 @@
+--- pulseaudio.orig/src/pulsecore/tagstruct.h
++++ pulseaudio/src/pulsecore/tagstruct.h
+@@ -64,6 +64,8 @@ pa_tagstruct *pa_tagstruct_new(void);
+ pa_tagstruct *pa_tagstruct_new_fixed(const uint8_t* data, size_t length);
  void pa_tagstruct_free(pa_tagstruct*t);
- uint8_t* pa_tagstruct_free_data(pa_tagstruct*t, size_t *l);
  
 +pa_tagstruct *pa_tagstruct_copy(pa_tagstruct*t);
 +

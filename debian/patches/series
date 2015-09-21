@@ -6,7 +6,6 @@
 0016-nodisplay-autostart.patch
 0022-inotify-wrapper-Quit-daemon-if-pid-file-is-removed.patch
 0023-fixing_snd_mixer_poll_descriptors_count_when_zero.patch
-0099-pa_yes_no.patch
 
 # Ubuntu touch stuff
 0202-dont-probe-ucm.patch
@@ -18,26 +17,10 @@
 0210-module-device-restore-adding-property-to-skip.patch
 0211-corking-a-sink-input-stream-when-stalled.patch
 
-# add lfe filter patchset
-0300-lfe-filter-Import-code-from-the-Chrome-OS-audio-serv.patch
-0301-lfe-filter-Enable-LFE-filter-in-the-resampler.patch
-0302-lfe-filter-Cleanup-and-refactor.patch
-0303-lfe-filter-change-the-crossover-frequency-as-a-param.patch
-0304-memblock-Change-pa_memblock_new_malloced-to-an-inlin.patch
-0305-lfe-filter-Add-rewind-support.patch
-0306-resampler-Make-some-basic-functions-for-rewinding.patch
-0307-tests-adding-lfe-filter-test.patch
-0308-daemon-conf-enable-the-lfe-remixing-by-default.patch
-0309-resampler-Allow-disabling-the-LFE-filter-by-setting-.patch
-0310-resampler-Rename-lfe_filter_required-to-lfe_remixed.patch
-0311-tests-add-tolerant-variation-for-comparing-the-rewin.patch
-0312-lfe-filter-test-Use-S16NE-format.patch
-
 # Ubuntu touch: support for trust-store
 0406-tagstruct-add-copy-method.patch
 0407-access-Add-access-control-hooks.patch
 0408-protocol-native-add-access-checks.patch
 0409-Trust-store-patch.patch
 0410-Add-thread-to-activate-trust-store-interface.patch
-0415-dynarray-Add-PA_DYNARRAY_FOREACH.patch
 0417-increase-timeout-check-apparmor.patch

@@ -28,7 +28,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
  
  static const char* const valid_modargs[] = {
      "restore_volume",
-@@ -611,6 +613,9 @@ static void subscribe_callback(pa_core *
+@@ -602,6 +604,9 @@ static void subscribe_callback(pa_core *
          if (!(sink = pa_idxset_get_by_index(c->sinks, idx)))
              return;
  
@@ -38,7 +38,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
          type = PA_DEVICE_TYPE_SINK;
          name = pa_sprintf_malloc("sink:%s", sink->name);
          if (sink->active_port)
-@@ -650,6 +655,9 @@ static void subscribe_callback(pa_core *
+@@ -641,6 +646,9 @@ static void subscribe_callback(pa_core *
          if (!(source = pa_idxset_get_by_index(c->sources, idx)))
              return;
  
@@ -48,7 +48,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
          type = PA_DEVICE_TYPE_SOURCE;
          name = pa_sprintf_malloc("source:%s", source->name);
          if (source->active_port)
-@@ -816,6 +824,9 @@ static pa_hook_result_t sink_port_hook_c
+@@ -807,6 +815,9 @@ static pa_hook_result_t sink_port_hook_c
      pa_assert(u);
      pa_assert(u->restore_volume || u->restore_muted);
  
@@ -58,7 +58,7 @@ Index: pulseaudio/src/modules/module-device-restore.c
      name = pa_sprintf_malloc("sink:%s", sink->name);
  
      if ((e = perportentry_read(u, name, (sink->active_port ? sink->active_port->name : NULL)))) {
-@@ -958,6 +969,9 @@ static pa_hook_result_t source_port_hook
+@@ -949,6 +960,9 @@ static pa_hook_result_t source_port_hook
      pa_assert(u);
      pa_assert(u->restore_volume || u->restore_muted);
  
