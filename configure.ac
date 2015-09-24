@@ -44,7 +44,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 30)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [18:1:18])
+AC_SUBST(LIBPULSE_VERSION_INFO, [18:2:18])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -572,7 +572,7 @@ AC_CHECK_FUNCS_ONCE([strerror_r])
 AC_CHECK_FUNCS_ONCE([lstat])
 
 # Non-standard
-AC_CHECK_FUNCS_ONCE([setresuid setresgid setreuid setregid seteuid setegid ppoll strsignal sig2str strtof_l pipe2 accept4])
+AC_CHECK_FUNCS_ONCE([setresuid setresgid setreuid setregid seteuid setegid ppoll strsignal sig2str strtod_l pipe2 accept4])
 
 AC_FUNC_ALLOCA
 
