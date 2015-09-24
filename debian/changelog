@@ -1,8 +1,12 @@
 pulseaudio (7.0-1) UNRELEASED; urgency=medium
 
+  [ Luke Yelavich ]
   * New upstream release
   * Dropped patch, applied upstream
   * Update shlibs file for 7.0
+
+  [ Felipe Sateler ]
+  * Update bash completion lintian override
 
  -- Luke Yelavich <themuso@ubuntu.com>  Thu, 24 Sep 2015 14:36:51 +1000
 
