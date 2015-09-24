@@ -2990,7 +2990,8 @@ am__dist_alsaprofilesets_DATA_DIST =  \
 	modules/alsa/mixer/profile-sets/native-instruments-traktor-audio10.conf \
 	modules/alsa/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf \
 	modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf \
-	modules/alsa/mixer/profile-sets/kinect-audio.conf
+	modules/alsa/mixer/profile-sets/kinect-audio.conf \
+	modules/alsa/mixer/profile-sets/sb-omni-surround-5.1.conf
 am__dist_udevrules_DATA_DIST =  \
 	modules/alsa/mixer/profile-sets/90-pulseaudio.rules
 DATA = $(dbuspolicy_DATA) $(dist_alsapaths_DATA) \
@@ -3242,7 +3243,6 @@ CXXCPP = @CXXCPP@
 CXXDEPMODE = @CXXDEPMODE@
 CXXFLAGS = @CXXFLAGS@
 CYGPATH_W = @CYGPATH_W@
-DATADIRNAME = @DATADIRNAME@
 DBUS_CFLAGS = @DBUS_CFLAGS@
 DBUS_LIBS = @DBUS_LIBS@
 DEFS = @DEFS@
@@ -4213,7 +4213,8 @@ libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMIN
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-traktor-audio10.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf \
 @HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf \
-@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/kinect-audio.conf
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/kinect-audio.conf \
+@HAVE_ALSA_TRUE@		modules/alsa/mixer/profile-sets/sb-omni-surround-5.1.conf
 
 @HAVE_ALSA_TRUE@@HAVE_UDEV_TRUE@dist_udevrules_DATA = \
 @HAVE_ALSA_TRUE@@HAVE_UDEV_TRUE@		modules/alsa/mixer/profile-sets/90-pulseaudio.rules
@@ -11173,7 +11174,7 @@ update-map-file:
 
 update-all: update-ffmpeg update-map-file
 $(installlibLTLIBRARIES): install-pkglibLTLIBRARIES
-$(installmodlibexecLTLIBRARIES): install-pkglibLTLIBRARIES
+$(installmodlibexecLTLIBRARIES): install-pkglibLTLIBRARIES install-libLTLIBRARIES
 $(installpadsplibLTLIBRARIES): install-libLTLIBRARIES
 
 @HAVE_GCOV_TRUE@coverage:
