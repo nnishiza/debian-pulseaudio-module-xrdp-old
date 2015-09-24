@@ -85,7 +85,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -2132,7 +2132,7 @@ libtruststore_util_la_LIBADD = libpulsec
+@@ -2133,7 +2133,7 @@ libtruststore_util_la_LIBADD = libpulsec
  libtruststore_util_la_LDFLAGS = -avoid-version
  
  module_trust_store_la_SOURCES = modules/trust-store/module-trust-store.c

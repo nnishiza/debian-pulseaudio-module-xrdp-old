@@ -61,7 +61,7 @@ Index: pulseaudio/src/Makefile.am
  dist_alsaprofilesets_DATA = \
  		modules/alsa/mixer/profile-sets/default.conf \
  		modules/alsa/mixer/profile-sets/force-speaker.conf \
-@@ -1537,6 +1547,13 @@ SYMDEF_FILES = \
+@@ -1538,6 +1548,13 @@ SYMDEF_FILES = \
  		module-filter-apply-symdef.h \
  		module-filter-heuristics-symdef.h
  
@@ -75,7 +75,7 @@ Index: pulseaudio/src/Makefile.am
  if HAVE_ESOUND
  SYMDEF_FILES += \
  		module-esound-protocol-tcp-symdef.h \
-@@ -1846,6 +1863,44 @@ libalsa_util_la_LIBADD += $(DBUS_LIBS)
+@@ -1847,6 +1864,44 @@ libalsa_util_la_LIBADD += $(DBUS_LIBS)
  libalsa_util_la_CFLAGS += $(DBUS_CFLAGS)
  endif
  

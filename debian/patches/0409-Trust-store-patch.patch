@@ -91,7 +91,7 @@ Index: pulseaudio/src/Makefile.am
  if HAVE_ESOUND
  modlibexec_LTLIBRARIES += \
  		module-esound-protocol-tcp.la \
-@@ -1521,6 +1530,7 @@ SYMDEF_FILES = \
+@@ -1522,6 +1531,7 @@ SYMDEF_FILES = \
  		module-intended-roles-symdef.h \
  		module-suspend-on-idle-symdef.h \
  		module-echo-cancel-symdef.h \
@@ -99,7 +99,7 @@ Index: pulseaudio/src/Makefile.am
  		module-hal-detect-symdef.h \
  		module-udev-detect-symdef.h \
  		module-systemd-login-symdef.h \
-@@ -2113,6 +2123,20 @@ module_echo_cancel_la_CFLAGS += -DHAVE_W
+@@ -2114,6 +2124,20 @@ module_echo_cancel_la_CFLAGS += -DHAVE_W
  module_echo_cancel_la_LIBADD += libwebrtc-util.la
  endif
  
@@ -557,7 +557,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/protocol-native.c
 +++ pulseaudio/src/pulsecore/protocol-native.c
-@@ -2812,6 +2812,13 @@ static void command_auth(pa_pdispatch *p
+@@ -2814,6 +2814,13 @@ static void command_auth(pa_pdispatch *p
              do_shm = false;
  
  #ifdef HAVE_CREDS
@@ -571,7 +571,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      if (do_shm) {
          /* Only enable SHM if both sides are owned by the same
           * user. This is a security measure because otherwise data
-@@ -5621,6 +5628,7 @@ typedef struct pa_protocol_native_access
+@@ -5623,6 +5630,7 @@ typedef struct pa_protocol_native_access
  } pa_protocol_native_access_data;
  
  static void check_access_finish_cb(pa_access_data *data, bool res) {
@@ -579,7 +579,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      pa_protocol_native_access_data *d = (pa_protocol_native_access_data *) data;
      pa_native_connection *c = PA_NATIVE_CONNECTION(d->userdata);
  
-@@ -5629,6 +5637,11 @@ static void check_access_finish_cb(pa_ac
+@@ -5631,6 +5639,11 @@ static void check_access_finish_cb(pa_ac
          goto finish;
      }
  
