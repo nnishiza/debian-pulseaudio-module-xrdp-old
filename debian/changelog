@@ -1,8 +1,5 @@
-pulseaudio (1:7.0-0ubuntu1~wily1) wily; urgency=medium
+pulseaudio (7.0-1ubuntu1~wily1) UNRELEASED; urgency=medium
 
-  * New upstream release
-  * Dropped patch, applied upstream
-  * Update shlibs file for 7.0
   * Merge from Debian experimental, remaining changes:
     - epoch (my stupid fault :S)
     - Don't ship the consolekit module, and explicitly depend on the PAM
@@ -31,7 +28,20 @@ pulseaudio (1:7.0-0ubuntu1~wily1) wily; urgency=medium
     - Add a build/run autopkgtest for libpulse-dev
   * Refreshed patches, and dropped those that were applied upstream.
 
- -- Luke Yelavich <themuso@ubuntu.com>  Mon, 21 Sep 2015 11:01:11 +1000
+ -- Luke Yelavich <themuso@ubuntu.com>  Tue, 06 Oct 2015 15:30:57 +1100
+
+pulseaudio (7.0-1) unstable; urgency=medium
+
+  [ Luke Yelavich ]
+  * New upstream release
+  * Dropped patch, applied upstream
+  * Update shlibs file for 7.0
+
+  [ Felipe Sateler ]
+  * Update bash completion lintian override
+  * Upload to unstable
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 25 Sep 2015 09:53:54 -0300
 
 pulseaudio (6.99.1-2) experimental; urgency=medium
 
