@@ -1,3 +1,9 @@
+pulseaudio (7.0-1~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 08 Oct 2015 22:46:32 -0300
+
 pulseaudio (7.0-1) unstable; urgency=medium
 
   [ Luke Yelavich ]
