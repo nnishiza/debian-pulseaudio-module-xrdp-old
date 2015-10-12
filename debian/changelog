@@ -1,3 +1,9 @@
+pulseaudio (1:6.0-0ubuntu13) UNRELEASED; urgency=medium
+
+  * Pull upstream commit a527711 to hopefully fix LP: #1425447
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Tue, 13 Oct 2015 10:15:01 +1100
+
 pulseaudio (1:6.0-0ubuntu12) wily; urgency=medium
 
   * debian/rules: disable bluez4 support, it's not useful and leads to

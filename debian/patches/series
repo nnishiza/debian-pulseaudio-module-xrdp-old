@@ -7,6 +7,9 @@
 0023-fixing_snd_mixer_poll_descriptors_count_when_zero.patch
 0099-pa_yes_no.patch
 
+# Patches pulled from upstream
+0101-module-Always-remove-freed-module-from-modules_pendi.patch
+
 # Ubuntu touch stuff
 0202-dont-probe-ucm.patch
 0203-card-Add-hook-before-profile-changes.patch

@@ -1,0 +1,46 @@
+From a527711528ce8f9e1b1f73957fa8281f9126b370 Mon Sep 17 00:00:00 2001
+From: David Henningsson <david.henningsson@canonical.com>
+Date: Thu, 3 Sep 2015 09:43:01 +0200
+Subject: [PATCH] module: Always remove freed module from
+ modules_pending_unload
+
+pa_module_free is called from more than one place, not all of
+these places correctly removed the module from the
+modules_pending_unload array, potentially causing a dangling pointer
+in that array.
+
+Signed-off-by: David Henningsson <david.henningsson@canonical.com>
+---
+ src/pulsecore/module.c | 5 +++--
+ 1 file changed, 3 insertions(+), 2 deletions(-)
+
+Index: pulseaudio/src/pulsecore/module.c
+===================================================================
+--- pulseaudio.orig/src/pulsecore/module.c
++++ pulseaudio/src/pulsecore/module.c
+@@ -229,6 +229,8 @@ static void pa_module_free(pa_module *m)
+ 
+     lt_dlclose(m->dl);
+ 
++    pa_hashmap_remove(m->core->modules_pending_unload, m);
++
+     pa_log_info("Unloaded \"%s\" (index: #%u).", m->name, m->index);
+ 
+     pa_subscription_post(m->core, PA_SUBSCRIPTION_EVENT_MODULE|PA_SUBSCRIPTION_EVENT_REMOVE, m->index);
+@@ -245,8 +247,6 @@ void pa_module_unload(pa_core *c, pa_mod
+     if (m->core->disallow_module_loading && !force)
+         return;
+ 
+-    pa_hashmap_remove(c->modules_pending_unload, m);
+-
+     if (!(m = pa_idxset_remove_by_data(c->modules, m, NULL)))
+         return;
+ 
+@@ -300,6 +300,7 @@ void pa_module_unload_all(pa_core *c) {
+         c->mainloop->defer_free(c->module_defer_unload_event);
+         c->module_defer_unload_event = NULL;
+     }
++    pa_assert(pa_hashmap_isempty(c->modules_pending_unload));
+ }
+ 
+ static void defer_cb(pa_mainloop_api*api, pa_defer_event *e, void *userdata) {
