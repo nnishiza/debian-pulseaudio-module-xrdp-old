@@ -1,4 +1,4 @@
-pulseaudio (7.0-1ubuntu1~wily1) UNRELEASED; urgency=medium
+pulseaudio (7.0-1ubuntu1~xenial1) UNRELEASED; urgency=medium
 
   * Merge from Debian experimental, remaining changes:
     - epoch (my stupid fault :S)
