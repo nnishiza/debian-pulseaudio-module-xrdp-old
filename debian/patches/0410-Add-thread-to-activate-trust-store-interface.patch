@@ -8,11 +8,11 @@ Subject: [PATCH] Add thread to activate trust-store interface
  src/modules/trust-store/truststore.cc        | 19 +++++++++++++++++++
  2 files changed, 20 insertions(+), 13 deletions(-)
 
-diff --git a/src/modules/trust-store/module-trust-store.c b/src/modules/trust-store/module-trust-store.c
-index 5a3dd0b..0fb27e0 100644
---- a/src/modules/trust-store/module-trust-store.c
-+++ b/src/modules/trust-store/module-trust-store.c
-@@ -27,6 +27,7 @@
+Index: pulseaudio/src/modules/trust-store/module-trust-store.c
+===================================================================
+--- pulseaudio.orig/src/modules/trust-store/module-trust-store.c
++++ pulseaudio/src/modules/trust-store/module-trust-store.c
+@@ -28,6 +28,7 @@
  #include <pulsecore/fdsem.h>
  #include <pulsecore/thread.h>
  #include <pulsecore/core-util.h>
@@ -20,7 +20,7 @@ index 5a3dd0b..0fb27e0 100644
  #include <pulse/mainloop-api.h>
  
  #include "module-trust-store-symdef.h"
-@@ -168,18 +169,6 @@ static pa_hook_result_t connect_record_hook(pa_core *core, pa_access_data *d, st
+@@ -170,18 +171,6 @@ static pa_hook_result_t connect_record_h
      return PA_HOOK_CANCEL;
  }
  
@@ -39,7 +39,7 @@ index 5a3dd0b..0fb27e0 100644
  int pa__init(pa_module *m) {
      struct userdata *u;
      pa_trust_store *ts = pa_trust_store_new();
-@@ -199,7 +188,6 @@ int pa__init(pa_module *m) {
+@@ -201,7 +190,6 @@ int pa__init(pa_module *m) {
                   pa_fdsem_get(u->fdsem), PA_IO_EVENT_INPUT, check_fdsem, u));
      pa_fdsem_before_poll(u->fdsem);
  
@@ -47,10 +47,10 @@ index 5a3dd0b..0fb27e0 100644
      return 0;
  }
  
-diff --git a/src/modules/trust-store/truststore.cc b/src/modules/trust-store/truststore.cc
-index ee09038..8645ce5 100644
---- a/src/modules/trust-store/truststore.cc
-+++ b/src/modules/trust-store/truststore.cc
+Index: pulseaudio/src/modules/trust-store/truststore.cc
+===================================================================
+--- pulseaudio.orig/src/modules/trust-store/truststore.cc
++++ pulseaudio/src/modules/trust-store/truststore.cc
 @@ -4,6 +4,7 @@
  
  #include <memory>
@@ -106,6 +106,3 @@ index ee09038..8645ce5 100644
      delete ts;
  }
  
--- 
-2.1.4
-

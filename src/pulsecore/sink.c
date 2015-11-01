@@ -580,7 +580,7 @@ void pa_sink_put(pa_sink* s) {
     pa_assert_ctl_context();
 
     pa_assert(s->state == PA_SINK_INIT);
-    pa_assert(!(s->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER) || s->input_to_master);
+    pa_assert(!(s->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER) || pa_sink_is_filter(s));
 
     /* The following fields must be initialized properly when calling _put() */
     pa_assert(s->asyncmsgq);
@@ -645,7 +645,7 @@ void pa_sink_put(pa_sink* s) {
               || (s->base_volume == PA_VOLUME_NORM
                   && ((s->flags & PA_SINK_DECIBEL_VOLUME || (s->flags & PA_SINK_SHARE_VOLUME_WITH_MASTER)))));
     pa_assert(!(s->flags & PA_SINK_DECIBEL_VOLUME) || s->n_volume_steps == PA_VOLUME_NORM+1);
-    pa_assert(!(s->flags & PA_SINK_DYNAMIC_LATENCY) == (s->thread_info.fixed_latency != 0));
+    pa_assert(!(s->flags & PA_SINK_DYNAMIC_LATENCY) == !(s->thread_info.fixed_latency == 0));
     pa_assert(!(s->flags & PA_SINK_LATENCY) == !(s->monitor_source->flags & PA_SOURCE_LATENCY));
     pa_assert(!(s->flags & PA_SINK_DYNAMIC_LATENCY) == !(s->monitor_source->flags & PA_SOURCE_DYNAMIC_LATENCY));
 
@@ -726,6 +726,8 @@ static void sink_free(pa_object *o) {
         pa_sink_unlink(s);
 
     pa_log_info("Freeing sink %u \"%s\"", s->index, s->name);
+
+    pa_sink_volume_change_flush(s);
 
     if (s->monitor_source) {
         pa_source_unref(s->monitor_source);
@@ -1553,6 +1555,13 @@ pa_sink *pa_sink_get_master(pa_sink *s) {
     }
 
     return s;
+}
+
+/* Called from main context */
+bool pa_sink_is_filter(pa_sink *s) {
+    pa_sink_assert_ref(s);
+
+    return (s->input_to_master != NULL);
 }
 
 /* Called from main context */
@@ -3534,6 +3543,7 @@ static void pa_sink_volume_change_free(pa_sink_volume_change *c) {
 void pa_sink_volume_change_push(pa_sink *s) {
     pa_sink_volume_change *c = NULL;
     pa_sink_volume_change *nc = NULL;
+    pa_sink_volume_change *pc = NULL;
     uint32_t safety_margin = s->thread_info.volume_change_safety_margin;
 
     const char *direction = NULL;
@@ -3591,7 +3601,7 @@ void pa_sink_volume_change_push(pa_sink *s) {
     pa_log_debug("Volume going %s to %d at %llu", direction, pa_cvolume_avg(&nc->hw_volume), (long long unsigned) nc->at);
 
     /* We can ignore volume events that came earlier but should happen later than this. */
-    PA_LLIST_FOREACH(c, nc->next) {
+    PA_LLIST_FOREACH_SAFE(c, pc, nc->next) {
         pa_log_debug("Volume change to %d at %llu was dropped", pa_cvolume_avg(&c->hw_volume), (long long unsigned) c->at);
         pa_sink_volume_change_free(c);
     }

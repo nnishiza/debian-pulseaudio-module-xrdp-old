@@ -23,6 +23,7 @@
 #include <config.h>
 #endif
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -51,8 +52,9 @@
 #include <pcreposix.h>
 #endif
 
-#ifdef HAVE_STRTOF_L
+#ifdef HAVE_STRTOD_L
 #include <locale.h>
+#include <xlocale.h>
 #endif
 
 #ifdef HAVE_SCHED_H
@@ -860,7 +862,7 @@ static int set_nice(int nice_level) {
 #ifdef HAVE_DBUS
     /* Try to talk to RealtimeKit */
 
-    if (!(bus = dbus_bus_get(DBUS_BUS_SYSTEM, &error))) {
+    if (!(bus = dbus_bus_get_private(DBUS_BUS_SYSTEM, &error))) {
         pa_log("Failed to connect to system bus: %s\n", error.message);
         dbus_error_free(&error);
         errno = -EIO;
@@ -873,6 +875,7 @@ static int set_nice(int nice_level) {
     dbus_connection_set_exit_on_disconnect(bus, FALSE);
 
     r = rtkit_make_high_priority(bus, 0, nice_level);
+    dbus_connection_close(bus);
     dbus_connection_unref(bus);
 
     if (r >= 0) {
@@ -1006,7 +1009,7 @@ int pa_parse_boolean(const char *v) {
 /* Try to parse a volume string to pa_volume_t. The allowed formats are:
  * db, % and unsigned integer */
 int pa_parse_volume(const char *v, pa_volume_t *volume) {
-    int len, ret = -1;
+    int len;
     uint32_t i;
     double d;
     char str[64];
@@ -1023,26 +1026,36 @@ int pa_parse_volume(const char *v, pa_volume_t *volume) {
 
     if (str[len - 1] == '%') {
         str[len - 1] = '\0';
-        if (pa_atou(str, &i) == 0) {
-            *volume = PA_CLAMP_VOLUME((uint64_t) PA_VOLUME_NORM * i / 100);
-            ret = 0;
-        }
-    } else if (len > 2 && (str[len - 1] == 'b' || str[len - 1] == 'B') &&
-               (str[len - 2] == 'd' || str[len - 2] == 'D')) {
-        str[len - 2] = '\0';
-        if (pa_atod(str, &d) == 0) {
-            *volume = pa_sw_volume_from_dB(d);
-            ret = 0;
-        }
-    } else {
-        if (pa_atou(v, &i) == 0) {
-            *volume= PA_CLAMP_VOLUME(i);
-            ret = 0;
-        }
+        if (pa_atod(str, &d) < 0)
+            return -1;
 
+        d = d / 100 * PA_VOLUME_NORM;
+
+        if (d < 0 || d > PA_VOLUME_MAX)
+            return -1;
+
+        *volume = d;
+        return 0;
     }
 
-    return ret;
+    if (len > 2 && (str[len - 1] == 'b' || str[len - 1] == 'B') &&
+               (str[len - 2] == 'd' || str[len - 2] == 'D')) {
+        str[len - 2] = '\0';
+        if (pa_atod(str, &d) < 0)
+            return -1;
+
+        if (d > pa_sw_volume_to_dB(PA_VOLUME_MAX))
+            return -1;
+
+        *volume = pa_sw_volume_from_dB(d);
+        return 0;
+    }
+
+    if (pa_atou(v, &i) < 0 || !PA_VOLUME_IS_VALID(i))
+        return -1;
+
+    *volume = i;
+    return 0;
 }
 
 /* Split the specified string wherever one of the strings in delimiter
@@ -2315,10 +2328,27 @@ int pa_atou(const char *s, uint32_t *ret_u) {
     pa_assert(s);
     pa_assert(ret_u);
 
+    /* strtoul() ignores leading spaces. We don't. */
+    if (isspace(*s)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /* strtoul() accepts strings that start with a minus sign. In that case the
+     * original negative number gets negated, and strtoul() returns the negated
+     * result. We don't want that kind of behaviour. strtoul() also allows a
+     * leading plus sign, which is also a thing that we don't want. */
+    if (*s == '-' || *s == '+') {
+        errno = EINVAL;
+        return -1;
+    }
+
     errno = 0;
     l = strtoul(s, &x, 0);
 
-    if (!x || *x || errno) {
+    /* If x doesn't point to the end of s, there was some trailing garbage in
+     * the string. If x points to s, no conversion was done (empty string). */
+    if (!x || *x || x == s || errno) {
         if (!errno)
             errno = EINVAL;
         return -1;
@@ -2342,10 +2372,26 @@ int pa_atol(const char *s, long *ret_l) {
     pa_assert(s);
     pa_assert(ret_l);
 
+    /* strtol() ignores leading spaces. We don't. */
+    if (isspace(*s)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /* strtol() accepts leading plus signs, but that's ugly, so we don't allow
+     * that. */
+    if (*s == '+') {
+        errno = EINVAL;
+        return -1;
+    }
+
     errno = 0;
     l = strtol(s, &x, 0);
 
-    if (!x || *x || errno) {
+    /* If x doesn't point to the end of s, there was some trailing garbage in
+     * the string. If x points to s, no conversion was done (at least an empty
+     * string can trigger this). */
+    if (!x || *x || x == s || errno) {
         if (!errno)
             errno = EINVAL;
         return -1;
@@ -2356,7 +2402,7 @@ int pa_atol(const char *s, long *ret_l) {
     return 0;
 }
 
-#ifdef HAVE_STRTOF_L
+#ifdef HAVE_STRTOD_L
 static locale_t c_locale = NULL;
 
 static void c_locale_destroy(void) {
@@ -2371,9 +2417,22 @@ int pa_atod(const char *s, double *ret_d) {
     pa_assert(s);
     pa_assert(ret_d);
 
+    /* strtod() ignores leading spaces. We don't. */
+    if (isspace(*s)) {
+        errno = EINVAL;
+        return -1;
+    }
+
+    /* strtod() accepts leading plus signs, but that's ugly, so we don't allow
+     * that. */
+    if (*s == '+') {
+        errno = EINVAL;
+        return -1;
+    }
+
     /* This should be locale independent */
 
-#ifdef HAVE_STRTOF_L
+#ifdef HAVE_STRTOD_L
 
     PA_ONCE_BEGIN {
 
@@ -2392,9 +2451,17 @@ int pa_atod(const char *s, double *ret_d) {
         f = strtod(s, &x);
     }
 
-    if (!x || *x || errno) {
+    /* If x doesn't point to the end of s, there was some trailing garbage in
+     * the string. If x points to s, no conversion was done (at least an empty
+     * string can trigger this). */
+    if (!x || *x || x == s || errno) {
         if (!errno)
             errno = EINVAL;
+        return -1;
+    }
+
+    if (isnan(f)) {
+        errno = EINVAL;
         return -1;
     }
 

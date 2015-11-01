@@ -372,6 +372,9 @@
 /* Have Solaris audio? */
 #undef HAVE_SOLARIS
 
+/* Have soxr */
+#undef HAVE_SOXR
+
 /* Have speex */
 #undef HAVE_SPEEX
 
@@ -399,11 +402,11 @@
 /* Define to 1 if you have the `strsignal' function. */
 #undef HAVE_STRSIGNAL
 
+/* Define to 1 if you have the `strtod_l' function. */
+#undef HAVE_STRTOD_L
+
 /* Define to 1 if you have the `strtof' function. */
 #undef HAVE_STRTOF
-
-/* Define to 1 if you have the `strtof_l' function. */
-#undef HAVE_STRTOF_L
 
 /* Define to 1 if you have the `symlink' function. */
 #undef HAVE_SYMLINK

@@ -126,6 +126,14 @@ typedef enum pa_core_hook {
     PA_CORE_HOOK_CARD_PROFILE_AVAILABLE_CHANGED,
     PA_CORE_HOOK_PORT_AVAILABLE_CHANGED,
     PA_CORE_HOOK_PORT_LATENCY_OFFSET_CHANGED,
+    PA_CORE_HOOK_DEFAULT_SINK_CHANGED,
+    PA_CORE_HOOK_DEFAULT_SOURCE_CHANGED,
+    PA_CORE_HOOK_MODULE_NEW,
+    PA_CORE_HOOK_MODULE_PROPLIST_CHANGED,
+    PA_CORE_HOOK_MODULE_UNLINK,
+    PA_CORE_HOOK_SAMPLE_CACHE_NEW,
+    PA_CORE_HOOK_SAMPLE_CACHE_CHANGED,
+    PA_CORE_HOOK_SAMPLE_CACHE_UNLINK,
     PA_CORE_HOOK_MAX
 } pa_core_hook_t;
 
@@ -160,6 +168,7 @@ struct pa_core {
     unsigned default_n_fragments, default_fragment_size_msec;
     unsigned deferred_volume_safety_margin_usec;
     int deferred_volume_extra_delay_usec;
+    unsigned lfe_crossover_freq;
 
     pa_defer_event *module_defer_unload_event;
     pa_hashmap *modules_pending_unload; /* pa_module -> pa_module (hashmap-as-a-set) */

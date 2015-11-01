@@ -60,15 +60,8 @@ static const char* const valid_modargs[] = {
 struct userdata {
     pa_core *core;
     pa_module *module;
-    pa_hook_slot *card_new_hook_slot;
-    pa_hook_slot *card_put_hook_slot;
-    pa_hook_slot *card_profile_changed_hook_slot;
-    pa_hook_slot *card_profile_added_hook_slot;
-    pa_hook_slot *profile_available_changed_hook_slot;
-    pa_hook_slot *port_offset_hook_slot;
     pa_time_event *save_time_event;
     pa_database *database;
-    bool hooks_connected;
 };
 
 #define ENTRY_VERSION 2
@@ -195,7 +188,7 @@ static bool entry_write(struct userdata *u, const char *name, const struct entry
     pa_assert(name);
     pa_assert(e);
 
-    t = pa_tagstruct_new(NULL, 0);
+    t = pa_tagstruct_new();
     pa_tagstruct_putu8(t, e->version);
     pa_tagstruct_puts(t, e->profile);
     pa_tagstruct_putu32(t, pa_hashmap_size(e->ports));
@@ -273,7 +266,7 @@ static struct entry* entry_read(struct userdata *u, const char *name) {
         return NULL;
     }
 
-    t = pa_tagstruct_new(data.data, data.size);
+    t = pa_tagstruct_new_fixed(data.data, data.size);
     e = entry_new();
 
     if (pa_tagstruct_getu8(t, &e->version) < 0 ||
@@ -445,12 +438,15 @@ static pa_hook_result_t profile_available_changed_callback(void *hook_data, void
     if (!entry)
         return PA_HOOK_OK;
 
-    if (!pa_streq(profile->name, entry->profile))
+    if (!pa_streq(profile->name, entry->profile)) {
+        entry_free(entry);
         return PA_HOOK_OK;
+    }
 
     pa_log_info("Card %s profile %s became available, activating.", card->name, profile->name);
     pa_card_set_profile(profile->card, profile, true);
 
+    entry_free(entry);
     return PA_HOOK_OK;
 }
 
@@ -536,14 +532,13 @@ int pa__init(pa_module*m) {
     u->core = m->core;
     u->module = m;
 
-    u->card_new_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_CARD_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) card_new_hook_callback, u);
-    u->card_put_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_CARD_PUT], PA_HOOK_NORMAL, (pa_hook_cb_t) card_put_hook_callback, u);
-    u->card_profile_changed_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_CARD_PROFILE_CHANGED], PA_HOOK_NORMAL, (pa_hook_cb_t) card_profile_changed_callback, u);
-    u->card_profile_added_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_CARD_PROFILE_ADDED], PA_HOOK_NORMAL, (pa_hook_cb_t) card_profile_added_callback, u);
-    u->profile_available_changed_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_CARD_PROFILE_AVAILABLE_CHANGED],
+    pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_CARD_NEW], PA_HOOK_EARLY, (pa_hook_cb_t) card_new_hook_callback, u);
+    pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_CARD_PUT], PA_HOOK_NORMAL, (pa_hook_cb_t) card_put_hook_callback, u);
+    pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_CARD_PROFILE_CHANGED], PA_HOOK_NORMAL, (pa_hook_cb_t) card_profile_changed_callback, u);
+    pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_CARD_PROFILE_ADDED], PA_HOOK_NORMAL, (pa_hook_cb_t) card_profile_added_callback, u);
+    pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_CARD_PROFILE_AVAILABLE_CHANGED],
                                                              PA_HOOK_NORMAL, profile_available_changed_callback, u);
-    u->port_offset_hook_slot = pa_hook_connect(&m->core->hooks[PA_CORE_HOOK_PORT_LATENCY_OFFSET_CHANGED], PA_HOOK_NORMAL, (pa_hook_cb_t) port_offset_change_callback, u);
-    u->hooks_connected = true;
+    pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_PORT_LATENCY_OFFSET_CHANGED], PA_HOOK_NORMAL, (pa_hook_cb_t) port_offset_change_callback, u);
 
     if (!(fname = pa_state_path("card-database", true)))
         goto fail;
@@ -576,15 +571,6 @@ void pa__done(pa_module*m) {
 
     if (!(u = m->userdata))
         return;
-
-    if (u->hooks_connected) {
-        pa_hook_slot_free(u->card_new_hook_slot);
-        pa_hook_slot_free(u->card_put_hook_slot);
-        pa_hook_slot_free(u->card_profile_changed_hook_slot);
-        pa_hook_slot_free(u->card_profile_added_hook_slot);
-        pa_hook_slot_free(u->profile_available_changed_hook_slot);
-        pa_hook_slot_free(u->port_offset_hook_slot);
-    }
 
     if (u->save_time_event)
         u->core->mainloop->time_free(u->save_time_event);

@@ -107,6 +107,119 @@ struct description_map {
     const char *description;
 };
 
+pa_alsa_jack *pa_alsa_jack_new(pa_alsa_path *path, const char *name) {
+    pa_alsa_jack *jack;
+
+    pa_assert(name);
+
+    jack = pa_xnew0(pa_alsa_jack, 1);
+    jack->path = path;
+    jack->name = pa_xstrdup(name);
+    jack->alsa_name = pa_sprintf_malloc("%s Jack", name);
+    jack->state_unplugged = PA_AVAILABLE_NO;
+    jack->state_plugged = PA_AVAILABLE_YES;
+    jack->ucm_devices = pa_dynarray_new(NULL);
+    jack->ucm_hw_mute_devices = pa_dynarray_new(NULL);
+
+    return jack;
+}
+
+void pa_alsa_jack_free(pa_alsa_jack *jack) {
+    pa_assert(jack);
+
+    pa_dynarray_free(jack->ucm_hw_mute_devices);
+    pa_dynarray_free(jack->ucm_devices);
+
+    pa_xfree(jack->alsa_name);
+    pa_xfree(jack->name);
+    pa_xfree(jack);
+}
+
+void pa_alsa_jack_set_has_control(pa_alsa_jack *jack, bool has_control) {
+    pa_alsa_ucm_device *device;
+    unsigned idx;
+
+    pa_assert(jack);
+
+    if (has_control == jack->has_control)
+        return;
+
+    jack->has_control = has_control;
+
+    PA_DYNARRAY_FOREACH(device, jack->ucm_hw_mute_devices, idx)
+        pa_alsa_ucm_device_update_available(device);
+
+    PA_DYNARRAY_FOREACH(device, jack->ucm_devices, idx)
+        pa_alsa_ucm_device_update_available(device);
+}
+
+void pa_alsa_jack_set_plugged_in(pa_alsa_jack *jack, bool plugged_in) {
+    pa_alsa_ucm_device *device;
+    unsigned idx;
+
+    pa_assert(jack);
+
+    if (plugged_in == jack->plugged_in)
+        return;
+
+    jack->plugged_in = plugged_in;
+
+    /* XXX: If this is a headphone jack that mutes speakers when plugged in,
+     * and the headphones get unplugged, then the headphone device must be set
+     * to unavailable and the speaker device must be set to unknown. So far so
+     * good. But there's an ugly detail: we must first set the availability of
+     * the speakers and then the headphones. We shouldn't need to care about
+     * the order, but we have to, because module-switch-on-port-available gets
+     * separate events for the two devices, and the intermediate state between
+     * the two events is such that the second event doesn't trigger the desired
+     * port switch, if the event order is "wrong".
+     *
+     * These are the transitions when the event order is "right":
+     *
+     *     speakers:   1) unavailable -> 2) unknown   -> 3) unknown
+     *     headphones: 1) available   -> 2) available -> 3) unavailable
+     *
+     * In the 2 -> 3 transition, headphones become unavailable, and
+     * module-switch-on-port-available sees that speakers can be used, so the
+     * port gets changed as it should.
+     *
+     * These are the transitions when the event order is "wrong":
+     *
+     *     speakers:   1) unavailable -> 2) unavailable -> 3) unknown
+     *     headphones: 1) available   -> 2) unavailable -> 3) unavailable
+     *
+     * In the 1 -> 2 transition, headphones become unavailable, and there are
+     * no available ports to use, so no port change happens. In the 2 -> 3
+     * transition, speaker availability becomes unknown, but that's not
+     * a strong enough signal for module-switch-on-port-available, so it still
+     * doesn't do the port switch.
+     *
+     * We should somehow merge the two events so that
+     * module-switch-on-port-available would handle both transitions in one go.
+     * If module-switch-on-port-available used a defer event to delay
+     * the port availability processing, that would probably do the trick. */
+
+    PA_DYNARRAY_FOREACH(device, jack->ucm_hw_mute_devices, idx)
+        pa_alsa_ucm_device_update_available(device);
+
+    PA_DYNARRAY_FOREACH(device, jack->ucm_devices, idx)
+        pa_alsa_ucm_device_update_available(device);
+}
+
+void pa_alsa_jack_add_ucm_device(pa_alsa_jack *jack, pa_alsa_ucm_device *device) {
+    pa_assert(jack);
+    pa_assert(device);
+
+    pa_dynarray_append(jack->ucm_devices, device);
+}
+
+void pa_alsa_jack_add_ucm_hw_mute_device(pa_alsa_jack *jack, pa_alsa_ucm_device *device) {
+    pa_assert(jack);
+    pa_assert(device);
+
+    pa_dynarray_append(jack->ucm_hw_mute_devices, device);
+}
+
 static const char *lookup_description(const char *key, const struct description_map dm[], unsigned n) {
     unsigned i;
 
@@ -524,14 +637,6 @@ static void decibel_fix_free(pa_alsa_decibel_fix *db_fix) {
     pa_xfree(db_fix);
 }
 
-static void jack_free(pa_alsa_jack *j) {
-    pa_assert(j);
-
-    pa_xfree(j->alsa_name);
-    pa_xfree(j->name);
-    pa_xfree(j);
-}
-
 static void element_free(pa_alsa_element *e) {
     pa_alsa_option *o;
     pa_assert(e);
@@ -557,7 +662,7 @@ void pa_alsa_path_free(pa_alsa_path *p) {
 
     while ((j = p->jacks)) {
         PA_LLIST_REMOVE(pa_alsa_jack, p->jacks, j);
-        jack_free(j);
+        pa_alsa_jack_free(j);
     }
 
     while ((e = p->elements)) {
@@ -1724,10 +1829,13 @@ static int element_probe(pa_alsa_element *e, snd_mixer_t *m) {
 }
 
 static int jack_probe(pa_alsa_jack *j, snd_mixer_t *m) {
+    bool has_control;
+
     pa_assert(j);
     pa_assert(j->path);
 
-    j->has_control = pa_alsa_mixer_find(m, j->alsa_name, 0) != NULL;
+    has_control = pa_alsa_mixer_find(m, j->alsa_name, 0) != NULL;
+    pa_alsa_jack_set_has_control(j, has_control);
 
     if (j->has_control) {
         if (j->required_absent != PA_ALSA_REQUIRED_IGNORE)
@@ -1793,12 +1901,7 @@ static pa_alsa_jack* jack_get(pa_alsa_path *p, const char *section) {
         if (pa_streq(j->name, section))
             goto finish;
 
-    j = pa_xnew0(pa_alsa_jack, 1);
-    j->state_unplugged = PA_AVAILABLE_NO;
-    j->state_plugged = PA_AVAILABLE_YES;
-    j->path = p;
-    j->name = pa_xstrdup(section);
-    j->alsa_name = pa_sprintf_malloc("%s Jack", section);
+    j = pa_alsa_jack_new(p, section);
     PA_LLIST_INSERT_AFTER(pa_alsa_jack, p->jacks, p->last_jack, j);
 
 finish:
@@ -2389,7 +2492,9 @@ static int path_verify(pa_alsa_path *p) {
         { "hdmi-output",                N_("HDMI / DisplayPort") },
         { "iec958-stereo-output",       N_("Digital Output (S/PDIF)") },
         { "iec958-stereo-input",        N_("Digital Input (S/PDIF)") },
-        { "iec958-passthrough-output",  N_("Digital Passthrough (S/PDIF)") }
+        { "iec958-passthrough-output",  N_("Digital Passthrough (S/PDIF)") },
+        { "multichannel-input",         N_("Multichannel Input") },
+        { "multichannel-output",        N_("Multichannel Output") },
     };
 
     pa_alsa_element *e;
@@ -3897,7 +4002,15 @@ static int mapping_verify(pa_alsa_mapping *m, const pa_channel_map *bonus) {
     static const struct description_map well_known_descriptions[] = {
         { "analog-mono",            N_("Analog Mono") },
         { "analog-stereo",          N_("Analog Stereo") },
-        { "multichannel",           N_("Multichannel") },
+        /* Note: Not translated to "Analog Stereo Input", because the source
+         * name gets "Input" appended to it automatically, so adding "Input"
+         * here would lead to the source name to become "Analog Stereo Input
+         * Input". The same logic applies to analog-stereo-output,
+         * multichannel-input and multichannel-output. */
+        { "analog-stereo-input",    N_("Analog Stereo") },
+        { "analog-stereo-output",   N_("Analog Stereo") },
+        { "multichannel-input",     N_("Multichannel") },
+        { "multichannel-output",    N_("Multichannel") },
         { "analog-surround-21",     N_("Analog Surround 2.1") },
         { "analog-surround-30",     N_("Analog Surround 3.0") },
         { "analog-surround-31",     N_("Analog Surround 3.1") },
@@ -4049,6 +4162,7 @@ static int profile_verify(pa_alsa_profile *p) {
         { "output:analog-mono+input:analog-mono",     N_("Analog Mono Duplex") },
         { "output:analog-stereo+input:analog-stereo", N_("Analog Stereo Duplex") },
         { "output:iec958-stereo+input:iec958-stereo", N_("Digital Stereo Duplex (IEC958)") },
+        { "output:multichannel-output+input:multichannel-input", N_("Multichannel Duplex") },
         { "off",                                      N_("Off") }
     };
 

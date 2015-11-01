@@ -126,7 +126,7 @@ enum {
 };
 
 enum {
-    SOURCE_OUTPUT_MESSAGE_LATENCY_SNAPSHOT
+    SOURCE_OUTPUT_MESSAGE_LATENCY_SNAPSHOT = PA_SOURCE_OUTPUT_MESSAGE_MAX,
 };
 
 static void enable_adjust_timer(struct userdata *u, bool enable);
@@ -186,7 +186,7 @@ static void adjust_rates(struct userdata *u) {
     if (u->latency_snapshot.recv_counter <= u->latency_snapshot.send_counter)
         buffer += (size_t) (u->latency_snapshot.send_counter - u->latency_snapshot.recv_counter);
     else
-        buffer += PA_CLIP_SUB(buffer, (size_t) (u->latency_snapshot.recv_counter - u->latency_snapshot.send_counter));
+        buffer = PA_CLIP_SUB(buffer, (size_t) (u->latency_snapshot.recv_counter - u->latency_snapshot.send_counter));
 
     buffer_latency = pa_bytes_to_usec(buffer, &u->sink_input->sample_spec);
 

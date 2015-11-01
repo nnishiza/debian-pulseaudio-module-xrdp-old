@@ -1,3 +1,114 @@
+pulseaudio (7.0-1ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge from Debian experimental, remaining changes:
+    - epoch (my stupid fault :S)
+    - Don't ship the consolekit module, and explicitly depend on the PAM
+      systemd module
+    - Add a module to allow pulseaudio to use the Android audio HAL
+    - Adjust gbp.conf file to point to the ubuntu branch for package builds
+    - Disable module-role-cork by default
+    - Load module-x11-bell in the start-pulseaudio-x11 script
+    - Hide pulseaudio from startup apps dialog
+    - Quit daemon if pid file is removed
+    - Avoid abort when poll descriptor is 0, such as when using it with the
+      audioflinger bridge, like done in ubuntu touch
+    - change default rlimit_rttime value to 200 ms
+    - Don't probe UCM profiles, trust that the profile writer knows what they
+      are doing
+    - Add card hook to allow modules to do something before a profile becomes
+      active
+    - Add an option to the bluez4 discovery module to set the profile
+    - Allow leaving bluetooth transport running while sink and source are
+      suspended.
+    - Add option to module-switch-on-connect to skip abstract devices
+    - Add property to module-device-restore to skip store/restore
+    - Add missing fields for sink_input/source_output info struct to the vala
+      bindings
+    - Add example upstart job to run pulseaudio in system mode
+    - Add a build/run autopkgtest for libpulse-dev
+  * Refreshed patches, and dropped those that were applied upstream.
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Tue, 06 Oct 2015 15:30:57 +1100
+
+pulseaudio (7.0-1) unstable; urgency=medium
+
+  [ Luke Yelavich ]
+  * New upstream release
+  * Dropped patch, applied upstream
+  * Update shlibs file for 7.0
+
+  [ Felipe Sateler ]
+  * Update bash completion lintian override
+  * Upload to unstable
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 25 Sep 2015 09:53:54 -0300
+
+pulseaudio (6.99.1-2) experimental; urgency=medium
+
+  * Fix test suite failure on alpha. Patch from Michael Cree. 
+    Closes: #798248
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 10 Sep 2015 20:44:53 -0300
+
+pulseaudio (6.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+     - Drop 0001-core-util-pactl-Make-one-localised-and-one-non-
+       local.patch, was picked from upstream
+  * Change the bash completion install dir to /usr/share
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 03 Sep 2015 23:29:12 -0300
+
+pulseaudio (6.0-5) unstable; urgency=medium
+
+  * Module udev detect is linux-only, so don't install on !linux.
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 03 Aug 2015 14:29:09 -0300
+
+pulseaudio (6.0-4) unstable; urgency=medium
+
+  * Specify systemd user unit dir explicitly.
+    The pkgconfig file lives in package systemd, which we don't want to
+    build-depend on.
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 03 Aug 2015 10:17:23 -0300
+
+pulseaudio (6.0-3) unstable; urgency=medium
+
+  * Do not build bluez4 module, it is no longer available.
+    Closes: #788293
+  * Pass --disable-hal-compat to configure instead of building a module we do
+    not install
+  * Use dh-exec instead of manual .install mangling
+  * Do not use dh_installman to install manpages, upstream already installs
+    them correctly.
+  * libpulse-dev: drop Depends on libavahi-client-dev
+  * debian/rules: use DEB_DH_INSTALL_SOURCEDIR instead of deprecated DEB_DH_INSTALL_ARGS
+  * Install (but not enable) systemd user units on linux archs.
+    Closes: #794226
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 31 Jul 2015 19:53:59 -0300
+
+pulseaudio (6.0-2) unstable; urgency=medium
+
+  * Pick upstream patch that creates a localised version of pa_yes_no
+    - This fixes a problem when that function was used to create module
+      loading arguments.
+  * Upload to unstable
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 27 Apr 2015 11:17:20 -0300
+
+pulseaudio (6.0-1) experimental; urgency=medium
+
+  [ Luke Yelavich ]
+  * New upstream release
+  * Remove pulseaudio-kde autostart file on upgrade (Closes: #776331)
+
+  [ Felipe Sateler ]
+  * Upload to experimental
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 13 Mar 2015 22:45:13 -0300
+
 pulseaudio (1:6.0-0ubuntu13) wily; urgency=medium
 
   * Pull upstream commit a527711 to hopefully fix LP: #1425447

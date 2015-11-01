@@ -59,7 +59,7 @@ endif
 cmakedir = $(libdir)/cmake/PulseAudio
 cmake_DATA = PulseAudioConfig.cmake PulseAudioConfigVersion.cmake
 
-bashcompletiondir=$(sysconfdir)/bash_completion.d
+bashcompletiondir=@bashcompletiondir@
 dist_bashcompletion_DATA = shell-completion/bash/pulseaudio
 
 install-bashcompletion-aliases:
@@ -113,4 +113,4 @@ $(top_srcdir)/.version:
 DISTCLEANFILES = \
         po/.intltool-merge-cache
 
-DISTCHECK_CONFIGURE_FLAGS = --with-udev-rules-dir="$$dc_install_base/lib/udev/rules.d"
+DISTCHECK_CONFIGURE_FLAGS = --with-udev-rules-dir="$$dc_install_base/lib/udev/rules.d" --with-systemduserunitdir="$$dc_install_base/lib/systemd/user" --with-bash-completion-dir="$$dc_install_base/share/bash-completion/completions"

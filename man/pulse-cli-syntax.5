@@ -4,9 +4,9 @@ pulse-cli-syntax \- PulseAudio Command Line Interface Syntax
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/default.pa\fB
 
-\fI/usr/local/etc/pulse/default.pa\fB
+\fI/etc/pulse/default.pa\fB
 
-\fI/usr/local/etc/pulse/system.pa\fB
+\fI/etc/pulse/system.pa\fB
 \f1
 .SH DESCRIPTION
 PulseAudio provides a simple command line language used by configuration scripts, the pacmd interactive shell, and the modules module-cli and module-cli-protocol-{unix,tcp}. Empty lines and lines beginning with a hashmark (#) are silently ignored. Several commands are supported. 
@@ -16,7 +16,7 @@ Note that any boolean arguments can be given positively as '1', 't', 'y', 'true'
 .TP
 \fBhelp\f1
 Show a quick help on the commands available.
-.SH STATUS_COMMANDS
+.SH STATUS COMMANDS
 .TP
 \fBlist-modules\f1
 Show all currently loaded modules with their arguments.
@@ -155,10 +155,16 @@ Terminate the daemon. If you want to terminate a CLI connection ("log out") you 
 In addition to the commands described above there are a few meta directives supported by the command line interpreter. 
 .TP
 \fB.include\f1 \fIfilename|folder\f1
-Executes the commands from the specified script file or in all of the *.pa file within the folder.
+Executes the commands from the specified script file or in all of the *.pa files within the folder.
 .TP
 \fB.fail\f1 and \fB.nofail\f1
-Enable (resp. disable) that following failing commands will cancel the execution of the current script file. This is a ignored when used on the interactive command line.
+Enable (resp. disable) that following failing commands will cancel the execution of the current script file. This is ignored when used on the interactive command line.
+.TP
+\fB.ifexists\f1 \fIfilename\f1
+Execute the subsequent block of commands only if the specified file exists. Typically \fIfilename\f1 indicates a module. Relative paths are resolved using the module directory as the base. By using an absolute path, the existance of other files can be checked as well.
+.TP
+\fB.else\f1 and \fB.endif\f1
+A block of commands is delimited by an \fB.else\f1 or \fB.endif\f1 meta command. Nesting conditional commands is not supported.
 .SH AUTHORS
 The PulseAudio Developers <pulseaudio-discuss (at) lists (dot) freedesktop (dot) org>; PulseAudio is available from \fBhttp://pulseaudio.org/\f1
 .SH SEE ALSO

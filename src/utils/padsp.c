@@ -1201,6 +1201,9 @@ static int dsp_open(int flags, int *_errno) {
         i->io_flags = PA_IO_EVENT_INPUT | PA_IO_EVENT_OUTPUT;
         break;
     default:
+        pa_threaded_mainloop_unlock(i->mainloop);
+        fd_info_unref(i);
+        *_errno = EIO;
         return -1;
     }
 
@@ -1899,7 +1902,7 @@ static int dsp_trigger(fd_info *i) {
     }
 
     i->operation_success = 0;
-    while (!pa_operation_get_state(o) != PA_OPERATION_DONE) {
+    while (pa_operation_get_state(o) != PA_OPERATION_DONE) {
         PLAYBACK_STREAM_CHECK_DEAD_GOTO(i, fail);
 
         pa_threaded_mainloop_wait(i->mainloop);
@@ -1934,7 +1937,7 @@ static int dsp_cork(fd_info *i, pa_stream *s, int b) {
     }
 
     i->operation_success = 0;
-    while (!pa_operation_get_state(o) != PA_OPERATION_DONE) {
+    while (pa_operation_get_state(o) != PA_OPERATION_DONE) {
         if (s == i->play_stream)
             PLAYBACK_STREAM_CHECK_DEAD_GOTO(i, fail);
         else if (s == i->rec_stream)

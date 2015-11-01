@@ -45,7 +45,7 @@ List available audio resamplers.
 Identify stale PulseAudio POSIX shared memory segments in \fI/dev/shm\f1 and remove them if possible. This is done implicitly whenever a new daemon starts up or a client tries to connect to a daemon. It should normally not be necessary to issue this command by hand. Only available on systems with POSIX shared memory segments implemented via a virtual file system mounted to \fI/dev/shm\f1 (e.g. Linux).
 .TP
 \fB--start\f1
-Start PulseAudio if it is not running yet. This is different from starting PulseAudio without \fB--start\f1 which would fail if PA is already running. PulseAudio is guaranteed to be fully initialized when this call returns. Implies \fB--daemon\f1.
+Start PulseAudio if it is not running yet. This is different from starting PulseAudio without \fB--start\f1 which would fail if PA is already running. PulseAudio is guaranteed to be fully initialized when this call returns. Implies \fB--daemonize\f1.
 .TP
 \fB-k | --kill\f1
 Kill an already running PulseAudio daemon of the calling user (Equivalent to sending a SIGTERM).
@@ -125,11 +125,11 @@ Open a command interpreter on STDIN/STDOUT after startup. This may be used to co
 \fB-n\f1
 Don't load default script file \fIdefault.pa\f1 (see below) on startup. Useful in conjunction with \fB-C\f1 or \fB--file\f1.
 .SH FILES
-\fI~/.config/pulse/daemon.conf\f1, \fI/usr/local/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
+\fI~/.config/pulse/daemon.conf\f1, \fI/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
 
-\fI~/.config/pulse/default.pa\f1, \fI/usr/local/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
+\fI~/.config/pulse/default.pa\f1, \fI/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
 
-\fI~/.config/pulse/client.conf\f1, \fI/usr/local/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
+\fI~/.config/pulse/client.conf\f1, \fI/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
 .SH SIGNALS
 \fISIGINT, SIGTERM\f1: the PulseAudio daemon will shut down (Same as \fB--kill\f1).
 
@@ -157,7 +157,7 @@ Alternatively, if the risk of locking up the machine is considered too big to en
 .SH ENVIRONMENT VARIABLES
 The PulseAudio client libraries check for the existence of the following environment variables and change their local configuration accordingly:
 
-\fI$PULSE_SERVER\f1: the server string specifying the server to connect to when a client asks for a sound server connection and doesn't explicitly ask for a specific server. The server string is a list of server addresses separated by whitespace which are tried in turn. A server address consists of an optional address type specifier (unix:, tcp:, tcp4:, tcp6:), followed by a path or host address. A host address may include an optional port number.
+\fI$PULSE_SERVER\f1: the server string specifying the server to connect to when a client asks for a sound server connection and doesn't explicitly ask for a specific server. The server string is a list of server addresses separated by whitespace which are tried in turn. A server address consists of an optional address type specifier (unix:, tcp:, tcp4:, tcp6:), followed by a path or host address. A host address may include an optional port number. A server address may be prefixed by a string enclosed in {}. In this case the following server address is ignored unless the prefix string equals the local hostname or the machine id (/etc/machine-id).
 
 \fI$PULSE_SINK\f1: the symbolic name of the sink to connect to when a client creates a playback stream and doesn't explicitly ask for a specific sink.
 

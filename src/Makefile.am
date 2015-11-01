@@ -262,7 +262,8 @@ TESTS_default = \
 		cpu-sconv-test \
 		cpu-volume-test \
 		lock-autospawn-test \
-		mult-s16-test
+		mult-s16-test \
+		lfe-filter-test
 
 TESTS_norun = \
 		ipacl-test \
@@ -554,6 +555,11 @@ mult_s16_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la li
 mult_s16_test_CFLAGS = $(AM_CFLAGS) $(LIBCHECK_CFLAGS)
 mult_s16_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBCHECK_LIBS)
 
+lfe_filter_test_SOURCES = tests/lfe-filter-test.c
+lfe_filter_test_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
+lfe_filter_test_CFLAGS = $(AM_CFLAGS) $(LIBCHECK_CFLAGS)
+lfe_filter_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBCHECK_LIBS)
+
 rtstutter_SOURCES = tests/rtstutter.c
 rtstutter_LDADD = $(AM_LDADD) libpulsecore-@PA_MAJORMINOR@.la libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 rtstutter_CFLAGS = $(AM_CFLAGS)
@@ -706,7 +712,9 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/socket.h
 
 if OS_IS_WIN32
-libpulsecommon_@PA_MAJORMINOR@_la_SOURCES += pulsecore/poll-win32.c pulsecore/poll.h
+libpulsecommon_@PA_MAJORMINOR@_la_SOURCES += \
+		pulsecore/poll-win32.c pulsecore/poll.h \
+		pulsecore/winerrno.h
 else
 libpulsecommon_@PA_MAJORMINOR@_la_SOURCES += pulsecore/poll-posix.c pulsecore/poll.h
 endif
@@ -911,6 +919,9 @@ lib_LTLIBRARIES += libpulsecore-@PA_MAJORMINOR@.la
 
 # Pure core stuff
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES = \
+		pulsecore/filter/lfe-filter.c pulsecore/filter/lfe-filter.h \
+		pulsecore/filter/biquad.c pulsecore/filter/biquad.h \
+		pulsecore/filter/crossover.c pulsecore/filter/crossover.h \
 		pulsecore/asyncmsgq.c pulsecore/asyncmsgq.h \
 		pulsecore/asyncq.c pulsecore/asyncq.h \
 		pulsecore/auth-cookie.c pulsecore/auth-cookie.h \
@@ -1017,6 +1028,12 @@ if HAVE_SPEEX
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/speex.c
 libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSPEEX_CFLAGS)
 libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBSPEEX_LIBS)
+endif
+
+if HAVE_SOXR
+libpulsecore_@PA_MAJORMINOR@_la_SOURCES += pulsecore/resampler/soxr.c
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS += $(LIBSOXR_CFLAGS)
+libpulsecore_@PA_MAJORMINOR@_la_LIBADD += $(LIBSOXR_LIBS)
 endif
 
 if HAVE_LIBSAMPLERATE
@@ -1262,7 +1279,8 @@ dist_alsaprofilesets_DATA = \
 		modules/alsa/mixer/profile-sets/native-instruments-traktor-audio10.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-traktorkontrol-s4.conf \
 		modules/alsa/mixer/profile-sets/native-instruments-korecontroller.conf \
-		modules/alsa/mixer/profile-sets/kinect-audio.conf
+		modules/alsa/mixer/profile-sets/kinect-audio.conf \
+		modules/alsa/mixer/profile-sets/sb-omni-surround-5.1.conf
 
 if HAVE_UDEV
 dist_udevrules_DATA = \
@@ -2004,8 +2022,8 @@ module_echo_cancel_la_SOURCES = \
 		modules/echo-cancel/null.c \
 		modules/echo-cancel/echo-cancel.h
 module_echo_cancel_la_LDFLAGS = $(MODULE_LDFLAGS)
-module_echo_cancel_la_LIBADD = $(MODULE_LIBADD) $(LIBSPEEX_LIBS)
-module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(LIBSPEEX_CFLAGS)
+module_echo_cancel_la_LIBADD = $(MODULE_LIBADD)
+module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS)
 if HAVE_ADRIAN_EC
 module_echo_cancel_la_SOURCES += \
 		modules/echo-cancel/adrian-aec.c modules/echo-cancel/adrian-aec.h \
@@ -2022,6 +2040,8 @@ endif
 endif
 if HAVE_SPEEX
 module_echo_cancel_la_SOURCES += modules/echo-cancel/speex.c
+module_echo_cancel_la_CFLAGS += $(LIBSPEEX_CFLAGS)
+module_echo_cancel_la_LIBADD += $(LIBSPEEX_LIBS)
 endif
 if HAVE_WEBRTC
 # The webrtc code is split off into a helper library to avoid having automake
@@ -2241,7 +2261,7 @@ installlibLTLIBRARIES = install-libLTLIBRARIES
 $(installlibLTLIBRARIES): install-pkglibLTLIBRARIES
 
 installmodlibexecLTLIBRARIES = install-modlibexecLTLIBRARIES
-$(installmodlibexecLTLIBRARIES): install-pkglibLTLIBRARIES
+$(installmodlibexecLTLIBRARIES): install-pkglibLTLIBRARIES install-libLTLIBRARIES
 
 installpadsplibLTLIBRARIES = install-padsplibLTLIBRARIES
 $(installpadsplibLTLIBRARIES): install-libLTLIBRARIES
