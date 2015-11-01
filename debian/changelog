@@ -1,8 +1,10 @@
-pulseaudio (7.1-1) UNRELEASED; urgency=medium
+pulseaudio (7.1-1) unstable; urgency=medium
 
   * New upstream version
+  * Update shlibs file for 7.1
+  * Silence lintian warning about pulsecore: it is internal library
 
- -- Felipe Sateler <fsateler@debian.org>  Sun, 01 Nov 2015 13:30:03 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 01 Nov 2015 16:27:53 -0300
 
 pulseaudio (7.0-1) unstable; urgency=medium
 
