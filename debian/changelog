@@ -1,3 +1,9 @@
+pulseaudio (7.1-2~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 13 Nov 2015 10:16:11 -0300
+
 pulseaudio (7.1-2) unstable; urgency=medium
 
   * Add build-depends on libsoxr-dev to enable soxr resamplers.
