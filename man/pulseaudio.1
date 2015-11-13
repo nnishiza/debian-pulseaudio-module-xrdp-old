@@ -57,7 +57,7 @@ Return 0 as return code when the PulseAudio daemon is already running for the ca
 Run as system-wide instance instead of per-user. Please note that this disables certain features of PulseAudio and is generally not recommended unless the system knows no local users (e.g. is a thin client). This feature needs special configuration and a dedicated UNIX user set up. It is highly recommended to combine this with \fB--disallow-module-loading\f1 (see below).
 .TP
 \fB-D | --daemonize\f1\fI[=BOOL]\f1
-Daemonize after startup, i.e. detach from the terminal.
+Daemonize after startup, i.e. detach from the terminal. Note that when running as a systemd service you should use \fB--daemonize=no\f1 for systemd notification to work. 
 .TP
 \fB--fail\f1\fI[=BOOL]\f1
 Fail startup when any of the commands specified in the startup script \fIdefault.pa\f1 (see below) fails.

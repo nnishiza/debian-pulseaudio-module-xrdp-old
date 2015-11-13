@@ -32,6 +32,7 @@ Build-Depends: debhelper (>= 9),
     liborc-0.4-dev (>= 1:0.4.11),
     libsamplerate0-dev,
     libsndfile1-dev (>= 1.0.20),
+    libsoxr-dev (>= 0.1.1),
     libspeexdsp-dev (>= 1.2~rc1),
     libssl-dev,
     libsystemd-dev [linux-any],
@@ -46,6 +47,7 @@ Standards-Version: 3.9.6
 Vcs-Git: git://anonscm.debian.org/git/pkg-pulseaudio/pulseaudio.git
 Vcs-Browser: http://anonscm.debian.org/gitweb/?p=pkg-pulseaudio/pulseaudio.git
 Homepage: http://www.pulseaudio.org
+XS-Testsuite: autopkgtest
 
 Package: pulseaudio
 Architecture: any
