@@ -1,3 +1,9 @@
+pulseaudio (1:7.1-1ubuntu3) UNRELEASED; urgency=medium
+
+  * trust-store: Update translation string
+
+ -- David Henningsson <david.henningsson@canonical.com>  Mon, 30 Nov 2015 16:43:53 +0100
+
 pulseaudio (1:7.1-1ubuntu2) xenial; urgency=medium
 
   * debian/patches/050*.patch:
