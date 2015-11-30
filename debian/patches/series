@@ -23,3 +23,12 @@
 0409-Trust-store-patch.patch
 0410-Add-thread-to-activate-trust-store-interface.patch
 0417-increase-timeout-check-apparmor.patch
+
+# Ubuntu touch: enable bluez5 HFP over ofono support
+0501-bluetooth-bluez5-ofono-add-support-for-HFP-gateway-r.patch
+0502-bluetooth-bluez5-bring-back-SCO-over-PCM-support.patch
+0503-bluetooth-bluez5-ofono-add-support-for-spekaer-micro.patch
+0504-bluetooth-bluez5-add-support-for-both-mode.patch
+0505-bluetooth-bluez5-let-user-specify-a-default-profile-.patch
+0506-bluetooth-bluez5-prevent-SCO-sink-source-to-be-suspe.patch
+0507-bluetooth-bluez5-drop-save-restore-of-SCO-sink-sourc.patch
