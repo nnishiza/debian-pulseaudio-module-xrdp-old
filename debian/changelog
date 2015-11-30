@@ -1,9 +1,9 @@
-pulseaudio (1:7.1-1ubuntu2) UNRELEASED; urgency=medium
+pulseaudio (1:7.1-1ubuntu2) xenial; urgency=medium
 
   * debian/patches/050*.patch:
     - Add bluez5 + ofono + HFP patches for Ubuntu touch
 
- -- David Henningsson <david.henningsson@canonical.com>  Mon, 30 Nov 2015 10:46:51 +0100
+ -- David Henningsson <david.henningsson@canonical.com>  Mon, 30 Nov 2015 11:24:05 +0100
 
 pulseaudio (1:7.1-1ubuntu1) xenial; urgency=medium
 
