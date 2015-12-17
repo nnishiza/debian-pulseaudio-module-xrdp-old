@@ -1,0 +1,127 @@
+From 7b9fcc01f62558a6f517e2a23408e98c2688bd9e Mon Sep 17 00:00:00 2001
+From: Tanu Kaskinen <tanuk@iki.fi>
+Date: Mon, 7 Dec 2015 23:22:42 +0200
+Subject: [PATCH] client-conf, daemon-conf: enable .d directories
+
+I want to enable client.conf.d, because in OpenEmbedded-core we have
+a graphical environment called Sato that runs as root. Sato needs to
+set allow-autospawn-for-root=true in client.conf, but the default
+configuration in OpenEmbedded-core should not set that option. With
+this patch, I can create a Sato-specific package that simply installs
+50-sato.conf in /etc/pulse/client.conf.d without conflicting with the
+main client.conf coming from a different package.
+
+daemon.conf.d is enabled just because it would be strange to not
+support it while client.conf.d is supported.
+---
+ man/pulse-client.conf.5.xml.in | 19 +++++++++++++++----
+ man/pulse-daemon.conf.5.xml.in | 25 ++++++++++++++++++-------
+ src/daemon/daemon-conf.c       |  2 +-
+ src/pulse/client-conf.c        |  2 +-
+ 4 files changed, 35 insertions(+), 13 deletions(-)
+
+diff --git a/man/pulse-client.conf.5.xml.in b/man/pulse-client.conf.5.xml.in
+index 1002dbe..cca2219 100644
+--- a/man/pulse-client.conf.5.xml.in
++++ b/man/pulse-client.conf.5.xml.in
+@@ -23,15 +23,26 @@ License along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
+ 
+   <synopsis>
+     <p><file>~/.config/pulse/client.conf</file></p>
+-
++    <p><file>~/.config/pulse/client.conf.d/*.conf</file></p>
+     <p><file>@PA_DEFAULT_CONFIG_DIR@/client.conf</file></p>
++    <p><file>@PA_DEFAULT_CONFIG_DIR@/client.conf.d/*.conf</file></p>
+   </synopsis>
+ 
+   <description>
+     <p>The PulseAudio client library reads configuration directives from
+-    a file <file>~/.config/pulse/client.conf</file> on startup and when that
+-    file doesn't exist from
+-    <file>@PA_DEFAULT_CONFIG_DIR@/client.conf</file>.</p>
++    a configuration file on startup. If the per-user file
++    <file>~/.config/pulse/client.conf</file> exists, it is used, otherwise the
++    system configuration file <file>@PA_DEFAULT_CONFIG_DIR@/client.conf</file>
++    is used. In addition to those main files, configuration directives can also
++    be put in files under directories
++    <file>~/.config/pulse/client.conf.d/</file> and
++    <file>@PA_DEFAULT_CONFIG_DIR@/client.conf.d/</file>. Those files have to
++    have the .conf file name extension, but otherwise the file names can be
++    chosen freely. The files under client.conf.d are processed in alphabetical
++    order. In case the same option is set in multiple files, the last file to
++    set an option overrides earlier files. The main client.conf file is
++    processed first, so options set in files under client.conf.d override the
++    main file.</p>
+ 
+     <p>The configuration file is a simple collection of variable
+     declarations. If the configuration file parser encounters either ;
+diff --git a/man/pulse-daemon.conf.5.xml.in b/man/pulse-daemon.conf.5.xml.in
+index d221585..0367b1f 100644
+--- a/man/pulse-daemon.conf.5.xml.in
++++ b/man/pulse-daemon.conf.5.xml.in
+@@ -23,18 +23,29 @@ License along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
+ 
+   <synopsis>
+     <p><file>~/.config/pulse/daemon.conf</file></p>
+-
++    <p><file>~/.config/pulse/daemon.conf.d/*.conf</file></p>
+     <p><file>@PA_DEFAULT_CONFIG_DIR@/daemon.conf</file></p>
++    <p><file>@PA_DEFAULT_CONFIG_DIR@/daemon.conf.d/*.conf</file></p>
+   </synopsis>
+ 
+   <description>
+     <p>The PulseAudio sound server reads configuration directives from
+-    a file <file>~/.config/pulse/daemon.conf</file> on startup and when that
+-    file doesn't exist from
+-    <file>@PA_DEFAULT_CONFIG_DIR@/daemon.conf</file>. Please note that the
+-    server also reads a configuration script on startup
+-    <file>default.pa</file> which also contains runtime configuration
+-    directives.</p>
++    a configuration file on startup. If the per-user file
++    <file>~/.config/pulse/daemon.conf</file> exists, it is used, otherwise the
++    system configuration file <file>@PA_DEFAULT_CONFIG_DIR@/daemon.conf</file>
++    is used. In addition to those main files, configuration directives can also
++    be put in files under directories
++    <file>~/.config/pulse/daemon.conf.d/</file> and
++    <file>@PA_DEFAULT_CONFIG_DIR@/daemon.conf.d/</file>. Those files have to
++    have the .conf file name extension, but otherwise the file names can be
++    chosen freely. The files under daemon.conf.d are processed in alphabetical
++    order. In case the same option is set in multiple files, the last file to
++    set an option overrides earlier files. The main daemon.conf file is
++    processed first, so options set in files under daemon.conf.d override the
++    main file.</p>
++
++    <p>Please note that the server also reads a configuration script on
++    startup. See <manref name="default.pa" section="5"/>.</p>
+ 
+     <p>The configuration file is a simple collection of variable
+     declarations. If the configuration file parser encounters either ;
+diff --git a/src/daemon/daemon-conf.c b/src/daemon/daemon-conf.c
+index 306c8cb..288aed2 100644
+--- a/src/daemon/daemon-conf.c
++++ b/src/daemon/daemon-conf.c
+@@ -617,7 +617,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
+     ci.default_channel_map_set = ci.default_sample_spec_set = false;
+     ci.conf = c;
+ 
+-    r = f ? pa_config_parse(c->config_file, f, table, NULL, false, NULL) : 0;
++    r = f ? pa_config_parse(c->config_file, f, table, NULL, true, NULL) : 0;
+ 
+     if (r >= 0) {
+ 
+diff --git a/src/pulse/client-conf.c b/src/pulse/client-conf.c
+index c2ece90..c23aa6b 100644
+--- a/src/pulse/client-conf.c
++++ b/src/pulse/client-conf.c
+@@ -149,7 +149,7 @@ void pa_client_conf_load(pa_client_conf *c, bool load_from_x11, bool load_from_e
+ 
+     f = pa_open_config_file(DEFAULT_CLIENT_CONFIG_FILE, DEFAULT_CLIENT_CONFIG_FILE_USER, ENV_CLIENT_CONFIG_FILE, &fn);
+     if (f) {
+-        pa_config_parse(fn, f, table, NULL, false, NULL);
++        pa_config_parse(fn, f, table, NULL, true, NULL);
+         pa_xfree(fn);
+         fclose(f);
+     }
+-- 
+2.6.4
+
