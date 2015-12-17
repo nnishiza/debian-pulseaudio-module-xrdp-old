@@ -1,10 +1,11 @@
 pulseaudio (1:7.1-1ubuntu3) UNRELEASED; urgency=medium
 
   * trust-store: Update translation string
+    Actually ship the .so files in the correct package
   * Cherrypick upstream patches to allow client.conf.d
     and daemon.conf.d
   * debian/patches/0508/0509/0510*.patches
-    - More patches for bluez5 + ofono + HFP support
+    - More patches for bluez5 + ofono + HFP support 
 
  -- David Henningsson <david.henningsson@canonical.com>  Mon, 30 Nov 2015 16:43:53 +0100
 
