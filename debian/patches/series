@@ -36,3 +36,6 @@
 0505-bluetooth-bluez5-let-user-specify-a-default-profile-.patch
 0506-bluetooth-bluez5-prevent-SCO-sink-source-to-be-suspe.patch
 0507-bluetooth-bluez5-drop-save-restore-of-SCO-sink-sourc.patch
+0508-bluetooth-bluez5-add-guards-to-prevent-HFP-and-HSP-c.patch
+0509-bluetooth-bluez5-don-t-reactivate-default-profile-wh.patch
+0510-Further-fixes-for-HFP-A2DP-with-BlueZ-5.x.patch
