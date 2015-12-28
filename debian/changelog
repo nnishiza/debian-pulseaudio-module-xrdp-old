@@ -1,8 +1,15 @@
-pulseaudio (7.99.1-1) UNRELEASED; urgency=medium
+pulseaudio (7.99.1-1) experimental; urgency=medium
 
   * New upstream release candidate
+    - Update local shlibs file for 7.99
+    - libpulsecore is now installed in the package-private directory
+    - Update symbols file to add new balance functions
+  * Drop pulsecore related lintian overrides
+  * Drop stale pulseaudio-dev.install file
+  * Drop stale lintian overrides
+  * Add patch to fix install order of libpulsecore
 
- -- Felipe Sateler <fsateler@debian.org>  Mon, 28 Dec 2015 11:25:38 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 28 Dec 2015 17:34:22 -0300
 
 pulseaudio (7.1-2) unstable; urgency=medium
 
