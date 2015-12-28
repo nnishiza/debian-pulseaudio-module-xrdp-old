@@ -791,7 +791,7 @@ static void do_push_drift_comp(struct userdata *u) {
 
 /* This one's simpler than the drift compensation case -- we just iterate over
  * the capture buffer, and pass the canceller blocksize bytes of playback and
- * capture data.
+ * capture data. If playback is currently inactive, we just push silence.
  *
  * Called from source I/O thread context. */
 static void do_push(struct userdata *u) {
@@ -877,12 +877,6 @@ static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk)
         return;
     }
 
-    if (PA_UNLIKELY(u->source->thread_info.state != PA_SOURCE_RUNNING ||
-                    u->sink->thread_info.state != PA_SINK_RUNNING)) {
-        pa_source_post(u->source, chunk);
-        return;
-    }
-
     /* handle queued messages, do any message sending of our own */
     while (pa_asyncmsgq_process_one(u->asyncmsgq) > 0)
         ;
@@ -939,8 +933,8 @@ static void source_output_push_cb(pa_source_output *o, const pa_memchunk *chunk)
         u->sink_skip -= to_skip;
     }
 
-    /* process and push out samples */
-    if (u->ec->params.drift_compensation)
+    /* process and push out samples, do drift compensation only if the sink is actually running */
+    if (u->ec->params.drift_compensation && u->sink->thread_info.state == PA_SINK_RUNNING)
         do_push_drift_comp(u);
     else
         do_push(u);
@@ -1558,17 +1552,23 @@ static int canceller_process_msg_cb(pa_msgobject *o, int code, void *userdata, i
 
 /* Called by the canceller, so source I/O thread context. */
 void pa_echo_canceller_get_capture_volume(pa_echo_canceller *ec, pa_cvolume *v) {
+#ifndef ECHO_CANCEL_TEST
     *v = ec->msg->userdata->thread_info.current_volume;
+#else
+    pa_cvolume_set(v, 1, PA_VOLUME_NORM);
+#endif
 }
 
 /* Called by the canceller, so source I/O thread context. */
 void pa_echo_canceller_set_capture_volume(pa_echo_canceller *ec, pa_cvolume *v) {
+#ifndef ECHO_CANCEL_TEST
     if (!pa_cvolume_equal(&ec->msg->userdata->thread_info.current_volume, v)) {
         pa_cvolume *vol = pa_xnewdup(pa_cvolume, v, 1);
 
         pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(ec->msg), ECHO_CANCELLER_MESSAGE_SET_VOLUME, vol, 0, NULL,
                 pa_xfree);
     }
+#endif
 }
 
 uint32_t pa_echo_canceller_blocksize_power2(unsigned rate, unsigned ms) {

@@ -4,10 +4,16 @@ pulse-daemon.conf \- PulseAudio daemon configuration file
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/daemon.conf\fB
 
+\fI~/.config/pulse/daemon.conf.d/*.conf\fB
+
 \fI/etc/pulse/daemon.conf\fB
+
+\fI/etc/pulse/daemon.conf.d/*.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a file \fI~/.config/pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
+The PulseAudio sound server reads configuration directives from a configuration file on startup. If the per-user file \fI~/.config/pulse/daemon.conf\f1 exists, it is used, otherwise the system configuration file \fI/etc/pulse/daemon.conf\f1 is used. In addition to those main files, configuration directives can also be put in files under directories \fI~/.config/pulse/daemon.conf.d/\f1 and \fI/etc/pulse/daemon.conf.d/\f1. Those files have to have the .conf file name extension, but otherwise the file names can be chosen freely. The files under daemon.conf.d are processed in alphabetical order. In case the same option is set in multiple files, the last file to set an option overrides earlier files. The main daemon.conf file is processed first, so options set in files under daemon.conf.d override the main file.
+
+Please note that the server also reads a configuration script on startup. See \fBdefault.pa(5)\f1.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
