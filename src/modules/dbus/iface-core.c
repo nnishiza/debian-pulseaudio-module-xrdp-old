@@ -1442,7 +1442,7 @@ static bool contains_space(const char *string) {
     pa_assert(string);
 
     for (p = string; *p; ++p) {
-        if (isspace(*p))
+        if (isspace((unsigned char)*p))
             return true;
     }
 
@@ -1504,7 +1504,7 @@ static void handle_load_module(DBusConnection *conn, DBusMessage *msg, void *use
         dbus_message_iter_next(&dict_iter);
     }
 
-    arg_string = pa_strbuf_tostring(arg_buffer);
+    arg_string = pa_strbuf_to_string(arg_buffer);
 
     if (!(module = pa_module_load(c->core, name, arg_string))) {
         pa_dbus_send_error(conn, msg, DBUS_ERROR_FAILED, "Failed to load module.");

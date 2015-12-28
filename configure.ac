@@ -44,7 +44,7 @@ AC_SUBST(PA_PROTOCOL_VERSION, 30)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [18:2:18])
+AC_SUBST(LIBPULSE_VERSION_INFO, [19:0:19])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -108,9 +108,6 @@ AM_GNU_GETTEXT([external])
 GETTEXT_PACKAGE=pulseaudio
 AC_SUBST([GETTEXT_PACKAGE])
 AC_DEFINE_UNQUOTED([GETTEXT_PACKAGE],["$GETTEXT_PACKAGE"],[Gettext package])
-
-pulselocaledir='${prefix}/${DATADIRNAME}/locale'
-AX_DEFINE_DIR(PULSE_LOCALEDIR, pulselocaledir, [Gettext locale dir])
 else
 # workaround till an intltool m4 bug is fixed upstream
 # (https://bugs.launchpad.net/intltool/+bug/904647)
@@ -139,6 +136,9 @@ case "$host_os" in
     freebsd*)
         AC_MSG_RESULT([freebsd])
         host_has_caps=1
+    ;;
+    netbsd*)
+        AC_MSG_RESULT([netbsd])
     ;;
     darwin*)
         AC_MSG_RESULT([darwin])
@@ -212,7 +212,7 @@ AC_SUBST([IMMEDIATE_LDFLAGS])
 # On ELF systems we don't want the libraries to be unloaded since we don't clean them up properly,
 # so we request the nodelete flag to be enabled.
 # On other systems, we don't really know how to do that, but it's welcome if somebody can tell.
-AX_APPEND_LINK_FLAGS([-Wl,-z,nodelete], [NODELETE_LDFLAGS])
+AX_APPEND_LINK_FLAGS([-Wl,-z,nodelete], [NODELETE_LDFLAGS], [-shared])
 AC_SUBST([NODELETE_LDFLAGS])
 
 # Check for the proper way to build libraries that have no undefined symbols
@@ -260,6 +260,10 @@ else
     # HW specific atomic ops stuff
     AC_MSG_CHECKING([architecture for native atomic operations])
     case $host in
+        *-netbsd*)
+            AC_MSG_RESULT([yes])
+            need_libatomic_ops=no
+        ;;
         arm*)
             AC_MSG_RESULT([arm])
             AC_MSG_CHECKING([whether we can use Linux kernel helpers])
@@ -294,10 +298,6 @@ else
                     need_libatomic_ops=no
                 ])
             fi
-        ;;
-        *-netbsdelf5*)
-            AC_MSG_RESULT([yes])
-            need_libatomic_ops=no
         ;;
         *-freebsd*)
             AC_MSG_RESULT([yes])
@@ -447,6 +447,7 @@ AC_CHECK_HEADERS_ONCE([sys/eventfd.h])
 AC_CHECK_HEADERS_ONCE([execinfo.h])
 AC_CHECK_HEADERS_ONCE([langinfo.h])
 AC_CHECK_HEADERS_ONCE([regex.h pcreposix.h])
+AC_CHECK_HEADERS_ONCE([locale.h xlocale.h])
 
 AM_CONDITIONAL(HAVE_SYS_EVENTFD_H, test "x$ac_cv_header_sys_eventfd_h" = "xyes")
 
@@ -488,14 +489,14 @@ AS_IF([test "$pulseaudio_cv__Bool" = "yes"], AC_DEFINE([HAVE_STD_BOOL], 1, [Have
 #### Thread support ####
 
 AX_TLS
-AS_IF([test "$ac_cv_tls" == "__thread"],
+AS_IF([test "$ac_cv_tls" = "__thread"],
     AC_DEFINE([SUPPORT_TLS___THREAD], 1, [Define this if the compiler supports __thread for Thread-Local Storage]))
 
 # Win32 build breaks with win32 pthread installed
 AS_IF([test "x$os_is_win32" != "x1"],
   [AX_PTHREAD])
 
-AS_IF([test "x$ax_pthread_ok" == "xyes"],
+AS_IF([test "x$ax_pthread_ok" = "xyes"],
     AC_DEFINE([_POSIX_PTHREAD_SEMANTICS], 1, [Needed on Solaris]))
 
 
@@ -569,7 +570,7 @@ AC_CHECK_FUNCS_ONCE([ctime_r usleep])
 AC_CHECK_FUNCS_ONCE([strerror_r])
 
 # BSD
-AC_CHECK_FUNCS_ONCE([lstat])
+AC_CHECK_FUNCS_ONCE([lstat paccept])
 
 # Non-standard
 AC_CHECK_FUNCS_ONCE([setresuid setresgid setreuid setregid seteuid setegid ppoll strsignal sig2str strtod_l pipe2 accept4])

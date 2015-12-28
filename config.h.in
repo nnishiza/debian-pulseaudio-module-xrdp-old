@@ -219,6 +219,9 @@
 /* Define to 1 if you have the <linux/sockios.h> header file. */
 #undef HAVE_LINUX_SOCKIOS_H
 
+/* Define to 1 if you have the <locale.h> header file. */
+#undef HAVE_LOCALE_H
+
 /* Define to 1 if you have the `lrintf' function. */
 #undef HAVE_LRINTF
 
@@ -272,6 +275,9 @@
 
 /* Have OSS wrapper (padsp)? */
 #undef HAVE_OSS_WRAPPER
+
+/* Define to 1 if you have the `paccept' function. */
+#undef HAVE_PACCEPT
 
 /* Define to 1 if you have the <pcreposix.h> header file. */
 #undef HAVE_PCREPOSIX_H
@@ -531,6 +537,9 @@
 /* Have X11? */
 #undef HAVE_X11
 
+/* Define to 1 if you have the <xlocale.h> header file. */
+#undef HAVE_XLOCALE_H
+
 /* Define to 1 if you have the
    </System/Library/Frameworks/CoreServices.framework/Headers/CoreServices.h>
    header file. */
@@ -624,9 +633,6 @@
 /* Define to necessary symbol if this constant uses a non-standard name on
    your system. */
 #undef PTHREAD_CREATE_JOINABLE
-
-/* Gettext locale dir */
-#undef PULSE_LOCALEDIR
 
 /* If using the C implementation of alloca, define if you know the
    direction of stack growth for your system; otherwise it will be

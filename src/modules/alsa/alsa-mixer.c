@@ -329,6 +329,10 @@ static void defer_cb(pa_mainloop_api *a, pa_defer_event *e, void *userdata) {
         pa_log("snd_mixer_poll_descriptors_count() failed: %s", pa_alsa_strerror(n));
         return;
     }
+    else if (n == 0) {
+        pa_log_warn("Mixer has no poll descriptors. Please control mixer from PulseAudio only.");
+        return;
+    }
     num_fds = (unsigned) n;
 
     if (num_fds != fdl->num_fds) {
@@ -521,6 +525,10 @@ int pa_alsa_set_mixer_rtpoll(struct pa_alsa_mixer_pdata *pd, snd_mixer_t *mixer,
     if ((n = snd_mixer_poll_descriptors_count(mixer)) < 0) {
         pa_log("snd_mixer_poll_descriptors_count() failed: %s", pa_alsa_strerror(n));
         return -1;
+    }
+    else if (n == 0) {
+        pa_log_warn("Mixer has no poll descriptors. Please control mixer from PulseAudio only.");
+        return 0;
     }
 
     i = pa_rtpoll_item_new(rtp, PA_RTPOLL_LATE, (unsigned) n);
@@ -2586,7 +2594,7 @@ pa_alsa_path* pa_alsa_path_new(const char *paths_dir, const char *fname, pa_alsa
 
     fn = pa_maybe_prefix_path(fname, paths_dir);
 
-    r = pa_config_parse(fn, NULL, items, p->proplist, p);
+    r = pa_config_parse(fn, NULL, items, p->proplist, false, p);
     pa_xfree(fn);
 
     if (r < 0)
@@ -2613,6 +2621,7 @@ pa_alsa_path *pa_alsa_path_synthesize(const char *element, pa_alsa_direction_t d
     p = pa_xnew0(pa_alsa_path, 1);
     p->name = pa_xstrdup(element);
     p->direction = direction;
+    p->proplist = pa_proplist_new();
 
     e = pa_xnew0(pa_alsa_element, 1);
     e->path = p;
@@ -3465,6 +3474,8 @@ static void profile_free(pa_alsa_profile *p) {
 
     pa_xfree(p->name);
     pa_xfree(p->description);
+    pa_xfree(p->input_name);
+    pa_xfree(p->output_name);
 
     pa_xstrfreev(p->input_mapping_names);
     pa_xstrfreev(p->output_mapping_names);
@@ -4115,6 +4126,7 @@ static void profile_set_add_auto_pair(
     p->name = name;
 
     if (m) {
+        p->output_name = pa_xstrdup(m->name);
         p->output_mappings = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
         pa_idxset_put(p->output_mappings, m, NULL);
         p->priority += m->priority * 100;
@@ -4122,6 +4134,7 @@ static void profile_set_add_auto_pair(
     }
 
     if (n) {
+        p->input_name = pa_xstrdup(n->name);
         p->input_mappings = pa_idxset_new(pa_idxset_trivial_hash_func, pa_idxset_trivial_compare_func);
         pa_idxset_put(p->input_mappings, n, NULL);
         p->priority += n->priority;
@@ -4273,7 +4286,7 @@ static int profile_verify(pa_alsa_profile *p) {
                 pa_strbuf_printf(sb, _("%s Input"), m->description);
             }
 
-        p->description = pa_strbuf_tostring_free(sb);
+        p->description = pa_strbuf_to_string_free(sb);
     }
 
     return 0;
@@ -4284,9 +4297,11 @@ void pa_alsa_profile_dump(pa_alsa_profile *p) {
     pa_alsa_mapping *m;
     pa_assert(p);
 
-    pa_log_debug("Profile %s (%s), priority=%u, supported=%s n_input_mappings=%u, n_output_mappings=%u",
+    pa_log_debug("Profile %s (%s), input=%s, output=%s priority=%u, supported=%s n_input_mappings=%u, n_output_mappings=%u",
                  p->name,
                  pa_strnull(p->description),
+                 pa_strnull(p->input_name),
+                 pa_strnull(p->output_name),
                  p->priority,
                  pa_yes_no(p->supported),
                  p->input_mappings ? pa_idxset_size(p->input_mappings) : 0,
@@ -4333,7 +4348,7 @@ void pa_alsa_decibel_fix_dump(pa_alsa_decibel_fix *db_fix) {
         for (i = 0; i < nsteps; ++i)
             pa_strbuf_printf(buf, "[%li]:%0.2f ", i + db_fix->min_step, db_fix->db_values[i] / 100.0);
 
-        db_values = pa_strbuf_tostring_free(buf);
+        db_values = pa_strbuf_to_string_free(buf);
     }
 
     pa_log_debug("Decibel fix %s, min_step=%li, max_step=%li, db_values=%s",
@@ -4396,7 +4411,7 @@ pa_alsa_profile_set* pa_alsa_profile_set_new(const char *fname, const pa_channel
                               pa_run_from_build_tree() ? PA_SRCDIR "/modules/alsa/mixer/profile-sets/" :
                               PA_ALSA_PROFILE_SETS_DIR);
 
-    r = pa_config_parse(fn, NULL, items, NULL, ps);
+    r = pa_config_parse(fn, NULL, items, NULL, false, ps);
     pa_xfree(fn);
 
     if (r < 0)
