@@ -1,3 +1,9 @@
+pulseaudio (7.99.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 28 Dec 2015 11:25:38 -0300
+
 pulseaudio (7.1-2) unstable; urgency=medium
 
   * Add build-depends on libsoxr-dev to enable soxr resamplers.
