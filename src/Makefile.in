@@ -914,23 +914,23 @@ am__libpulsecore_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
 	pulsecore/auth-cookie.h pulsecore/cli-command.c \
 	pulsecore/cli-command.h pulsecore/cli-text.c \
 	pulsecore/cli-text.h pulsecore/client.c pulsecore/client.h \
-	pulsecore/card.c pulsecore/card.h pulsecore/core-scache.c \
-	pulsecore/core-scache.h pulsecore/core-subscribe.c \
-	pulsecore/core-subscribe.h pulsecore/core.c pulsecore/core.h \
-	pulsecore/hook-list.c pulsecore/hook-list.h \
-	pulsecore/ltdl-helper.c pulsecore/ltdl-helper.h \
-	pulsecore/modargs.c pulsecore/modargs.h pulsecore/modinfo.c \
-	pulsecore/modinfo.h pulsecore/module.c pulsecore/module.h \
-	pulsecore/msgobject.c pulsecore/msgobject.h \
-	pulsecore/namereg.c pulsecore/namereg.h pulsecore/object.c \
-	pulsecore/object.h pulsecore/play-memblockq.c \
-	pulsecore/play-memblockq.h pulsecore/play-memchunk.c \
-	pulsecore/play-memchunk.h pulsecore/remap.c pulsecore/remap.h \
-	pulsecore/remap_mmx.c pulsecore/remap_sse.c \
-	pulsecore/resampler.c pulsecore/resampler.h \
-	pulsecore/resampler/ffmpeg.c pulsecore/resampler/peaks.c \
-	pulsecore/resampler/trivial.c pulsecore/rtpoll.c \
-	pulsecore/rtpoll.h pulsecore/stream-util.c \
+	pulsecore/typedefs.h pulsecore/card.c pulsecore/card.h \
+	pulsecore/core-scache.c pulsecore/core-scache.h \
+	pulsecore/core-subscribe.c pulsecore/core-subscribe.h \
+	pulsecore/core.c pulsecore/core.h pulsecore/hook-list.c \
+	pulsecore/hook-list.h pulsecore/ltdl-helper.c \
+	pulsecore/ltdl-helper.h pulsecore/modargs.c \
+	pulsecore/modargs.h pulsecore/modinfo.c pulsecore/modinfo.h \
+	pulsecore/module.c pulsecore/module.h pulsecore/msgobject.c \
+	pulsecore/msgobject.h pulsecore/namereg.c pulsecore/namereg.h \
+	pulsecore/object.c pulsecore/object.h \
+	pulsecore/play-memblockq.c pulsecore/play-memblockq.h \
+	pulsecore/play-memchunk.c pulsecore/play-memchunk.h \
+	pulsecore/remap.c pulsecore/remap.h pulsecore/remap_mmx.c \
+	pulsecore/remap_sse.c pulsecore/resampler.c \
+	pulsecore/resampler.h pulsecore/resampler/ffmpeg.c \
+	pulsecore/resampler/peaks.c pulsecore/resampler/trivial.c \
+	pulsecore/rtpoll.c pulsecore/rtpoll.h pulsecore/stream-util.c \
 	pulsecore/stream-util.h pulsecore/mix.c pulsecore/mix.h \
 	pulsecore/cpu.c pulsecore/cpu.h pulsecore/cpu-arm.c \
 	pulsecore/cpu-arm.h pulsecore/cpu-x86.c pulsecore/cpu-x86.h \
@@ -3403,7 +3403,6 @@ PREOPEN_MODS = @PREOPEN_MODS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_LIBS = @PTHREAD_LIBS@
-PULSE_LOCALEDIR = @PULSE_LOCALEDIR@
 RANLIB = @RANLIB@
 SBC_CFLAGS = @SBC_CFLAGS@
 SBC_LIBS = @SBC_LIBS@
@@ -3516,19 +3515,21 @@ AM_CPPFLAGS = \
 	-DPA_ALSA_PATHS_DIR=\"$(alsapathsdir)\" \
 	-DPA_ALSA_PROFILE_SETS_DIR=\"$(alsaprofilesetsdir)\" \
 	-DPA_SRCDIR=\"$(abs_srcdir)\" \
-	-DPA_BUILDDIR=\"$(abs_builddir)\"
+	-DPA_BUILDDIR=\"$(abs_builddir)\" \
+	-DPULSE_LOCALEDIR=\"$(localedir)\"
 
 AM_CFLAGS = $(PTHREAD_CFLAGS) $(am__append_1)
 AM_CXXFLAGS = $(AM_CFLAGS) $(am__append_2)
 SERVER_CFLAGS = -D__INCLUDED_FROM_PULSE_AUDIO
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
-AM_LDFLAGS = $(NODELETE_LDFLAGS) $(am__append_3) $(am__append_4) \
-	$(am__append_5)
+AM_LDFLAGS = $(am__append_3) $(am__append_4) $(am__append_5)
+# Should only be applied to libraries.
+AM_LIBLDFLAGS = $(NODELETE_LDFLAGS)
 @STATIC_BINS_TRUE@BINLDFLAGS = -static
 @OS_IS_WIN32_TRUE@WINSOCK_LIBS = -lwsock32 -lws2_32 -lwininet
 FOREIGN_CFLAGS = -w
-MODULE_LDFLAGS = $(AM_LDFLAGS) -module -disable-static -avoid-version $(NOUNDEFINED_LDFLAGS)
+MODULE_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -module -disable-static -avoid-version $(NOUNDEFINED_LDFLAGS)
 MODULE_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 
 ###################################
@@ -3881,9 +3882,12 @@ lo_latency_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBCHECK_LIBS)
 ###################################
 #         Common library          #
 ###################################
-pkglib_LTLIBRARIES = \
-		libpulsecommon-@PA_MAJORMINOR@.la
 
+###################################
+#      Daemon core library        #
+###################################
+pkglib_LTLIBRARIES = libpulsecommon-@PA_MAJORMINOR@.la \
+	libpulsecore-@PA_MAJORMINOR@.la
 
 # We duplicate files from pulse/ in this to allow as-needed linking. If we did
 # not do this, in situations where code in libpulsecommon uses code in
@@ -3955,8 +3959,8 @@ libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) \
 	$(GTK30_CFLAGS) $(am__append_36) $(am__append_38) \
 	$(am__append_42)
 libpulsecommon_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) \
-	-avoid-version $(am__append_29) $(am__append_31) \
-	$(am__append_33)
+	$(AM_LIBLDFLAGS) -avoid-version $(am__append_29) \
+	$(am__append_31) $(am__append_33)
 libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) \
 	$(LIBJSON_LIBS) $(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) \
 	$(LIBSNDFILE_LIBS) $(am__append_39) $(am__append_43)
@@ -3975,12 +3979,7 @@ pulseinclude_HEADERS = pulse/cdecl.h pulse/channelmap.h \
 	pulse/subscribe.h pulse/thread-mainloop.h pulse/timeval.h \
 	pulse/utf8.h pulse/util.h pulse/version.h pulse/volume.h \
 	pulse/xmalloc.h $(am__append_44)
-
-###################################
-#      Daemon core library        #
-###################################
-lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_45) \
-	libpulsecore-@PA_MAJORMINOR@.la
+lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_45)
 
 # Public interface
 libpulse_la_SOURCES = \
@@ -4019,15 +4018,15 @@ libpulse_la_CFLAGS = $(AM_CFLAGS) $(LIBJSON_CFLAGS) $(am__append_46)
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) \
 	$(LIBJSON_LIBS) libpulsecommon-@PA_MAJORMINOR@.la \
 	$(am__append_47)
-libpulse_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_VERSION_INFO)
+libpulse_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_VERSION_INFO)
 libpulse_simple_la_SOURCES = pulse/simple.c pulse/simple.h
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
 libpulse_simple_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
-libpulse_simple_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_SIMPLE_VERSION_INFO)
+libpulse_simple_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_SIMPLE_VERSION_INFO)
 libpulse_mainloop_glib_la_SOURCES = pulse/glib-mainloop.h pulse/glib-mainloop.c
 libpulse_mainloop_glib_la_CFLAGS = $(AM_CFLAGS) $(GLIB20_CFLAGS)
 libpulse_mainloop_glib_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la $(GLIB20_LIBS)
-libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO)
+libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_MAINLOOP_GLIB_VERSION_INFO)
 
 ###################################
 #         OSS emulation           #
@@ -4040,7 +4039,7 @@ libpulse_mainloop_glib_la_LDFLAGS = $(AM_LDFLAGS) $(VERSIONING_LDFLAGS) -version
 libpulsedsp_la_SOURCES = utils/padsp.c
 libpulsedsp_la_CFLAGS = $(AM_CFLAGS)
 libpulsedsp_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
-libpulsedsp_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version -disable-static
+libpulsedsp_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version -disable-static
 
 # Pure core stuff
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES =  \
@@ -4052,23 +4051,23 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES =  \
 	pulsecore/auth-cookie.h pulsecore/cli-command.c \
 	pulsecore/cli-command.h pulsecore/cli-text.c \
 	pulsecore/cli-text.h pulsecore/client.c pulsecore/client.h \
-	pulsecore/card.c pulsecore/card.h pulsecore/core-scache.c \
-	pulsecore/core-scache.h pulsecore/core-subscribe.c \
-	pulsecore/core-subscribe.h pulsecore/core.c pulsecore/core.h \
-	pulsecore/hook-list.c pulsecore/hook-list.h \
-	pulsecore/ltdl-helper.c pulsecore/ltdl-helper.h \
-	pulsecore/modargs.c pulsecore/modargs.h pulsecore/modinfo.c \
-	pulsecore/modinfo.h pulsecore/module.c pulsecore/module.h \
-	pulsecore/msgobject.c pulsecore/msgobject.h \
-	pulsecore/namereg.c pulsecore/namereg.h pulsecore/object.c \
-	pulsecore/object.h pulsecore/play-memblockq.c \
-	pulsecore/play-memblockq.h pulsecore/play-memchunk.c \
-	pulsecore/play-memchunk.h pulsecore/remap.c pulsecore/remap.h \
-	pulsecore/remap_mmx.c pulsecore/remap_sse.c \
-	pulsecore/resampler.c pulsecore/resampler.h \
-	pulsecore/resampler/ffmpeg.c pulsecore/resampler/peaks.c \
-	pulsecore/resampler/trivial.c pulsecore/rtpoll.c \
-	pulsecore/rtpoll.h pulsecore/stream-util.c \
+	pulsecore/typedefs.h pulsecore/card.c pulsecore/card.h \
+	pulsecore/core-scache.c pulsecore/core-scache.h \
+	pulsecore/core-subscribe.c pulsecore/core-subscribe.h \
+	pulsecore/core.c pulsecore/core.h pulsecore/hook-list.c \
+	pulsecore/hook-list.h pulsecore/ltdl-helper.c \
+	pulsecore/ltdl-helper.h pulsecore/modargs.c \
+	pulsecore/modargs.h pulsecore/modinfo.c pulsecore/modinfo.h \
+	pulsecore/module.c pulsecore/module.h pulsecore/msgobject.c \
+	pulsecore/msgobject.h pulsecore/namereg.c pulsecore/namereg.h \
+	pulsecore/object.c pulsecore/object.h \
+	pulsecore/play-memblockq.c pulsecore/play-memblockq.h \
+	pulsecore/play-memchunk.c pulsecore/play-memchunk.h \
+	pulsecore/remap.c pulsecore/remap.h pulsecore/remap_mmx.c \
+	pulsecore/remap_sse.c pulsecore/resampler.c \
+	pulsecore/resampler.h pulsecore/resampler/ffmpeg.c \
+	pulsecore/resampler/peaks.c pulsecore/resampler/trivial.c \
+	pulsecore/rtpoll.c pulsecore/rtpoll.h pulsecore/stream-util.c \
 	pulsecore/stream-util.h pulsecore/mix.c pulsecore/mix.h \
 	pulsecore/cpu.c pulsecore/cpu.h pulsecore/cpu-arm.c \
 	pulsecore/cpu-arm.h pulsecore/cpu-x86.c pulsecore/cpu-x86.h \
@@ -4094,8 +4093,8 @@ libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
 	$(am__append_56) $(am__append_59) $(am__append_62) \
 	$(am__append_65) $(am__append_69) $(am__append_72) \
 	$(am__append_75)
-libpulsecore_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version \
-	$(am__append_57)
+libpulsecore_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) \
+	$(AM_LIBLDFLAGS) -avoid-version $(am__append_57)
 libpulsecore_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) \
 	$(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) \
 	libpulsecommon-@PA_MAJORMINOR@.la libpulse.la \
@@ -4158,26 +4157,26 @@ modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	$(am__append_111) $(am__append_112) $(am__append_113) \
 	$(am__append_114) $(am__append_115)
 libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
-libprotocol_simple_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libprotocol_simple_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 libcli_la_SOURCES = pulsecore/cli.c pulsecore/cli.h
-libcli_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libcli_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libcli_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 libprotocol_cli_la_SOURCES = pulsecore/protocol-cli.c pulsecore/protocol-cli.h
-libprotocol_cli_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libprotocol_cli_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libprotocol_cli_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la libcli.la
 libprotocol_http_la_SOURCES = pulsecore/protocol-http.c pulsecore/protocol-http.h pulsecore/mime-type.c pulsecore/mime-type.h
-libprotocol_http_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libprotocol_http_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libprotocol_http_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 libprotocol_native_la_SOURCES = pulsecore/protocol-native.c pulsecore/protocol-native.h pulsecore/native-common.h
 libprotocol_native_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
 	$(am__append_81)
-libprotocol_native_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libprotocol_native_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libprotocol_native_la_LIBADD = $(AM_LIBADD) \
 	libpulsecore-@PA_MAJORMINOR@.la \
 	libpulsecommon-@PA_MAJORMINOR@.la libpulse.la $(am__append_82)
 @HAVE_ESOUND_TRUE@libprotocol_esound_la_SOURCES = pulsecore/protocol-esound.c pulsecore/protocol-esound.h pulsecore/esound.h
-@HAVE_ESOUND_TRUE@libprotocol_esound_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+@HAVE_ESOUND_TRUE@libprotocol_esound_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 @HAVE_ESOUND_TRUE@libprotocol_esound_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 librtp_la_SOURCES = \
 		modules/rtp/rtp.c modules/rtp/rtp.h \
@@ -4186,19 +4185,19 @@ librtp_la_SOURCES = \
 		modules/rtp/rtsp_client.c modules/rtp/rtsp_client.h \
 		modules/rtp/headerlist.c modules/rtp/headerlist.h
 
-librtp_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+librtp_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 librtp_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 libraop_la_SOURCES = \
         modules/raop/raop_client.c modules/raop/raop_client.h \
         modules/raop/base64.c modules/raop/base64.h
 
 libraop_la_CFLAGS = $(AM_CFLAGS) $(OPENSSL_CFLAGS) -I$(top_srcdir)/src/modules/rtp
-libraop_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libraop_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libraop_la_LIBADD = $(AM_LIBADD) $(OPENSSL_LIBS) libpulsecore-@PA_MAJORMINOR@.la librtp.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 
 # Avahi
 libavahi_wrap_la_SOURCES = pulsecore/avahi-wrap.c pulsecore/avahi-wrap.h
-libavahi_wrap_la_LDFLAGS = $(AM_LDFLAGS) -avoid-version
+libavahi_wrap_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libavahi_wrap_la_CFLAGS = $(AM_CFLAGS) $(AVAHI_CFLAGS)
 libavahi_wrap_la_LIBADD = $(AM_LIBADD) $(AVAHI_CFLAGS) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 @HAVE_ALSA_TRUE@dist_alsaprofilesets_DATA = \
@@ -5551,7 +5550,7 @@ pulsecore/libpulsecore_@PA_MAJORMINOR@_la-svolume-orc-gen.lo:  \
 	pulsecore/$(am__dirstamp) pulsecore/$(DEPDIR)/$(am__dirstamp)
 
 libpulsecore-@PA_MAJORMINOR@.la: $(libpulsecore_@PA_MAJORMINOR@_la_OBJECTS) $(libpulsecore_@PA_MAJORMINOR@_la_DEPENDENCIES) $(EXTRA_libpulsecore_@PA_MAJORMINOR@_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libpulsecore_@PA_MAJORMINOR@_la_LINK) -rpath $(libdir) $(libpulsecore_@PA_MAJORMINOR@_la_OBJECTS) $(libpulsecore_@PA_MAJORMINOR@_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libpulsecore_@PA_MAJORMINOR@_la_LINK) -rpath $(pkglibdir) $(libpulsecore_@PA_MAJORMINOR@_la_OBJECTS) $(libpulsecore_@PA_MAJORMINOR@_la_LIBADD) $(LIBS)
 pulsecore/ffmpeg/$(am__dirstamp):
 	@$(MKDIR_P) pulsecore/ffmpeg
 	@: > pulsecore/ffmpeg/$(am__dirstamp)

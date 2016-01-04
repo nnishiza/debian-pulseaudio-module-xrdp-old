@@ -4,10 +4,14 @@ pulse-client.conf \- PulseAudio client configuration file
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/client.conf\fB
 
+\fI~/.config/pulse/client.conf.d/*.conf\fB
+
 \fI/etc/pulse/client.conf\fB
+
+\fI/etc/pulse/client.conf.d/*.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio client library reads configuration directives from a file \fI~/.config/pulse/client.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/client.conf\f1.
+The PulseAudio client library reads configuration directives from a configuration file on startup. If the per-user file \fI~/.config/pulse/client.conf\f1 exists, it is used, otherwise the system configuration file \fI/etc/pulse/client.conf\f1 is used. In addition to those main files, configuration directives can also be put in files under directories \fI~/.config/pulse/client.conf.d/\f1 and \fI/etc/pulse/client.conf.d/\f1. Those files have to have the .conf file name extension, but otherwise the file names can be chosen freely. The files under client.conf.d are processed in alphabetical order. In case the same option is set in multiple files, the last file to set an option overrides earlier files. The main client.conf file is processed first, so options set in files under client.conf.d override the main file.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 

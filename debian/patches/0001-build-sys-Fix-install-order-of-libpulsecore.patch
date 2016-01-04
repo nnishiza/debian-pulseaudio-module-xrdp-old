@@ -1,0 +1,44 @@
+From: Felipe Sateler <fsateler@debian.org>
+Date: Mon, 28 Dec 2015 20:16:18 -0300
+Subject: build-sys: Fix install order of libpulsecore
+
+It needs to be installed after libpulse, because of libtool relinking.
+---
+ src/Makefile.am | 10 +++++++---
+ 1 file changed, 7 insertions(+), 3 deletions(-)
+
+diff --git a/src/Makefile.am b/src/Makefile.am
+index 3c035aa..b0ca2bc 100644
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -631,7 +631,8 @@ lo_latency_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBCHECK_LIBS)
+ #         Common library          #
+ ###################################
+ 
+-pkglib_LTLIBRARIES = \
++commonlibdir = $(pkglibdir)
++commonlib_LTLIBRARIES = \
+ 		libpulsecommon-@PA_MAJORMINOR@.la
+ 
+ # We duplicate files from pulse/ in this to allow as-needed linking. If we did
+@@ -918,7 +919,7 @@ libpulsedsp_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version -disable-
+ #      Daemon core library        #
+ ###################################
+ 
+-pkglib_LTLIBRARIES += libpulsecore-@PA_MAJORMINOR@.la
++pkglib_LTLIBRARIES = libpulsecore-@PA_MAJORMINOR@.la
+ 
+ # Pure core stuff
+ libpulsecore_@PA_MAJORMINOR@_la_SOURCES = \
+@@ -2262,7 +2263,10 @@ update-all: update-ffmpeg update-map-file
+ # Isn't libtool/autotools fun!
+ 
+ installlibLTLIBRARIES = install-libLTLIBRARIES
+-$(installlibLTLIBRARIES): install-pkglibLTLIBRARIES
++$(installlibLTLIBRARIES): install-commonlibLTLIBRARIES
++
++installpkglibLTLIBRARIES = install-pkglibLTLIBRARIES
++$(installpkglibLTLIBRARIES): install-libLTLIBRARIES
+ 
+ installmodlibexecLTLIBRARIES = install-modlibexecLTLIBRARIES
+ $(installmodlibexecLTLIBRARIES): install-pkglibLTLIBRARIES install-libLTLIBRARIES

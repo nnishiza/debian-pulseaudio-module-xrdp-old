@@ -53,8 +53,12 @@
 #endif
 
 #ifdef HAVE_STRTOD_L
+#ifdef HAVE_LOCALE_H
 #include <locale.h>
+#endif
+#ifdef HAVE_XLOCALE_H
 #include <xlocale.h>
+#endif
 #endif
 
 #ifdef HAVE_SCHED_H
@@ -106,7 +110,6 @@
 #endif
 
 #ifdef __APPLE__
-#include <xlocale.h>
 #include <mach/mach_init.h>
 #include <mach/thread_act.h>
 #include <mach/thread_policy.h>
@@ -343,7 +346,7 @@ again:
 #endif
 
 #ifdef HAVE_FCHMOD
-    if (fchmod(fd, m) < 0) {
+    if ((st.st_mode & 07777) != m && fchmod(fd, m) < 0) {
         pa_assert_se(pa_close(fd) >= 0);
         goto fail;
     };
@@ -2329,7 +2332,7 @@ int pa_atou(const char *s, uint32_t *ret_u) {
     pa_assert(ret_u);
 
     /* strtoul() ignores leading spaces. We don't. */
-    if (isspace(*s)) {
+    if (isspace((unsigned char)*s)) {
         errno = EINVAL;
         return -1;
     }
@@ -2373,7 +2376,7 @@ int pa_atol(const char *s, long *ret_l) {
     pa_assert(ret_l);
 
     /* strtol() ignores leading spaces. We don't. */
-    if (isspace(*s)) {
+    if (isspace((unsigned char)*s)) {
         errno = EINVAL;
         return -1;
     }
@@ -2418,7 +2421,7 @@ int pa_atod(const char *s, double *ret_d) {
     pa_assert(ret_d);
 
     /* strtod() ignores leading spaces. We don't. */
-    if (isspace(*s)) {
+    if (isspace((unsigned char)*s)) {
         errno = EINVAL;
         return -1;
     }
@@ -3058,14 +3061,28 @@ char *pa_machine_id(void) {
     char *h;
 
     /* The returned value is supposed be some kind of ascii identifier
-     * that is unique and stable across reboots. */
+     * that is unique and stable across reboots. First we try if the machine-id
+     * file is available. If it's available, that's great, since it provides an
+     * identifier that suits our needs perfectly. If it's not, we fall back to
+     * the hostname, which is not as good, since it can change over time. */
 
-    /* First we try the /etc/machine-id, which is the best option we
-     * have, since it fits perfectly our needs and is not as volatile
-     * as the hostname which might be set from dhcp. */
-
+    /* We search for the machine-id file from four locations. The first two are
+     * relative to the configured installation prefix, but if we're installed
+     * under /usr/local, for example, it's likely that the machine-id won't be
+     * found there, so we also try the hardcoded paths.
+     *
+     * PA_MACHINE_ID or PA_MACHINE_ID_FALLBACK might exist on a Windows system,
+     * but the last two hardcoded paths certainly don't, hence we don't try
+     * them on Windows. */
     if ((f = pa_fopen_cloexec(PA_MACHINE_ID, "r")) ||
-        (f = pa_fopen_cloexec(PA_MACHINE_ID_FALLBACK, "r"))) {
+        (f = pa_fopen_cloexec(PA_MACHINE_ID_FALLBACK, "r")) ||
+#if !defined(OS_IS_WIN32)
+        (f = pa_fopen_cloexec("/etc/machine-id", "r")) ||
+        (f = pa_fopen_cloexec("/var/lib/dbus/machine-id", "r"))
+#else
+        false
+#endif
+        ) {
         char ln[34] = "", *r;
 
         r = fgets(ln, sizeof(ln)-1, f);
@@ -3193,7 +3210,7 @@ char *pa_replace(const char*s, const char*a, const char *b) {
 
     pa_strbuf_puts(sb, s);
 
-    return pa_strbuf_tostring_free(sb);
+    return pa_strbuf_to_string_free(sb);
 }
 
 char *pa_escape(const char *p, const char *chars) {
@@ -3215,7 +3232,7 @@ char *pa_escape(const char *p, const char *chars) {
         pa_strbuf_putc(buf, *s);
     }
 
-    return pa_strbuf_tostring_free(buf);
+    return pa_strbuf_to_string_free(buf);
 }
 
 char *pa_unescape(char *p) {
@@ -3492,6 +3509,8 @@ finish:
 int pa_accept_cloexec(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     int fd;
 
+    errno = 0;
+
 #ifdef HAVE_ACCEPT4
     if ((fd = accept4(sockfd, addr, addrlen, SOCK_CLOEXEC)) >= 0)
         goto finish;
@@ -3499,6 +3518,11 @@ int pa_accept_cloexec(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     if (errno != EINVAL && errno != ENOSYS)
         return fd;
 
+#endif
+
+#ifdef HAVE_PACCEPT
+    if ((fd = paccept(sockfd, addr, addrlen, NULL, SOCK_CLOEXEC)) >= 0)
+        goto finish;
 #endif
 
     if ((fd = accept(sockfd, addr, addrlen)) >= 0)

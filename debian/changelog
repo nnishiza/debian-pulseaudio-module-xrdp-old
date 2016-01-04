@@ -1,3 +1,56 @@
+pulseaudio (7.99.1-1ubuntu1~xenial1) UNRELEASED; urgency=medium
+
+  * Merge from Debian experimental, remaining changes:
+    - epoch (my stupid fault :S)
+    - Don't ship the consolekit module, and explicitly depend on the PAM
+      systemd module
+    - Add a module to allow pulseaudio to use the Android audio HAL
+    - Adjust gbp.conf file to point to the ubuntu branch for package builds
+    - Disable module-role-cork by default
+    - Load module-x11-bell in the start-pulseaudio-x11 script
+    - Hide pulseaudio from startup apps dialog
+    - Quit daemon if pid file is removed
+    - Avoid abort when poll descriptor is 0, such as when using it with the
+      audioflinger bridge, like done in ubuntu touch
+    - change default rlimit_rttime value to 200 ms
+    - Don't probe UCM profiles, trust that the profile writer knows what they
+      are doing
+    - Add card hook to allow modules to do something before a profile becomes
+      active
+    - Add an option to the bluez4 discovery module to set the profile
+    - Allow leaving bluetooth transport running while sink and source are
+      suspended.
+    - Add option to module-switch-on-connect to skip abstract devices
+    - Add property to module-device-restore to skip store/restore
+    - Add missing fields for sink_input/source_output info struct to the vala
+      bindings
+    - Add example upstart job to run pulseaudio in system mode
+    - Add a build/run autopkgtest for libpulse-dev
+    - Drop libsoxr-dev build dep, its in universe
+  * Refreshed patches, and dropped those that were applied upstream.
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Tue, 05 Jan 2016 10:04:43 +1100
+
+pulseaudio (7.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+    - Update local shlibs file for 7.99
+    - libpulsecore is now installed in the package-private directory
+    - Update symbols file to add new balance functions
+  * Drop pulsecore related lintian overrides
+  * Drop stale pulseaudio-dev.install file
+  * Drop stale lintian overrides
+  * Add patch to fix install order of libpulsecore
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 28 Dec 2015 17:34:22 -0300
+
+pulseaudio (7.1-2) unstable; urgency=medium
+
+  * Add build-depends on libsoxr-dev to enable soxr resamplers.
+     Closes: #804212
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 06 Nov 2015 17:15:54 -0300
+
 pulseaudio (1:7.1-1ubuntu3) xenial; urgency=medium
 
   * trust-store: Update translation string
@@ -5,7 +58,7 @@ pulseaudio (1:7.1-1ubuntu3) xenial; urgency=medium
   * Cherrypick upstream patches to allow client.conf.d
     and daemon.conf.d
   * debian/patches/0508/0509/0510*.patches
-    - More patches for bluez5 + ofono + HFP support 
+    - More patches for bluez5 + ofono + HFP support
 
  -- David Henningsson <david.henningsson@canonical.com>  Thu, 17 Dec 2015 12:36:42 +0100
 
