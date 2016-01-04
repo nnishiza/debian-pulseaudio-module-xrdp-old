@@ -29,7 +29,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -933,6 +933,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES
+@@ -938,6 +938,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES
  		pulsecore/core-subscribe.c pulsecore/core-subscribe.h \
  		pulsecore/core.c pulsecore/core.h \
  		pulsecore/hook-list.c pulsecore/hook-list.h \
@@ -91,7 +91,7 @@ Index: pulseaudio/src/daemon/main.c
      c->default_sample_spec = conf->default_sample_spec;
      c->alternate_sample_rate = conf->alternate_sample_rate;
      c->default_channel_map = conf->default_channel_map;
-@@ -1154,6 +1167,9 @@ finish:
+@@ -1162,6 +1175,9 @@ finish:
          pa_autospawn_lock_done(false);
      }
  

@@ -12,5 +12,5 @@ Index: pulseaudio/src/modules/alsa/alsa-mixer.c
 +        pa_log("snd_mixer_poll_descriptors_count() equal 0");
 +        return;
      }
-     num_fds = (unsigned) n;
- 
+     else if (n == 0) {
+         pa_log_warn("Mixer has no poll descriptors. Please control mixer from PulseAudio only.");
