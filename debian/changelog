@@ -1,10 +1,10 @@
-pulseaudio (7.99.2-1) UNRELEASED; urgency=medium
+pulseaudio (7.99.2-1) experimental; urgency=medium
 
   * New upstream release candidate
   * Drop build-sys-Fix-install-order-of-libpulsecore.patch, applied
     upstream
 
- -- Felipe Sateler <fsateler@debian.org>  Fri, 15 Jan 2016 18:19:58 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 15 Jan 2016 18:21:14 -0300
 
 pulseaudio (7.99.1-1) experimental; urgency=medium
 
