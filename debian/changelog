@@ -1,3 +1,9 @@
+pulseaudio (7.99.2-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 15 Jan 2016 18:19:58 -0300
+
 pulseaudio (7.99.1-1) experimental; urgency=medium
 
   * New upstream release candidate
