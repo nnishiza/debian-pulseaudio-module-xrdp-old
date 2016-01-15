@@ -511,17 +511,17 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" \
-	"$(DESTDIR)$(padsplibdir)" "$(DESTDIR)$(pkglibdir)" \
-	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" \
-	"$(DESTDIR)$(bindir)" "$(DESTDIR)$(dbuspolicydir)" \
-	"$(DESTDIR)$(alsapathsdir)" "$(DESTDIR)$(alsaprofilesetsdir)" \
-	"$(DESTDIR)$(udevrulesdir)" "$(DESTDIR)$(pulseconfdir)" \
-	"$(DESTDIR)$(systemduserunitdir)" \
+am__installdirs = "$(DESTDIR)$(commonlibdir)" "$(DESTDIR)$(libdir)" \
+	"$(DESTDIR)$(modlibexecdir)" "$(DESTDIR)$(padsplibdir)" \
+	"$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" \
+	"$(DESTDIR)$(pulselibexecdir)" "$(DESTDIR)$(bindir)" \
+	"$(DESTDIR)$(dbuspolicydir)" "$(DESTDIR)$(alsapathsdir)" \
+	"$(DESTDIR)$(alsaprofilesetsdir)" "$(DESTDIR)$(udevrulesdir)" \
+	"$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(systemduserunitdir)" \
 	"$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"
-LTLIBRARIES = $(lib_LTLIBRARIES) $(modlibexec_LTLIBRARIES) \
-	$(noinst_LTLIBRARIES) $(padsplib_LTLIBRARIES) \
-	$(pkglib_LTLIBRARIES)
+LTLIBRARIES = $(commonlib_LTLIBRARIES) $(lib_LTLIBRARIES) \
+	$(modlibexec_LTLIBRARIES) $(noinst_LTLIBRARIES) \
+	$(padsplib_LTLIBRARIES) $(pkglib_LTLIBRARIES)
 am__DEPENDENCIES_1 =
 am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2) \
@@ -3281,6 +3281,7 @@ HAVE_BLUEZ_4 = @HAVE_BLUEZ_4@
 HAVE_BLUEZ_5 = @HAVE_BLUEZ_5@
 HAVE_BLUEZ_5_NATIVE_HEADSET = @HAVE_BLUEZ_5_NATIVE_HEADSET@
 HAVE_BLUEZ_5_OFONO_HEADSET = @HAVE_BLUEZ_5_OFONO_HEADSET@
+HAVE_COREAUDIO = @HAVE_COREAUDIO@
 HAVE_DBUS = @HAVE_DBUS@
 HAVE_GLIB20 = @HAVE_GLIB20@
 HAVE_MKFIFO = @HAVE_MKFIFO@
@@ -3882,12 +3883,10 @@ lo_latency_test_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS) $(LIBCHECK_LIBS)
 ###################################
 #         Common library          #
 ###################################
+commonlibdir = $(pkglibdir)
+commonlib_LTLIBRARIES = \
+		libpulsecommon-@PA_MAJORMINOR@.la
 
-###################################
-#      Daemon core library        #
-###################################
-pkglib_LTLIBRARIES = libpulsecommon-@PA_MAJORMINOR@.la \
-	libpulsecore-@PA_MAJORMINOR@.la
 
 # We duplicate files from pulse/ in this to allow as-needed linking. If we did
 # not do this, in situations where code in libpulsecommon uses code in
@@ -4040,6 +4039,11 @@ libpulsedsp_la_SOURCES = utils/padsp.c
 libpulsedsp_la_CFLAGS = $(AM_CFLAGS)
 libpulsedsp_la_LIBADD = $(AM_LIBADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la
 libpulsedsp_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version -disable-static
+
+###################################
+#      Daemon core library        #
+###################################
+pkglib_LTLIBRARIES = libpulsecore-@PA_MAJORMINOR@.la
 
 # Pure core stuff
 libpulsecore_@PA_MAJORMINOR@_la_SOURCES =  \
@@ -4838,6 +4842,7 @@ DISTCLEANFILES = esdcompat client.conf default.pa system.pa daemon.conf start-pu
 # ...
 # Isn't libtool/autotools fun!
 installlibLTLIBRARIES = install-libLTLIBRARIES
+installpkglibLTLIBRARIES = install-pkglibLTLIBRARIES
 installmodlibexecLTLIBRARIES = install-modlibexecLTLIBRARIES
 installpadsplibLTLIBRARIES = install-padsplibLTLIBRARIES
 all: $(BUILT_SOURCES)
@@ -4889,6 +4894,41 @@ system.pa: $(top_builddir)/config.status $(top_srcdir)/src/daemon/system.pa.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 pulseaudio.service: $(top_builddir)/config.status $(top_srcdir)/src/daemon/systemd/user/pulseaudio.service.in
 	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
+
+install-commonlibLTLIBRARIES: $(commonlib_LTLIBRARIES)
+	@$(NORMAL_INSTALL)
+	@list='$(commonlib_LTLIBRARIES)'; test -n "$(commonlibdir)" || list=; \
+	list2=; for p in $$list; do \
+	  if test -f $$p; then \
+	    list2="$$list2 $$p"; \
+	  else :; fi; \
+	done; \
+	test -z "$$list2" || { \
+	  echo " $(MKDIR_P) '$(DESTDIR)$(commonlibdir)'"; \
+	  $(MKDIR_P) "$(DESTDIR)$(commonlibdir)" || exit 1; \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 '$(DESTDIR)$(commonlibdir)'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=install $(INSTALL) $(INSTALL_STRIP_FLAG) $$list2 "$(DESTDIR)$(commonlibdir)"; \
+	}
+
+uninstall-commonlibLTLIBRARIES:
+	@$(NORMAL_UNINSTALL)
+	@list='$(commonlib_LTLIBRARIES)'; test -n "$(commonlibdir)" || list=; \
+	for p in $$list; do \
+	  $(am__strip_dir) \
+	  echo " $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f '$(DESTDIR)$(commonlibdir)/$$f'"; \
+	  $(LIBTOOL) $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=uninstall rm -f "$(DESTDIR)$(commonlibdir)/$$f"; \
+	done
+
+clean-commonlibLTLIBRARIES:
+	-test -z "$(commonlib_LTLIBRARIES)" || rm -f $(commonlib_LTLIBRARIES)
+	@list='$(commonlib_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
 
 install-libLTLIBRARIES: $(lib_LTLIBRARIES)
 	@$(NORMAL_INSTALL)
@@ -5400,7 +5440,7 @@ pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-rtkit.lo:  \
 	pulsecore/$(am__dirstamp) pulsecore/$(DEPDIR)/$(am__dirstamp)
 
 libpulsecommon-@PA_MAJORMINOR@.la: $(libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS) $(libpulsecommon_@PA_MAJORMINOR@_la_DEPENDENCIES) $(EXTRA_libpulsecommon_@PA_MAJORMINOR@_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libpulsecommon_@PA_MAJORMINOR@_la_LINK) -rpath $(pkglibdir) $(libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS) $(libpulsecommon_@PA_MAJORMINOR@_la_LIBADD) $(LIBS)
+	$(AM_V_CCLD)$(libpulsecommon_@PA_MAJORMINOR@_la_LINK) -rpath $(commonlibdir) $(libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS) $(libpulsecommon_@PA_MAJORMINOR@_la_LIBADD) $(LIBS)
 pulsecore/filter/$(am__dirstamp):
 	@$(MKDIR_P) pulsecore/filter
 	@: > pulsecore/filter/$(am__dirstamp)
@@ -10891,7 +10931,7 @@ all-am: Makefile $(LTLIBRARIES) $(PROGRAMS) $(SCRIPTS) $(DATA) \
 install-binPROGRAMS: install-libLTLIBRARIES
 
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" "$(DESTDIR)$(padsplibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(dbuspolicydir)" "$(DESTDIR)$(alsapathsdir)" "$(DESTDIR)$(alsaprofilesetsdir)" "$(DESTDIR)$(udevrulesdir)" "$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(systemduserunitdir)" "$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"; do \
+	for dir in "$(DESTDIR)$(commonlibdir)" "$(DESTDIR)$(libdir)" "$(DESTDIR)$(modlibexecdir)" "$(DESTDIR)$(padsplibdir)" "$(DESTDIR)$(pkglibdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(pulselibexecdir)" "$(DESTDIR)$(bindir)" "$(DESTDIR)$(dbuspolicydir)" "$(DESTDIR)$(alsapathsdir)" "$(DESTDIR)$(alsaprofilesetsdir)" "$(DESTDIR)$(udevrulesdir)" "$(DESTDIR)$(pulseconfdir)" "$(DESTDIR)$(systemduserunitdir)" "$(DESTDIR)$(xdgautostartdir)" "$(DESTDIR)$(pulseincludedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: $(BUILT_SOURCES)
@@ -10975,8 +11015,9 @@ maintainer-clean-generic:
 	-test -z "$(BUILT_SOURCES)" || rm -f $(BUILT_SOURCES)
 clean: clean-am
 
-clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
-	clean-libLTLIBRARIES clean-libtool clean-modlibexecLTLIBRARIES \
+clean-am: clean-binPROGRAMS clean-checkPROGRAMS \
+	clean-commonlibLTLIBRARIES clean-generic clean-libLTLIBRARIES \
+	clean-libtool clean-modlibexecLTLIBRARIES \
 	clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
 	clean-padsplibLTLIBRARIES clean-pkglibLTLIBRARIES \
 	clean-pulselibexecPROGRAMS mostlyclean-am
@@ -10999,11 +11040,11 @@ info: info-am
 
 info-am:
 
-install-data-am: install-dbuspolicyDATA install-dist_alsapathsDATA \
-	install-dist_alsaprofilesetsDATA install-dist_udevrulesDATA \
-	install-padsplibLTLIBRARIES install-pulseconfDATA \
-	install-pulseincludeHEADERS install-systemduserunitDATA \
-	install-xdgautostartDATA
+install-data-am: install-commonlibLTLIBRARIES install-dbuspolicyDATA \
+	install-dist_alsapathsDATA install-dist_alsaprofilesetsDATA \
+	install-dist_udevrulesDATA install-padsplibLTLIBRARIES \
+	install-pulseconfDATA install-pulseincludeHEADERS \
+	install-systemduserunitDATA install-xdgautostartDATA
 
 install-dvi: install-dvi-am
 
@@ -11053,7 +11094,8 @@ ps: ps-am
 ps-am:
 
 uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
-	uninstall-dbuspolicyDATA uninstall-dist_alsapathsDATA \
+	uninstall-commonlibLTLIBRARIES uninstall-dbuspolicyDATA \
+	uninstall-dist_alsapathsDATA \
 	uninstall-dist_alsaprofilesetsDATA \
 	uninstall-dist_udevrulesDATA uninstall-libLTLIBRARIES \
 	uninstall-modlibexecLTLIBRARIES uninstall-padsplibLTLIBRARIES \
@@ -11066,20 +11108,22 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	install-strip uninstall-am
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-TESTS check-am clean \
-	clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
-	clean-libLTLIBRARIES clean-libtool clean-modlibexecLTLIBRARIES \
+	clean-binPROGRAMS clean-checkPROGRAMS \
+	clean-commonlibLTLIBRARIES clean-generic clean-libLTLIBRARIES \
+	clean-libtool clean-modlibexecLTLIBRARIES \
 	clean-noinstLTLIBRARIES clean-noinstPROGRAMS \
 	clean-padsplibLTLIBRARIES clean-pkglibLTLIBRARIES \
 	clean-pulselibexecPROGRAMS cscopelist-am ctags ctags-am \
 	distclean distclean-compile distclean-generic \
 	distclean-libtool distclean-tags distdir dvi dvi-am html \
 	html-am info info-am install install-am install-binPROGRAMS \
-	install-binSCRIPTS install-data install-data-am \
-	install-dbuspolicyDATA install-dist_alsapathsDATA \
-	install-dist_alsaprofilesetsDATA install-dist_udevrulesDATA \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-exec-hook install-html install-html-am install-info \
-	install-info-am install-libLTLIBRARIES install-man \
+	install-binSCRIPTS install-commonlibLTLIBRARIES install-data \
+	install-data-am install-dbuspolicyDATA \
+	install-dist_alsapathsDATA install-dist_alsaprofilesetsDATA \
+	install-dist_udevrulesDATA install-dvi install-dvi-am \
+	install-exec install-exec-am install-exec-hook install-html \
+	install-html-am install-info install-info-am \
+	install-libLTLIBRARIES install-man \
 	install-modlibexecLTLIBRARIES install-padsplibLTLIBRARIES \
 	install-pdf install-pdf-am install-pkglibLTLIBRARIES \
 	install-ps install-ps-am install-pulseconfDATA \
@@ -11090,8 +11134,8 @@ uninstall-am: uninstall-binPROGRAMS uninstall-binSCRIPTS \
 	mostlyclean mostlyclean-compile mostlyclean-generic \
 	mostlyclean-libtool pdf pdf-am ps ps-am recheck tags tags-am \
 	uninstall uninstall-am uninstall-binPROGRAMS \
-	uninstall-binSCRIPTS uninstall-dbuspolicyDATA \
-	uninstall-dist_alsapathsDATA \
+	uninstall-binSCRIPTS uninstall-commonlibLTLIBRARIES \
+	uninstall-dbuspolicyDATA uninstall-dist_alsapathsDATA \
 	uninstall-dist_alsaprofilesetsDATA \
 	uninstall-dist_udevrulesDATA uninstall-hook \
 	uninstall-libLTLIBRARIES uninstall-modlibexecLTLIBRARIES \
@@ -11172,7 +11216,8 @@ update-map-file:
 	  echo "};" ) > $(srcdir)/map-file
 
 update-all: update-ffmpeg update-map-file
-$(installlibLTLIBRARIES): install-pkglibLTLIBRARIES
+$(installlibLTLIBRARIES): install-commonlibLTLIBRARIES
+$(installpkglibLTLIBRARIES): install-libLTLIBRARIES
 $(installmodlibexecLTLIBRARIES): install-pkglibLTLIBRARIES install-libLTLIBRARIES
 $(installpadsplibLTLIBRARIES): install-libLTLIBRARIES
 
