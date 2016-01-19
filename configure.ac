@@ -463,6 +463,17 @@ AC_TYPE_OFF_T
 AC_TYPE_UID_T
 AC_CHECK_DECLS(environ)
 
+AC_CHECK_SIZEOF(void*)
+
+fast_64bit_operations="no"
+# This check covers x32-ABI
+AC_CHECK_DECL([__x86_64__], [fast_64bit_operations="yes"], [], [])
+if test "x$fast_64bit_operations" = "xno"; then
+    AS_IF([test $ac_cv_sizeof_voidp -ge 8], [fast_64bit_operations="yes"])
+fi
+
+AS_IF([test "x$fast_64bit_operations" = "xyes"], AC_DEFINE([HAVE_FAST_64BIT_OPERATIONS], 1, [Have CPU with fast 64-bit operations?]))
+
 # SIGXCPU
 AX_CHECK_DEFINE([signal.h], [SIGXCPU], [HAVE_SIGXCPU=1], [HAVE_SIGXCPU=0])
 AS_IF([test "x$HAVE_SIGXCPU" = "x1"], AC_DEFINE([HAVE_SIGXCPU], 1, [Have SIGXCPU?]))
@@ -781,7 +792,10 @@ AS_IF([test "x$enable_coreaudio_output" != "xno"],
 AS_IF([test "x$enable_coreaudio_output" = "xyes" && test "x$HAVE_COREAUDIO" = "x0"],
     [AC_MSG_ERROR([*** CoreAudio output support not found])])
 
+AC_SUBST(HAVE_COREAUDIO)
 AM_CONDITIONAL([HAVE_COREAUDIO], [test "x$HAVE_COREAUDIO" = "x1" && test "x$enable_coreaudio_output" != "xno"])
+
+AS_IF([test "x$HAVE_COREAUDIO" = "x1"], AC_DEFINE([HAVE_COREAUDIO], 1, [Have CoreAudio?]))
 
 #### ALSA support (optional) ####
 

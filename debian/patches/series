@@ -1,5 +1,4 @@
 # Ubuntu/Debian specific config/fixes
-0001-build-sys-Fix-install-order-of-libpulsecore.patch
 0001-volume-config-changes.patch
 0005-dont-load-cork-music-on-phone.patch
 0006-load-module-x11-bell.patch
