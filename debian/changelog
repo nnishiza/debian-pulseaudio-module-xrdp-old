@@ -1,6 +1,7 @@
 pulseaudio (8.0-1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Update shlibs file
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 26 Jan 2016 09:58:36 +1100
 
