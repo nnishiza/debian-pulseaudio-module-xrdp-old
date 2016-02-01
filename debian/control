@@ -8,8 +8,8 @@ Uploaders: Sjoerd Simons <sjoerd@debian.org>,
     Felipe Sateler <fsateler@debian.org>
 # The following packages can be omitted for bootstrapping (DEB_BUILD_PROFILES=stage1):
 #  libbluetooth-dev
-Build-Depends: android-headers-19 (>= 23),
-    android-headers-22 (>= 23),
+Build-Depends: android-headers-19 (>= 23) [armhf i386 amd64],
+    android-headers-22 (>= 23) [armhf i386 amd64],
     debhelper (>= 9),
     cdbs (>= 0.4.93),
     check,
