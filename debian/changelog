@@ -1,3 +1,13 @@
+pulseaudio (1:7.1-1ubuntu6) xenial; urgency=medium
+
+  * debian/patches/60*.patch:
+    + Add proper dep3 patch header to all patches.
+  * debian/control:
+    + Only depend on android-headers for i386, amd64 and armhf as no
+      other platform actually uses it or provides hybris support.
+
+ -- Simon Fels <simon.fels@canonical.com>  Mon, 01 Feb 2016 15:31:25 +0100
+
 pulseaudio (1:7.1-1ubuntu5) xenial; urgency=medium
 
   * debian/pulseaudio-module-droid.install:
