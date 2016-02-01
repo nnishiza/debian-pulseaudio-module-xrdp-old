@@ -1,3 +1,21 @@
+pulseaudio (1:7.1-1ubuntu5) xenial; urgency=medium
+
+  * debian/pulseaudio-module-droid.install:
+    - Correctly install all droid modules which have changed names
+      after we're now supporting multiple Android versions.
+
+ -- Simon Fels <simon.fels@canonical.com>  Thu, 28 Jan 2016 11:19:33 +0100
+
+pulseaudio (1:7.1-1ubuntu4) xenial; urgency=medium
+
+  * debian/patches/0600-droid-sync-with-upstream-for-Android-5-support-and-b.patches
+    debian/patches/0601-droid-alternative-hw-module-id.patch
+    debian/patcheshes/0602-droid-inputstream-config-parameters.pach
+    debian/patches/0603-0603droid-port-priority-and-availability.patch:
+    - Import patches from vivid for Android 5.x support
+
+ -- Simon Fels <simon.fels@canonical.com>  Thu, 28 Jan 2016 10:19:54 +0100
+
 pulseaudio (1:7.1-1ubuntu3) xenial; urgency=medium
 
   * trust-store: Update translation string
