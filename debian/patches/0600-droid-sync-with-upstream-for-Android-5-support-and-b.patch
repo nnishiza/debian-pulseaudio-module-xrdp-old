@@ -4,6 +4,8 @@ Date: Thu, 14 Jan 2016 09:49:37 +0100
 Subject: [PATCH] droid: sync with upstream for Android 5 support and building
  for multiple Android versions
 
+Origin: upstream, https://github.com/mer-hybris/pulseaudio-modules-droid
+Forwarded: not-needed
 ---
  configure.ac                              |   20 +
  src/Makefile.am                           |  136 +++-

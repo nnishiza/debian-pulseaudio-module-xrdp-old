@@ -1,3 +1,7 @@
+Subject: Bring back proper jack detection
+Author: Rex Tsai <rex.tsai@canonical.com>
+Forwarded: no
+
 Index: pulseaudio/src/modules/droid/droid-util.c
 ===================================================================
 --- pulseaudio.orig/src/modules/droid/droid-util.c

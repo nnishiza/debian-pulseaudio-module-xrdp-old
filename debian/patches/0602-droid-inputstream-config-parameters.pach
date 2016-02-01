@@ -1,3 +1,7 @@
+Subject: Extend droid module to acept further config parameters
+Author: Rex Tsai <rex.tsai@canonical.com>
+Forwarded: no
+
 Index: pulseaudio/src/modules/droid/droid-util.c
 ===================================================================
 --- pulseaudio.orig/src/modules/droid/droid-util.c
