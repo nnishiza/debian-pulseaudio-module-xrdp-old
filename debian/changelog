@@ -1,3 +1,9 @@
+pulseaudio (1:7.1-1ubuntu7) xenial; urgency=medium
+
+  * Keep the libpulsecore library in the multiarch libdir.
+
+ -- Matthias Klose <doko@ubuntu.com>  Fri, 05 Feb 2016 13:10:43 +0100
+
 pulseaudio (1:7.1-1ubuntu6) xenial; urgency=medium
 
   * debian/patches/60*.patch:
