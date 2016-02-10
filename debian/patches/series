@@ -6,10 +6,6 @@
 0022-inotify-wrapper-Quit-daemon-if-pid-file-is-removed.patch
 0023-fixing_snd_mixer_poll_descriptors_count_when_zero.patch
 
-# Patches cherrypicked from upstream
-0101-conf-parser-add-support-for-.d-directories.patch
-0102-client-conf-daemon-conf-enable-.d-directories.patch
-
 # Ubuntu touch stuff
 0202-dont-probe-ucm.patch
 0203-card-Add-hook-before-profile-changes.patch

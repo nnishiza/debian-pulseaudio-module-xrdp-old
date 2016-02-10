@@ -2,7 +2,7 @@ Index: pulseaudio/src/daemon/default.pa.in
 ===================================================================
 --- pulseaudio.orig/src/daemon/default.pa.in
 +++ pulseaudio/src/daemon/default.pa.in
-@@ -160,7 +160,7 @@ load-module module-systemd-login
+@@ -164,7 +164,7 @@ load-module module-systemd-login
  load-module module-position-event-sounds
  
  ### Cork music/video streams when a phone stream is active

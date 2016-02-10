@@ -12,7 +12,6 @@ Signed-off-by: David Henningsson <david.henningsson@canonical.com>
  src/modules/trust-store/module-trust-store.c | 221 +++++++++++++++++++++++++++
  src/modules/trust-store/truststore.cc        |  74 +++++++++
  src/modules/trust-store/truststore.h         |  41 +++++
- src/pulsecore/client.c                       |   6 +-
  src/pulsecore/client.h                       |   4 +
  src/pulsecore/creds.h                        |   1 +
  src/pulsecore/iochannel.c                    |   2 +
@@ -26,9 +25,9 @@ Signed-off-by: David Henningsson <david.henningsson@canonical.com>
 
 Index: pulseaudio/configure.ac
 ===================================================================
---- pulseaudio.orig/configure.ac	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/configure.ac	2015-11-30 16:38:21.776316368 +0100
-@@ -1399,6 +1399,19 @@
+--- pulseaudio.orig/configure.ac
++++ pulseaudio/configure.ac
+@@ -1414,6 +1414,19 @@ AS_IF([test "x$enable_adrian_aec" != "xn
      [HAVE_ADRIAN_EC=1])
  AM_CONDITIONAL([HAVE_ADRIAN_EC], [test "x$HAVE_ADRIAN_EC" = "x1"])
  
@@ -48,7 +47,7 @@ Index: pulseaudio/configure.ac
  
  
  ###################################
-@@ -1568,6 +1581,7 @@
+@@ -1583,6 +1596,7 @@ AS_IF([test "x$HAVE_ADRIAN_EC" = "x1"],
  AS_IF([test "x$HAVE_SPEEX" = "x1"], ENABLE_SPEEX=yes, ENABLE_SPEEX=no)
  AS_IF([test "x$HAVE_SOXR" = "x1"], ENABLE_SOXR=yes, ENABLE_SOXR=no)
  AS_IF([test "x$HAVE_WEBRTC" = "x1"], ENABLE_WEBRTC=yes, ENABLE_WEBRTC=no)
@@ -56,7 +55,7 @@ Index: pulseaudio/configure.ac
  AS_IF([test "x$HAVE_TDB" = "x1"], ENABLE_TDB=yes, ENABLE_TDB=no)
  AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
  AS_IF([test "x$HAVE_SIMPLEDB" = "x1"], ENABLE_SIMPLEDB=yes, ENABLE_SIMPLEDB=no)
-@@ -1632,6 +1646,7 @@
+@@ -1647,6 +1661,7 @@ echo "
      Enable speex (resampler, AEC): ${ENABLE_SPEEX}
      Enable soxr (resampler):       ${ENABLE_SOXR}
      Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
@@ -66,9 +65,9 @@ Index: pulseaudio/configure.ac
      Database
 Index: pulseaudio/src/Makefile.am
 ===================================================================
---- pulseaudio.orig/src/Makefile.am	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/src/Makefile.am	2015-11-30 16:38:44.000000000 +0100
-@@ -1072,6 +1072,10 @@
+--- pulseaudio.orig/src/Makefile.am
++++ pulseaudio/src/Makefile.am
+@@ -1077,6 +1077,10 @@ if HAVE_WEBRTC
  modlibexec_LTLIBRARIES += libwebrtc-util.la
  endif
  
@@ -79,7 +78,7 @@ Index: pulseaudio/src/Makefile.am
  if HAVE_ESOUND
  modlibexec_LTLIBRARIES += \
  		libprotocol-esound.la
-@@ -1196,6 +1200,11 @@
+@@ -1201,6 +1205,11 @@ modlibexec_LTLIBRARIES += \
  		module-filter-heuristics.la \
  		module-role-ducking.la
  
@@ -91,7 +90,7 @@ Index: pulseaudio/src/Makefile.am
  if HAVE_ESOUND
  modlibexec_LTLIBRARIES += \
  		module-esound-protocol-tcp.la \
-@@ -1522,6 +1531,7 @@
+@@ -1527,6 +1536,7 @@ SYMDEF_FILES = \
  		module-intended-roles-symdef.h \
  		module-suspend-on-idle-symdef.h \
  		module-echo-cancel-symdef.h \
@@ -99,7 +98,7 @@ Index: pulseaudio/src/Makefile.am
  		module-hal-detect-symdef.h \
  		module-udev-detect-symdef.h \
  		module-systemd-login-symdef.h \
-@@ -2114,6 +2124,20 @@
+@@ -2119,6 +2129,20 @@ module_echo_cancel_la_CFLAGS += -DHAVE_W
  module_echo_cancel_la_LIBADD += libwebrtc-util.la
  endif
  
@@ -122,8 +121,8 @@ Index: pulseaudio/src/Makefile.am
  module_rtp_send_la_LDFLAGS = $(MODULE_LDFLAGS)
 Index: pulseaudio/src/modules/trust-store/module-trust-store.c
 ===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ pulseaudio/src/modules/trust-store/module-trust-store.c	2015-11-30 16:41:04.603244932 +0100
+--- /dev/null
++++ pulseaudio/src/modules/trust-store/module-trust-store.c
 @@ -0,0 +1,228 @@
 +/***
 +    This file is part of PulseAudio.
@@ -355,8 +354,8 @@ Index: pulseaudio/src/modules/trust-store/module-trust-store.c
 +}
 Index: pulseaudio/src/modules/trust-store/truststore.cc
 ===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ pulseaudio/src/modules/trust-store/truststore.cc	2015-11-30 16:38:47.000000000 +0100
+--- /dev/null
++++ pulseaudio/src/modules/trust-store/truststore.cc
 @@ -0,0 +1,74 @@
 +#ifdef HAVE_CONFIG_H
 +#include <config.h>
@@ -434,8 +433,8 @@ Index: pulseaudio/src/modules/trust-store/truststore.cc
 +}
 Index: pulseaudio/src/modules/trust-store/truststore.h
 ===================================================================
---- /dev/null	1970-01-01 00:00:00.000000000 +0000
-+++ pulseaudio/src/modules/trust-store/truststore.h	2015-11-30 16:38:21.780316440 +0100
+--- /dev/null
++++ pulseaudio/src/modules/trust-store/truststore.h
 @@ -0,0 +1,41 @@
 +/***
 +    This file is part of PulseAudio.
@@ -478,35 +477,11 @@ Index: pulseaudio/src/modules/trust-store/truststore.h
 +#endif
 +
 +#endif
-Index: pulseaudio/src/pulsecore/client.c
-===================================================================
---- pulseaudio.orig/src/pulsecore/client.c	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/src/pulsecore/client.c	2015-11-30 16:38:21.780316440 +0100
-@@ -60,7 +60,7 @@
-     if (pa_hook_fire(&core->hooks[PA_CORE_HOOK_CLIENT_NEW], data) < 0)
-         return NULL;
- 
--    c = pa_xnew(pa_client, 1);
-+    c = pa_xnew0(pa_client, 1);
-     c->core = core;
-     c->proplist = pa_proplist_copy(data->proplist);
-     c->driver = pa_xstrdup(pa_path_get_filename(data->driver));
-@@ -69,10 +69,6 @@
-     c->sink_inputs = pa_idxset_new(NULL, NULL);
-     c->source_outputs = pa_idxset_new(NULL, NULL);
- 
--    c->userdata = NULL;
--    c->kill = NULL;
--    c->send_event = NULL;
--
-     pa_assert_se(pa_idxset_put(core->clients, c, &c->index) >= 0);
- 
-     pa_log_info("Created %u \"%s\"", c->index, pa_strnull(pa_proplist_gets(c->proplist, PA_PROP_APPLICATION_NAME)));
 Index: pulseaudio/src/pulsecore/client.h
 ===================================================================
---- pulseaudio.orig/src/pulsecore/client.h	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/src/pulsecore/client.h	2015-11-30 16:38:21.780316440 +0100
-@@ -27,6 +27,7 @@
+--- pulseaudio.orig/src/pulsecore/client.h
++++ pulseaudio/src/pulsecore/client.h
+@@ -26,6 +26,7 @@
  #include <pulse/proplist.h>
  #include <pulsecore/core.h>
  #include <pulsecore/module.h>
@@ -514,7 +489,7 @@ Index: pulseaudio/src/pulsecore/client.h
  
  /* Every connection to the server should have a pa_client
   * attached. That way the user may generate a listing of all connected
-@@ -36,6 +37,9 @@
+@@ -35,6 +36,9 @@ struct pa_client {
      uint32_t index;
      pa_core *core;
  
@@ -526,9 +501,9 @@ Index: pulseaudio/src/pulsecore/client.h
      char *driver;
 Index: pulseaudio/src/pulsecore/creds.h
 ===================================================================
---- pulseaudio.orig/src/pulsecore/creds.h	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/src/pulsecore/creds.h	2015-11-30 16:38:21.780316440 +0100
-@@ -41,6 +41,7 @@
+--- pulseaudio.orig/src/pulsecore/creds.h
++++ pulseaudio/src/pulsecore/creds.h
+@@ -41,6 +41,7 @@ typedef struct pa_cmsg_ancil_data pa_cms
  struct pa_creds {
      gid_t gid;
      uid_t uid;
@@ -538,9 +513,9 @@ Index: pulseaudio/src/pulsecore/creds.h
  /* Struct for handling ancillary data, i e, extra data that can be sent together with a message
 Index: pulseaudio/src/pulsecore/iochannel.c
 ===================================================================
---- pulseaudio.orig/src/pulsecore/iochannel.c	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/src/pulsecore/iochannel.c	2015-11-30 16:38:21.780316440 +0100
-@@ -323,6 +323,7 @@
+--- pulseaudio.orig/src/pulsecore/iochannel.c
++++ pulseaudio/src/pulsecore/iochannel.c
+@@ -323,6 +323,7 @@ ssize_t pa_iochannel_write_with_creds(pa
  
      u = (struct ucred*) CMSG_DATA(&cmsg.hdr);
  
@@ -548,7 +523,7 @@ Index: pulseaudio/src/pulsecore/iochannel.c
      u->pid = getpid();
      if (ucred) {
          u->uid = ucred->uid;
-@@ -437,6 +438,7 @@
+@@ -437,6 +438,7 @@ ssize_t pa_iochannel_read_with_ancil_dat
  
                  ancil_data->creds.gid = u.gid;
                  ancil_data->creds.uid = u.uid;
@@ -558,9 +533,9 @@ Index: pulseaudio/src/pulsecore/iochannel.c
              else if (cmh->cmsg_type == SCM_RIGHTS) {
 Index: pulseaudio/src/pulsecore/protocol-native.c
 ===================================================================
---- pulseaudio.orig/src/pulsecore/protocol-native.c	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/src/pulsecore/protocol-native.c	2015-11-30 16:38:21.784316513 +0100
-@@ -2814,6 +2814,13 @@
+--- pulseaudio.orig/src/pulsecore/protocol-native.c
++++ pulseaudio/src/pulsecore/protocol-native.c
+@@ -2814,6 +2814,13 @@ static void command_auth(pa_pdispatch *p
              do_shm = false;
  
  #ifdef HAVE_CREDS
@@ -574,7 +549,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      if (do_shm) {
          /* Only enable SHM if both sides are owned by the same
           * user. This is a security measure because otherwise data
-@@ -5623,6 +5630,7 @@
+@@ -5623,6 +5630,7 @@ typedef struct pa_protocol_native_access
  } pa_protocol_native_access_data;
  
  static void check_access_finish_cb(pa_access_data *data, bool res) {
@@ -582,7 +557,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      pa_protocol_native_access_data *d = (pa_protocol_native_access_data *) data;
      pa_native_connection *c = PA_NATIVE_CONNECTION(d->userdata);
  
-@@ -5631,6 +5639,11 @@
+@@ -5631,6 +5639,11 @@ static void check_access_finish_cb(pa_ac
          goto finish;
      }
  
@@ -596,9 +571,9 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      command_table[d->command](d->pd, d->command, d->tag, d->tc, d->userdata);
 Index: pulseaudio/src/tests/connect-stress.c
 ===================================================================
---- pulseaudio.orig/src/tests/connect-stress.c	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/src/tests/connect-stress.c	2015-11-30 16:38:21.784316513 +0100
-@@ -63,7 +63,7 @@
+--- pulseaudio.orig/src/tests/connect-stress.c
++++ pulseaudio/src/tests/connect-stress.c
+@@ -63,7 +63,7 @@ static const pa_sample_spec sample_spec
  
  static void context_state_callback(pa_context *c, void *userdata);
  
@@ -607,7 +582,7 @@ Index: pulseaudio/src/tests/connect-stress.c
      int ret;
      pa_mainloop_api *api;
  
-@@ -201,7 +201,7 @@
+@@ -201,7 +201,7 @@ START_TEST (connect_stress_test) {
          streams[i] = NULL;
  
      for (i = 0; i < NTESTS; i++) {
@@ -618,9 +593,9 @@ Index: pulseaudio/src/tests/connect-stress.c
          usleep(rand() % 500000);
 Index: pulseaudio/po/POTFILES.in
 ===================================================================
---- pulseaudio.orig/po/POTFILES.in	2015-11-30 16:38:21.788316586 +0100
-+++ pulseaudio/po/POTFILES.in	2015-11-30 16:38:21.784316513 +0100
-@@ -23,6 +23,7 @@
+--- pulseaudio.orig/po/POTFILES.in
++++ pulseaudio/po/POTFILES.in
+@@ -23,6 +23,7 @@ src/modules/gconf/module-gconf.c
  src/modules/jack/module-jack-sink.c
  src/modules/jack/module-jack-source.c
  src/modules/macosx/module-coreaudio-device.c

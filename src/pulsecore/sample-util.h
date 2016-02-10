@@ -55,7 +55,7 @@ void pa_deinterleave(const void *src, void *dst[], unsigned channels, size_t ss,
 void pa_sample_clamp(pa_sample_format_t format, void *dst, size_t dstr, const void *src, size_t sstr, unsigned n);
 
 static inline int32_t pa_mult_s16_volume(int16_t v, int32_t cv) {
-#if __WORDSIZE == 64 || ((ULONG_MAX) > (UINT_MAX))
+#ifdef HAVE_FAST_64BIT_OPERATIONS
     /* Multiply with 64 bit integers on 64 bit platforms */
     return (v * (int64_t) cv) >> 16;
 #else
@@ -125,6 +125,14 @@ size_t pa_convert_size(size_t size, const pa_sample_spec *from, const pa_sample_
      | PA_CHANNEL_POSITION_MASK(PA_CHANNEL_POSITION_TOP_REAR_LEFT)      \
      | PA_CHANNEL_POSITION_MASK(PA_CHANNEL_POSITION_TOP_REAR_RIGHT)     \
      | PA_CHANNEL_POSITION_MASK(PA_CHANNEL_POSITION_TOP_REAR_CENTER))
+
+#define PA_CHANNEL_POSITION_MASK_LFE                                    \
+    PA_CHANNEL_POSITION_MASK(PA_CHANNEL_POSITION_LFE)
+
+#define PA_CHANNEL_POSITION_MASK_HFE                                    \
+    (PA_CHANNEL_POSITION_MASK_REAR | PA_CHANNEL_POSITION_MASK_FRONT     \
+     | PA_CHANNEL_POSITION_MASK_LEFT | PA_CHANNEL_POSITION_MASK_RIGHT   \
+     | PA_CHANNEL_POSITION_MASK_CENTER)
 
 #define PA_CHANNEL_POSITION_MASK_SIDE_OR_TOP_CENTER                     \
     (PA_CHANNEL_POSITION_MASK(PA_CHANNEL_POSITION_SIDE_LEFT)            \

@@ -1,10 +1,11 @@
-#ifndef foostrbufhfoo
-#define foostrbufhfoo
+#ifndef footypedefshfoo
+#define footypedefshfoo
 
 /***
   This file is part of PulseAudio.
 
-  Copyright 2004-2006 Lennart Poettering
+  Copyright 2015 Canonical Ltd.
+  Written by David Henningsson <david.henningsson@canonical.com>
 
   PulseAudio is free software; you can redistribute it and/or modify
   it under the terms of the GNU Lesser General Public License as published
@@ -20,21 +21,17 @@
   along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
 ***/
 
-#include <pulse/gccmacro.h>
-#include <pulsecore/macro.h>
+typedef struct pa_card pa_card;
+typedef struct pa_card_profile pa_card_profile;
+typedef struct pa_client pa_client;
+typedef struct pa_core pa_core;
+typedef struct pa_device_port pa_device_port;
+typedef struct pa_sink pa_sink;
+typedef struct pa_sink_volume_change pa_sink_volume_change;
+typedef struct pa_sink_input pa_sink_input;
+typedef struct pa_source pa_source;
+typedef struct pa_source_volume_change pa_source_volume_change;
+typedef struct pa_source_output pa_source_output;
 
-typedef struct pa_strbuf pa_strbuf;
-
-pa_strbuf *pa_strbuf_new(void);
-void pa_strbuf_free(pa_strbuf *sb);
-char *pa_strbuf_to_string(pa_strbuf *sb);
-char *pa_strbuf_to_string_free(pa_strbuf *sb);
-
-size_t pa_strbuf_printf(pa_strbuf *sb, const char *format, ...)  PA_GCC_PRINTF_ATTR(2,3);
-void pa_strbuf_puts(pa_strbuf *sb, const char *t);
-void pa_strbuf_putsn(pa_strbuf *sb, const char *t, size_t m);
-void pa_strbuf_putc(pa_strbuf *sb, char c);
-
-bool pa_strbuf_isempty(pa_strbuf *sb);
 
 #endif

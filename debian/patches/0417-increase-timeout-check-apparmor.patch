@@ -1,7 +1,7 @@
 Index: pulseaudio/src/modules/trust-store/module-trust-store.c
 ===================================================================
---- pulseaudio.orig/src/modules/trust-store/module-trust-store.c	2015-11-30 16:41:22.583564451 +0100
-+++ pulseaudio/src/modules/trust-store/module-trust-store.c	2015-11-30 16:43:09.701454805 +0100
+--- pulseaudio.orig/src/modules/trust-store/module-trust-store.c
++++ pulseaudio/src/modules/trust-store/module-trust-store.c
 @@ -31,6 +31,8 @@
  #include <pulsecore/dynarray.h>
  #include <pulse/mainloop-api.h>
@@ -11,7 +11,7 @@ Index: pulseaudio/src/modules/trust-store/module-trust-store.c
  #include "module-trust-store-symdef.h"
  
  PA_MODULE_AUTHOR("David Henningsson");
-@@ -77,9 +79,37 @@
+@@ -77,9 +79,37 @@ static struct per_client *per_client_new
      }
  
      pc = pa_xnew0(struct per_client, 1);
@@ -52,7 +52,7 @@ Index: pulseaudio/src/modules/trust-store/module-trust-store.c
      pc->index = client_index;
      pc->uid = client->creds.uid;
      pc->pid = client->creds.pid;
-@@ -103,13 +133,28 @@
+@@ -103,13 +133,28 @@ static void per_client_free_from_hashmap
  static void thread_func(void *data) {
      struct per_client *pc = data;
  
@@ -89,9 +89,9 @@ Index: pulseaudio/src/modules/trust-store/module-trust-store.c
  
 Index: pulseaudio/src/Makefile.am
 ===================================================================
---- pulseaudio.orig/src/Makefile.am	2015-11-30 16:41:22.583564451 +0100
-+++ pulseaudio/src/Makefile.am	2015-11-30 16:41:22.579564380 +0100
-@@ -2133,7 +2133,7 @@
+--- pulseaudio.orig/src/Makefile.am
++++ pulseaudio/src/Makefile.am
+@@ -2138,7 +2138,7 @@ libtruststore_util_la_LIBADD = libpulsec
  libtruststore_util_la_LDFLAGS = -avoid-version
  
  module_trust_store_la_SOURCES = modules/trust-store/module-trust-store.c
