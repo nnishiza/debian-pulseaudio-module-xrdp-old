@@ -29,6 +29,7 @@ pulseaudio (1:8.0-0ubuntu1) UNRELEASED; urgency=medium
     - Add a build/run autopkgtest for libpulse-dev
     - Drop libsoxr-dev build dep, its in universe
   * Refreshed patches, and dropped those that were applied upstream.
+  * Update local shlibs file for 8.0
 
  -- Luke Yelavich <themuso@ubuntu.com>  Tue, 05 Jan 2016 10:04:43 +1100
 
