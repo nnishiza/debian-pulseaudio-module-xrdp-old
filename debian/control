@@ -12,6 +12,7 @@ Build-Depends: debhelper (>= 9),
     check,
     dh-autoreconf,
     dh-exec,
+    dpkg-dev (>= 1.17.14),
     intltool,
     libasound2-dev (>= 1.0.24) [linux-any],
     libasyncns-dev,
@@ -47,7 +48,6 @@ Standards-Version: 3.9.7
 Vcs-Git: https://anonscm.debian.org/git/pkg-pulseaudio/pulseaudio.git
 Vcs-Browser: https://anonscm.debian.org/cgit/pkg-pulseaudio/pulseaudio.git
 Homepage: http://www.pulseaudio.org
-XS-Testsuite: autopkgtest
 
 Package: pulseaudio
 Architecture: any
