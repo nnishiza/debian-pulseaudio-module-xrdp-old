@@ -2,6 +2,7 @@ pulseaudio (8.0-2) UNRELEASED; urgency=medium
 
   * Add patch from upstream to switch back to HDMI when port is back.
     (Closes: #816963)
+  * Bump standards-version (no changes needed)
 
  -- Felipe Sateler <fsateler@debian.org>  Sat, 02 Apr 2016 19:29:18 -0300
 
