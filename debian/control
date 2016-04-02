@@ -5,9 +5,7 @@ Maintainer: Pulseaudio maintenance team <pkg-pulseaudio-devel@lists.alioth.debia
 Uploaders: Sjoerd Simons <sjoerd@debian.org>,
     Balint Reczey <balint@balintreczey.hu>,
     Felipe Sateler <fsateler@debian.org>
-# The following packages can be omitted for bootstrapping (DEB_BUILD_PROFILES=stage1):
-#  libbluetooth-dev
-Build-Depends: debhelper (>= 9),
+Build-Depends: debhelper (>= 9.20141010),
     cdbs (>= 0.4.93),
     check,
     dh-autoreconf,
@@ -18,7 +16,7 @@ Build-Depends: debhelper (>= 9),
     libasyncns-dev,
     libatomic-ops-dev,
     libavahi-client-dev,
-    libbluetooth-dev (>= 4.99) [linux-any],
+    libbluetooth-dev (>= 4.99) [linux-any] <!stage1>,
     libsbc-dev [linux-any],
     libcap-dev [linux-any],
     libfftw3-dev,
@@ -188,6 +186,7 @@ Description: RAOP module for PulseAudio sound server
  This module enables PulseAudio to stream audio to an Apple Airport Express.
 
 Package: pulseaudio-module-bluetooth
+Build-Profiles: <!stage1>
 Architecture: linux-any
 Priority: extra
 Depends: ${shlibs:Depends}, ${misc:Depends}, bluez (>= 5.23)
