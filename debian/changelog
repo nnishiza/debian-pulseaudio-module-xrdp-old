@@ -1,3 +1,9 @@
+pulseaudio (8.0-3) UNRELEASED; urgency=medium
+
+  * Split module-udev-detect into a separate package
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 18 Apr 2016 20:11:27 -0300
+
 pulseaudio (8.0-2) unstable; urgency=medium
 
   * Add patch from upstream to switch back to HDMI when port is back.

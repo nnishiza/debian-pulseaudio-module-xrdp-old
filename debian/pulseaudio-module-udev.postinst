@@ -1,0 +1,33 @@
+#! /bin/sh
+# postinst script for pulseaudio
+
+set -e
+
+# summary of how this script can be called:
+#        * <postinst> `configure' <most-recently-configured-version>
+#        * <old-postinst> `abort-upgrade' <new version>
+#        * <conflictor's-postinst> `abort-remove' `in-favour' <package>
+#          <new-version>
+#        * <deconfigured's-postinst> `abort-deconfigure' `in-favour'
+#          <failed-install-package> <version> `removing'
+#          <conflicting-package> <version>
+# for details, see http://www.debian.org/doc/debian-policy/ or
+# the debian-policy package
+
+trigger_udev() {
+	if ! which udevadm >/dev/null 2>&1 ; then
+		return 0;
+	fi
+	udevadm control --reload-rules || true
+	udevadm trigger --subsystem-match=sound --action=change || true
+}
+
+case "$1" in
+  configure)
+    trigger_udev
+  ;;
+esac
+
+#DEBHELPER#
+
+exit 0

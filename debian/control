@@ -52,12 +52,11 @@ Architecture: any
 Multi-Arch: foreign
 Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   lsb-base (>= 3.2-13),
-  udev (>= 143) [linux-any],
   libasound2-plugins [linux-any],
   libpulse0 (= ${binary:Version}),
   pulseaudio-utils
 Breaks: libltdl3 (<< 1.5.24-1), avahi-daemon (<< 0.6.31-3)
-Recommends: pulseaudio-module-x11, rtkit
+Recommends: pulseaudio-module-x11, rtkit, pulseaudio-module-udev
 Suggests: pavumeter, pavucontrol, paman, paprefs
 Description: PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -123,6 +122,21 @@ Description: PulseAudio ESD compatibility layer
  older versions of complete desktop environments, e.g., GNOME, and
  many useful applications. It enables a PulseAudio sound server to
  fully replace ESD.
+
+Package: pulseaudio-module-udev
+Architecture: linux-any
+Depends: ${shlibs:Depends}, ${misc:Depends}, udev (>= 143)
+Breaks: pulseaudio (<< 8.0-3)
+Replaces: pulseaudio (<< 8.0-3)
+Description: Udev module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This module enables PulseAudio to discover available sinks and sources via
+ udev.
+ .
+ The module is called module-udev-detect.
 
 Package: pulseaudio-module-zeroconf
 Architecture: any
