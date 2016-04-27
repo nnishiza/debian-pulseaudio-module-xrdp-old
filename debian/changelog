@@ -1,9 +1,9 @@
-pulseaudio (1:8.0-0ubuntu4) UNRELEASED; urgency=medium
+pulseaudio (1:8.0-0ubuntu4) yakkety; urgency=medium
 
   * debian/pulseaudio.maintscript: Bump versions for files that need to be
     removed as they are obsolete (LP: #1573296)
 
- -- Luke Yelavich <luke@galactica>  Wed, 27 Apr 2016 13:39:16 +0200
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 27 Apr 2016 14:41:42 +0200
 
 pulseaudio (1:8.0-0ubuntu3) xenial; urgency=medium
 
