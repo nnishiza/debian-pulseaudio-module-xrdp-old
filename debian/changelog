@@ -1,3 +1,14 @@
+pulseaudio (1:8.0-0ubuntu3) xenial; urgency=medium
+
+  * Drop 0023-fixing_snd_mixer_poll_descriptors_count_when_zero.patch 
+    - Upstreamed
+  * 0024-alsa-mixer-Quick-workaround-for-potential-index-out-.patch
+    - Fix a potential index-out-of-bounds when reading multichannel mixers
+  * 0100-switch-on-port-available-Switch-from-HDMI-to-analog-.patch
+    - Improve an 8.0 routing regression 
+
+ -- David Henningsson <david.henningsson@canonical.com>  Mon, 21 Mar 2016 11:14:25 +0100
+
 pulseaudio (1:8.0-0ubuntu2) xenial; urgency=medium
 
   * 0600-droid-sync-with-upstream-for-Android-5-support-and-b.patch:
