@@ -1,3 +1,10 @@
+pulseaudio (1:8.0-0ubuntu3.1) UNRELEASED; urgency=medium
+
+  * debian/pulseaudio.maintscript: Bump versions for files that need to be
+    removed as they are obsolete (LP: #1573296)
+
+ -- Luke Yelavich <luke@galactica>  Wed, 27 Apr 2016 13:39:16 +0200
+
 pulseaudio (1:8.0-0ubuntu3) xenial; urgency=medium
 
   * Drop 0023-fixing_snd_mixer_poll_descriptors_count_when_zero.patch 
