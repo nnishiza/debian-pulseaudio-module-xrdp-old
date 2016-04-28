@@ -1,3 +1,63 @@
+pulseaudio (8.0-2ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge from Debian experimental, remaining changes:
+    - epoch (my stupid fault :S)
+    - Add a module to allow pulseaudio to use the Android audio HAL
+    - Adjust gbp.conf file to point to the ubuntu branch for package builds
+    - Disable module-role-cork by default
+    - Load module-x11-bell in the start-pulseaudio-x11 script
+    - Hide pulseaudio from startup apps dialog
+    - Quit daemon if pid file is removed
+    - Avoid abort when poll descriptor is 0, such as when using it with the
+      audioflinger bridge, like done in ubuntu touch
+    - change default rlimit_rttime value to 200 ms
+    - Don't probe UCM profiles, trust that the profile writer knows what they
+      are doing
+    - Add card hook to allow modules to do something before a profile becomes
+      active
+    - Add an option to the bluez4 discovery module to set the profile
+    - Allow leaving bluetooth transport running while sink and source are
+      suspended.
+    - Add option to module-switch-on-connect to skip abstract devices
+    - Add property to module-device-restore to skip store/restore
+    - Add missing fields for sink_input/source_output info struct to the vala
+      bindings
+    - Add a build/run autopkgtest for libpulse-dev
+    - Drop libsoxr-dev build dep, its in universe
+
+ -- Luke Yelavich <luke@galactica>  Thu, 28 Apr 2016 09:33:45 +0200
+
+pulseaudio (8.0-2) unstable; urgency=medium
+
+  * Add patch from upstream to switch back to HDMI when port is back.
+    (Closes: #816963)
+  * Bump standards-version (no changes needed)
+  * Use canonical Vcs-* urls
+    - Use cgit url for browser
+    - Use https url for git
+  * Drop XS-Testsuite header.
+    - Newer dpkg-dev adds the field automatically
+    - Add versioned Build-Depends for such a version (1.17.14)
+  * Fix Build-Profile stage1 support
+    - Mark libbluetooth-dev dependency as <!stage1>
+    - Mark pulseaudio-module-bluetooth as <!stage1>
+    - Build-depend on new enough debhelper (9.20141010)
+    - Use correct flag --disable-bluez5
+    - Drop manual ignoring of bluetooth packages, debhelper knows to do so
+
+ -- Felipe Sateler <fsateler@debian.org>  Sat, 02 Apr 2016 20:42:36 -0300
+
+pulseaudio (8.0-1) unstable; urgency=medium
+
+  [ Luke Yelavich ]
+  * New upstream release
+  * Update shlibs file
+
+  [ Felipe Sateler ]
+  * Release to unstable
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 27 Jan 2016 20:44:59 -0300
+
 pulseaudio (1:8.0-0ubuntu4) yakkety; urgency=medium
 
   * debian/pulseaudio.maintscript: Bump versions for files that need to be

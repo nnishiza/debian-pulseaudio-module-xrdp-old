@@ -1,13 +1,12 @@
-# Ubuntu/Debian specific config/fixes
+switch-on-port-available:-Switch-from-HDMI-to-analog.patch
+
+# Ubuntu specific config/fixes
 0001-volume-config-changes.patch
 0005-dont-load-cork-music-on-phone.patch
 0006-load-module-x11-bell.patch
 0016-nodisplay-autostart.patch
 0022-inotify-wrapper-Quit-daemon-if-pid-file-is-removed.patch
 0024-alsa-mixer-Quick-workaround-for-potential-index-out-.patch
-
-# Cherry-picked from upstream
-0100-switch-on-port-available-Switch-from-HDMI-to-analog-.patch
 
 # Ubuntu touch stuff
 0202-dont-probe-ucm.patch
