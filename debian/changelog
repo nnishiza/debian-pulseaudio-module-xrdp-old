@@ -1,3 +1,9 @@
+pulseaudio (8.99.1-1) UNRELEASED; urgency=medium
+
+  * New upstream release candidate
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 13 May 2016 20:52:48 -0300
+
 pulseaudio (8.0-3) experimental; urgency=medium
 
   * Split module-udev-detect into a separate package
