@@ -645,7 +645,7 @@ static void handle_add_entry(DBusConnection *conn, DBusMessage *msg, void *userd
         e->channel_map = map;
         e->volume_valid = !!map.channels;
 
-        device_updated = (e->device_valid != !!device[0]) || !pa_streq(e->device, device);
+        device_updated = (e->device_valid != !!device[0]) || !pa_safe_streq(e->device, device);
         pa_xfree(e->device);
         e->device = pa_xstrdup(device);
         e->device_valid = !!device[0];
@@ -757,7 +757,7 @@ static void handle_entry_set_device(DBusConnection *conn, DBusMessage *msg, DBus
 
     pa_assert_se(e = entry_read(de->userdata, de->entry_name));
 
-    updated = (e->device_valid != !!device[0]) || !pa_streq(e->device, device);
+    updated = (e->device_valid != !!device[0]) || !pa_safe_streq(e->device, device);
 
     if (updated) {
         pa_xfree(e->device);
@@ -2341,7 +2341,7 @@ static void clean_up_db(struct userdata *u) {
     PA_LLIST_FOREACH_SAFE(item, next, to_be_converted) {
         pa_log_debug("Upgrading a legacy entry to the current format: %s", item->entry_name);
 
-        pa_assert_se(entry_write(u, item->entry_name, item->entry, true) >= 0);
+        pa_assert_se(entry_write(u, item->entry_name, item->entry, true));
         trigger_save(u);
 
         PA_LLIST_REMOVE(struct clean_up_item, to_be_converted, item);

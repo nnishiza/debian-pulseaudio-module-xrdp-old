@@ -108,6 +108,8 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/ax_check_define.m4 \
 	$(top_srcdir)/m4/ax_check_flag.m4 \
+	$(top_srcdir)/m4/ax_cxx_compile_stdcxx.m4 \
+	$(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
 	$(top_srcdir)/m4/ax_define_dir.m4 \
 	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/ax_tls.m4 \
 	$(top_srcdir)/m4/gettext.m4 $(top_srcdir)/m4/iconv.m4 \
@@ -260,8 +262,10 @@ HAVE_BLUEZ_5 = @HAVE_BLUEZ_5@
 HAVE_BLUEZ_5_NATIVE_HEADSET = @HAVE_BLUEZ_5_NATIVE_HEADSET@
 HAVE_BLUEZ_5_OFONO_HEADSET = @HAVE_BLUEZ_5_OFONO_HEADSET@
 HAVE_COREAUDIO = @HAVE_COREAUDIO@
+HAVE_CXX11 = @HAVE_CXX11@
 HAVE_DBUS = @HAVE_DBUS@
 HAVE_GLIB20 = @HAVE_GLIB20@
+HAVE_MEMFD = @HAVE_MEMFD@
 HAVE_MKFIFO = @HAVE_MKFIFO@
 HAVE_NEON = @HAVE_NEON@
 HAVE_OSS_OUTPUT = @HAVE_OSS_OUTPUT@

@@ -136,7 +136,7 @@ START_TEST (lfe_filter_test) {
     a.format = PA_SAMPLE_S16NE;
 
     lft.ss = &a;
-    pa_assert_se(lft.pool = pa_mempool_new(false, 0));
+    pa_assert_se(lft.pool = pa_mempool_new(PA_MEM_TYPE_PRIVATE, 0, true));
 
     /* We prepare pseudo-random input audio samples for lfe-filter rewind testing*/
     ori_sample_ptr = pa_xmalloc(pa_frame_size(lft.ss) * TOTAL_SAMPLES);
@@ -163,7 +163,7 @@ START_TEST (lfe_filter_test) {
 
     pa_lfe_filter_free(lft.lf);
 
-    pa_mempool_free(lft.pool);
+    pa_mempool_unref(lft.pool);
 
     if (!ret)
         pa_log_debug("lfe-filter-test: tests for both rewind to block boundary and rewind to middle position of a block passed!");
