@@ -44,7 +44,9 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBlocal-server-type=\f1 Please don't use this option if you don't have to! This option is currently only useful when you want D-Bus clients to use a remote server. This option may be removed in future versions. If you only want to run PulseAudio in the system mode, use the \fBsystem-instance\f1 option. This option takes one of \fBuser\f1, \fBsystem\f1 or \fBnone\f1 as the argument. This is essentially a duplicate for the \fBsystem-instance\f1 option. The difference is the \fBnone\f1 option, which is useful when you want to use a remote server with D-Bus clients. If both this and \fBsystem-instance\f1 are defined, this option takes precedence. Defaults to whatever the \fBsystem-instance\f1 is set.
 .TP
-\fBenable-shm=\f1 Enable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fByes\f1. The \fB--disable-shm\f1 command line argument takes precedence.
+\fBenable-shm=\f1 Enable data transfer via POSIX or memfd shared memory. Takes a boolean argument, defaults to \fByes\f1. The \fB--disable-shm\f1 command line argument takes precedence.
+.TP
+\fBenable-memfd=\f1. Enable memfd shared memory. Takes a boolean argument, defaults to \fBno\f1.
 .TP
 \fBshm-size-bytes=\f1 Sets the shared memory segment size for the daemon, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
 .TP

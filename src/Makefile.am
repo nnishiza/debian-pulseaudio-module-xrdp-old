@@ -48,9 +48,10 @@ AM_CPPFLAGS = \
 	-DPA_SRCDIR=\"$(abs_srcdir)\" \
 	-DPA_BUILDDIR=\"$(abs_builddir)\" \
 	-DPULSE_LOCALEDIR=\"$(localedir)\"
-AM_CFLAGS = \
+AM_CFLAGS = -std=gnu11 \
 	$(PTHREAD_CFLAGS)
-AM_CXXFLAGS = $(AM_CFLAGS)
+AM_CXXFLAGS = -std=c++11 \
+	$(PTHREAD_CFLAGS)
 SERVER_CFLAGS = -D__INCLUDED_FROM_PULSE_AUDIO
 
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
@@ -313,11 +314,12 @@ endif
 if HAVE_GLIB20
 TESTS_default += \
 		mainloop-test-glib
-endif
 
 if HAVE_GTK30
+# gtk-test depends on both glib and gtk
 TESTS_norun += \
 		gtk-test
+endif
 endif
 
 if HAVE_ALSA
@@ -682,7 +684,7 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/memblock.c pulsecore/memblock.h \
 		pulsecore/memblockq.c pulsecore/memblockq.h \
 		pulsecore/memchunk.c pulsecore/memchunk.h \
-		pulsecore/native-common.h \
+		pulsecore/native-common.c pulsecore/native-common.h \
 		pulsecore/once.c pulsecore/once.h \
 		pulsecore/packet.c pulsecore/packet.h \
 		pulsecore/parseaddr.c pulsecore/parseaddr.h \
@@ -699,6 +701,7 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
 		pulsecore/refcnt.h \
 		pulsecore/srbchannel.c pulsecore/srbchannel.h \
 		pulsecore/sample-util.c pulsecore/sample-util.h \
+		pulsecore/mem.h \
 		pulsecore/shm.c pulsecore/shm.h \
 		pulsecore/bitset.c pulsecore/bitset.h \
 		pulsecore/socket-client.c pulsecore/socket-client.h \
@@ -726,6 +729,11 @@ endif
 libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(LIBJSON_CFLAGS) $(LIBSNDFILE_CFLAGS)
 libpulsecommon_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBJSON_LIBS)  $(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) $(LIBSNDFILE_LIBS)
+
+if HAVE_MEMFD
+libpulsecommon_@PA_MAJORMINOR@_la_SOURCES += \
+		pulsecore/memfd-wrappers.h
+endif
 
 if HAVE_X11
 libpulsecommon_@PA_MAJORMINOR@_la_SOURCES += \
@@ -1939,7 +1947,8 @@ module_position_event_sounds_la_LIBADD = $(MODULE_LIBADD)
 module_position_event_sounds_la_CFLAGS = $(AM_CFLAGS)
 
 # Ducking effect based on stream roles
-module_role_ducking_la_SOURCES = modules/module-role-ducking.c
+module_role_ducking_la_SOURCES = modules/module-role-ducking.c \
+                                 modules/stream-interaction.c modules/stream-interaction.h
 module_role_ducking_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_role_ducking_la_LIBADD = $(MODULE_LIBADD)
 module_role_ducking_la_CFLAGS = $(AM_CFLAGS)
@@ -1952,7 +1961,8 @@ module_augment_properties_la_LIBADD = $(MODULE_LIBADD)
 module_augment_properties_la_CFLAGS = $(AM_CFLAGS) -DDESKTOPFILEDIR=\"/usr/share/applications\"
 
 # Cork certain streams while others are active (e.g. cork music when phone streams appear)
-module_role_cork_la_SOURCES = modules/module-role-cork.c
+module_role_cork_la_SOURCES = modules/module-role-cork.c \
+                              modules/stream-interaction.c modules/stream-interaction.h
 module_role_cork_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_role_cork_la_LIBADD = $(MODULE_LIBADD)
 module_role_cork_la_CFLAGS = $(AM_CFLAGS)

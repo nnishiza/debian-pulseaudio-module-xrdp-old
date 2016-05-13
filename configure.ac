@@ -40,11 +40,11 @@ AC_SUBST(PA_MINOR, pa_minor)
 AC_SUBST(PA_MAJORMINOR, pa_major.pa_minor)
 
 AC_SUBST(PA_API_VERSION, 12)
-AC_SUBST(PA_PROTOCOL_VERSION, 30)
+AC_SUBST(PA_PROTOCOL_VERSION, 31)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [19:0:19])
+AC_SUBST(LIBPULSE_VERSION_INFO, [20:0:20])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -80,11 +80,11 @@ AC_PROG_LN_S
 # CC
 
 AC_PROG_CC
-AC_PROG_CC_C99
 AM_PROG_CC_C_O
 # Only required if you want the WebRTC canceller -- no runtime dep on
 # libstdc++ otherwise
 AC_PROG_CXX
+AX_CXX_COMPILE_STDCXX_11
 AC_PROG_GCC_TRADITIONAL
 AC_USE_SYSTEM_EXTENSIONS
 
@@ -175,6 +175,11 @@ esac
 
 
 #### Compiler flags ####
+
+AX_CHECK_COMPILE_FLAG([-std=gnu11],
+   [],
+   [AC_MSG_ERROR([*** Compiler does not support -std=gnu11])],
+   [-pedantic -Werror])
 
 AX_APPEND_COMPILE_FLAGS(
     [-Wall -W -Wextra -pipe -Wno-long-long -Wno-overlength-strings -Wunsafe-loop-optimizations -Wundef -Wformat=2 -Wlogical-op -Wsign-compare -Wformat-security -Wmissing-include-dirs -Wformat-nonliteral -Wold-style-definition -Wpointer-arith -Winit-self -Wdeclaration-after-statement -Wfloat-equal -Wmissing-prototypes -Wstrict-prototypes -Wredundant-decls -Wmissing-declarations -Wmissing-noreturn -Wshadow -Wendif-labels -Wcast-align -Wstrict-aliasing -Wwrite-strings -Wno-unused-parameter -ffast-math -fno-common -fdiagnostics-show-option -fdiagnostics-color=auto],
@@ -533,13 +538,9 @@ AC_SEARCH_LIBS([backtrace], [execinfo ubacktrace])
 # Darwin/OS X
 if test "x$os_is_darwin" = "x1" ; then
     AC_MSG_CHECKING([looking for Apple CoreService Framework])
-    # How do I check a framework "library" - AC_CHECK_LIB prob. won't work??, just assign LIBS & hope
-    AC_CHECK_HEADER([/Developer/Headers/FlatCarbon/CoreServices.h],
+    AC_CHECK_HEADER([CoreServices/CoreServices.h],
         [LIBS="$LIBS -framework CoreServices"],
-        [AC_CHECK_HEADERS([/System/Library/Frameworks/CoreServices.framework/Headers/CoreServices.h],
-            [LIBS="$LIBS -framework CoreServices"],
-            [AC_MSG_ERROR([CoreServices.h header file not found])]
-        )]
+        [AC_MSG_ERROR([CoreServices.h header file not found])]
     )
 
     AC_MSG_RESULT([ok])
@@ -606,6 +607,23 @@ AC_DEFINE(HAVE_DLADDR, [1], [Have dladdr?])
 #### [lib]iconv ####
 
 AM_ICONV
+
+#### Linux memfd_create(2) SHM support ####
+
+AC_ARG_ENABLE([memfd],
+    AS_HELP_STRING([--disable-memfd], [Disable Linux memfd shared memory]))
+
+AS_IF([test "x$enable_memfd" != "xno"],
+    AC_CHECK_DECL(SYS_memfd_create, [HAVE_MEMFD=1], [HAVE_MEMFD=0], [#include <sys/syscall.h>]),
+    [HAVE_MEMFD=0])
+
+AS_IF([test "x$enable_memfd" = "xyes" && test "x$HAVE_MEMFD" = "x0"],
+    [AC_MSG_ERROR([*** Your Linux kernel does not support memfd shared memory.
+                  *** Use linux v3.17 or higher for such a feature.])])
+
+AC_SUBST(HAVE_MEMFD)
+AM_CONDITIONAL([HAVE_MEMFD], [test "x$HAVE_MEMFD" = x1])
+AS_IF([test "x$HAVE_MEMFD" = "x1"], AC_DEFINE([HAVE_MEMFD], 1, [Have memfd shared memory.]))
 
 #### X11 (optional) ####
 
@@ -779,6 +797,13 @@ AM_CONDITIONAL([HAVE_OSS_OUTPUT], [test "x$HAVE_OSS_OUTPUT" = "x1"])
 AM_CONDITIONAL([HAVE_OSS_WRAPPER], [test "x$HAVE_OSS_WRAPPER" = "x1"])
 AS_IF([test "x$HAVE_OSS_OUTPUT" = "x1"], AC_DEFINE([HAVE_OSS_OUTPUT], 1, [Have OSS output?]))
 AS_IF([test "x$HAVE_OSS_WRAPPER" = "x1"], AC_DEFINE([HAVE_OSS_WRAPPER], 1, [Have OSS wrapper (padsp)?]))
+
+# Some platforms like SunOS (Illumos) may ship without SOUND_PCM_* functionality
+if test "x$HAVE_OSS" = "x1"; then
+    AC_CHECK_DECLS([SOUND_PCM_READ_RATE], [], [], [[#include <sys/soundcard.h>]])
+    AC_CHECK_DECLS([SOUND_PCM_READ_CHANNELS], [], [], [[#include <sys/soundcard.h>]])
+    AC_CHECK_DECLS([SOUND_PCM_READ_BITS], [], [], [[#include <sys/soundcard.h>]])
+fi
 
 #### CoreAudio support (optional) ####
 
@@ -1368,11 +1393,16 @@ AC_ARG_WITH(mac-version-min,
 
 AC_ARG_WITH(mac-sysroot,
     AS_HELP_STRING([--with-mac-sysroot=<path>], [SDK basedir to use as the logical root directory for headers and libraries.]),
-    mac_sysroot=$withval, mac_sysroot="/Developer/SDKs/MacOSX10.5.sdk")
+    mac_sysroot=$withval)
 
 if test "x$os_is_darwin" = "x1" ; then
-    LDFLAGS="$LDFLAGS -isysroot $mac_sysroot -mmacosx-version-min=$mac_version_min"
-    CFLAGS="$CFLAGS -isysroot $mac_sysroot -mmacosx-version-min=$mac_version_min"
+    LDFLAGS="$LDFLAGS -mmacosx-version-min=$mac_version_min"
+    CFLAGS="$CFLAGS -mmacosx-version-min=$mac_version_min"
+
+    if test "x$mac_sysroot" != "x" ; then
+        LDFLAGS="$LDFLAGS -isysroot $mac_sysroot"
+        CFLAGS="$CFLAGS -isysroot $mac_sysroot"
+    fi
 
     if test "x$enable_mac_universal" = "xyes" ; then
         mac_arches="-arch i386 -arch x86_64"
@@ -1385,7 +1415,7 @@ AC_ARG_ENABLE([webrtc-aec],
     AS_HELP_STRING([--enable-webrtc-aec], [Enable the optional WebRTC-based echo canceller]))
 
 AS_IF([test "x$enable_webrtc_aec" != "xno"],
-    [PKG_CHECK_MODULES(WEBRTC, [ webrtc-audio-processing ], [HAVE_WEBRTC=1], [HAVE_WEBRTC=0])],
+    [PKG_CHECK_MODULES(WEBRTC, [ webrtc-audio-processing >= 0.2 ], [HAVE_WEBRTC=1], [HAVE_WEBRTC=0])],
     [HAVE_WEBRTC=0])
 
 AS_IF([test "x$enable_webrtc_aec" = "xyes" && test "x$HAVE_WEBRTC" = "x0"],
@@ -1532,6 +1562,7 @@ AC_OUTPUT
 
 # ==========================================================================
 
+AS_IF([test "x$HAVE_MEMFD" = "x1"], ENABLE_MEMFD=yes, ENABLE_MEMFD=no)
 AS_IF([test "x$HAVE_X11" = "x1"], ENABLE_X11=yes, ENABLE_X11=no)
 AS_IF([test "x$HAVE_OSS_OUTPUT" = "x1"], ENABLE_OSS_OUTPUT=yes, ENABLE_OSS_OUTPUT=no)
 AS_IF([test "x$HAVE_OSS_WRAPPER" = "x1"], ENABLE_OSS_WRAPPER=yes, ENABLE_OSS_WRAPPER=no)
@@ -1593,6 +1624,7 @@ echo "
     CPPFLAGS:                      ${CPPFLAGS}
     LIBS:                          ${LIBS}
 
+    Enable memfd shared memory:    ${ENABLE_MEMFD}
     Enable X11:                    ${ENABLE_X11}
     Enable OSS Output:             ${ENABLE_OSS_OUTPUT}
     Enable OSS Wrapper:            ${ENABLE_OSS_WRAPPER}

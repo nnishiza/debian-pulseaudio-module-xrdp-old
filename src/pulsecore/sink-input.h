@@ -335,8 +335,6 @@ int pa_sink_input_new(
 void pa_sink_input_put(pa_sink_input *i);
 void pa_sink_input_unlink(pa_sink_input* i);
 
-void pa_sink_input_set_name(pa_sink_input *i, const char *name);
-
 pa_usec_t pa_sink_input_set_requested_latency(pa_sink_input *i, pa_usec_t usec);
 
 /* Request that the specified number of bytes already written out to
@@ -373,6 +371,8 @@ pa_cvolume *pa_sink_input_get_volume(pa_sink_input *i, pa_cvolume *volume, bool 
 
 void pa_sink_input_set_mute(pa_sink_input *i, bool mute, bool save);
 
+void pa_sink_input_set_property(pa_sink_input *i, const char *key, const char *value);
+void pa_sink_input_set_property_arbitrary(pa_sink_input *i, const char *key, const uint8_t *value, size_t nbytes);
 void pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_proplist *p);
 
 pa_resample_method_t pa_sink_input_get_resample_method(pa_sink_input *i);
