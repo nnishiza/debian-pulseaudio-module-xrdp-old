@@ -42,7 +42,7 @@ Build-Depends: debhelper (>= 9.20141010),
     libx11-xcb-dev,
     libxcb1-dev (>= 1.6),
     libxtst-dev
-Standards-Version: 3.9.7
+Standards-Version: 3.9.8
 Vcs-Git: https://anonscm.debian.org/git/pkg-pulseaudio/pulseaudio.git
 Vcs-Browser: https://anonscm.debian.org/cgit/pkg-pulseaudio/pulseaudio.git
 Homepage: http://www.pulseaudio.org
