@@ -3,6 +3,7 @@ pulseaudio (8.99.1-1) UNRELEASED; urgency=medium
   * New upstream release candidate
     - Closes: #813423
     - Drop patches, applied upstream
+  * Bump dependency on libwebrtc-audio-processing to >= 0.2
 
  -- Felipe Sateler <fsateler@debian.org>  Fri, 13 May 2016 20:52:48 -0300
 
