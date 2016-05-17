@@ -1,0 +1,200 @@
+From a430ebc2271f5a07389ee25631a8ba5524371764 Mon Sep 17 00:00:00 2001
+From: Simon Fels <simon.fels@canonical.com>
+Date: Tue, 17 May 2016 17:29:31 +0200
+Subject: [PATCH] modules: add snappy policy module
+
+---
+ configure.ac                       | 18 +++++++-
+ src/Makefile.am                    | 18 ++++++++
+ src/modules/module-snappy-policy.c | 94 ++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 129 insertions(+), 1 deletion(-)
+ create mode 100644 src/modules/module-snappy-policy.c
+
+Index: pa-debian/src/Makefile.am
+===================================================================
+--- pa-debian.orig/src/Makefile.am
++++ pa-debian/src/Makefile.am
+@@ -1216,6 +1216,11 @@ modlibexec_LTLIBRARIES += \
+ 		module-esound-sink.la
+ endif
+ 
++if HAVE_APPARMOR
++modlibexec_LTLIBRARIES += \
++		module-snappy-policy.la
++endif
++
+ # See comment at librtp.la above
+ if !OS_IS_WIN32
+ modlibexec_LTLIBRARIES += \
+@@ -1603,6 +1608,11 @@ SYMDEF_FILES += \
+ 		module-esound-sink-symdef.h
+ endif
+ 
++if HAVE_APPARMOR
++SYMDEF_FILES += \
++		module-snappy-policy-symdef.h
++endif
++
+ EXTRA_DIST += $(SYMDEF_FILES)
+ BUILT_SOURCES += $(SYMDEF_FILES) builddirs
+ 
+@@ -2210,6 +2220,14 @@ module_trust_store_la_LIBADD = $(MODULE_
+ module_trust_store_la_CFLAGS = $(AM_CFLAGS) -DHAVE_TRUST_STORE=1
+ endif
+ 
++# Snappy
++if HAVE_APPARMOR
++module_snappy_policy_la_SOURCES = modules/module-snappy-policy.c
++module_snappy_policy_la_LDFLAGS = $(MODULE_LDFLAGS) -lapparmor
++module_snappy_policy_la_LIBADD = $(MODULE_LIBADD)
++module_snappy_policy_la_CFLAGS = $(AM_CFLAGS) -DHAVE_SNAPPY=1
++endif
++
+ # RTP modules
+ module_rtp_send_la_SOURCES = modules/rtp/module-rtp-send.c
+ module_rtp_send_la_LDFLAGS = $(MODULE_LDFLAGS)
+Index: pa-debian/src/modules/module-snappy-policy.c
+===================================================================
+--- /dev/null
++++ pa-debian/src/modules/module-snappy-policy.c
+@@ -0,0 +1,98 @@
++/***
++    This file is part of PulseAudio.
++
++    Copyright 2016 Canonical Ltd.
++    Written by Simon Fels <simon.fels@canonical.com>
++
++    PulseAudio is free software; you can redistribute it and/or modify
++    it under the terms of the GNU Lesser General Public License as published
++    by the Free Software Foundation; either version 2.1 of the License,
++    or (at your option) any later version.
++
++    PulseAudio is distributed in the hope that it will be useful, but
++    WITHOUT ANY WARRANTY; without even the implied warranty of
++    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
++    General Public License for more details.
++
++    You should have received a copy of the GNU Lesser General Public License
++    along with PulseAudio; if not, see <http://www.gnu.org/licenses/>.
++***/
++
++#ifdef HAVE_CONFIG_H
++#include <config.h>
++#endif
++
++#include <sys/apparmor.h>
++#include <errno.h>
++
++#include <pulsecore/i18n.h>
++#include <pulsecore/core.h>
++#include <pulsecore/module.h>
++#include <pulse/xmalloc.h>
++#include <pulsecore/fdsem.h>
++#include <pulsecore/thread.h>
++#include <pulsecore/core-util.h>
++#include <pulse/mainloop-api.h>
++
++#include "module-snappy-policy-symdef.h"
++
++#define SNAP_LABEL_PREFIX           "snap."
++#define SNAP_LABEL_PREFIX_LENGTH    5
++
++PA_MODULE_AUTHOR("Simon Fels");
++PA_MODULE_DESCRIPTION("Ubuntu Snappy policy management");
++PA_MODULE_VERSION(PACKAGE_VERSION);
++PA_MODULE_LOAD_ONCE(true);
++
++struct userdata {
++    pa_core *core;
++    pa_hook_slot *connect_hook_slot;
++};
++
++static pa_hook_result_t connect_record_hook(pa_core *core, pa_access_data *d, struct userdata *u) {
++    pa_client *client = pa_idxset_get_by_index(u->core->clients, d->client_index);
++    if (!client)
++        return PA_HOOK_OK;
++
++    char *label = NULL;
++    char *mode = NULL;
++    if (aa_gettaskcon(client->creds.pid, &label, &mode) < 0) {
++        pa_log_warn("Failed to retrieve apparmor security label for pid %u: %s",
++                    client->creds.pid, strerror(-errno));
++        return PA_HOOK_OK;
++    }
++
++    pa_hook_result_t decision = PA_HOOK_OK;
++
++    // We only cancel the attempt of the client to start audio recording
++    // when we could successfully determine that the request is coming
++    // from an app which is part of a snap. Otherwise we continue to
++    // work as normal.
++    if (label && strncmp(SNAP_LABEL_PREFIX, label, SNAP_LABEL_PREFIX_LENGTH) == 0)
++        decision = PA_HOOK_CANCEL;
++
++    free(label);
++
++    return decision;
++}
++
++int pa__init(pa_module *m) {
++    struct userdata *u;
++    u = pa_xnew0(struct userdata, 1);
++    u->core = m->core;
++
++    m->userdata = u;
++    u->connect_hook_slot = pa_hook_connect(&m->core->access[PA_ACCESS_HOOK_CONNECT_RECORD],
++        PA_HOOK_NORMAL, (pa_hook_cb_t) connect_record_hook, u);
++
++    return 0;
++}
++
++void pa__done(pa_module *m) {
++    struct userdata *u = m->userdata;
++    if (u) {
++        if (u->connect_hook_slot)
++            pa_hook_slot_free(u->connect_hook_slot);
++        pa_xfree(u);
++    }
++}
+Index: pa-debian/configure.ac
+===================================================================
+--- pa-debian.orig/configure.ac
++++ pa-debian/configure.ac
+@@ -1445,6 +1445,19 @@ AS_IF([test "x$enable_trust_store" = "xy
+ 
+ AM_CONDITIONAL([HAVE_TRUST_STORE], [test "x$HAVE_TRUST_STORE" = "x1"])
+ 
++# Snappy support
++ 
++AC_ARG_ENABLE([snappy],
++    AS_HELP_STRING([--enable-snappy], [Enable snappy support]))
++
++AS_IF([test "x$enable_snappy" != "xno"],
++    [PKG_CHECK_MODULES(APPARMOR, [libapparmor], [HAVE_APPARMOR=1], [HAVE_APPARMOR=0])],
++    [HAVE_APPARMOR=0])
++
++AS_IF([test "x$enable_snappy" = "xyes" && test "x$HAVE_APPARMOR" = "x0"],
++    [AC_MSG_ERROR([*** Apparmor library not found])])
++
++AM_CONDITIONAL([HAVE_APPARMOR], [test "x$HAVE_APPARMOR" = "x1"])
+ 
+ ###################################
+ #            Output               #
+@@ -1624,6 +1637,8 @@ AS_IF([test "x$HAVE_ESOUND" = "x1" -a "x
+ AS_IF([test "x$HAVE_GCOV" = "x1"], ENABLE_GCOV=yes, ENABLE_GCOV=no)
+ AS_IF([test "x$HAVE_LIBCHECK" = "x1"], ENABLE_TESTS=yes, ENABLE_TESTS=no)
+ AS_IF([test "x$enable_legacy_database_entry_format" != "xno"], ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=yes, ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=no)
++AS_IF([test "x$enable_snappy" = "x1"], ENABLE_SNAPPY=yes, ENABLE_SNAPPY=no)
++AS_IF([test "x$HAVE_APPARMOR" = "x1"], ENABLE_APPARMOR=yes, ENABLE_APPARMOR=no)
+ 
+ echo "
+  ---{ $PACKAGE_NAME $VERSION }---
+@@ -1683,6 +1698,8 @@ echo "
+     Enable soxr (resampler):       ${ENABLE_SOXR}
+     Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
+     Enable Ubuntu trust store:     ${ENABLE_TRUST_STORE}
++    Enable Snappy support:         ${ENABLE_SNAPPY}
++    Enable Apparmor:               ${ENABLE_APPARMOR}
+     Enable gcov coverage:          ${ENABLE_GCOV}
+     Enable unit tests:             ${ENABLE_TESTS}
+     Database

@@ -43,3 +43,6 @@ switch-on-port-available:-Switch-from-HDMI-to-analog.patch
 0601-droid-alternative-hw-module-id.patch
 0602-droid-inputstream-config-parameters.pach
 0603-droid-port-priority-and-availability.patch
+
+# Ubuntu Snappy
+0700-modules-add-snappy-policy-module.patch

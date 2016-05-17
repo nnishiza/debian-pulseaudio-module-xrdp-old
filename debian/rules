@@ -30,7 +30,7 @@ DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal-compat \
   --with-zsh-completion-dir=\$${datadir}/zsh/vendor-completions \
   --with-bash-completion-dir=\$${datadir}/bash-completion/completions \
   --with-systemduserunitdir=\$${prefix}/lib/systemd/user \
-  --disable-bluez4
+  --disable-bluez4 --enable-snappy
 
 ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
   DEB_CONFIGURE_EXTRA_FLAGS += --disable-bluez5
