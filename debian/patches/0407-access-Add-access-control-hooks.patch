@@ -16,7 +16,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -641,6 +641,7 @@ commonlib_LTLIBRARIES = \
+@@ -643,6 +643,7 @@ commonlib_LTLIBRARIES = \
  # to the existing libpulse being linked to libpulsecommon). Duplicating the
  # code allows us to prevent this circular linking.
  libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = \
@@ -135,7 +135,7 @@ Index: pulseaudio/src/pulsecore/core.c
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/core.c
 +++ pulseaudio/src/pulsecore/core.c
-@@ -151,6 +151,9 @@ pa_core* pa_core_new(pa_mainloop_api *m,
+@@ -150,6 +150,9 @@ pa_core* pa_core_new(pa_mainloop_api *m,
      for (j = 0; j < PA_CORE_HOOK_MAX; j++)
          pa_hook_init(&c->hooks[j], c);
  
@@ -145,7 +145,7 @@ Index: pulseaudio/src/pulsecore/core.c
      pa_random(&c->cookie, sizeof(c->cookie));
  
  #ifdef SIGPIPE
-@@ -222,6 +225,8 @@ static void core_free(pa_object *o) {
+@@ -219,6 +222,8 @@ static void core_free(pa_object *o) {
  
      for (j = 0; j < PA_CORE_HOOK_MAX; j++)
          pa_hook_done(&c->hooks[j]);
@@ -166,7 +166,7 @@ Index: pulseaudio/src/pulsecore/core.h
  
  typedef enum pa_server_type {
      PA_SERVER_TYPE_UNSET,
-@@ -206,6 +207,8 @@ struct pa_core {
+@@ -211,6 +212,8 @@ struct pa_core {
  
      /* hooks */
      pa_hook hooks[PA_CORE_HOOK_MAX];

@@ -29,7 +29,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -938,6 +938,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES
+@@ -946,6 +946,7 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES
  		pulsecore/core-subscribe.c pulsecore/core-subscribe.h \
  		pulsecore/core.c pulsecore/core.h \
  		pulsecore/hook-list.c pulsecore/hook-list.h \
@@ -81,7 +81,7 @@ Index: pulseaudio/src/daemon/main.c
      int autospawn_fd = -1;
      bool autospawn_locked = false;
  #ifdef HAVE_DBUS
-@@ -1022,6 +1032,9 @@ int main(int argc, char *argv[]) {
+@@ -1024,6 +1034,9 @@ int main(int argc, char *argv[]) {
          goto finish;
      }
  
@@ -91,7 +91,7 @@ Index: pulseaudio/src/daemon/main.c
      c->default_sample_spec = conf->default_sample_spec;
      c->alternate_sample_rate = conf->alternate_sample_rate;
      c->default_channel_map = conf->default_channel_map;
-@@ -1162,6 +1175,9 @@ finish:
+@@ -1164,6 +1177,9 @@ finish:
          pa_autospawn_lock_done(false);
      }
  

@@ -12,11 +12,11 @@ selected for the droid card.
  src/modules/bluetooth/module-bluez5-discover.c | 13 ++++
  2 files changed, 96 insertions(+)
 
-diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
-index 07f88d0..f1e887c 100644
---- a/src/modules/bluetooth/module-bluez5-device.c
-+++ b/src/modules/bluetooth/module-bluez5-device.c
-@@ -73,6 +73,7 @@ PA_MODULE_USAGE("path=<device object path> "
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-device.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+@@ -73,6 +73,7 @@ PA_MODULE_USAGE("path=<device object pat
  #define HSP_MAX_GAIN 15
  
  #define USE_SCO_OVER_PCM(u) (u->profile == PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT && (u->hsp.sco_sink && u->hsp.sco_source))
@@ -34,7 +34,7 @@ index 07f88d0..f1e887c 100644
      pa_bluetooth_discovery *discovery;
      pa_bluetooth_device *device;
      pa_bluetooth_transport *transport;
-@@ -1042,6 +1046,69 @@ static int add_source(struct userdata *u) {
+@@ -1042,6 +1046,69 @@ static int add_source(struct userdata *u
      return 0;
  }
  
@@ -104,7 +104,7 @@ index 07f88d0..f1e887c 100644
  /* Run from IO thread */
  static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offset, pa_memchunk *chunk) {
      struct userdata *u = PA_SINK(o)->userdata;
-@@ -2036,6 +2103,13 @@ static int set_profile_cb(pa_card *c, pa_card_profile *new_profile) {
+@@ -2036,6 +2103,13 @@ static int set_profile_cb(pa_card *c, pa
  
          if (!d->transports[*p] || d->transports[*p]->state <= PA_BLUETOOTH_TRANSPORT_STATE_DISCONNECTED) {
              pa_log_warn("Refused to switch profile to %s: Not connected", new_profile->name);
@@ -118,7 +118,7 @@ index 07f88d0..f1e887c 100644
              return -PA_ERR_IO;
          }
      }
-@@ -2162,6 +2236,7 @@ static int add_card(struct userdata *u) {
+@@ -2162,6 +2236,7 @@ static int add_card(struct userdata *u)
  
      pa_log_debug("Created card (current profile %s)",
                   pa_bluetooth_profile_to_string(u->profile));
@@ -148,10 +148,10 @@ index 07f88d0..f1e887c 100644
      if (u->sbc_info.buffer)
          pa_xfree(u->sbc_info.buffer);
  
-diff --git a/src/modules/bluetooth/module-bluez5-discover.c b/src/modules/bluetooth/module-bluez5-discover.c
-index 831e9e2..1f249cc 100644
---- a/src/modules/bluetooth/module-bluez5-discover.c
-+++ b/src/modules/bluetooth/module-bluez5-discover.c
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-discover.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-discover.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-discover.c
 @@ -38,12 +38,14 @@ PA_MODULE_VERSION(PACKAGE_VERSION);
  PA_MODULE_LOAD_ONCE(true);
  PA_MODULE_USAGE(
@@ -167,7 +167,7 @@ index 831e9e2..1f249cc 100644
      "sco_sink",
      "sco_source",
      NULL
-@@ -78,6 +80,15 @@ static pa_hook_result_t device_connection_changed_cb(pa_bluetooth_discovery *y,
+@@ -78,6 +80,15 @@ static pa_hook_result_t device_connectio
          pa_module *m;
          char *args = pa_sprintf_malloc("path=%s", d->path);
  
@@ -183,7 +183,7 @@ index 831e9e2..1f249cc 100644
          if (pa_modargs_get_value(u->modargs, "sco_sink", NULL) &&
              pa_modargs_get_value(u->modargs, "sco_source", NULL)) {
              char *tmp;
-@@ -88,6 +99,7 @@ static pa_hook_result_t device_connection_changed_cb(pa_bluetooth_discovery *y,
+@@ -88,6 +99,7 @@ static pa_hook_result_t device_connectio
              pa_xfree(args);
              args = tmp;
          }
@@ -191,13 +191,10 @@ index 831e9e2..1f249cc 100644
          pa_log_debug("Loading module-bluez5-device %s", args);
          m = pa_module_load(u->module->core, "module-bluez5-device", args);
          pa_xfree(args);
-@@ -182,5 +194,6 @@ void pa__done(pa_module *m) {
+@@ -183,5 +195,6 @@ void pa__done(pa_module *m) {
  
      if (u->modargs)
          pa_modargs_free(u->modargs);
 +
      pa_xfree(u);
  }
--- 
-2.6.2
-

@@ -10,11 +10,11 @@ Subject: [PATCH] modules: add snappy policy module
  3 files changed, 129 insertions(+), 1 deletion(-)
  create mode 100644 src/modules/module-snappy-policy.c
 
-Index: pa-debian/src/Makefile.am
+Index: pulseaudio/src/Makefile.am
 ===================================================================
---- pa-debian.orig/src/Makefile.am
-+++ pa-debian/src/Makefile.am
-@@ -1216,6 +1216,11 @@ modlibexec_LTLIBRARIES += \
+--- pulseaudio.orig/src/Makefile.am
++++ pulseaudio/src/Makefile.am
+@@ -1224,6 +1224,11 @@ modlibexec_LTLIBRARIES += \
  		module-esound-sink.la
  endif
  
@@ -26,7 +26,7 @@ Index: pa-debian/src/Makefile.am
  # See comment at librtp.la above
  if !OS_IS_WIN32
  modlibexec_LTLIBRARIES += \
-@@ -1603,6 +1608,11 @@ SYMDEF_FILES += \
+@@ -1611,6 +1616,11 @@ SYMDEF_FILES += \
  		module-esound-sink-symdef.h
  endif
  
@@ -38,7 +38,7 @@ Index: pa-debian/src/Makefile.am
  EXTRA_DIST += $(SYMDEF_FILES)
  BUILT_SOURCES += $(SYMDEF_FILES) builddirs
  
-@@ -2210,6 +2220,14 @@ module_trust_store_la_LIBADD = $(MODULE_
+@@ -2220,6 +2230,14 @@ module_trust_store_la_LIBADD = $(MODULE_
  module_trust_store_la_CFLAGS = $(AM_CFLAGS) -DHAVE_TRUST_STORE=1
  endif
  
@@ -53,10 +53,10 @@ Index: pa-debian/src/Makefile.am
  # RTP modules
  module_rtp_send_la_SOURCES = modules/rtp/module-rtp-send.c
  module_rtp_send_la_LDFLAGS = $(MODULE_LDFLAGS)
-Index: pa-debian/src/modules/module-snappy-policy.c
+Index: pulseaudio/src/modules/module-snappy-policy.c
 ===================================================================
 --- /dev/null
-+++ pa-debian/src/modules/module-snappy-policy.c
++++ pulseaudio/src/modules/module-snappy-policy.c
 @@ -0,0 +1,98 @@
 +/***
 +    This file is part of PulseAudio.
@@ -156,16 +156,16 @@ Index: pa-debian/src/modules/module-snappy-policy.c
 +        pa_xfree(u);
 +    }
 +}
-Index: pa-debian/configure.ac
+Index: pulseaudio/configure.ac
 ===================================================================
---- pa-debian.orig/configure.ac
-+++ pa-debian/configure.ac
-@@ -1445,6 +1445,19 @@ AS_IF([test "x$enable_trust_store" = "xy
+--- pulseaudio.orig/configure.ac
++++ pulseaudio/configure.ac
+@@ -1475,6 +1475,19 @@ AS_IF([test "x$enable_trust_store" = "xy
  
  AM_CONDITIONAL([HAVE_TRUST_STORE], [test "x$HAVE_TRUST_STORE" = "x1"])
  
 +# Snappy support
-+ 
++
 +AC_ARG_ENABLE([snappy],
 +    AS_HELP_STRING([--enable-snappy], [Enable snappy support]))
 +
@@ -180,7 +180,7 @@ Index: pa-debian/configure.ac
  
  ###################################
  #            Output               #
-@@ -1624,6 +1637,8 @@ AS_IF([test "x$HAVE_ESOUND" = "x1" -a "x
+@@ -1655,6 +1668,8 @@ AS_IF([test "x$HAVE_ESOUND" = "x1" -a "x
  AS_IF([test "x$HAVE_GCOV" = "x1"], ENABLE_GCOV=yes, ENABLE_GCOV=no)
  AS_IF([test "x$HAVE_LIBCHECK" = "x1"], ENABLE_TESTS=yes, ENABLE_TESTS=no)
  AS_IF([test "x$enable_legacy_database_entry_format" != "xno"], ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=yes, ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=no)
@@ -189,7 +189,7 @@ Index: pa-debian/configure.ac
  
  echo "
   ---{ $PACKAGE_NAME $VERSION }---
-@@ -1683,6 +1698,8 @@ echo "
+@@ -1715,6 +1730,8 @@ echo "
      Enable soxr (resampler):       ${ENABLE_SOXR}
      Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
      Enable Ubuntu trust store:     ${ENABLE_TRUST_STORE}

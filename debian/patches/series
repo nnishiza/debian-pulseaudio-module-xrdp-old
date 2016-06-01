@@ -4,7 +4,6 @@
 0006-load-module-x11-bell.patch
 0016-nodisplay-autostart.patch
 0022-inotify-wrapper-Quit-daemon-if-pid-file-is-removed.patch
-0024-alsa-mixer-Quick-workaround-for-potential-index-out-.patch
 
 # Ubuntu touch stuff
 0202-dont-probe-ucm.patch

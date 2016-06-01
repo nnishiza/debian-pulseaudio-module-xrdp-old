@@ -8,10 +8,10 @@ Subject: [PATCH 502/507] bluetooth: bluez5: bring back SCO over PCM support
  src/modules/bluetooth/module-bluez5-discover.c |  19 +-
  2 files changed, 346 insertions(+), 75 deletions(-)
 
-diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
-index 6ebcda2..999c254 100644
---- a/src/modules/bluetooth/module-bluez5-device.c
-+++ b/src/modules/bluetooth/module-bluez5-device.c
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-device.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-device.c
 @@ -30,6 +30,7 @@
  #include <pulse/rtclock.h>
  #include <pulse/timeval.h>
@@ -29,7 +29,7 @@ index 6ebcda2..999c254 100644
  
  #include "a2dp-codecs.h"
  #include "bluez5-util.h"
-@@ -54,7 +57,9 @@ PA_MODULE_AUTHOR("João Paulo Rechi Vita");
+@@ -54,7 +57,9 @@ PA_MODULE_AUTHOR("João Paulo Rechi Vita
  PA_MODULE_DESCRIPTION("BlueZ 5 Bluetooth audio sink and source");
  PA_MODULE_VERSION(PACKAGE_VERSION);
  PA_MODULE_LOAD_ONCE(false);
@@ -40,7 +40,7 @@ index 6ebcda2..999c254 100644
  
  #define MAX_PLAYBACK_CATCH_UP_USEC (100 * PA_USEC_PER_MSEC)
  #define FIXED_LATENCY_PLAYBACK_A2DP (25 * PA_USEC_PER_MSEC)
-@@ -66,8 +71,11 @@ PA_MODULE_USAGE("path=<device object path>");
+@@ -66,8 +71,11 @@ PA_MODULE_USAGE("path=<device object pat
  #define BITPOOL_DEC_STEP 5
  #define HSP_MAX_GAIN 15
  
@@ -91,7 +91,7 @@ index 6ebcda2..999c254 100644
  };
  
  typedef enum pa_bluetooth_form_factor {
-@@ -712,6 +736,11 @@ static void teardown_stream(struct userdata *u) {
+@@ -712,6 +736,11 @@ static void teardown_stream(struct userd
          u->rtpoll_item = NULL;
      }
  
@@ -103,7 +103,7 @@ index 6ebcda2..999c254 100644
      if (u->stream_fd >= 0) {
          pa_close(u->stream_fd);
          u->stream_fd = -1;
-@@ -733,18 +762,29 @@ static void teardown_stream(struct userdata *u) {
+@@ -733,18 +762,29 @@ static void teardown_stream(struct userd
  static int transport_acquire(struct userdata *u, bool optional) {
      pa_assert(u->transport);
  
@@ -135,7 +135,7 @@ index 6ebcda2..999c254 100644
      return 0;
  }
  
-@@ -766,6 +806,10 @@ static void transport_release(struct userdata *u) {
+@@ -766,6 +806,10 @@ static void transport_release(struct use
  
  /* Run from I/O thread */
  static void transport_config_mtu(struct userdata *u) {
@@ -146,7 +146,7 @@ index 6ebcda2..999c254 100644
      if (u->profile == PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT || u->profile == PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY) {
          u->read_block_size = u->read_link_mtu;
          u->write_block_size = u->write_link_mtu;
-@@ -779,6 +823,9 @@ static void transport_config_mtu(struct userdata *u) {
+@@ -779,6 +823,9 @@ static void transport_config_mtu(struct
              / u->sbc_info.frame_length * u->sbc_info.codesize;
      }
  
@@ -156,7 +156,7 @@ index 6ebcda2..999c254 100644
      if (u->sink) {
          pa_sink_set_max_request_within_thread(u->sink, u->write_block_size);
          pa_sink_set_fixed_latency_within_thread(u->sink,
-@@ -794,7 +841,7 @@ static void transport_config_mtu(struct userdata *u) {
+@@ -794,7 +841,7 @@ static void transport_config_mtu(struct
                                                    pa_bytes_to_usec(u->read_block_size, &u->sample_spec));
  }
  
@@ -165,7 +165,7 @@ index 6ebcda2..999c254 100644
  static void setup_stream(struct userdata *u) {
      struct pollfd *pollfd;
      int one;
-@@ -943,46 +990,52 @@ static int add_source(struct userdata *u) {
+@@ -943,46 +990,52 @@ static int add_source(struct userdata *u
  
      pa_assert(u->transport);
  
@@ -249,7 +249,7 @@ index 6ebcda2..999c254 100644
      return 0;
  }
  
-@@ -1100,52 +1153,67 @@ static int add_sink(struct userdata *u) {
+@@ -1100,52 +1153,67 @@ static int add_sink(struct userdata *u)
  
      pa_assert(u->transport);
  
@@ -348,7 +348,7 @@ index 6ebcda2..999c254 100644
      if (u->profile == PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT || u->profile == PA_BLUETOOTH_PROFILE_HEADSET_AUDIO_GATEWAY) {
          u->sample_spec.format = PA_SAMPLE_S16LE;
          u->sample_spec.channels = 1;
-@@ -1264,11 +1332,18 @@ static int setup_transport(struct userdata *u) {
+@@ -1264,11 +1332,18 @@ static int setup_transport(struct userda
      pa_bluetooth_transport *t;
  
      pa_assert(u);
@@ -368,7 +368,7 @@ index 6ebcda2..999c254 100644
      if (!t || t->state <= PA_BLUETOOTH_TRANSPORT_STATE_DISCONNECTED) {
          pa_log_warn("Profile has no transport");
          return -1;
-@@ -1305,11 +1380,16 @@ static int init_profile(struct userdata *u) {
+@@ -1305,11 +1380,16 @@ static int init_profile(struct userdata
      pa_assert(u);
      pa_assert(u->profile != PA_BLUETOOTH_PROFILE_OFF);
  
@@ -449,7 +449,7 @@ index 6ebcda2..999c254 100644
  /* Run from main thread */
  static int start_thread(struct userdata *u) {
      pa_assert(u);
-@@ -1527,6 +1664,25 @@ static int start_thread(struct userdata *u) {
+@@ -1527,6 +1664,25 @@ static int start_thread(struct userdata
      u->rtpoll = pa_rtpoll_new();
      pa_thread_mq_init(&u->thread_mq, u->core->mainloop, u->rtpoll);
  
@@ -475,7 +475,7 @@ index 6ebcda2..999c254 100644
      if (!(u->thread = pa_thread_new("bluetooth", thread_func, u))) {
          pa_log_error("Failed to create IO thread");
          return -1;
-@@ -1557,10 +1713,10 @@ static int start_thread(struct userdata *u) {
+@@ -1557,10 +1713,10 @@ static int start_thread(struct userdata
  static void stop_thread(struct userdata *u) {
      pa_assert(u);
  
@@ -488,7 +488,7 @@ index 6ebcda2..999c254 100644
          pa_source_unlink(u->source);
  
      if (u->thread) {
-@@ -1582,7 +1738,8 @@ static void stop_thread(struct userdata *u) {
+@@ -1582,7 +1738,8 @@ static void stop_thread(struct userdata
  
      if (u->transport) {
          transport_release(u);
@@ -498,7 +498,7 @@ index 6ebcda2..999c254 100644
      }
  
      if (u->sink) {
-@@ -1840,6 +1997,22 @@ static pa_card_profile *create_card_profile(struct userdata *u, const char *uuid
+@@ -1840,6 +1997,22 @@ static pa_card_profile *create_card_prof
      return cp;
  }
  
@@ -521,7 +521,7 @@ index 6ebcda2..999c254 100644
  /* Run from main thread */
  static int set_profile_cb(pa_card *c, pa_card_profile *new_profile) {
      struct userdata *u;
-@@ -1851,6 +2024,10 @@ static int set_profile_cb(pa_card *c, pa_card_profile *new_profile) {
+@@ -1851,6 +2024,10 @@ static int set_profile_cb(pa_card *c, pa
  
      p = PA_CARD_PROFILE_DATA(new_profile);
  
@@ -532,7 +532,7 @@ index 6ebcda2..999c254 100644
      if (*p != PA_BLUETOOTH_PROFILE_OFF) {
          const pa_bluetooth_device *d = u->device;
  
-@@ -1957,6 +2134,11 @@ static int add_card(struct userdata *u) {
+@@ -1957,6 +2134,11 @@ static int add_card(struct userdata *u)
      p = PA_CARD_PROFILE_DATA(u->card->active_profile);
      u->profile = *p;
  
@@ -544,7 +544,7 @@ index 6ebcda2..999c254 100644
      return 0;
  }
  
-@@ -1966,13 +2148,15 @@ static void handle_transport_state_change(struct userdata *u, struct pa_bluetoot
+@@ -1966,13 +2148,15 @@ static void handle_transport_state_chang
      bool release = false;
      pa_card_profile *cp;
      pa_device_port *port;
@@ -562,7 +562,7 @@ index 6ebcda2..999c254 100644
      pa_card_profile_set_available(cp, transport_state_to_availability(t->state));
  
      /* Update port availability */
-@@ -1983,9 +2167,13 @@ static void handle_transport_state_change(struct userdata *u, struct pa_bluetoot
+@@ -1983,9 +2167,13 @@ static void handle_transport_state_chang
  
      /* Acquire or release transport as needed */
      acquire = (t->state == PA_BLUETOOTH_TRANSPORT_STATE_PLAYING && u->profile == t->profile);
@@ -577,7 +577,7 @@ index 6ebcda2..999c254 100644
          if (u->source) {
              pa_log_debug("Resuming source %s because its transport state changed to playing", u->source->name);
  
-@@ -2013,6 +2201,9 @@ static void handle_transport_state_change(struct userdata *u, struct pa_bluetoot
+@@ -2013,6 +2201,9 @@ static void handle_transport_state_chang
           * BlueZ should probably release the transport automatically, and in
           * that case we would just mark the transport as released */
  
@@ -587,7 +587,7 @@ index 6ebcda2..999c254 100644
          /* Remote side closed the stream so we consider it PA_SUSPEND_USER */
          if (u->source) {
              pa_log_debug("Suspending source %s because the remote end closed the stream", u->source->name);
-@@ -2045,6 +2236,10 @@ static pa_hook_result_t transport_state_changed_cb(pa_bluetooth_discovery *y, pa
+@@ -2045,6 +2236,10 @@ static pa_hook_result_t transport_state_
      pa_assert(t);
      pa_assert(u);
  
@@ -598,7 +598,7 @@ index 6ebcda2..999c254 100644
      if (t == u->transport && t->state <= PA_BLUETOOTH_TRANSPORT_STATE_DISCONNECTED)
          pa_assert_se(pa_card_set_profile(u->card, pa_hashmap_get(u->card->profiles, "off"), false) >= 0);
  
-@@ -2102,6 +2297,36 @@ static pa_hook_result_t transport_microphone_gain_changed_cb(pa_bluetooth_discov
+@@ -2102,6 +2297,36 @@ static pa_hook_result_t transport_microp
      return PA_HOOK_OK;
  }
  
@@ -707,10 +707,10 @@ index 6ebcda2..999c254 100644
      pa_xfree(u);
  }
  
-diff --git a/src/modules/bluetooth/module-bluez5-discover.c b/src/modules/bluetooth/module-bluez5-discover.c
-index 1ccc1d1..40ce562 100644
---- a/src/modules/bluetooth/module-bluez5-discover.c
-+++ b/src/modules/bluetooth/module-bluez5-discover.c
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-discover.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-discover.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-discover.c
 @@ -38,15 +38,20 @@ PA_MODULE_VERSION(PACKAGE_VERSION);
  PA_MODULE_LOAD_ONCE(true);
  PA_MODULE_USAGE(
@@ -732,7 +732,7 @@ index 1ccc1d1..40ce562 100644
      pa_core *core;
      pa_hashmap *loaded_device_paths;
      pa_hook_slot *device_connection_changed_slot;
-@@ -73,6 +78,16 @@ static pa_hook_result_t device_connection_changed_cb(pa_bluetooth_discovery *y,
+@@ -73,6 +78,16 @@ static pa_hook_result_t device_connectio
          pa_module *m;
          char *args = pa_sprintf_malloc("path=%s", d->path);
  
@@ -765,7 +765,7 @@ index 1ccc1d1..40ce562 100644
      return 0;
  
  fail:
-@@ -159,5 +174,7 @@ void pa__done(pa_module *m) {
+@@ -160,5 +175,7 @@ void pa__done(pa_module *m) {
      if (u->loaded_device_paths)
          pa_hashmap_free(u->loaded_device_paths);
  
@@ -773,6 +773,3 @@ index 1ccc1d1..40ce562 100644
 +        pa_modargs_free(u->modargs);
      pa_xfree(u);
  }
--- 
-2.6.2
-

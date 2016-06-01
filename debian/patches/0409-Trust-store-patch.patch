@@ -17,7 +17,6 @@ Signed-off-by: David Henningsson <david.henningsson@canonical.com>
  src/pulsecore/iochannel.c                    |   2 +
  src/pulsecore/protocol-native.c              |  13 ++
  src/pulsecore/tagstruct.c                    |   1 +
- src/tests/connect-stress.c                   |   4 +-
  12 files changed, 399 insertions(+), 7 deletions(-)
  create mode 100644 src/modules/trust-store/module-trust-store.c
  create mode 100644 src/modules/trust-store/truststore.cc
@@ -27,7 +26,7 @@ Index: pulseaudio/configure.ac
 ===================================================================
 --- pulseaudio.orig/configure.ac
 +++ pulseaudio/configure.ac
-@@ -1414,6 +1414,19 @@ AS_IF([test "x$enable_adrian_aec" != "xn
+@@ -1444,6 +1444,19 @@ AS_IF([test "x$enable_adrian_aec" != "xn
      [HAVE_ADRIAN_EC=1])
  AM_CONDITIONAL([HAVE_ADRIAN_EC], [test "x$HAVE_ADRIAN_EC" = "x1"])
  
@@ -47,7 +46,7 @@ Index: pulseaudio/configure.ac
  
  
  ###################################
-@@ -1583,6 +1596,7 @@ AS_IF([test "x$HAVE_ADRIAN_EC" = "x1"],
+@@ -1614,6 +1627,7 @@ AS_IF([test "x$HAVE_ADRIAN_EC" = "x1"],
  AS_IF([test "x$HAVE_SPEEX" = "x1"], ENABLE_SPEEX=yes, ENABLE_SPEEX=no)
  AS_IF([test "x$HAVE_SOXR" = "x1"], ENABLE_SOXR=yes, ENABLE_SOXR=no)
  AS_IF([test "x$HAVE_WEBRTC" = "x1"], ENABLE_WEBRTC=yes, ENABLE_WEBRTC=no)
@@ -55,7 +54,7 @@ Index: pulseaudio/configure.ac
  AS_IF([test "x$HAVE_TDB" = "x1"], ENABLE_TDB=yes, ENABLE_TDB=no)
  AS_IF([test "x$HAVE_GDBM" = "x1"], ENABLE_GDBM=yes, ENABLE_GDBM=no)
  AS_IF([test "x$HAVE_SIMPLEDB" = "x1"], ENABLE_SIMPLEDB=yes, ENABLE_SIMPLEDB=no)
-@@ -1647,6 +1661,7 @@ echo "
+@@ -1679,6 +1693,7 @@ echo "
      Enable speex (resampler, AEC): ${ENABLE_SPEEX}
      Enable soxr (resampler):       ${ENABLE_SOXR}
      Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
@@ -67,7 +66,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -1077,6 +1077,10 @@ if HAVE_WEBRTC
+@@ -1085,6 +1085,10 @@ if HAVE_WEBRTC
  modlibexec_LTLIBRARIES += libwebrtc-util.la
  endif
  
@@ -78,7 +77,7 @@ Index: pulseaudio/src/Makefile.am
  if HAVE_ESOUND
  modlibexec_LTLIBRARIES += \
  		libprotocol-esound.la
-@@ -1201,6 +1205,11 @@ modlibexec_LTLIBRARIES += \
+@@ -1209,6 +1213,11 @@ modlibexec_LTLIBRARIES += \
  		module-filter-heuristics.la \
  		module-role-ducking.la
  
@@ -90,7 +89,7 @@ Index: pulseaudio/src/Makefile.am
  if HAVE_ESOUND
  modlibexec_LTLIBRARIES += \
  		module-esound-protocol-tcp.la \
-@@ -1527,6 +1536,7 @@ SYMDEF_FILES = \
+@@ -1535,6 +1544,7 @@ SYMDEF_FILES = \
  		module-intended-roles-symdef.h \
  		module-suspend-on-idle-symdef.h \
  		module-echo-cancel-symdef.h \
@@ -98,7 +97,7 @@ Index: pulseaudio/src/Makefile.am
  		module-hal-detect-symdef.h \
  		module-udev-detect-symdef.h \
  		module-systemd-login-symdef.h \
-@@ -2119,6 +2129,20 @@ module_echo_cancel_la_CFLAGS += -DHAVE_W
+@@ -2129,6 +2139,20 @@ module_echo_cancel_la_CFLAGS += -DHAVE_W
  module_echo_cancel_la_LIBADD += libwebrtc-util.la
  endif
  
@@ -535,7 +534,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/protocol-native.c
 +++ pulseaudio/src/pulsecore/protocol-native.c
-@@ -2814,6 +2814,13 @@ static void command_auth(pa_pdispatch *p
+@@ -2866,6 +2866,13 @@ static void command_auth(pa_pdispatch *p
              do_shm = false;
  
  #ifdef HAVE_CREDS
@@ -549,7 +548,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      if (do_shm) {
          /* Only enable SHM if both sides are owned by the same
           * user. This is a security measure because otherwise data
-@@ -5623,6 +5630,7 @@ typedef struct pa_protocol_native_access
+@@ -5715,6 +5722,7 @@ typedef struct pa_protocol_native_access
  } pa_protocol_native_access_data;
  
  static void check_access_finish_cb(pa_access_data *data, bool res) {
@@ -557,7 +556,7 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      pa_protocol_native_access_data *d = (pa_protocol_native_access_data *) data;
      pa_native_connection *c = PA_NATIVE_CONNECTION(d->userdata);
  
-@@ -5631,6 +5639,11 @@ static void check_access_finish_cb(pa_ac
+@@ -5723,6 +5731,11 @@ static void check_access_finish_cb(pa_ac
          goto finish;
      }
  
@@ -569,28 +568,6 @@ Index: pulseaudio/src/pulsecore/protocol-native.c
      /* call the dispatcher again, hopefully this time, the access check will
       * fail or succeed immediately */
      command_table[d->command](d->pd, d->command, d->tag, d->tc, d->userdata);
-Index: pulseaudio/src/tests/connect-stress.c
-===================================================================
---- pulseaudio.orig/src/tests/connect-stress.c
-+++ pulseaudio/src/tests/connect-stress.c
-@@ -63,7 +63,7 @@ static const pa_sample_spec sample_spec
- 
- static void context_state_callback(pa_context *c, void *userdata);
- 
--static void connect(const char *name, int *try) {
-+static void connect2(const char *name, int *try) {
-     int ret;
-     pa_mainloop_api *api;
- 
-@@ -201,7 +201,7 @@ START_TEST (connect_stress_test) {
-         streams[i] = NULL;
- 
-     for (i = 0; i < NTESTS; i++) {
--        connect(bname, &i);
-+        connect2(bname, &i);
-         usleep(rand() % 500000);
-         disconnect();
-         usleep(rand() % 500000);
 Index: pulseaudio/po/POTFILES.in
 ===================================================================
 --- pulseaudio.orig/po/POTFILES.in

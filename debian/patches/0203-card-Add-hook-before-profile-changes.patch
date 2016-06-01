@@ -14,7 +14,7 @@ Index: pulseaudio/src/pulsecore/card.c
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/card.c
 +++ pulseaudio/src/pulsecore/card.c
-@@ -291,6 +291,8 @@ int pa_card_set_profile(pa_card *c, pa_c
+@@ -303,6 +303,8 @@ int pa_card_set_profile(pa_card *c, pa_c
          return 0;
      }
  
@@ -27,11 +27,11 @@ Index: pulseaudio/src/pulsecore/core.h
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/core.h
 +++ pulseaudio/src/pulsecore/core.h
-@@ -121,6 +121,7 @@ typedef enum pa_core_hook {
-     PA_CORE_HOOK_CARD_PUT,
+@@ -122,6 +122,7 @@ typedef enum pa_core_hook {
      PA_CORE_HOOK_CARD_UNLINK,
+     PA_CORE_HOOK_CARD_PREFERRED_PORT_CHANGED,
      PA_CORE_HOOK_CARD_PROFILE_CHANGED,
 +    PA_CORE_HOOK_CARD_PROFILE_CHANGING,
      PA_CORE_HOOK_CARD_PROFILE_ADDED,
      PA_CORE_HOOK_CARD_PROFILE_AVAILABLE_CHANGED,
-     PA_CORE_HOOK_PORT_AVAILABLE_CHANGED,
+     PA_CORE_HOOK_CARD_SUSPEND_CHANGED,
