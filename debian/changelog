@@ -1,3 +1,50 @@
+pulseaudio (1:8.99.1-1ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge with experimental pulseaudio package:
+    - epoch (my stupid fault :S)
+    - Add a module to allow pulseaudio to use the Android audio HAL
+    - Adjust gbp.conf file to point to the ubuntu branch for package builds
+    - Disable module-role-cork by default
+    - Load module-x11-bell in the start-pulseaudio-x11 script
+    - Hide pulseaudio from startup apps dialog
+    - Quit daemon if pid file is removed
+    - Avoid abort when poll descriptor is 0, such as when using it with the
+      audioflinger bridge, like done in ubuntu touch
+    - change default rlimit_rttime value to 200 ms
+    - Don't probe UCM profiles, trust that the profile writer knows what they
+      are doing
+    - Add card hook to allow modules to do something before a profile becomes
+      active
+    - Add an option to the bluez discovery module to set the profile
+    - Allow leaving bluetooth transport running while sink and source are
+      suspended.
+    - Add option to module-switch-on-connect to skip abstract devices
+    - Add property to module-device-restore to skip store/restore
+    - Add missing fields for sink_input/source_output info struct to the vala
+      bindings
+    - Add a build/run autopkgtest for libpulse-dev
+    - Drop libsoxr-dev build dep, its in universe
+    - Add support for the trust-store
+    - Add snappy support, preventing snap apps from recording audio, full
+      support via trust-store is planned
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 01 Jun 2016 12:21:21 +1000
+
+pulseaudio (8.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+    - Closes: #813423
+    - Drop patches, applied upstream
+  * Bump dependency on libwebrtc-audio-processing to >= 0.2
+
+ -- Felipe Sateler <fsateler@debian.org>  Sat, 14 May 2016 15:16:09 -0300
+
+pulseaudio (8.0-3) experimental; urgency=medium
+
+  * Split module-udev-detect into a separate package
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 21 Apr 2016 23:59:41 -0300
+
 pulseaudio (1:8.0-2ubuntu2) yakkety; urgency=medium
 
   [ Simon Fels ]

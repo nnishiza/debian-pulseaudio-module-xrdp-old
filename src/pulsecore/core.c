@@ -61,22 +61,25 @@ static int core_process_msg(pa_msgobject *o, int code, void *userdata, int64_t o
 
 static void core_free(pa_object *o);
 
-pa_core* pa_core_new(pa_mainloop_api *m, bool shared, size_t shm_size) {
+pa_core* pa_core_new(pa_mainloop_api *m, bool shared, bool enable_memfd, size_t shm_size) {
     pa_core* c;
     pa_mempool *pool;
+    pa_mem_type_t type;
     int j;
 
     pa_assert(m);
 
     if (shared) {
-        if (!(pool = pa_mempool_new(shared, shm_size))) {
-            pa_log_warn("Failed to allocate shared memory pool. Falling back to a normal memory pool.");
+        type = (enable_memfd) ? PA_MEM_TYPE_SHARED_MEMFD : PA_MEM_TYPE_SHARED_POSIX;
+        if (!(pool = pa_mempool_new(type, shm_size, false))) {
+            pa_log_warn("Failed to allocate %s memory pool. Falling back to a normal memory pool.",
+                        pa_mem_type_to_string(type));
             shared = false;
         }
     }
 
     if (!shared) {
-        if (!(pool = pa_mempool_new(shared, shm_size))) {
+        if (!(pool = pa_mempool_new(PA_MEM_TYPE_PRIVATE, shm_size, false))) {
             pa_log("pa_mempool_new() failed.");
             return NULL;
         }
@@ -123,12 +126,8 @@ pa_core* pa_core_new(pa_mainloop_api *m, bool shared, size_t shm_size) {
     c->subscription_event_last = NULL;
 
     c->mempool = pool;
+    c->shm_size = shm_size;
     pa_silence_cache_init(&c->silence_cache);
-
-    if (shared && !(c->rw_mempool = pa_mempool_new(shared, shm_size)))
-        pa_log_warn("Failed to allocate shared writable memory pool.");
-    if (c->rw_mempool)
-        pa_mempool_set_is_remote_writable(c->rw_mempool, true);
 
     c->exit_event = NULL;
     c->scache_auto_unload_event = NULL;
@@ -216,9 +215,7 @@ static void core_free(pa_object *o) {
     pa_assert(!c->default_sink);
 
     pa_silence_cache_done(&c->silence_cache);
-    if (c->rw_mempool)
-        pa_mempool_free(c->rw_mempool);
-    pa_mempool_free(c->mempool);
+    pa_mempool_unref(c->mempool);
 
     for (j = 0; j < PA_CORE_HOOK_MAX; j++)
         pa_hook_done(&c->hooks[j]);
@@ -283,9 +280,6 @@ void pa_core_maybe_vacuum(pa_core *c) {
     }
 
     pa_mempool_vacuum(c->mempool);
-
-    if (c->rw_mempool)
-        pa_mempool_vacuum(c->rw_mempool);
 }
 
 pa_time_event* pa_core_rttime_new(pa_core *c, pa_usec_t usec, pa_time_event_cb_t cb, void *userdata) {

@@ -16,14 +16,6 @@ set -e
 
 PULSEAUDIO=/usr/bin/pulseaudio
 
-trigger_udev() {
-	if ! which udevadm >/dev/null 2>&1 ; then
-		return 0;
-	fi
-	udevadm control --reload-rules || true
-	udevadm trigger --subsystem-match=sound --action=change || true
-}
-
 case "$1" in
   configure)
     if ! getent passwd pulse >/dev/null; then
@@ -35,7 +27,6 @@ case "$1" in
     if ! getent group pulse-access >/dev/null; then
       addgroup --quiet --system pulse-access
     fi
-    trigger_udev
   ;;
   abort-upgrade|abort-remove|abort-deconfigure)
   ;;

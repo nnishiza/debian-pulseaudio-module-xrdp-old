@@ -171,8 +171,10 @@ bin_PROGRAMS = pulseaudio$(EXEEXT) pacat$(EXEEXT) pactl$(EXEEXT) \
 @HAVE_GLIB20_TRUE@am__append_21 = \
 @HAVE_GLIB20_TRUE@		mainloop-test-glib
 
-@HAVE_GTK30_TRUE@am__append_22 = \
-@HAVE_GTK30_TRUE@		gtk-test
+
+# gtk-test depends on both glib and gtk
+@HAVE_GLIB20_TRUE@@HAVE_GTK30_TRUE@am__append_22 = \
+@HAVE_GLIB20_TRUE@@HAVE_GTK30_TRUE@		gtk-test
 
 @HAVE_ALSA_TRUE@am__append_23 = \
 @HAVE_ALSA_TRUE@		alsa-time-test
@@ -193,214 +195,217 @@ bin_PROGRAMS = pulseaudio$(EXEEXT) pacat$(EXEEXT) pactl$(EXEEXT) \
 @OS_IS_WIN32_TRUE@		pulsecore/winerrno.h
 
 @OS_IS_WIN32_FALSE@am__append_26 = pulsecore/poll-posix.c pulsecore/poll.h
-@HAVE_X11_TRUE@am__append_27 = \
+@HAVE_MEMFD_TRUE@am__append_27 = \
+@HAVE_MEMFD_TRUE@		pulsecore/memfd-wrappers.h
+
+@HAVE_X11_TRUE@am__append_28 = \
 @HAVE_X11_TRUE@		pulse/client-conf-x11.c pulse/client-conf-x11.h \
 @HAVE_X11_TRUE@		pulsecore/x11prop.c pulsecore/x11prop.h
 
-@HAVE_X11_TRUE@am__append_28 = $(X11_CFLAGS)
-@HAVE_X11_TRUE@am__append_29 = $(X11_LIBS)
-@HAVE_SYSTEMD_DAEMON_TRUE@am__append_30 = $(SYSTEMD_FLAGS) $(SYSTEMDDAEMON_FLAGS)
-@HAVE_SYSTEMD_DAEMON_TRUE@am__append_31 = $(SYSTEMD_LIBS) $(SYSTEMDDAEMON_LIBS)
-@HAVE_SYSTEMD_JOURNAL_TRUE@am__append_32 = $(SYSTEMD_FLAGS) $(SYSTEMDJOURNAL_FLAGS)
-@HAVE_SYSTEMD_JOURNAL_TRUE@am__append_33 = $(SYSTEMD_LIBS) $(SYSTEMDJOURNAL_LIBS)
-@OS_IS_WIN32_TRUE@am__append_34 = \
+@HAVE_X11_TRUE@am__append_29 = $(X11_CFLAGS)
+@HAVE_X11_TRUE@am__append_30 = $(X11_LIBS)
+@HAVE_SYSTEMD_DAEMON_TRUE@am__append_31 = $(SYSTEMD_FLAGS) $(SYSTEMDDAEMON_FLAGS)
+@HAVE_SYSTEMD_DAEMON_TRUE@am__append_32 = $(SYSTEMD_LIBS) $(SYSTEMDDAEMON_LIBS)
+@HAVE_SYSTEMD_JOURNAL_TRUE@am__append_33 = $(SYSTEMD_FLAGS) $(SYSTEMDJOURNAL_FLAGS)
+@HAVE_SYSTEMD_JOURNAL_TRUE@am__append_34 = $(SYSTEMD_LIBS) $(SYSTEMDJOURNAL_LIBS)
+@OS_IS_WIN32_TRUE@am__append_35 = \
 @OS_IS_WIN32_TRUE@		pulsecore/mutex-win32.c pulsecore/mutex.h \
 @OS_IS_WIN32_TRUE@		pulsecore/thread-win32.c pulsecore/thread.h \
 @OS_IS_WIN32_TRUE@		pulsecore/semaphore-win32.c pulsecore/semaphore.h
 
-@OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@am__append_35 = \
+@OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@am__append_36 = \
 @OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@		pulsecore/mutex-posix.c pulsecore/mutex.h \
 @OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@		pulsecore/thread-posix.c pulsecore/thread.h \
 @OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@		pulsecore/semaphore-osx.c pulsecore/semaphore.h
 
-@OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@am__append_36 = "-I/Developer/Headers/FlatCarbon/"
+@OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@am__append_37 = "-I/Developer/Headers/FlatCarbon/"
 #libpulsecommon_@PA_MAJORMINOR@_la_LDFLAGS += "-framework CoreServices"
-@OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@am__append_37 = \
+@OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@am__append_38 = \
 @OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@		pulsecore/mutex-posix.c pulsecore/mutex.h \
 @OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@		pulsecore/thread-posix.c pulsecore/thread.h \
 @OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@		pulsecore/semaphore-posix.c pulsecore/semaphore.h
 
-@HAVE_LIBASYNCNS_TRUE@am__append_38 = $(LIBASYNCNS_CFLAGS)
-@HAVE_LIBASYNCNS_TRUE@am__append_39 = $(LIBASYNCNS_LIBS)
-@OS_IS_WIN32_TRUE@am__append_40 = pulsecore/dllmain.c
-@HAVE_DBUS_TRUE@am__append_41 = \
+@HAVE_LIBASYNCNS_TRUE@am__append_39 = $(LIBASYNCNS_CFLAGS)
+@HAVE_LIBASYNCNS_TRUE@am__append_40 = $(LIBASYNCNS_LIBS)
+@OS_IS_WIN32_TRUE@am__append_41 = pulsecore/dllmain.c
+@HAVE_DBUS_TRUE@am__append_42 = \
 @HAVE_DBUS_TRUE@		pulsecore/dbus-util.c pulsecore/dbus-util.h \
 @HAVE_DBUS_TRUE@		pulsecore/rtkit.c pulsecore/rtkit.h
 
-@HAVE_DBUS_TRUE@am__append_42 = $(DBUS_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_43 = $(DBUS_LIBS)
-@HAVE_GLIB20_TRUE@am__append_44 = \
+@HAVE_DBUS_TRUE@am__append_43 = $(DBUS_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_44 = $(DBUS_LIBS)
+@HAVE_GLIB20_TRUE@am__append_45 = \
 @HAVE_GLIB20_TRUE@		pulse/glib-mainloop.h
 
-@HAVE_GLIB20_TRUE@am__append_45 = \
+@HAVE_GLIB20_TRUE@am__append_46 = \
 @HAVE_GLIB20_TRUE@		libpulse-mainloop-glib.la
 
-@HAVE_DBUS_TRUE@am__append_46 = $(DBUS_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_47 = $(DBUS_LIBS)
-@HAVE_OSS_WRAPPER_TRUE@am__append_48 = padsp
+@HAVE_DBUS_TRUE@am__append_47 = $(DBUS_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_48 = $(DBUS_LIBS)
 @HAVE_OSS_WRAPPER_TRUE@am__append_49 = padsp
-@HAVE_NEON_TRUE@am__append_50 = libpulsecore_sconv_neon.la libpulsecore_mix_neon.la libpulsecore_remap_neon.la
+@HAVE_OSS_WRAPPER_TRUE@am__append_50 = padsp
 @HAVE_NEON_TRUE@am__append_51 = libpulsecore_sconv_neon.la libpulsecore_mix_neon.la libpulsecore_remap_neon.la
-@HAVE_ORC_TRUE@am__append_52 = pulsecore/svolume_orc.c
-@HAVE_ORC_TRUE@am__append_53 = $(ORC_CFLAGS)
-@HAVE_ORC_TRUE@am__append_54 = $(ORC_LIBS)
-@HAVE_X11_TRUE@am__append_55 = pulsecore/x11wrap.c pulsecore/x11wrap.h
-@HAVE_X11_TRUE@am__append_56 = $(X11_CFLAGS)
-@HAVE_X11_TRUE@am__append_57 = $(X11_LIBS)
-@HAVE_DBUS_TRUE@am__append_58 = \
+@HAVE_NEON_TRUE@am__append_52 = libpulsecore_sconv_neon.la libpulsecore_mix_neon.la libpulsecore_remap_neon.la
+@HAVE_ORC_TRUE@am__append_53 = pulsecore/svolume_orc.c
+@HAVE_ORC_TRUE@am__append_54 = $(ORC_CFLAGS)
+@HAVE_ORC_TRUE@am__append_55 = $(ORC_LIBS)
+@HAVE_X11_TRUE@am__append_56 = pulsecore/x11wrap.c pulsecore/x11wrap.h
+@HAVE_X11_TRUE@am__append_57 = $(X11_CFLAGS)
+@HAVE_X11_TRUE@am__append_58 = $(X11_LIBS)
+@HAVE_DBUS_TRUE@am__append_59 = \
 @HAVE_DBUS_TRUE@		pulsecore/dbus-shared.c pulsecore/dbus-shared.h \
 @HAVE_DBUS_TRUE@		pulsecore/protocol-dbus.c pulsecore/protocol-dbus.h
 
-@HAVE_DBUS_TRUE@am__append_59 = $(DBUS_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_60 = $(DBUS_LIBS)
-@HAVE_GDBM_TRUE@am__append_61 = pulsecore/database-gdbm.c
-@HAVE_GDBM_TRUE@am__append_62 = $(GDBM_CFLAGS)
-@HAVE_GDBM_TRUE@am__append_63 = $(GDBM_LIBS)
-@HAVE_TDB_TRUE@am__append_64 = pulsecore/database-tdb.c
-@HAVE_TDB_TRUE@am__append_65 = $(TDB_CFLAGS)
-@HAVE_TDB_TRUE@am__append_66 = $(TDB_LIBS)
-@HAVE_SIMPLEDB_TRUE@am__append_67 = pulsecore/database-simple.c
-@HAVE_SPEEX_TRUE@am__append_68 = pulsecore/resampler/speex.c
-@HAVE_SPEEX_TRUE@am__append_69 = $(LIBSPEEX_CFLAGS)
-@HAVE_SPEEX_TRUE@am__append_70 = $(LIBSPEEX_LIBS)
-@HAVE_SOXR_TRUE@am__append_71 = pulsecore/resampler/soxr.c
-@HAVE_SOXR_TRUE@am__append_72 = $(LIBSOXR_CFLAGS)
-@HAVE_SOXR_TRUE@am__append_73 = $(LIBSOXR_LIBS)
-@HAVE_LIBSAMPLERATE_TRUE@am__append_74 = pulsecore/resampler/libsamplerate.c
-@HAVE_LIBSAMPLERATE_TRUE@am__append_75 = $(LIBSAMPLERATE_CFLAGS)
-@HAVE_LIBSAMPLERATE_TRUE@am__append_76 = $(LIBSAMPLERATE_LIBS)
-@HAVE_WEBRTC_TRUE@am__append_77 = libwebrtc-util.la
-@HAVE_ESOUND_TRUE@am__append_78 = \
+@HAVE_DBUS_TRUE@am__append_60 = $(DBUS_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_61 = $(DBUS_LIBS)
+@HAVE_GDBM_TRUE@am__append_62 = pulsecore/database-gdbm.c
+@HAVE_GDBM_TRUE@am__append_63 = $(GDBM_CFLAGS)
+@HAVE_GDBM_TRUE@am__append_64 = $(GDBM_LIBS)
+@HAVE_TDB_TRUE@am__append_65 = pulsecore/database-tdb.c
+@HAVE_TDB_TRUE@am__append_66 = $(TDB_CFLAGS)
+@HAVE_TDB_TRUE@am__append_67 = $(TDB_LIBS)
+@HAVE_SIMPLEDB_TRUE@am__append_68 = pulsecore/database-simple.c
+@HAVE_SPEEX_TRUE@am__append_69 = pulsecore/resampler/speex.c
+@HAVE_SPEEX_TRUE@am__append_70 = $(LIBSPEEX_CFLAGS)
+@HAVE_SPEEX_TRUE@am__append_71 = $(LIBSPEEX_LIBS)
+@HAVE_SOXR_TRUE@am__append_72 = pulsecore/resampler/soxr.c
+@HAVE_SOXR_TRUE@am__append_73 = $(LIBSOXR_CFLAGS)
+@HAVE_SOXR_TRUE@am__append_74 = $(LIBSOXR_LIBS)
+@HAVE_LIBSAMPLERATE_TRUE@am__append_75 = pulsecore/resampler/libsamplerate.c
+@HAVE_LIBSAMPLERATE_TRUE@am__append_76 = $(LIBSAMPLERATE_CFLAGS)
+@HAVE_LIBSAMPLERATE_TRUE@am__append_77 = $(LIBSAMPLERATE_LIBS)
+@HAVE_WEBRTC_TRUE@am__append_78 = libwebrtc-util.la
+@HAVE_ESOUND_TRUE@am__append_79 = \
 @HAVE_ESOUND_TRUE@		libprotocol-esound.la
 
 
 # We need to emulate sendmsg/recvmsg to support this on Win32
-@OS_IS_WIN32_FALSE@am__append_79 = \
+@OS_IS_WIN32_FALSE@am__append_80 = \
 @OS_IS_WIN32_FALSE@		librtp.la
 
-@HAVE_AVAHI_TRUE@am__append_80 = \
+@HAVE_AVAHI_TRUE@am__append_81 = \
 @HAVE_AVAHI_TRUE@		libavahi-wrap.la
 
-@HAVE_DBUS_TRUE@am__append_81 = $(DBUS_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_82 = $(DBUS_LIBS)
+@HAVE_DBUS_TRUE@am__append_82 = $(DBUS_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_83 = $(DBUS_LIBS)
 
 ###################################
 #        Plug-in libraries        #
 ###################################
 
 # Serveral module (e.g. libalsa-util.la)
-@HAVE_DBUS_TRUE@am__append_83 = \
+@HAVE_DBUS_TRUE@am__append_84 = \
 @HAVE_DBUS_TRUE@		module-console-kit.la
 
-@HAVE_ESOUND_TRUE@am__append_84 = \
+@HAVE_ESOUND_TRUE@am__append_85 = \
 @HAVE_ESOUND_TRUE@		module-esound-protocol-tcp.la \
 @HAVE_ESOUND_TRUE@		module-esound-sink.la
 
 
 # See comment at librtp.la above
-@OS_IS_WIN32_FALSE@am__append_85 = \
+@OS_IS_WIN32_FALSE@am__append_86 = \
 @OS_IS_WIN32_FALSE@		module-rtp-send.la \
 @OS_IS_WIN32_FALSE@		module-rtp-recv.la
 
-@HAVE_AF_UNIX_TRUE@am__append_86 = \
+@HAVE_AF_UNIX_TRUE@am__append_87 = \
 @HAVE_AF_UNIX_TRUE@		module-cli-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-simple-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-http-protocol-unix.la \
 @HAVE_AF_UNIX_TRUE@		module-native-protocol-unix.la
 
-@HAVE_AF_UNIX_TRUE@@HAVE_ESOUND_TRUE@am__append_87 = \
+@HAVE_AF_UNIX_TRUE@@HAVE_ESOUND_TRUE@am__append_88 = \
 @HAVE_AF_UNIX_TRUE@@HAVE_ESOUND_TRUE@		module-esound-protocol-unix.la
 
-@HAVE_MKFIFO_TRUE@am__append_88 = \
+@HAVE_MKFIFO_TRUE@am__append_89 = \
 @HAVE_MKFIFO_TRUE@		module-pipe-sink.la \
 @HAVE_MKFIFO_TRUE@		module-pipe-source.la
 
-@HAVE_ESOUND_TRUE@@OS_IS_WIN32_FALSE@am__append_89 = \
+@HAVE_ESOUND_TRUE@@OS_IS_WIN32_FALSE@am__append_90 = \
 @HAVE_ESOUND_TRUE@@OS_IS_WIN32_FALSE@		module-esound-compat-spawnfd.la \
 @HAVE_ESOUND_TRUE@@OS_IS_WIN32_FALSE@		module-esound-compat-spawnpid.la
 
-@HAVE_REGEX_TRUE@am__append_90 = \
+@HAVE_REGEX_TRUE@am__append_91 = \
 @HAVE_REGEX_TRUE@		module-match.la
 
-@HAVE_X11_TRUE@am__append_91 = \
+@HAVE_X11_TRUE@am__append_92 = \
 @HAVE_X11_TRUE@		module-x11-bell.la \
 @HAVE_X11_TRUE@		module-x11-publish.la \
 @HAVE_X11_TRUE@		module-x11-xsmp.la \
 @HAVE_X11_TRUE@		module-x11-cork-request.la
 
-@HAVE_OSS_OUTPUT_TRUE@am__append_92 = \
+@HAVE_OSS_OUTPUT_TRUE@am__append_93 = \
 @HAVE_OSS_OUTPUT_TRUE@		liboss-util.la \
 @HAVE_OSS_OUTPUT_TRUE@		module-oss.la
 
-@HAVE_COREAUDIO_TRUE@am__append_93 = \
+@HAVE_COREAUDIO_TRUE@am__append_94 = \
 @HAVE_COREAUDIO_TRUE@		module-coreaudio-detect.la \
 @HAVE_COREAUDIO_TRUE@		module-coreaudio-device.la
 
 pulselibexec_PROGRAMS = $(am__EXEEXT_15)
-@HAVE_ALSA_TRUE@am__append_94 = \
+@HAVE_ALSA_TRUE@am__append_95 = \
 @HAVE_ALSA_TRUE@		libalsa-util.la \
 @HAVE_ALSA_TRUE@		module-alsa-sink.la \
 @HAVE_ALSA_TRUE@		module-alsa-source.la \
 @HAVE_ALSA_TRUE@		module-alsa-card.la
 
-@HAVE_SOLARIS_TRUE@am__append_95 = \
+@HAVE_SOLARIS_TRUE@am__append_96 = \
 @HAVE_SOLARIS_TRUE@		module-solaris.la
 
-@HAVE_AVAHI_TRUE@am__append_96 = \
+@HAVE_AVAHI_TRUE@am__append_97 = \
 @HAVE_AVAHI_TRUE@		module-zeroconf-publish.la \
 @HAVE_AVAHI_TRUE@		module-zeroconf-discover.la
 
-@HAVE_BONJOUR_TRUE@am__append_97 = \
+@HAVE_BONJOUR_TRUE@am__append_98 = \
 @HAVE_BONJOUR_TRUE@		module-bonjour-publish.la
 
-@HAVE_LIRC_TRUE@am__append_98 = \
+@HAVE_LIRC_TRUE@am__append_99 = \
 @HAVE_LIRC_TRUE@		module-lirc.la
 
-@HAVE_XEN_TRUE@am__append_99 = \
+@HAVE_XEN_TRUE@am__append_100 = \
 @HAVE_XEN_TRUE@		module-xenpv-sink.la
 
-@HAVE_EVDEV_TRUE@am__append_100 = \
+@HAVE_EVDEV_TRUE@am__append_101 = \
 @HAVE_EVDEV_TRUE@		module-mmkbd-evdev.la
 
-@HAVE_JACK_TRUE@am__append_101 = \
+@HAVE_JACK_TRUE@am__append_102 = \
 @HAVE_JACK_TRUE@		module-jack-sink.la \
 @HAVE_JACK_TRUE@		module-jack-source.la
 
-@HAVE_DBUS_TRUE@@HAVE_JACK_TRUE@am__append_102 = \
+@HAVE_DBUS_TRUE@@HAVE_JACK_TRUE@am__append_103 = \
 @HAVE_DBUS_TRUE@@HAVE_JACK_TRUE@		module-jackdbus-detect.la
 
-@HAVE_GCONF_TRUE@am__append_103 = \
+@HAVE_GCONF_TRUE@am__append_104 = \
 @HAVE_GCONF_TRUE@		module-gconf.la
 
-@HAVE_GCONF_TRUE@am__append_104 = \
+@HAVE_GCONF_TRUE@am__append_105 = \
 @HAVE_GCONF_TRUE@		gconf-helper
 
-@HAVE_WAVEOUT_TRUE@am__append_105 = \
+@HAVE_WAVEOUT_TRUE@am__append_106 = \
 @HAVE_WAVEOUT_TRUE@		module-waveout.la
 
-@HAVE_HAL_COMPAT_TRUE@am__append_106 = \
+@HAVE_HAL_COMPAT_TRUE@am__append_107 = \
 @HAVE_HAL_COMPAT_TRUE@		module-hal-detect.la
 
-@HAVE_UDEV_TRUE@am__append_107 = \
+@HAVE_UDEV_TRUE@am__append_108 = \
 @HAVE_UDEV_TRUE@		module-udev-detect.la
 
-@HAVE_SYSTEMD_LOGIN_TRUE@am__append_108 = \
+@HAVE_SYSTEMD_LOGIN_TRUE@am__append_109 = \
 @HAVE_SYSTEMD_LOGIN_TRUE@		module-systemd-login.la
 
-@HAVE_DBUS_TRUE@am__append_109 = \
+@HAVE_DBUS_TRUE@am__append_110 = \
 @HAVE_DBUS_TRUE@		module-rygel-media-server.la \
 @HAVE_DBUS_TRUE@		module-dbus-protocol.la
 
-@HAVE_BLUEZ_TRUE@am__append_110 = \
+@HAVE_BLUEZ_TRUE@am__append_111 = \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-discover.la \
 @HAVE_BLUEZ_TRUE@		module-bluetooth-policy.la
 
-@HAVE_BLUEZ_4_TRUE@am__append_111 = \
+@HAVE_BLUEZ_4_TRUE@am__append_112 = \
 @HAVE_BLUEZ_4_TRUE@		libbluez4-util.la \
 @HAVE_BLUEZ_4_TRUE@		module-bluez4-discover.la \
 @HAVE_BLUEZ_4_TRUE@		module-bluez4-device.la
 
-@HAVE_BLUEZ_5_TRUE@am__append_112 = \
+@HAVE_BLUEZ_5_TRUE@am__append_113 = \
 @HAVE_BLUEZ_5_TRUE@		libbluez5-util.la \
 @HAVE_BLUEZ_5_TRUE@		module-bluez5-discover.la \
 @HAVE_BLUEZ_5_TRUE@		module-bluez5-device.la
@@ -408,53 +413,53 @@ pulselibexec_PROGRAMS = $(am__EXEEXT_15)
 
 # RAOP depends on RTP, and we don't support RTP on Windows, see comment at
 # librtp.la above.
-@HAVE_OPENSSL_TRUE@@OS_IS_WIN32_FALSE@am__append_113 = \
+@HAVE_OPENSSL_TRUE@@OS_IS_WIN32_FALSE@am__append_114 = \
 @HAVE_OPENSSL_TRUE@@OS_IS_WIN32_FALSE@		libraop.la \
 @HAVE_OPENSSL_TRUE@@OS_IS_WIN32_FALSE@		module-raop-sink.la
 
-@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@@OS_IS_WIN32_FALSE@am__append_114 = \
+@HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@@OS_IS_WIN32_FALSE@am__append_115 = \
 @HAVE_AVAHI_TRUE@@HAVE_OPENSSL_TRUE@@OS_IS_WIN32_FALSE@		module-raop-discover.la
 
-@HAVE_DBUS_TRUE@@HAVE_FFTW_TRUE@am__append_115 = \
+@HAVE_DBUS_TRUE@@HAVE_FFTW_TRUE@am__append_116 = \
 @HAVE_DBUS_TRUE@@HAVE_FFTW_TRUE@		module-equalizer-sink.la
 
-@HAVE_DBUS_TRUE@@HAVE_FFTW_TRUE@am__append_116 = utils/qpaeq
-@HAVE_ESOUND_TRUE@am__append_117 = \
+@HAVE_DBUS_TRUE@@HAVE_FFTW_TRUE@am__append_117 = utils/qpaeq
+@HAVE_ESOUND_TRUE@am__append_118 = \
 @HAVE_ESOUND_TRUE@		module-esound-protocol-tcp-symdef.h \
 @HAVE_ESOUND_TRUE@		module-esound-protocol-unix-symdef.h \
 @HAVE_ESOUND_TRUE@		module-esound-compat-spawnfd-symdef.h \
 @HAVE_ESOUND_TRUE@		module-esound-compat-spawnpid-symdef.h \
 @HAVE_ESOUND_TRUE@		module-esound-sink-symdef.h
 
-@HAVE_DBUS_TRUE@am__append_118 = $(DBUS_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_119 = $(DBUS_LIBS)
-@HAVE_UDEV_TRUE@am__append_120 = modules/udev-util.h modules/udev-util.c
-@HAVE_UDEV_TRUE@am__append_121 = $(UDEV_LIBS)
-@HAVE_UDEV_TRUE@am__append_122 = $(UDEV_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_123 = modules/reserve.h modules/reserve.c modules/reserve-monitor.h modules/reserve-monitor.c
-@HAVE_DBUS_TRUE@am__append_124 = $(DBUS_LIBS)
-@HAVE_DBUS_TRUE@am__append_125 = $(DBUS_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_126 = $(DBUS_LIBS)
-@HAVE_DBUS_TRUE@am__append_127 = $(DBUS_CFLAGS)
-@HAVE_DBUS_TRUE@am__append_128 = $(DBUS_LIBS)
-@HAVE_DBUS_TRUE@am__append_129 = $(DBUS_CFLAGS)
-@HAVE_ADRIAN_EC_TRUE@am__append_130 = \
+@HAVE_DBUS_TRUE@am__append_119 = $(DBUS_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_120 = $(DBUS_LIBS)
+@HAVE_UDEV_TRUE@am__append_121 = modules/udev-util.h modules/udev-util.c
+@HAVE_UDEV_TRUE@am__append_122 = $(UDEV_LIBS)
+@HAVE_UDEV_TRUE@am__append_123 = $(UDEV_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_124 = modules/reserve.h modules/reserve.c modules/reserve-monitor.h modules/reserve-monitor.c
+@HAVE_DBUS_TRUE@am__append_125 = $(DBUS_LIBS)
+@HAVE_DBUS_TRUE@am__append_126 = $(DBUS_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_127 = $(DBUS_LIBS)
+@HAVE_DBUS_TRUE@am__append_128 = $(DBUS_CFLAGS)
+@HAVE_DBUS_TRUE@am__append_129 = $(DBUS_LIBS)
+@HAVE_DBUS_TRUE@am__append_130 = $(DBUS_CFLAGS)
+@HAVE_ADRIAN_EC_TRUE@am__append_131 = \
 @HAVE_ADRIAN_EC_TRUE@		modules/echo-cancel/adrian-aec.c modules/echo-cancel/adrian-aec.h \
 @HAVE_ADRIAN_EC_TRUE@		modules/echo-cancel/adrian.c modules/echo-cancel/adrian.h
 
-@HAVE_ADRIAN_EC_TRUE@am__append_131 = -DHAVE_ADRIAN_EC=1
-@HAVE_ADRIAN_EC_TRUE@am__append_132 = modules/echo-cancel/adrian-aec
-@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__append_133 = $(ORC_LIBS)
-@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__append_134 = $(ORC_CFLAGS) -I$(top_builddir)/src/modules/echo-cancel
-@HAVE_SPEEX_TRUE@am__append_135 = modules/echo-cancel/speex.c
-@HAVE_SPEEX_TRUE@am__append_136 = $(LIBSPEEX_CFLAGS)
-@HAVE_SPEEX_TRUE@am__append_137 = $(LIBSPEEX_LIBS)
-@HAVE_WEBRTC_TRUE@am__append_138 = -DHAVE_WEBRTC=1
-@HAVE_WEBRTC_TRUE@am__append_139 = libwebrtc-util.la
-@HAVE_BLUEZ_5_OFONO_HEADSET_TRUE@am__append_140 = \
+@HAVE_ADRIAN_EC_TRUE@am__append_132 = -DHAVE_ADRIAN_EC=1
+@HAVE_ADRIAN_EC_TRUE@am__append_133 = modules/echo-cancel/adrian-aec
+@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__append_134 = $(ORC_LIBS)
+@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__append_135 = $(ORC_CFLAGS) -I$(top_builddir)/src/modules/echo-cancel
+@HAVE_SPEEX_TRUE@am__append_136 = modules/echo-cancel/speex.c
+@HAVE_SPEEX_TRUE@am__append_137 = $(LIBSPEEX_CFLAGS)
+@HAVE_SPEEX_TRUE@am__append_138 = $(LIBSPEEX_LIBS)
+@HAVE_WEBRTC_TRUE@am__append_139 = -DHAVE_WEBRTC=1
+@HAVE_WEBRTC_TRUE@am__append_140 = libwebrtc-util.la
+@HAVE_BLUEZ_5_OFONO_HEADSET_TRUE@am__append_141 = \
 @HAVE_BLUEZ_5_OFONO_HEADSET_TRUE@		modules/bluetooth/backend-ofono.c
 
-@HAVE_BLUEZ_5_NATIVE_HEADSET_TRUE@am__append_141 = \
+@HAVE_BLUEZ_5_NATIVE_HEADSET_TRUE@am__append_142 = \
 @HAVE_BLUEZ_5_NATIVE_HEADSET_TRUE@		modules/bluetooth/backend-native.c
 
 subdir = src
@@ -462,6 +467,8 @@ ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/acx_libwrap.m4 \
 	$(top_srcdir)/m4/ax_check_define.m4 \
 	$(top_srcdir)/m4/ax_check_flag.m4 \
+	$(top_srcdir)/m4/ax_cxx_compile_stdcxx.m4 \
+	$(top_srcdir)/m4/ax_cxx_compile_stdcxx_11.m4 \
 	$(top_srcdir)/m4/ax_define_dir.m4 \
 	$(top_srcdir)/m4/ax_pthread.m4 $(top_srcdir)/m4/ax_tls.m4 \
 	$(top_srcdir)/m4/gettext.m4 $(top_srcdir)/m4/iconv.m4 \
@@ -762,25 +769,26 @@ am__libpulsecommon_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
 	pulsecore/mcalign.c pulsecore/mcalign.h pulsecore/memblock.c \
 	pulsecore/memblock.h pulsecore/memblockq.c \
 	pulsecore/memblockq.h pulsecore/memchunk.c \
-	pulsecore/memchunk.h pulsecore/native-common.h \
-	pulsecore/once.c pulsecore/once.h pulsecore/packet.c \
-	pulsecore/packet.h pulsecore/parseaddr.c pulsecore/parseaddr.h \
-	pulsecore/pdispatch.c pulsecore/pdispatch.h pulsecore/pid.c \
-	pulsecore/pid.h pulsecore/pipe.c pulsecore/pipe.h \
-	pulsecore/memtrap.c pulsecore/memtrap.h pulsecore/aupdate.c \
-	pulsecore/aupdate.h pulsecore/proplist-util.c \
-	pulsecore/proplist-util.h pulsecore/pstream-util.c \
-	pulsecore/pstream-util.h pulsecore/pstream.c \
-	pulsecore/pstream.h pulsecore/queue.c pulsecore/queue.h \
-	pulsecore/random.c pulsecore/random.h pulsecore/refcnt.h \
-	pulsecore/srbchannel.c pulsecore/srbchannel.h \
-	pulsecore/sample-util.c pulsecore/sample-util.h \
-	pulsecore/shm.c pulsecore/shm.h pulsecore/bitset.c \
-	pulsecore/bitset.h pulsecore/socket-client.c \
-	pulsecore/socket-client.h pulsecore/socket-server.c \
-	pulsecore/socket-server.h pulsecore/socket-util.c \
-	pulsecore/socket-util.h pulsecore/strbuf.c pulsecore/strbuf.h \
-	pulsecore/strlist.c pulsecore/strlist.h pulsecore/svolume_c.c \
+	pulsecore/memchunk.h pulsecore/native-common.c \
+	pulsecore/native-common.h pulsecore/once.c pulsecore/once.h \
+	pulsecore/packet.c pulsecore/packet.h pulsecore/parseaddr.c \
+	pulsecore/parseaddr.h pulsecore/pdispatch.c \
+	pulsecore/pdispatch.h pulsecore/pid.c pulsecore/pid.h \
+	pulsecore/pipe.c pulsecore/pipe.h pulsecore/memtrap.c \
+	pulsecore/memtrap.h pulsecore/aupdate.c pulsecore/aupdate.h \
+	pulsecore/proplist-util.c pulsecore/proplist-util.h \
+	pulsecore/pstream-util.c pulsecore/pstream-util.h \
+	pulsecore/pstream.c pulsecore/pstream.h pulsecore/queue.c \
+	pulsecore/queue.h pulsecore/random.c pulsecore/random.h \
+	pulsecore/refcnt.h pulsecore/srbchannel.c \
+	pulsecore/srbchannel.h pulsecore/sample-util.c \
+	pulsecore/sample-util.h pulsecore/mem.h pulsecore/shm.c \
+	pulsecore/shm.h pulsecore/bitset.c pulsecore/bitset.h \
+	pulsecore/socket-client.c pulsecore/socket-client.h \
+	pulsecore/socket-server.c pulsecore/socket-server.h \
+	pulsecore/socket-util.c pulsecore/socket-util.h \
+	pulsecore/strbuf.c pulsecore/strbuf.h pulsecore/strlist.c \
+	pulsecore/strlist.h pulsecore/svolume_c.c \
 	pulsecore/svolume_arm.c pulsecore/svolume_mmx.c \
 	pulsecore/svolume_sse.c pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
@@ -789,9 +797,10 @@ am__libpulsecommon_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
 	pulsecore/usergroup.h pulsecore/sndfile-util.c \
 	pulsecore/sndfile-util.h pulsecore/socket.h \
 	pulsecore/poll-win32.c pulsecore/poll.h pulsecore/winerrno.h \
-	pulsecore/poll-posix.c pulse/client-conf-x11.c \
-	pulse/client-conf-x11.h pulsecore/x11prop.c \
-	pulsecore/x11prop.h pulsecore/mutex-win32.c pulsecore/mutex.h \
+	pulsecore/poll-posix.c pulsecore/memfd-wrappers.h \
+	pulse/client-conf-x11.c pulse/client-conf-x11.h \
+	pulsecore/x11prop.c pulsecore/x11prop.h \
+	pulsecore/mutex-win32.c pulsecore/mutex.h \
 	pulsecore/thread-win32.c pulsecore/thread.h \
 	pulsecore/semaphore-win32.c pulsecore/semaphore.h \
 	pulsecore/mutex-posix.c pulsecore/thread-posix.c \
@@ -800,19 +809,20 @@ am__libpulsecommon_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
 	pulsecore/dbus-util.h pulsecore/rtkit.c pulsecore/rtkit.h
 @OS_IS_WIN32_TRUE@am__objects_5 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-poll-win32.lo
 @OS_IS_WIN32_FALSE@am__objects_6 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-poll-posix.lo
-@HAVE_X11_TRUE@am__objects_7 = pulse/libpulsecommon_@PA_MAJORMINOR@_la-client-conf-x11.lo \
+am__objects_7 =
+@HAVE_X11_TRUE@am__objects_8 = pulse/libpulsecommon_@PA_MAJORMINOR@_la-client-conf-x11.lo \
 @HAVE_X11_TRUE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-x11prop.lo
-@OS_IS_WIN32_TRUE@am__objects_8 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-mutex-win32.lo \
+@OS_IS_WIN32_TRUE@am__objects_9 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-mutex-win32.lo \
 @OS_IS_WIN32_TRUE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-thread-win32.lo \
 @OS_IS_WIN32_TRUE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-semaphore-win32.lo
-@OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@am__objects_9 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-mutex-posix.lo \
+@OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@am__objects_10 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-mutex-posix.lo \
 @OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-thread-posix.lo \
 @OS_IS_DARWIN_TRUE@@OS_IS_WIN32_FALSE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-semaphore-osx.lo
-@OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@am__objects_10 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-mutex-posix.lo \
+@OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@am__objects_11 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-mutex-posix.lo \
 @OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-thread-posix.lo \
 @OS_IS_DARWIN_FALSE@@OS_IS_WIN32_FALSE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-semaphore-posix.lo
-@OS_IS_WIN32_TRUE@am__objects_11 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-dllmain.lo
-@HAVE_DBUS_TRUE@am__objects_12 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-dbus-util.lo \
+@OS_IS_WIN32_TRUE@am__objects_12 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-dllmain.lo
+@HAVE_DBUS_TRUE@am__objects_13 = pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-dbus-util.lo \
 @HAVE_DBUS_TRUE@	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-rtkit.lo
 am_libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS =  \
 	pulse/libpulsecommon_@PA_MAJORMINOR@_la-client-conf.lo \
@@ -851,6 +861,7 @@ am_libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS =  \
 	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memblock.lo \
 	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memblockq.lo \
 	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memchunk.lo \
+	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-native-common.lo \
 	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-once.lo \
 	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-packet.lo \
 	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-parseaddr.lo \
@@ -884,7 +895,7 @@ am_libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS =  \
 	pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-sndfile-util.lo \
 	$(am__objects_5) $(am__objects_6) $(am__objects_7) \
 	$(am__objects_8) $(am__objects_9) $(am__objects_10) \
-	$(am__objects_11) $(am__objects_12)
+	$(am__objects_11) $(am__objects_12) $(am__objects_13)
 libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS =  \
 	$(am_libpulsecommon_@PA_MAJORMINOR@_la_OBJECTS)
 libpulsecommon_@PA_MAJORMINOR@_la_LINK = $(LIBTOOL) $(AM_V_lt) \
@@ -901,7 +912,7 @@ libpulsecore_@PA_MAJORMINOR@_la_DEPENDENCIES = $(am__DEPENDENCIES_2) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	libpulsecommon-@PA_MAJORMINOR@.la libpulse.la \
-	libpulsecore-foreign.la $(am__append_51) $(am__DEPENDENCIES_7) \
+	libpulsecore-foreign.la $(am__append_52) $(am__DEPENDENCIES_7) \
 	$(am__DEPENDENCIES_5) $(am__DEPENDENCIES_8) \
 	$(am__DEPENDENCIES_9) $(am__DEPENDENCIES_10) \
 	$(am__DEPENDENCIES_11) $(am__DEPENDENCIES_12)
@@ -955,16 +966,16 @@ am__libpulsecore_@PA_MAJORMINOR@_la_SOURCES_DIST =  \
 	pulsecore/database-tdb.c pulsecore/database-simple.c \
 	pulsecore/resampler/speex.c pulsecore/resampler/soxr.c \
 	pulsecore/resampler/libsamplerate.c
-@HAVE_ORC_TRUE@am__objects_13 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-svolume_orc.lo
-@HAVE_X11_TRUE@am__objects_14 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-x11wrap.lo
-@HAVE_DBUS_TRUE@am__objects_15 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-dbus-shared.lo \
+@HAVE_ORC_TRUE@am__objects_14 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-svolume_orc.lo
+@HAVE_X11_TRUE@am__objects_15 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-x11wrap.lo
+@HAVE_DBUS_TRUE@am__objects_16 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-dbus-shared.lo \
 @HAVE_DBUS_TRUE@	pulsecore/libpulsecore_@PA_MAJORMINOR@_la-protocol-dbus.lo
-@HAVE_GDBM_TRUE@am__objects_16 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-database-gdbm.lo
-@HAVE_TDB_TRUE@am__objects_17 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-database-tdb.lo
-@HAVE_SIMPLEDB_TRUE@am__objects_18 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-database-simple.lo
-@HAVE_SPEEX_TRUE@am__objects_19 = pulsecore/resampler/libpulsecore_@PA_MAJORMINOR@_la-speex.lo
-@HAVE_SOXR_TRUE@am__objects_20 = pulsecore/resampler/libpulsecore_@PA_MAJORMINOR@_la-soxr.lo
-@HAVE_LIBSAMPLERATE_TRUE@am__objects_21 = pulsecore/resampler/libpulsecore_@PA_MAJORMINOR@_la-libsamplerate.lo
+@HAVE_GDBM_TRUE@am__objects_17 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-database-gdbm.lo
+@HAVE_TDB_TRUE@am__objects_18 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-database-tdb.lo
+@HAVE_SIMPLEDB_TRUE@am__objects_19 = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-database-simple.lo
+@HAVE_SPEEX_TRUE@am__objects_20 = pulsecore/resampler/libpulsecore_@PA_MAJORMINOR@_la-speex.lo
+@HAVE_SOXR_TRUE@am__objects_21 = pulsecore/resampler/libpulsecore_@PA_MAJORMINOR@_la-soxr.lo
+@HAVE_LIBSAMPLERATE_TRUE@am__objects_22 = pulsecore/resampler/libpulsecore_@PA_MAJORMINOR@_la-libsamplerate.lo
 am_libpulsecore_@PA_MAJORMINOR@_la_OBJECTS = pulsecore/filter/libpulsecore_@PA_MAJORMINOR@_la-lfe-filter.lo \
 	pulsecore/filter/libpulsecore_@PA_MAJORMINOR@_la-biquad.lo \
 	pulsecore/filter/libpulsecore_@PA_MAJORMINOR@_la-crossover.lo \
@@ -1017,9 +1028,9 @@ am_libpulsecore_@PA_MAJORMINOR@_la_OBJECTS = pulsecore/filter/libpulsecore_@PA_M
 	pulsecore/libpulsecore_@PA_MAJORMINOR@_la-source.lo \
 	pulsecore/libpulsecore_@PA_MAJORMINOR@_la-start-child.lo \
 	pulsecore/libpulsecore_@PA_MAJORMINOR@_la-thread-mq.lo \
-	$(am__objects_13) $(am__objects_14) $(am__objects_15) \
-	$(am__objects_16) $(am__objects_17) $(am__objects_18) \
-	$(am__objects_19) $(am__objects_20) $(am__objects_21)
+	$(am__objects_14) $(am__objects_15) $(am__objects_16) \
+	$(am__objects_17) $(am__objects_18) $(am__objects_19) \
+	$(am__objects_20) $(am__objects_21) $(am__objects_22)
 @HAVE_ORC_TRUE@nodist_libpulsecore_@PA_MAJORMINOR@_la_OBJECTS = pulsecore/libpulsecore_@PA_MAJORMINOR@_la-svolume-orc-gen.lo
 libpulsecore_@PA_MAJORMINOR@_la_OBJECTS =  \
 	$(am_libpulsecore_@PA_MAJORMINOR@_la_OBJECTS) \
@@ -1377,19 +1388,19 @@ module_device_restore_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@	$(am__DEPENDENCIES_1)
 module_echo_cancel_la_DEPENDENCIES = $(am__DEPENDENCIES_3) \
 	$(am__DEPENDENCIES_13) $(am__DEPENDENCIES_10) \
-	$(am__append_139)
+	$(am__append_140)
 am__module_echo_cancel_la_SOURCES_DIST =  \
 	modules/echo-cancel/module-echo-cancel.c \
 	modules/echo-cancel/null.c modules/echo-cancel/echo-cancel.h \
 	modules/echo-cancel/adrian-aec.c \
 	modules/echo-cancel/adrian-aec.h modules/echo-cancel/adrian.c \
 	modules/echo-cancel/adrian.h modules/echo-cancel/speex.c
-@HAVE_ADRIAN_EC_TRUE@am__objects_22 = modules/echo-cancel/module_echo_cancel_la-adrian-aec.lo \
+@HAVE_ADRIAN_EC_TRUE@am__objects_23 = modules/echo-cancel/module_echo_cancel_la-adrian-aec.lo \
 @HAVE_ADRIAN_EC_TRUE@	modules/echo-cancel/module_echo_cancel_la-adrian.lo
-@HAVE_SPEEX_TRUE@am__objects_23 = modules/echo-cancel/module_echo_cancel_la-speex.lo
+@HAVE_SPEEX_TRUE@am__objects_24 = modules/echo-cancel/module_echo_cancel_la-speex.lo
 am_module_echo_cancel_la_OBJECTS = modules/echo-cancel/module_echo_cancel_la-module-echo-cancel.lo \
 	modules/echo-cancel/module_echo_cancel_la-null.lo \
-	$(am__objects_22) $(am__objects_23)
+	$(am__objects_23) $(am__objects_24)
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@nodist_module_echo_cancel_la_OBJECTS = modules/echo-cancel/module_echo_cancel_la-adrian-aec-orc-gen.lo
 module_echo_cancel_la_OBJECTS = $(am_module_echo_cancel_la_OBJECTS) \
 	$(nodist_module_echo_cancel_la_OBJECTS)
@@ -1742,7 +1753,8 @@ module_rescue_streams_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(module_rescue_streams_la_LDFLAGS) $(LDFLAGS) -o $@
 module_role_cork_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
 am_module_role_cork_la_OBJECTS =  \
-	modules/module_role_cork_la-module-role-cork.lo
+	modules/module_role_cork_la-module-role-cork.lo \
+	modules/module_role_cork_la-stream-interaction.lo
 module_role_cork_la_OBJECTS = $(am_module_role_cork_la_OBJECTS)
 module_role_cork_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -1750,7 +1762,8 @@ module_role_cork_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(module_role_cork_la_LDFLAGS) $(LDFLAGS) -o $@
 module_role_ducking_la_DEPENDENCIES = $(am__DEPENDENCIES_3)
 am_module_role_ducking_la_OBJECTS =  \
-	modules/module_role_ducking_la-module-role-ducking.lo
+	modules/module_role_ducking_la-module-role-ducking.lo \
+	modules/module_role_ducking_la-stream-interaction.lo
 module_role_ducking_la_OBJECTS = $(am_module_role_ducking_la_OBJECTS)
 module_role_ducking_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -2073,7 +2086,7 @@ am__EXEEXT_9 = mainloop-test$(EXEEXT) strlist-test$(EXEEXT) \
 	$(am__EXEEXT_6) $(am__EXEEXT_7) $(am__EXEEXT_8)
 @HAVE_SIGXCPU_TRUE@am__EXEEXT_10 = cpulimit-test$(EXEEXT) \
 @HAVE_SIGXCPU_TRUE@	cpulimit-test2$(EXEEXT)
-@HAVE_GTK30_TRUE@am__EXEEXT_11 = gtk-test$(EXEEXT)
+@HAVE_GLIB20_TRUE@@HAVE_GTK30_TRUE@am__EXEEXT_11 = gtk-test$(EXEEXT)
 @HAVE_ALSA_TRUE@am__EXEEXT_12 = alsa-time-test$(EXEEXT)
 am__EXEEXT_13 = ipacl-test$(EXEEXT) mcalign-test$(EXEEXT) \
 	pacat-simple$(EXEEXT) parec-simple$(EXEEXT) \
@@ -2211,19 +2224,19 @@ am__echo_cancel_test_SOURCES_DIST =  \
 	modules/echo-cancel/adrian-aec.c \
 	modules/echo-cancel/adrian-aec.h modules/echo-cancel/adrian.c \
 	modules/echo-cancel/adrian.h modules/echo-cancel/speex.c
-@HAVE_ADRIAN_EC_TRUE@am__objects_24 = modules/echo-cancel/echo_cancel_test-adrian-aec.$(OBJEXT) \
+@HAVE_ADRIAN_EC_TRUE@am__objects_25 = modules/echo-cancel/echo_cancel_test-adrian-aec.$(OBJEXT) \
 @HAVE_ADRIAN_EC_TRUE@	modules/echo-cancel/echo_cancel_test-adrian.$(OBJEXT)
-@HAVE_SPEEX_TRUE@am__objects_25 = modules/echo-cancel/echo_cancel_test-speex.$(OBJEXT)
-am__objects_26 = modules/echo-cancel/echo_cancel_test-module-echo-cancel.$(OBJEXT) \
+@HAVE_SPEEX_TRUE@am__objects_26 = modules/echo-cancel/echo_cancel_test-speex.$(OBJEXT)
+am__objects_27 = modules/echo-cancel/echo_cancel_test-module-echo-cancel.$(OBJEXT) \
 	modules/echo-cancel/echo_cancel_test-null.$(OBJEXT) \
-	$(am__objects_24) $(am__objects_25)
-am_echo_cancel_test_OBJECTS = $(am__objects_26)
-@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__objects_27 = modules/echo-cancel/echo_cancel_test-adrian-aec-orc-gen.$(OBJEXT)
-nodist_echo_cancel_test_OBJECTS = $(am__objects_27)
+	$(am__objects_25) $(am__objects_26)
+am_echo_cancel_test_OBJECTS = $(am__objects_27)
+@HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@am__objects_28 = modules/echo-cancel/echo_cancel_test-adrian-aec-orc-gen.$(OBJEXT)
+nodist_echo_cancel_test_OBJECTS = $(am__objects_28)
 echo_cancel_test_OBJECTS = $(am_echo_cancel_test_OBJECTS) \
 	$(nodist_echo_cancel_test_OBJECTS)
 am__DEPENDENCIES_14 = $(am__DEPENDENCIES_3) $(am__DEPENDENCIES_13) \
-	$(am__DEPENDENCIES_10) $(am__append_139)
+	$(am__DEPENDENCIES_10) $(am__append_140)
 echo_cancel_test_DEPENDENCIES = $(am__DEPENDENCIES_14)
 echo_cancel_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
@@ -2342,8 +2355,8 @@ mainloop_test_DEPENDENCIES = $(am__DEPENDENCIES_2) libpulse.la \
 mainloop_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(mainloop_test_CFLAGS) \
 	$(CFLAGS) $(mainloop_test_LDFLAGS) $(LDFLAGS) -o $@
-am__objects_28 = tests/mainloop_test_glib-mainloop-test.$(OBJEXT)
-am_mainloop_test_glib_OBJECTS = $(am__objects_28)
+am__objects_29 = tests/mainloop_test_glib-mainloop-test.$(OBJEXT)
+am_mainloop_test_glib_OBJECTS = $(am__objects_29)
 mainloop_test_glib_OBJECTS = $(am_mainloop_test_glib_OBJECTS)
 am__DEPENDENCIES_15 = $(am__DEPENDENCIES_2) libpulse.la \
 	libpulsecommon-@PA_MAJORMINOR@.la
@@ -2469,7 +2482,7 @@ am__pulseaudio_SOURCES_DIST = daemon/caps.c daemon/caps.h \
 	daemon/dumpmodules.c daemon/dumpmodules.h \
 	daemon/ltdl-bind-now.c daemon/ltdl-bind-now.h daemon/main.c \
 	daemon/server-lookup.c daemon/server-lookup.h
-@HAVE_DBUS_TRUE@am__objects_29 =  \
+@HAVE_DBUS_TRUE@am__objects_30 =  \
 @HAVE_DBUS_TRUE@	daemon/pulseaudio-server-lookup.$(OBJEXT)
 am_pulseaudio_OBJECTS = daemon/pulseaudio-caps.$(OBJEXT) \
 	daemon/pulseaudio-cmdline.$(OBJEXT) \
@@ -2477,7 +2490,7 @@ am_pulseaudio_OBJECTS = daemon/pulseaudio-caps.$(OBJEXT) \
 	daemon/pulseaudio-daemon-conf.$(OBJEXT) \
 	daemon/pulseaudio-dumpmodules.$(OBJEXT) \
 	daemon/pulseaudio-ltdl-bind-now.$(OBJEXT) \
-	daemon/pulseaudio-main.$(OBJEXT) $(am__objects_29)
+	daemon/pulseaudio-main.$(OBJEXT) $(am__objects_30)
 pulseaudio_OBJECTS = $(am_pulseaudio_OBJECTS)
 pulseaudio_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(pulseaudio_CFLAGS) \
@@ -3282,8 +3295,10 @@ HAVE_BLUEZ_5 = @HAVE_BLUEZ_5@
 HAVE_BLUEZ_5_NATIVE_HEADSET = @HAVE_BLUEZ_5_NATIVE_HEADSET@
 HAVE_BLUEZ_5_OFONO_HEADSET = @HAVE_BLUEZ_5_OFONO_HEADSET@
 HAVE_COREAUDIO = @HAVE_COREAUDIO@
+HAVE_CXX11 = @HAVE_CXX11@
 HAVE_DBUS = @HAVE_DBUS@
 HAVE_GLIB20 = @HAVE_GLIB20@
+HAVE_MEMFD = @HAVE_MEMFD@
 HAVE_MKFIFO = @HAVE_MKFIFO@
 HAVE_NEON = @HAVE_NEON@
 HAVE_OSS_OUTPUT = @HAVE_OSS_OUTPUT@
@@ -3519,8 +3534,8 @@ AM_CPPFLAGS = \
 	-DPA_BUILDDIR=\"$(abs_builddir)\" \
 	-DPULSE_LOCALEDIR=\"$(localedir)\"
 
-AM_CFLAGS = $(PTHREAD_CFLAGS) $(am__append_1)
-AM_CXXFLAGS = $(AM_CFLAGS) $(am__append_2)
+AM_CFLAGS = -std=gnu11 $(PTHREAD_CFLAGS) $(am__append_1)
+AM_CXXFLAGS = -std=c++11 $(PTHREAD_CFLAGS) $(am__append_2)
 SERVER_CFLAGS = -D__INCLUDED_FROM_PULSE_AUDIO
 AM_LIBADD = $(PTHREAD_LIBS) $(INTLLIBS)
 AM_LDADD = $(PTHREAD_LIBS) $(INTLLIBS)
@@ -3568,7 +3583,7 @@ BUILT_SOURCES = $(am__append_6) $(SYMDEF_FILES) builddirs
 ###################################
 #        Some minor stuff         #
 ###################################
-CLEANFILES = $(am__append_7) $(am__append_49) \
+CLEANFILES = $(am__append_7) $(am__append_50) \
 	daemon/pulseaudio.desktop
 @HAVE_ORC_TRUE@ORC_BUILT_SOURCE = $(addsuffix -orc-gen.c,$(ORC_SOURCE))
 @HAVE_ORC_TRUE@ORC_BUILT_HEADER = $(addsuffix -orc-gen.h,$(ORC_SOURCE))
@@ -3578,7 +3593,7 @@ CLEANFILES = $(am__append_7) $(am__append_49) \
 @HAVE_ORC_TRUE@cp_v_gen = $(cp_v_gen_$(V))
 @HAVE_ORC_TRUE@cp_v_gen_ = $(cp_v_gen_$(AM_DEFAULT_VERBOSITY))
 @HAVE_ORC_TRUE@cp_v_gen_0 = @echo "  CP     $@";
-ORC_SOURCE = pulsecore/svolume $(am__append_132)
+ORC_SOURCE = pulsecore/svolume $(am__append_133)
 pulseaudio_SOURCES = daemon/caps.c daemon/caps.h daemon/cmdline.c \
 	daemon/cmdline.h daemon/cpulimit.c daemon/cpulimit.h \
 	daemon/daemon-conf.c daemon/daemon-conf.h daemon/dumpmodules.c \
@@ -3605,8 +3620,8 @@ pulseaudio_DEPENDENCIES = libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJ
 ###################################
 #       Utility programs          #
 ###################################
-bin_SCRIPTS = esdcompat $(am__append_16) $(am__append_48) \
-	$(am__append_116)
+bin_SCRIPTS = esdcompat $(am__append_16) $(am__append_49) \
+	$(am__append_117)
 pacat_SOURCES = utils/pacat.c
 pacat_LDADD = $(AM_LDADD) libpulse.la libpulsecommon-@PA_MAJORMINOR@.la $(LIBSNDFILE_LIBS)
 pacat_CFLAGS = $(AM_CFLAGS) $(LIBSNDFILE_CFLAGS)
@@ -3637,7 +3652,7 @@ pax11publish_LDFLAGS = $(AM_LDFLAGS) $(BINLDFLAGS)
 ###################################
 
 # We split the foreign code off to not be annoyed by warnings we don't care about
-noinst_LTLIBRARIES = liblo-test-util.la $(am__append_50) \
+noinst_LTLIBRARIES = liblo-test-util.la $(am__append_51) \
 	libpulsecore-foreign.la
 TESTS_default = mainloop-test strlist-test close-test memblockq-test \
 	channelmap-test thread-mainloop-test utf8-test format-test \
@@ -3921,25 +3936,26 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = pulse/client-conf.c \
 	pulsecore/mcalign.c pulsecore/mcalign.h pulsecore/memblock.c \
 	pulsecore/memblock.h pulsecore/memblockq.c \
 	pulsecore/memblockq.h pulsecore/memchunk.c \
-	pulsecore/memchunk.h pulsecore/native-common.h \
-	pulsecore/once.c pulsecore/once.h pulsecore/packet.c \
-	pulsecore/packet.h pulsecore/parseaddr.c pulsecore/parseaddr.h \
-	pulsecore/pdispatch.c pulsecore/pdispatch.h pulsecore/pid.c \
-	pulsecore/pid.h pulsecore/pipe.c pulsecore/pipe.h \
-	pulsecore/memtrap.c pulsecore/memtrap.h pulsecore/aupdate.c \
-	pulsecore/aupdate.h pulsecore/proplist-util.c \
-	pulsecore/proplist-util.h pulsecore/pstream-util.c \
-	pulsecore/pstream-util.h pulsecore/pstream.c \
-	pulsecore/pstream.h pulsecore/queue.c pulsecore/queue.h \
-	pulsecore/random.c pulsecore/random.h pulsecore/refcnt.h \
-	pulsecore/srbchannel.c pulsecore/srbchannel.h \
-	pulsecore/sample-util.c pulsecore/sample-util.h \
-	pulsecore/shm.c pulsecore/shm.h pulsecore/bitset.c \
-	pulsecore/bitset.h pulsecore/socket-client.c \
-	pulsecore/socket-client.h pulsecore/socket-server.c \
-	pulsecore/socket-server.h pulsecore/socket-util.c \
-	pulsecore/socket-util.h pulsecore/strbuf.c pulsecore/strbuf.h \
-	pulsecore/strlist.c pulsecore/strlist.h pulsecore/svolume_c.c \
+	pulsecore/memchunk.h pulsecore/native-common.c \
+	pulsecore/native-common.h pulsecore/once.c pulsecore/once.h \
+	pulsecore/packet.c pulsecore/packet.h pulsecore/parseaddr.c \
+	pulsecore/parseaddr.h pulsecore/pdispatch.c \
+	pulsecore/pdispatch.h pulsecore/pid.c pulsecore/pid.h \
+	pulsecore/pipe.c pulsecore/pipe.h pulsecore/memtrap.c \
+	pulsecore/memtrap.h pulsecore/aupdate.c pulsecore/aupdate.h \
+	pulsecore/proplist-util.c pulsecore/proplist-util.h \
+	pulsecore/pstream-util.c pulsecore/pstream-util.h \
+	pulsecore/pstream.c pulsecore/pstream.h pulsecore/queue.c \
+	pulsecore/queue.h pulsecore/random.c pulsecore/random.h \
+	pulsecore/refcnt.h pulsecore/srbchannel.c \
+	pulsecore/srbchannel.h pulsecore/sample-util.c \
+	pulsecore/sample-util.h pulsecore/mem.h pulsecore/shm.c \
+	pulsecore/shm.h pulsecore/bitset.c pulsecore/bitset.h \
+	pulsecore/socket-client.c pulsecore/socket-client.h \
+	pulsecore/socket-server.c pulsecore/socket-server.h \
+	pulsecore/socket-util.c pulsecore/socket-util.h \
+	pulsecore/strbuf.c pulsecore/strbuf.h pulsecore/strlist.c \
+	pulsecore/strlist.h pulsecore/svolume_c.c \
 	pulsecore/svolume_arm.c pulsecore/svolume_mmx.c \
 	pulsecore/svolume_sse.c pulsecore/tagstruct.c \
 	pulsecore/tagstruct.h pulsecore/time-smoother.c \
@@ -3947,22 +3963,22 @@ libpulsecommon_@PA_MAJORMINOR@_la_SOURCES = pulse/client-conf.c \
 	pulsecore/tokenizer.h pulsecore/usergroup.c \
 	pulsecore/usergroup.h pulsecore/sndfile-util.c \
 	pulsecore/sndfile-util.h pulsecore/socket.h $(am__append_25) \
-	$(am__append_26) $(am__append_27) $(am__append_34) \
-	$(am__append_35) $(am__append_37) $(am__append_40) \
-	$(am__append_41)
+	$(am__append_26) $(am__append_27) $(am__append_28) \
+	$(am__append_35) $(am__append_36) $(am__append_38) \
+	$(am__append_41) $(am__append_42)
 
 # proplist-util.h uses these header files, but not the library itself!
 libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) \
-	$(LIBJSON_CFLAGS) $(LIBSNDFILE_CFLAGS) $(am__append_28) \
-	$(am__append_30) $(am__append_32) $(GLIB20_CFLAGS) \
-	$(GTK30_CFLAGS) $(am__append_36) $(am__append_38) \
-	$(am__append_42)
+	$(LIBJSON_CFLAGS) $(LIBSNDFILE_CFLAGS) $(am__append_29) \
+	$(am__append_31) $(am__append_33) $(GLIB20_CFLAGS) \
+	$(GTK30_CFLAGS) $(am__append_37) $(am__append_39) \
+	$(am__append_43)
 libpulsecommon_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) \
-	$(AM_LIBLDFLAGS) -avoid-version $(am__append_29) \
-	$(am__append_31) $(am__append_33)
+	$(AM_LIBLDFLAGS) -avoid-version $(am__append_30) \
+	$(am__append_32) $(am__append_34)
 libpulsecommon_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) \
 	$(LIBJSON_LIBS) $(LIBWRAP_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) \
-	$(LIBSNDFILE_LIBS) $(am__append_39) $(am__append_43)
+	$(LIBSNDFILE_LIBS) $(am__append_40) $(am__append_44)
 
 ###################################
 #         Client library          #
@@ -3977,8 +3993,8 @@ pulseinclude_HEADERS = pulse/cdecl.h pulse/channelmap.h \
 	pulse/sample.h pulse/scache.h pulse/simple.h pulse/stream.h \
 	pulse/subscribe.h pulse/thread-mainloop.h pulse/timeval.h \
 	pulse/utf8.h pulse/util.h pulse/version.h pulse/volume.h \
-	pulse/xmalloc.h $(am__append_44)
-lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_45)
+	pulse/xmalloc.h $(am__append_45)
+lib_LTLIBRARIES = libpulse.la libpulse-simple.la $(am__append_46)
 
 # Public interface
 libpulse_la_SOURCES = \
@@ -4013,10 +4029,10 @@ libpulse_la_SOURCES = \
 		pulse/volume.c pulse/volume.h \
 		pulse/xmalloc.c pulse/xmalloc.h
 
-libpulse_la_CFLAGS = $(AM_CFLAGS) $(LIBJSON_CFLAGS) $(am__append_46)
+libpulse_la_CFLAGS = $(AM_CFLAGS) $(LIBJSON_CFLAGS) $(am__append_47)
 libpulse_la_LIBADD = $(AM_LIBADD) $(WINSOCK_LIBS) $(LTLIBICONV) \
 	$(LIBJSON_LIBS) libpulsecommon-@PA_MAJORMINOR@.la \
-	$(am__append_47)
+	$(am__append_48)
 libpulse_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) $(VERSIONING_LDFLAGS) -version-info $(LIBPULSE_VERSION_INFO)
 libpulse_simple_la_SOURCES = pulse/simple.c pulse/simple.h
 libpulse_simple_la_CFLAGS = $(AM_CFLAGS)
@@ -4088,23 +4104,23 @@ libpulsecore_@PA_MAJORMINOR@_la_SOURCES =  \
 	pulsecore/source-output.c pulsecore/source-output.h \
 	pulsecore/source.c pulsecore/source.h pulsecore/start-child.c \
 	pulsecore/start-child.h pulsecore/thread-mq.c \
-	pulsecore/thread-mq.h pulsecore/database.h $(am__append_52) \
-	$(am__append_55) $(am__append_58) $(am__append_61) \
-	$(am__append_64) $(am__append_67) $(am__append_68) \
-	$(am__append_71) $(am__append_74)
-libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
-	$(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS) $(am__append_53) \
+	pulsecore/thread-mq.h pulsecore/database.h $(am__append_53) \
 	$(am__append_56) $(am__append_59) $(am__append_62) \
-	$(am__append_65) $(am__append_69) $(am__append_72) \
-	$(am__append_75)
+	$(am__append_65) $(am__append_68) $(am__append_69) \
+	$(am__append_72) $(am__append_75)
+libpulsecore_@PA_MAJORMINOR@_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
+	$(LIBSNDFILE_CFLAGS) $(WINSOCK_CFLAGS) $(am__append_54) \
+	$(am__append_57) $(am__append_60) $(am__append_63) \
+	$(am__append_66) $(am__append_70) $(am__append_73) \
+	$(am__append_76)
 libpulsecore_@PA_MAJORMINOR@_la_LDFLAGS = $(AM_LDFLAGS) \
-	$(AM_LIBLDFLAGS) -avoid-version $(am__append_57)
+	$(AM_LIBLDFLAGS) -avoid-version $(am__append_58)
 libpulsecore_@PA_MAJORMINOR@_la_LIBADD = $(AM_LIBADD) $(LIBLTDL) \
 	$(LIBSNDFILE_LIBS) $(WINSOCK_LIBS) $(LTLIBICONV) \
 	libpulsecommon-@PA_MAJORMINOR@.la libpulse.la \
-	libpulsecore-foreign.la $(am__append_51) $(am__append_54) \
-	$(am__append_60) $(am__append_63) $(am__append_66) \
-	$(am__append_70) $(am__append_73) $(am__append_76)
+	libpulsecore-foreign.la $(am__append_52) $(am__append_55) \
+	$(am__append_61) $(am__append_64) $(am__append_67) \
+	$(am__append_71) $(am__append_74) $(am__append_77)
 @HAVE_NEON_TRUE@libpulsecore_sconv_neon_la_SOURCES = pulsecore/sconv_neon.c
 @HAVE_NEON_TRUE@libpulsecore_sconv_neon_la_CFLAGS = $(AM_CFLAGS) $(NEON_CFLAGS)
 @HAVE_NEON_TRUE@libpulsecore_mix_neon_la_SOURCES = pulsecore/mix_neon.c
@@ -4127,8 +4143,8 @@ libpulsecore_foreign_la_CFLAGS = $(AM_CFLAGS) $(FOREIGN_CFLAGS)
 ### the head, and not the other way!
 modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	libprotocol-simple.la libprotocol-http.la \
-	libprotocol-native.la $(am__append_77) $(am__append_78) \
-	$(am__append_79) $(am__append_80) $(am__append_83) \
+	libprotocol-native.la $(am__append_78) $(am__append_79) \
+	$(am__append_80) $(am__append_81) $(am__append_84) \
 	module-cli.la module-cli-protocol-tcp.la \
 	module-simple-protocol-tcp.la module-null-sink.la \
 	module-null-source.la module-sine-source.la module-detect.la \
@@ -4149,17 +4165,17 @@ modlibexec_LTLIBRARIES = libcli.la libprotocol-cli.la \
 	module-virtual-source.la module-virtual-surround-sink.la \
 	module-switch-on-connect.la module-switch-on-port-available.la \
 	module-filter-apply.la module-filter-heuristics.la \
-	module-role-ducking.la $(am__append_84) $(am__append_85) \
-	$(am__append_86) $(am__append_87) $(am__append_88) \
-	$(am__append_89) $(am__append_90) $(am__append_91) \
-	$(am__append_92) $(am__append_93) $(am__append_94) \
-	$(am__append_95) $(am__append_96) $(am__append_97) \
-	$(am__append_98) $(am__append_99) $(am__append_100) \
-	$(am__append_101) $(am__append_102) $(am__append_103) \
-	$(am__append_105) $(am__append_106) $(am__append_107) \
-	$(am__append_108) $(am__append_109) $(am__append_110) \
-	$(am__append_111) $(am__append_112) $(am__append_113) \
-	$(am__append_114) $(am__append_115)
+	module-role-ducking.la $(am__append_85) $(am__append_86) \
+	$(am__append_87) $(am__append_88) $(am__append_89) \
+	$(am__append_90) $(am__append_91) $(am__append_92) \
+	$(am__append_93) $(am__append_94) $(am__append_95) \
+	$(am__append_96) $(am__append_97) $(am__append_98) \
+	$(am__append_99) $(am__append_100) $(am__append_101) \
+	$(am__append_102) $(am__append_103) $(am__append_104) \
+	$(am__append_106) $(am__append_107) $(am__append_108) \
+	$(am__append_109) $(am__append_110) $(am__append_111) \
+	$(am__append_112) $(am__append_113) $(am__append_114) \
+	$(am__append_115) $(am__append_116)
 libprotocol_simple_la_SOURCES = pulsecore/protocol-simple.c pulsecore/protocol-simple.h
 libprotocol_simple_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libprotocol_simple_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
@@ -4174,11 +4190,11 @@ libprotocol_http_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libprotocol_http_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
 libprotocol_native_la_SOURCES = pulsecore/protocol-native.c pulsecore/protocol-native.h pulsecore/native-common.h
 libprotocol_native_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
-	$(am__append_81)
+	$(am__append_82)
 libprotocol_native_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 libprotocol_native_la_LIBADD = $(AM_LIBADD) \
 	libpulsecore-@PA_MAJORMINOR@.la \
-	libpulsecommon-@PA_MAJORMINOR@.la libpulse.la $(am__append_82)
+	libpulsecommon-@PA_MAJORMINOR@.la libpulse.la $(am__append_83)
 @HAVE_ESOUND_TRUE@libprotocol_esound_la_SOURCES = pulsecore/protocol-esound.c pulsecore/protocol-esound.h pulsecore/esound.h
 @HAVE_ESOUND_TRUE@libprotocol_esound_la_LDFLAGS = $(AM_LDFLAGS) $(AM_LIBLDFLAGS) -avoid-version
 @HAVE_ESOUND_TRUE@libprotocol_esound_la_LIBADD = $(AM_LIBADD) libpulsecore-@PA_MAJORMINOR@.la libpulsecommon-@PA_MAJORMINOR@.la libpulse.la
@@ -4313,7 +4329,7 @@ SYMDEF_FILES = module-cli-symdef.h module-cli-protocol-tcp-symdef.h \
 	module-switch-on-connect-symdef.h \
 	module-switch-on-port-available-symdef.h \
 	module-filter-apply-symdef.h module-filter-heuristics-symdef.h \
-	$(am__append_117)
+	$(am__append_118)
 
 # Simple protocol
 module_simple_protocol_tcp_la_SOURCES = modules/module-protocol-stub.c
@@ -4448,10 +4464,10 @@ module_remap_source_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_remap_source_la_LIBADD = $(MODULE_LIBADD)
 module_ladspa_sink_la_SOURCES = modules/module-ladspa-sink.c modules/ladspa.h
 module_ladspa_sink_la_CFLAGS = -DLADSPA_PATH=\"$(libdir)/ladspa:/usr/local/lib/ladspa:/usr/lib/ladspa:/usr/local/lib64/ladspa:/usr/lib64/ladspa\" \
-	$(AM_CFLAGS) $(SERVER_CFLAGS) $(am__append_118)
+	$(AM_CFLAGS) $(SERVER_CFLAGS) $(am__append_119)
 module_ladspa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_ladspa_sink_la_LIBADD = $(MODULE_LIBADD) $(LIBLTDL) \
-	$(am__append_119)
+	$(am__append_120)
 module_equalizer_sink_la_SOURCES = modules/module-equalizer-sink.c
 module_equalizer_sink_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) $(DBUS_CFLAGS) $(FFTW_CFLAGS)
 module_equalizer_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
@@ -4535,12 +4551,12 @@ libalsa_util_la_SOURCES = modules/alsa/alsa-util.c \
 	modules/alsa/alsa-mixer.h modules/alsa/alsa-sink.c \
 	modules/alsa/alsa-sink.h modules/alsa/alsa-source.c \
 	modules/alsa/alsa-source.h modules/reserve-wrap.c \
-	modules/reserve-wrap.h $(am__append_120) $(am__append_123)
+	modules/reserve-wrap.h $(am__append_121) $(am__append_124)
 libalsa_util_la_LDFLAGS = -avoid-version
 libalsa_util_la_LIBADD = $(MODULE_LIBADD) $(ASOUNDLIB_LIBS) \
-	$(am__append_121) $(am__append_124)
+	$(am__append_122) $(am__append_125)
 libalsa_util_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
-	$(ASOUNDLIB_CFLAGS) $(am__append_122) $(am__append_125)
+	$(ASOUNDLIB_CFLAGS) $(am__append_123) $(am__append_126)
 module_alsa_sink_la_SOURCES = modules/alsa/module-alsa-sink.c
 module_alsa_sink_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_alsa_sink_la_LIBADD = $(MODULE_LIBADD) $(ASOUNDLIB_LIBS) libalsa-util.la
@@ -4619,7 +4635,9 @@ module_position_event_sounds_la_LIBADD = $(MODULE_LIBADD)
 module_position_event_sounds_la_CFLAGS = $(AM_CFLAGS)
 
 # Ducking effect based on stream roles
-module_role_ducking_la_SOURCES = modules/module-role-ducking.c
+module_role_ducking_la_SOURCES = modules/module-role-ducking.c \
+                                 modules/stream-interaction.c modules/stream-interaction.h
+
 module_role_ducking_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_role_ducking_la_LIBADD = $(MODULE_LIBADD)
 module_role_ducking_la_CFLAGS = $(AM_CFLAGS)
@@ -4632,7 +4650,9 @@ module_augment_properties_la_LIBADD = $(MODULE_LIBADD)
 module_augment_properties_la_CFLAGS = $(AM_CFLAGS) -DDESKTOPFILEDIR=\"/usr/share/applications\"
 
 # Cork certain streams while others are active (e.g. cork music when phone streams appear)
-module_role_cork_la_SOURCES = modules/module-role-cork.c
+module_role_cork_la_SOURCES = modules/module-role-cork.c \
+                              modules/stream-interaction.c modules/stream-interaction.h
+
 module_role_cork_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_role_cork_la_LIBADD = $(MODULE_LIBADD)
 module_role_cork_la_CFLAGS = $(AM_CFLAGS)
@@ -4647,15 +4667,15 @@ module_device_manager_la_CFLAGS = $(AM_CFLAGS)
 module_device_restore_la_SOURCES = modules/module-device-restore.c
 module_device_restore_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_device_restore_la_LIBADD = $(MODULE_LIBADD) \
-	libprotocol-native.la $(am__append_126)
-module_device_restore_la_CFLAGS = $(AM_CFLAGS) $(am__append_127)
+	libprotocol-native.la $(am__append_127)
+module_device_restore_la_CFLAGS = $(AM_CFLAGS) $(am__append_128)
 
 # Stream volume/muted/device restore module
 module_stream_restore_la_SOURCES = modules/module-stream-restore.c
 module_stream_restore_la_LDFLAGS = $(MODULE_LDFLAGS)
 module_stream_restore_la_LIBADD = $(MODULE_LIBADD) \
-	libprotocol-native.la $(am__append_128)
-module_stream_restore_la_CFLAGS = $(AM_CFLAGS) $(am__append_129)
+	libprotocol-native.la $(am__append_129)
+module_stream_restore_la_CFLAGS = $(AM_CFLAGS) $(am__append_130)
 
 # Card profile restore module
 module_card_restore_la_SOURCES = modules/module-card-restore.c
@@ -4697,13 +4717,13 @@ module_suspend_on_idle_la_CFLAGS = $(AM_CFLAGS)
 module_echo_cancel_la_SOURCES =  \
 	modules/echo-cancel/module-echo-cancel.c \
 	modules/echo-cancel/null.c modules/echo-cancel/echo-cancel.h \
-	$(am__append_130) $(am__append_135)
+	$(am__append_131) $(am__append_136)
 module_echo_cancel_la_LDFLAGS = $(MODULE_LDFLAGS)
-module_echo_cancel_la_LIBADD = $(MODULE_LIBADD) $(am__append_133) \
-	$(am__append_137) $(am__append_139)
+module_echo_cancel_la_LIBADD = $(MODULE_LIBADD) $(am__append_134) \
+	$(am__append_138) $(am__append_140)
 module_echo_cancel_la_CFLAGS = $(AM_CFLAGS) $(SERVER_CFLAGS) \
-	$(am__append_131) $(am__append_134) $(am__append_136) \
-	$(am__append_138)
+	$(am__append_132) $(am__append_135) $(am__append_137) \
+	$(am__append_139)
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@nodist_module_echo_cancel_la_SOURCES = \
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@		modules/echo-cancel/adrian-aec-orc-gen.c \
 @HAVE_ADRIAN_EC_TRUE@@HAVE_ORC_TRUE@		modules/echo-cancel/adrian-aec-orc-gen.h
@@ -4799,8 +4819,8 @@ module_bluez4_device_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS) $(SBC_CFLAGS)
 # Bluetooth BlueZ 5 sink / source
 libbluez5_util_la_SOURCES = modules/bluetooth/bluez5-util.c \
 	modules/bluetooth/bluez5-util.h \
-	modules/bluetooth/a2dp-codecs.h $(am__append_140) \
-	$(am__append_141)
+	modules/bluetooth/a2dp-codecs.h $(am__append_141) \
+	$(am__append_142)
 libbluez5_util_la_LDFLAGS = -avoid-version
 libbluez5_util_la_LIBADD = $(MODULE_LIBADD) $(DBUS_LIBS)
 libbluez5_util_la_CFLAGS = $(AM_CFLAGS) $(DBUS_CFLAGS)
@@ -5347,6 +5367,8 @@ pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memblock.lo:  \
 pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memblockq.lo:  \
 	pulsecore/$(am__dirstamp) pulsecore/$(DEPDIR)/$(am__dirstamp)
 pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memchunk.lo:  \
+	pulsecore/$(am__dirstamp) pulsecore/$(DEPDIR)/$(am__dirstamp)
+pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-native-common.lo:  \
 	pulsecore/$(am__dirstamp) pulsecore/$(DEPDIR)/$(am__dirstamp)
 pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-once.lo:  \
 	pulsecore/$(am__dirstamp) pulsecore/$(DEPDIR)/$(am__dirstamp)
@@ -6074,10 +6096,14 @@ module-rescue-streams.la: $(module_rescue_streams_la_OBJECTS) $(module_rescue_st
 	$(AM_V_CCLD)$(module_rescue_streams_la_LINK) -rpath $(modlibexecdir) $(module_rescue_streams_la_OBJECTS) $(module_rescue_streams_la_LIBADD) $(LIBS)
 modules/module_role_cork_la-module-role-cork.lo:  \
 	modules/$(am__dirstamp) modules/$(DEPDIR)/$(am__dirstamp)
+modules/module_role_cork_la-stream-interaction.lo:  \
+	modules/$(am__dirstamp) modules/$(DEPDIR)/$(am__dirstamp)
 
 module-role-cork.la: $(module_role_cork_la_OBJECTS) $(module_role_cork_la_DEPENDENCIES) $(EXTRA_module_role_cork_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(module_role_cork_la_LINK) -rpath $(modlibexecdir) $(module_role_cork_la_OBJECTS) $(module_role_cork_la_LIBADD) $(LIBS)
 modules/module_role_ducking_la-module-role-ducking.lo:  \
+	modules/$(am__dirstamp) modules/$(DEPDIR)/$(am__dirstamp)
+modules/module_role_ducking_la-stream-interaction.lo:  \
 	modules/$(am__dirstamp) modules/$(DEPDIR)/$(am__dirstamp)
 
 module-role-ducking.la: $(module_role_ducking_la_OBJECTS) $(module_role_ducking_la_DEPENDENCIES) $(EXTRA_module_role_ducking_la_DEPENDENCIES) 
@@ -6915,7 +6941,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_position_event_sounds_la-module-position-event-sounds.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_rescue_streams_la-module-rescue-streams.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_role_cork_la-module-role-cork.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_role_cork_la-stream-interaction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_role_ducking_la-module-role-ducking.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_role_ducking_la-stream-interaction.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_rygel_media_server_la-module-rygel-media-server.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_simple_protocol_tcp_la-module-protocol-stub.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@modules/$(DEPDIR)/module_simple_protocol_unix_la-module-protocol-stub.Plo@am__quote@
@@ -7072,6 +7100,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-memtrap.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-mutex-posix.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-mutex-win32.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-native-common.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-once.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-packet.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-parseaddr.Plo@am__quote@
@@ -7811,6 +7840,13 @@ pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memchunk.lo: pulsecore/memchunk.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pulsecore/memchunk.c' object='pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memchunk.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-memchunk.lo `test -f 'pulsecore/memchunk.c' || echo '$(srcdir)/'`pulsecore/memchunk.c
+
+pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-native-common.lo: pulsecore/native-common.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-native-common.lo -MD -MP -MF pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-native-common.Tpo -c -o pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-native-common.lo `test -f 'pulsecore/native-common.c' || echo '$(srcdir)/'`pulsecore/native-common.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-native-common.Tpo pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-native-common.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pulsecore/native-common.c' object='pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-native-common.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -c -o pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-native-common.lo `test -f 'pulsecore/native-common.c' || echo '$(srcdir)/'`pulsecore/native-common.c
 
 pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-once.lo: pulsecore/once.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpulsecommon_@PA_MAJORMINOR@_la_CFLAGS) $(CFLAGS) -MT pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-once.lo -MD -MP -MF pulsecore/$(DEPDIR)/libpulsecommon_@PA_MAJORMINOR@_la-once.Tpo -c -o pulsecore/libpulsecommon_@PA_MAJORMINOR@_la-once.lo `test -f 'pulsecore/once.c' || echo '$(srcdir)/'`pulsecore/once.c
@@ -9023,12 +9059,26 @@ modules/module_role_cork_la-module-role-cork.lo: modules/module-role-cork.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_role_cork_la_CFLAGS) $(CFLAGS) -c -o modules/module_role_cork_la-module-role-cork.lo `test -f 'modules/module-role-cork.c' || echo '$(srcdir)/'`modules/module-role-cork.c
 
+modules/module_role_cork_la-stream-interaction.lo: modules/stream-interaction.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_role_cork_la_CFLAGS) $(CFLAGS) -MT modules/module_role_cork_la-stream-interaction.lo -MD -MP -MF modules/$(DEPDIR)/module_role_cork_la-stream-interaction.Tpo -c -o modules/module_role_cork_la-stream-interaction.lo `test -f 'modules/stream-interaction.c' || echo '$(srcdir)/'`modules/stream-interaction.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) modules/$(DEPDIR)/module_role_cork_la-stream-interaction.Tpo modules/$(DEPDIR)/module_role_cork_la-stream-interaction.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='modules/stream-interaction.c' object='modules/module_role_cork_la-stream-interaction.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_role_cork_la_CFLAGS) $(CFLAGS) -c -o modules/module_role_cork_la-stream-interaction.lo `test -f 'modules/stream-interaction.c' || echo '$(srcdir)/'`modules/stream-interaction.c
+
 modules/module_role_ducking_la-module-role-ducking.lo: modules/module-role-ducking.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_role_ducking_la_CFLAGS) $(CFLAGS) -MT modules/module_role_ducking_la-module-role-ducking.lo -MD -MP -MF modules/$(DEPDIR)/module_role_ducking_la-module-role-ducking.Tpo -c -o modules/module_role_ducking_la-module-role-ducking.lo `test -f 'modules/module-role-ducking.c' || echo '$(srcdir)/'`modules/module-role-ducking.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) modules/$(DEPDIR)/module_role_ducking_la-module-role-ducking.Tpo modules/$(DEPDIR)/module_role_ducking_la-module-role-ducking.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='modules/module-role-ducking.c' object='modules/module_role_ducking_la-module-role-ducking.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_role_ducking_la_CFLAGS) $(CFLAGS) -c -o modules/module_role_ducking_la-module-role-ducking.lo `test -f 'modules/module-role-ducking.c' || echo '$(srcdir)/'`modules/module-role-ducking.c
+
+modules/module_role_ducking_la-stream-interaction.lo: modules/stream-interaction.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_role_ducking_la_CFLAGS) $(CFLAGS) -MT modules/module_role_ducking_la-stream-interaction.lo -MD -MP -MF modules/$(DEPDIR)/module_role_ducking_la-stream-interaction.Tpo -c -o modules/module_role_ducking_la-stream-interaction.lo `test -f 'modules/stream-interaction.c' || echo '$(srcdir)/'`modules/stream-interaction.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) modules/$(DEPDIR)/module_role_ducking_la-stream-interaction.Tpo modules/$(DEPDIR)/module_role_ducking_la-stream-interaction.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='modules/stream-interaction.c' object='modules/module_role_ducking_la-stream-interaction.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_role_ducking_la_CFLAGS) $(CFLAGS) -c -o modules/module_role_ducking_la-stream-interaction.lo `test -f 'modules/stream-interaction.c' || echo '$(srcdir)/'`modules/stream-interaction.c
 
 modules/rtp/module_rtp_recv_la-module-rtp-recv.lo: modules/rtp/module-rtp-recv.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(module_rtp_recv_la_CFLAGS) $(CFLAGS) -MT modules/rtp/module_rtp_recv_la-module-rtp-recv.lo -MD -MP -MF modules/rtp/$(DEPDIR)/module_rtp_recv_la-module-rtp-recv.Tpo -c -o modules/rtp/module_rtp_recv_la-module-rtp-recv.lo `test -f 'modules/rtp/module-rtp-recv.c' || echo '$(srcdir)/'`modules/rtp/module-rtp-recv.c

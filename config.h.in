@@ -103,6 +103,9 @@
 /* Define to 1 if you have the `ctime_r' function. */
 #undef HAVE_CTIME_R
 
+/* define if the compiler supports basic C++11 syntax */
+#undef HAVE_CXX11
+
 /* Have D-Bus. */
 #undef HAVE_DBUS
 
@@ -116,6 +119,18 @@
 /* Define to 1 if you have the declaration of `environ', and to 0 if you
    don't. */
 #undef HAVE_DECL_ENVIRON
+
+/* Define to 1 if you have the declaration of `SOUND_PCM_READ_BITS', and to 0
+   if you don't. */
+#undef HAVE_DECL_SOUND_PCM_READ_BITS
+
+/* Define to 1 if you have the declaration of `SOUND_PCM_READ_CHANNELS', and
+   to 0 if you don't. */
+#undef HAVE_DECL_SOUND_PCM_READ_CHANNELS
+
+/* Define to 1 if you have the declaration of `SOUND_PCM_READ_RATE', and to 0
+   if you don't. */
+#undef HAVE_DECL_SOUND_PCM_READ_RATE
 
 /* Have dladdr? */
 #undef HAVE_DLADDR
@@ -233,6 +248,9 @@
 
 /* Define to 1 if you have the `lstat' function. */
 #undef HAVE_LSTAT
+
+/* Have memfd shared memory. */
+#undef HAVE_MEMFD
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
@@ -545,11 +563,6 @@
 
 /* Define to 1 if you have the <xlocale.h> header file. */
 #undef HAVE_XLOCALE_H
-
-/* Define to 1 if you have the
-   </System/Library/Frameworks/CoreServices.framework/Headers/CoreServices.h>
-   header file. */
-#undef HAVE__SYSTEM_LIBRARY_FRAMEWORKS_CORESERVICES_FRAMEWORK_HEADERS_CORESERVICES_H
 
 /* Define as const if the declaration of iconv() needs const. */
 #undef ICONV_CONST

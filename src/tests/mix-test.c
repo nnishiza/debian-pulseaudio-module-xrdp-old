@@ -286,7 +286,7 @@ START_TEST (mix_test) {
     if (!getenv("MAKE_CHECK"))
         pa_log_set_level(PA_LOG_DEBUG);
 
-    fail_unless((pool = pa_mempool_new(false, 0)) != NULL, NULL);
+    fail_unless((pool = pa_mempool_new(PA_MEM_TYPE_PRIVATE, 0, true)) != NULL, NULL);
 
     a.channels = 1;
     a.rate = 44100;
@@ -338,7 +338,7 @@ START_TEST (mix_test) {
         pa_memblock_unref(k.memblock);
     }
 
-    pa_mempool_free(pool);
+    pa_mempool_unref(pool);
 }
 END_TEST
 

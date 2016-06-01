@@ -75,6 +75,7 @@ PA_MODULE_USAGE(
           "save_aec=<save AEC data in /tmp> "
           "autoloaded=<set if this module is being loaded automatically> "
           "use_volume_sharing=<yes or no> "
+          "use_master_format=<yes or no> "
         ));
 
 /* NOTE: Make sure the enum and ec_table are maintained in the correct order */
@@ -140,6 +141,7 @@ static const pa_echo_canceller ec_table[] = {
 #define DEFAULT_ADJUST_TOLERANCE (5*PA_USEC_PER_MSEC)
 #define DEFAULT_SAVE_AEC false
 #define DEFAULT_AUTOLOADED false
+#define DEFAULT_USE_MASTER_FORMAT false
 
 #define MEMBLOCKQ_MAXLENGTH (16*1024*1024)
 
@@ -204,7 +206,6 @@ struct userdata {
     pa_core *core;
     pa_module *module;
 
-    bool autoloaded;
     bool dead;
     bool save_aec;
 
@@ -275,6 +276,7 @@ static const char* const valid_modargs[] = {
     "save_aec",
     "autoloaded",
     "use_volume_sharing",
+    "use_master_format",
     NULL
 };
 
@@ -1433,12 +1435,6 @@ static void source_output_moving_cb(pa_source_output *o, pa_source *dest) {
     pa_assert_ctl_context();
     pa_assert_se(u = o->userdata);
 
-    if (u->autoloaded) {
-        /* We were autoloaded, and don't support moving. Let's unload ourselves. */
-        pa_log_debug("Can't move autoloaded streams, unloading");
-        pa_module_unload_request(u->module, true);
-    }
-
     if (dest) {
         pa_source_set_asyncmsgq(u->source, dest->asyncmsgq);
         pa_source_update_flags(u->source, PA_SOURCE_LATENCY|PA_SOURCE_DYNAMIC_LATENCY, dest->flags);
@@ -1469,12 +1465,6 @@ static void sink_input_moving_cb(pa_sink_input *i, pa_sink *dest) {
 
     pa_sink_input_assert_ref(i);
     pa_assert_se(u = i->userdata);
-
-    if (u->autoloaded) {
-        /* We were autoloaded, and don't support moving. Let's unload ourselves. */
-        pa_log_debug("Can't move autoloaded streams, unloading");
-        pa_module_unload_request(u->module, true);
-    }
 
     if (dest) {
         pa_sink_set_asyncmsgq(u->sink, dest->asyncmsgq);
@@ -1532,12 +1522,16 @@ static int canceller_process_msg_cb(pa_msgobject *o, int code, void *userdata, i
 
     switch (code) {
         case ECHO_CANCELLER_MESSAGE_SET_VOLUME: {
-            pa_cvolume *v = (pa_cvolume *) userdata;
+            pa_volume_t v = PA_PTR_TO_UINT(userdata);
+            pa_cvolume vol;
 
-            if (u->use_volume_sharing)
-                pa_source_set_volume(u->source, v, true, false);
-            else
-                pa_source_output_set_volume(u->source_output, v, false, true);
+            if (u->use_volume_sharing) {
+                pa_cvolume_set(&vol, u->source->sample_spec.channels, v);
+                pa_source_set_volume(u->source, &vol, true, false);
+            } else {
+                pa_cvolume_set(&vol, u->source_output->sample_spec.channels, v);
+                pa_source_output_set_volume(u->source_output, &vol, false, true);
+            }
 
             break;
         }
@@ -1551,22 +1545,20 @@ static int canceller_process_msg_cb(pa_msgobject *o, int code, void *userdata, i
 }
 
 /* Called by the canceller, so source I/O thread context. */
-void pa_echo_canceller_get_capture_volume(pa_echo_canceller *ec, pa_cvolume *v) {
+pa_volume_t pa_echo_canceller_get_capture_volume(pa_echo_canceller *ec) {
 #ifndef ECHO_CANCEL_TEST
-    *v = ec->msg->userdata->thread_info.current_volume;
+    return pa_cvolume_avg(&ec->msg->userdata->thread_info.current_volume);
 #else
-    pa_cvolume_set(v, 1, PA_VOLUME_NORM);
+    return PA_VOLUME_NORM;
 #endif
 }
 
 /* Called by the canceller, so source I/O thread context. */
-void pa_echo_canceller_set_capture_volume(pa_echo_canceller *ec, pa_cvolume *v) {
+void pa_echo_canceller_set_capture_volume(pa_echo_canceller *ec, pa_volume_t v) {
 #ifndef ECHO_CANCEL_TEST
-    if (!pa_cvolume_equal(&ec->msg->userdata->thread_info.current_volume, v)) {
-        pa_cvolume *vol = pa_xnewdup(pa_cvolume, v, 1);
-
-        pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(ec->msg), ECHO_CANCELLER_MESSAGE_SET_VOLUME, vol, 0, NULL,
-                pa_xfree);
+    if (pa_cvolume_avg(&ec->msg->userdata->thread_info.current_volume) != v) {
+        pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(ec->msg), ECHO_CANCELLER_MESSAGE_SET_VOLUME, PA_UINT_TO_PTR(v),
+                0, NULL, NULL);
     }
 #endif
 }
@@ -1652,6 +1644,7 @@ int pa__init(pa_module*m) {
     pa_modargs *ma;
     pa_source *source_master=NULL;
     pa_sink *sink_master=NULL;
+    bool autoloaded;
     pa_source_output_new_data source_output_data;
     pa_sink_input_new_data sink_input_data;
     pa_source_new_data source_data;
@@ -1659,6 +1652,7 @@ int pa__init(pa_module*m) {
     pa_memchunk silence;
     uint32_t temp;
     uint32_t nframes = 0;
+    bool use_master_format;
 
     pa_assert(m);
 
@@ -1684,13 +1678,30 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    source_ss = source_master->sample_spec;
-    source_ss.rate = DEFAULT_RATE;
-    source_ss.channels = DEFAULT_CHANNELS;
-    pa_channel_map_init_auto(&source_map, source_ss.channels, PA_CHANNEL_MAP_DEFAULT);
+    /* Set to true if we just want to inherit sample spec and channel map from the sink and source master */
+    use_master_format = DEFAULT_USE_MASTER_FORMAT;
+    if (pa_modargs_get_value_boolean(ma, "use_master_format", &use_master_format) < 0) {
+        pa_log("use_master_format= expects a boolean argument");
+        goto fail;
+    }
 
+    source_ss = source_master->sample_spec;
     sink_ss = sink_master->sample_spec;
-    sink_map = sink_master->channel_map;
+
+    if (use_master_format) {
+        source_map = source_master->channel_map;
+        sink_map = sink_master->channel_map;
+    } else {
+        source_ss = source_master->sample_spec;
+        source_ss.rate = DEFAULT_RATE;
+        source_ss.channels = DEFAULT_CHANNELS;
+        pa_channel_map_init_auto(&source_map, source_ss.channels, PA_CHANNEL_MAP_DEFAULT);
+
+        sink_ss = sink_master->sample_spec;
+        sink_ss.rate = DEFAULT_RATE;
+        sink_ss.channels = DEFAULT_CHANNELS;
+        pa_channel_map_init_auto(&sink_map, sink_ss.channels, PA_CHANNEL_MAP_DEFAULT);
+    }
 
     u = pa_xnew0(struct userdata, 1);
     if (!u) {
@@ -1736,8 +1747,8 @@ int pa__init(pa_module*m) {
         goto fail;
     }
 
-    u->autoloaded = DEFAULT_AUTOLOADED;
-    if (pa_modargs_get_value_boolean(ma, "autoloaded", &u->autoloaded) < 0) {
+    autoloaded = DEFAULT_AUTOLOADED;
+    if (pa_modargs_get_value_boolean(ma, "autoloaded", &autoloaded) < 0) {
         pa_log("Failed to parse autoloaded value");
         goto fail;
     }
@@ -1782,7 +1793,7 @@ int pa__init(pa_module*m) {
     pa_source_new_data_set_channel_map(&source_data, &source_map);
     pa_proplist_sets(source_data.proplist, PA_PROP_DEVICE_MASTER_DEVICE, source_master->name);
     pa_proplist_sets(source_data.proplist, PA_PROP_DEVICE_CLASS, "filter");
-    if (!u->autoloaded)
+    if (!autoloaded)
         pa_proplist_sets(source_data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
 
     if (pa_modargs_get_proplist(ma, "source_properties", source_data.proplist, PA_UPDATE_REPLACE) < 0) {
@@ -1832,7 +1843,7 @@ int pa__init(pa_module*m) {
     pa_sink_new_data_set_channel_map(&sink_data, &sink_map);
     pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_MASTER_DEVICE, sink_master->name);
     pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_CLASS, "filter");
-    if (!u->autoloaded)
+    if (!autoloaded)
         pa_proplist_sets(sink_data.proplist, PA_PROP_DEVICE_INTENDED_ROLES, "phone");
 
     if (pa_modargs_get_proplist(ma, "sink_properties", sink_data.proplist, PA_UPDATE_REPLACE) < 0) {
@@ -1884,6 +1895,9 @@ int pa__init(pa_module*m) {
     pa_source_output_new_data_set_sample_spec(&source_output_data, &source_output_ss);
     pa_source_output_new_data_set_channel_map(&source_output_data, &source_output_map);
 
+    if (autoloaded)
+        source_output_data.flags |= PA_SOURCE_OUTPUT_DONT_MOVE;
+
     pa_source_output_new(&u->source_output, m->core, &source_output_data);
     pa_source_output_new_data_done(&source_output_data);
 
@@ -1918,6 +1932,9 @@ int pa__init(pa_module*m) {
     pa_sink_input_new_data_set_sample_spec(&sink_input_data, &sink_ss);
     pa_sink_input_new_data_set_channel_map(&sink_input_data, &sink_map);
     sink_input_data.flags = PA_SINK_INPUT_VARIABLE_RATE;
+
+    if (autoloaded)
+        sink_input_data.flags |= PA_SINK_INPUT_DONT_MOVE;
 
     pa_sink_input_new(&u->sink_input, m->core, &sink_input_data);
     pa_sink_input_new_data_done(&sink_input_data);
@@ -2137,12 +2154,12 @@ int main(int argc, char* argv[]) {
         goto fail;
     }
 
-    source_ss.format = PA_SAMPLE_S16LE;
+    source_ss.format = PA_SAMPLE_FLOAT32LE;
     source_ss.rate = DEFAULT_RATE;
     source_ss.channels = DEFAULT_CHANNELS;
     pa_channel_map_init_auto(&source_map, source_ss.channels, PA_CHANNEL_MAP_DEFAULT);
 
-    sink_ss.format = PA_SAMPLE_S16LE;
+    sink_ss.format = PA_SAMPLE_FLOAT32LE;
     sink_ss.rate = DEFAULT_RATE;
     sink_ss.channels = DEFAULT_CHANNELS;
     pa_channel_map_init_auto(&sink_map, sink_ss.channels, PA_CHANNEL_MAP_DEFAULT);
