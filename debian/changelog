@@ -1,3 +1,9 @@
+pulseaudio (1:9.0-1ubuntu1~yakkety1) UNRELEASED; urgency=medium
+
+  * New upstream release
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Fri, 24 Jun 2016 10:50:55 +1000
+
 pulseaudio (1:8.99.1-1ubuntu1) UNRELEASED; urgency=medium
 
   * Merge with experimental pulseaudio package:
