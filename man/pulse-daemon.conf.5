@@ -32,9 +32,9 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBenable-remixing=\f1 If disabled never upmix or downmix channels to different channel maps. Instead, do a simple name-based matching only. Defaults to \fByes.\f1
 .TP
-\fBenable-lfe-remixing=\f1 If disabled when upmixing or downmixing ignore LFE channels. When this option is disabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fByes\f1.
+\fBenable-lfe-remixing=\f1 If disabled when upmixing or downmixing ignore LFE channels. When this option is disabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fBno\f1.
 .TP
-\fBlfe-crossover-freq=\f1 The crossover frequency (in Hz) for the LFE filter. Defaults to 120 Hz. Set it to 0 to disable the LFE filter.
+\fBlfe-crossover-freq=\f1 The crossover frequency (in Hz) for the LFE filter. Set it to 0 to disable the LFE filter. Defaults to 0.
 .TP
 \fBuse-pid-file=\f1 Create a PID file in the runtime directory (\fI$XDG_RUNTIME_DIR/pulse/pid\f1). If this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--use-pid-file\f1 command line option takes precedence.
 .TP
