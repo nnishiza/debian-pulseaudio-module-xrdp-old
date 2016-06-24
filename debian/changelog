@@ -1,6 +1,7 @@
 pulseaudio (1:9.0-1ubuntu1~yakkety1) UNRELEASED; urgency=medium
 
   * New upstream release
+  * Refreshed patches
 
  -- Luke Yelavich <themuso@ubuntu.com>  Fri, 24 Jun 2016 10:50:55 +1000
 
