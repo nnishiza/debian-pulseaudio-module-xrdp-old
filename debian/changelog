@@ -1,9 +1,10 @@
-pulseaudio (9.0-1) UNRELEASED; urgency=medium
+pulseaudio (9.0-1) unstable; urgency=medium
 
+  [ Luke Yelavich ]
   * New upstream release
   * Update shlibs file
 
- -- Luke Yelavich <themuso@ubuntu.com>  Fri, 24 Jun 2016 10:50:55 +1000
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 03 Jul 2016 12:00:25 -0400
 
 pulseaudio (8.99.1-1) experimental; urgency=medium
 
