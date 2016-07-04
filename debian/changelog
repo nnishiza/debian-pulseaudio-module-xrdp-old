@@ -1,3 +1,11 @@
+pulseaudio (9.0-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Add 0001-Fix_detection_of_online_CPUs.patch to fix pa_ncpus()
+    on systems with dynamic CPU configurations. Closes: #829618
+
+ -- John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>  Mon, 04 Jul 2016 23:11:29 +0200
+
 pulseaudio (9.0-1) unstable; urgency=medium
 
   [ Luke Yelavich ]

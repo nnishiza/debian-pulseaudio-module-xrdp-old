@@ -1,0 +1,31 @@
+Description: Fix detection of online CPUs in pa_ncpus()
+ PulseAudio uses sysconf(_NC_PROCESSORS_CONF) in pulsecore/
+ core-util.c:pa_ncpus() to determine the number of available
+ CPUs on the system.
+ .
+ However, since the operating system may disable individual CPUs,
+ the number of available CPUs may be smaller than _NC_PROCESSORS_CONF
+ and pa_ncpus() will therefore report an incorrect number of CPUs.
+ This makes the once-test fail on such systems like some of the
+ sparc64 buildds.
+ .
+ Patching pa_ncpus() to use _NC_PROCESSORS_CONF fixes this problem
+ and also results in once-test passing on the sparc64 buildds.
+ .
+ This has been reported upstream as:
+ https://bugs.freedesktop.org/show_bug.cgi?id=96809
+ .
+
+--- pulseaudio-9.0.orig/src/pulsecore/core-util.c
++++ pulseaudio-9.0/src/pulsecore/core-util.c
+@@ -3179,8 +3179,8 @@ void pa_reduce(unsigned *num, unsigned *
+ unsigned pa_ncpus(void) {
+     long ncpus;
+ 
+-#ifdef _SC_NPROCESSORS_CONF
+-    ncpus = sysconf(_SC_NPROCESSORS_CONF);
++#ifdef _SC_NPROCESSORS_ONLN
++    ncpus = sysconf(_SC_NPROCESSORS_ONLN);
+ #else
+     ncpus = 1;
+ #endif
