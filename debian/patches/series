@@ -1,3 +1,5 @@
+0001-Fix_detection_of_online_CPUs.patch
+
 # Ubuntu specific config/fixes
 0001-volume-config-changes.patch
 0005-dont-load-cork-music-on-phone.patch
