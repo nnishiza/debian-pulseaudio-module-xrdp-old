@@ -1,4 +1,4 @@
-pulseaudio (1:9.0-1.1ubuntu1) UNRELEASED; urgency=medium
+pulseaudio (1:9.0-1.1ubuntu1) yakkety; urgency=medium
 
   * Merge with experimental pulseaudio package:
     - epoch (my stupid fault :S)
@@ -28,7 +28,7 @@ pulseaudio (1:9.0-1.1ubuntu1) UNRELEASED; urgency=medium
     - Add snappy support, preventing snap apps from recording audio, full
       support via trust-store is planned
 
- -- Luke Yelavich <themuso@ubuntu.com>  Wed, 01 Jun 2016 12:21:21 +1000
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 13 Jul 2016 08:44:48 +1000
 
 pulseaudio (9.0-1.1) unstable; urgency=medium
 
