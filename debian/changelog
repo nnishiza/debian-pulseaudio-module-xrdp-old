@@ -62,6 +62,12 @@ pulseaudio (8.0-3) experimental; urgency=medium
 
  -- Felipe Sateler <fsateler@debian.org>  Thu, 21 Apr 2016 23:59:41 -0300
 
+pulseaudio (1:8.0-2ubuntu3) yakkety; urgency=medium
+
+  * No-change rebuild against libwebrtc-audio-processing1
+
+ -- Steve Langasek <steve.langasek@ubuntu.com>  Sun, 10 Jul 2016 10:06:31 +0000
+
 pulseaudio (1:8.0-2ubuntu2) yakkety; urgency=medium
 
   [ Simon Fels ]
