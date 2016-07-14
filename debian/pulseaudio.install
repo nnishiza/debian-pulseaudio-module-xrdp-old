@@ -31,7 +31,6 @@ usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-default-device-restore.so
 usr/lib/pulse-*/modules/module-detect.so
 usr/lib/pulse-*/modules/module-esound-sink.so
-usr/lib/pulse-*/modules/module-equalizer-sink.so
 usr/lib/pulse-*/modules/module-http-protocol-tcp.so
 usr/lib/pulse-*/modules/module-http-protocol-unix.so
 usr/lib/pulse-*/modules/module-intended-roles.so
