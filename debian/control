@@ -6,7 +6,6 @@ Uploaders: Sjoerd Simons <sjoerd@debian.org>,
     Balint Reczey <balint@balintreczey.hu>,
     Felipe Sateler <fsateler@debian.org>
 Build-Depends: debhelper (>= 9.20141010),
-    cdbs (>= 0.4.93),
     check,
     dh-autoreconf,
     dh-exec,
