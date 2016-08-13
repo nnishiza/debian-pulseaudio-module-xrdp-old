@@ -12,6 +12,8 @@ pulseaudio (9.0-2) UNRELEASED; urgency=medium
     Closes: #833011
   * Drop versioned breaks against ancient libltdl version
   * Drop versioned breaks against avahi-daemon version older than jessie
+  * libpulsedsp: drop versioned breaks against ancient pulseaudio-utils
+    version
 
  -- Felipe Sateler <fsateler@debian.org>  Fri, 12 Aug 2016 21:57:56 -0400
 

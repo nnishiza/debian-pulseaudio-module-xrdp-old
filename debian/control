@@ -253,8 +253,6 @@ Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Conflicts: pulseaudio-utils (<< 3.0)
-Replaces: pulseaudio-utils (<< 3.0)
 Description: PulseAudio OSS pre-load library
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
  WIN32 systems. It is a drop in replacement for the ESD sound server with
