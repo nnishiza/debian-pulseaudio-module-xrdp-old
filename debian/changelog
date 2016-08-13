@@ -1,3 +1,10 @@
+pulseaudio (9.0-2) UNRELEASED; urgency=medium
+
+  * Merge module-udev-detect back into main package.
+    Closes: #831518, #831355
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 12 Aug 2016 21:28:51 -0400
+
 pulseaudio (9.0-1.1) unstable; urgency=medium
 
   * Non-maintainer upload.
