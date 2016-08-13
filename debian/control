@@ -55,7 +55,7 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   libasound2-plugins [linux-any],
   libpulse0 (= ${binary:Version}),
   pulseaudio-utils
-Breaks: pulseaudio-module-udev (<< 9.0-2), pulseaudio-module-x11 (<< 9.0-2), avahi-daemon (<< 0.6.31-3)
+Breaks: pulseaudio-module-udev (<< 9.0-2), pulseaudio-module-x11 (<< 9.0-2)
 Replaces: pulseaudio-module-udev (<< 9.0-2), pulseaudio-module-x11 (<< 9.0-2)
 Recommends: rtkit
 Suggests: udev [linux-any], pavumeter, pavucontrol, paman, paprefs
