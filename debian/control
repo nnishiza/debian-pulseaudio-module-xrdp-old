@@ -55,9 +55,9 @@ Depends: ${shlibs:Depends}, ${misc:Depends}, adduser,
   libasound2-plugins [linux-any],
   libpulse0 (= ${binary:Version}),
   pulseaudio-utils
-Breaks: pulseaudio-module-udev (<< 9.0-2), libltdl3 (<< 1.5.24-1), avahi-daemon (<< 0.6.31-3)
-Replaces: pulseaudio-module-udev (<< 9.0-2)
-Recommends: pulseaudio-module-x11, rtkit
+Breaks: pulseaudio-module-udev (<< 9.0-2), pulseaudio-module-x11 (<< 9.0-2), libltdl3 (<< 1.5.24-1), avahi-daemon (<< 0.6.31-3)
+Replaces: pulseaudio-module-udev (<< 9.0-2), pulseaudio-module-x11 (<< 9.0-2)
+Recommends: rtkit
 Suggests: udev [linux-any], pavumeter, pavucontrol, paman, paprefs
 Description: PulseAudio sound server
  PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
@@ -200,20 +200,6 @@ Description: Bluetooth module for PulseAudio sound server
  or audio gateway.
  .
  The module is called module-bluetooth
-
-Package: pulseaudio-module-x11
-Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}, pulseaudio-utils
-Description: X11 module for PulseAudio sound server
- PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
- WIN32 systems. It is a drop in replacement for the ESD sound server with
- much better latency, mixing/re-sampling quality and overall architecture.
- .
- This module enables PulseAudio to publish itself as the default sound
- server to the X11 root window automatically upon startup. There is also a
- module to playback a sound file in place of the X11 bell beep.
- .
- The modules are called module-x11-publish and module-x11-bell.
 
 Package: libpulse0
 Section: libs

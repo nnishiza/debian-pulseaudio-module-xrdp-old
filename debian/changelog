@@ -5,8 +5,13 @@ pulseaudio (9.0-2) UNRELEASED; urgency=medium
   * Demote udev Depends to Suggests.
     Turns out libudev does not error out when udev is not available,
     instead it just does nothing.
+  * Merge pulseaudio-module-x11 back into main package.
+    Split is not very useful, as main pulseaudio package
+    already depends on X libs. Therefore, only 56Kb are added
+    to the main package.
+    Closes: #833011
 
- -- Felipe Sateler <fsateler@debian.org>  Fri, 12 Aug 2016 21:28:51 -0400
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 12 Aug 2016 21:57:56 -0400
 
 pulseaudio (9.0-1.1) unstable; urgency=medium
 
