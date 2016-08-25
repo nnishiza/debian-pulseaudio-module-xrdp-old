@@ -5,6 +5,7 @@ etc/pulse/system.pa
 etc/pulse/daemon.conf
 etc/dbus-1/system.d/pulseaudio-system.conf
 etc/xdg/autostart/pulseaudio.desktop
+[linux-any] lib/udev/rules.d/90-pulseaudio.rules
 usr/bin/pulseaudio
 usr/bin/start-pulseaudio-x11
 usr/lib/*/pulseaudio/libpulsecore-*.so
@@ -39,6 +40,7 @@ usr/lib/pulse-*/modules/module-match.so
 usr/lib/pulse-*/modules/module-native-protocol-fd.so
 usr/lib/pulse-*/modules/module-native-protocol-tcp.so
 usr/lib/pulse-*/modules/module-native-protocol-unix.so
+[linux-any] usr/lib/pulse-*/modules/module-udev-detect.so
 usr/lib/pulse-*/modules/module-loopback.so
 usr/lib/pulse-*/modules/module-null-sink.so
 usr/lib/pulse-*/modules/module-oss.so
@@ -76,6 +78,7 @@ usr/lib/pulse-*/modules/module-virtual-source.so
 usr/lib/pulse-*/modules/module-switch-on-port-available.so
 usr/lib/pulse-*/modules/module-virtual-surround-sink.so
 usr/lib/pulse-*/modules/module-snappy-policy.so
+usr/lib/pulse-*/modules/module-x11*.so
 [linux-any] usr/lib/pulse-*/modules/module-systemd-login.so
 [linux-any] usr/lib/systemd/user/pulseaudio.*
 usr/share/bash-completion/completions/*

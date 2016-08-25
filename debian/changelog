@@ -1,3 +1,54 @@
+pulseaudio (1:9.0-2ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge with Debian:
+    - epoch (my stupid fault :S)
+    - Add a module to allow pulseaudio to use the Android audio HAL
+    - Adjust gbp.conf file to point to the ubuntu branch for package builds
+    - Disable module-role-cork by default
+    - Load module-x11-bell in the start-pulseaudio-x11 script
+    - Hide pulseaudio from startup apps dialog
+    - Quit daemon if pid file is removed
+    - Avoid abort when poll descriptor is 0, such as when using it with the
+      audioflinger bridge, like done in ubuntu touch
+    - change default rlimit_rttime value to 200 ms
+    - Don't probe UCM profiles, trust that the profile writer knows what they
+      are doing
+    - Add card hook to allow modules to do something before a profile becomes
+      active
+    - Add an option to the bluez discovery module to set the profile
+    - Allow leaving bluetooth transport running while sink and source are
+      suspended.
+    - Add option to module-switch-on-connect to skip abstract devices
+    - Add property to module-device-restore to skip store/restore
+    - Add missing fields for sink_input/source_output info struct to the vala
+      bindings
+    - Add a build/run autopkgtest for libpulse-dev
+    - Drop libsoxr-dev build dep, its in universe
+    - Add support for the trust-store
+    - Add snappy support, preventing snap apps from recording audio, full
+      support via trust-store is planned
+
+ -- Luke Yelavich <luke@galactica>  Fri, 26 Aug 2016 08:16:30 +1000
+
+pulseaudio (9.0-2) unstable; urgency=medium
+
+  * Merge module-udev-detect back into main package.
+    Closes: #831518, #831355
+  * Demote udev Depends to Suggests.
+    Turns out libudev does not error out when udev is not available,
+    instead it just does nothing.
+  * Merge pulseaudio-module-x11 back into main package.
+    Split is not very useful, as main pulseaudio package
+    already depends on X libs. Therefore, only 56Kb are added
+    to the main package.
+    Closes: #833011
+  * Drop versioned breaks against ancient libltdl version
+  * Drop versioned breaks against avahi-daemon version older than jessie
+  * libpulsedsp: drop versioned breaks against ancient pulseaudio-utils
+    version
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 12 Aug 2016 22:40:38 -0400
+
 pulseaudio (1:9.0-1.1ubuntu1) yakkety; urgency=medium
 
   * Merge with experimental pulseaudio package:

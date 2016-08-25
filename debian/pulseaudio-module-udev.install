@@ -1,2 +1,0 @@
-lib/udev/rules.d/90-pulseaudio.rules
-usr/lib/pulse-*/modules/module-udev-detect.so
