@@ -52,7 +52,7 @@ override_dh_shlibdeps:
 	dh_shlibdeps --libpackage=pulseaudio
 
 override_dh_install:
-	dh_install --list-missing
+	dh_install --fail-missing
 
 override_dh_installdocs:
 	dh_installdocs -A NEWS README
