@@ -1,3 +1,15 @@
+pulseaudio (9.0-3) unstable; urgency=medium
+
+  [ Willem Mulder ]
+  * Split equalizer sink module into its own package (Closes: #794650)
+
+  [ Felipe Sateler ]
+  * Switch from CDBS to short-form dh
+  * Use upstream-provided pamon,parec,parecord links instead of creating our own
+  * Now that we ship everything upstream ships, enable --fail-missing
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 28 Aug 2016 13:15:28 -0300
+
 pulseaudio (9.0-2) unstable; urgency=medium
 
   * Merge module-udev-detect back into main package.
