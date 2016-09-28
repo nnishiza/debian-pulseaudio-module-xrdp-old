@@ -45,6 +45,7 @@ override_dh_auto_install:
 	cp $(CURDIR)/debian/apport-hook.py $(CURDIR)/debian/tmp/usr/share/apport/package-hooks/source_pulseaudio.py
 
 override_dh_makeshlibs:
+	sed 's/DEB_VERSION_UPSTREAM/$(DEB_VERSION_UPSTREAM)/' debian/shlibs.local.in > debian/shlibs.local
 	dh_makeshlibs --exclude=usr/lib/pulse-$(DEB_VERSION_UPSTREAM)/modules \
 		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pulseaudio
 
@@ -56,3 +57,7 @@ override_dh_install:
 
 override_dh_installdocs:
 	dh_installdocs -A NEWS README
+
+override_dh_clean:
+	dh_clean
+	rm -f debian/shlibs.local
