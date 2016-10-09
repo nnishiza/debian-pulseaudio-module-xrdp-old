@@ -1,3 +1,9 @@
+pulseaudio (9.0-5) UNRELEASED; urgency=medium
+
+  * Remove unnecessary compression=xz dpkg source option
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 09 Oct 2016 13:49:14 -0300
+
 pulseaudio (9.0-4) unstable; urgency=medium
 
   * Generate shlibs.local file on build, to avoid hardcoding
