@@ -33,6 +33,7 @@ pulseaudio (1:9.0-4ubuntu1) UNRELEASED; urgency=medium
     - Remove patch hunk that set u->transport to NULL. At the time this
       code was written for 15.10, it was to prevent an assertion. Now with
       newer versions of pulse, the opposite is happening in some circumstances
+  * debian/control: Use liblirc-dev instead of liblircclient-dev
 
  -- Luke Yelavich <themuso@ubuntu.com>  Wed, 26 Oct 2016 11:19:16 +1100
 
