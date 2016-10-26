@@ -10,11 +10,11 @@ Subject: [PATCH] Further fixes for HFP/A2DP with BlueZ 5.x
  src/modules/bluetooth/module-bluez5-device.c | 44 +++++++++++++++++++++++-----
  4 files changed, 46 insertions(+), 9 deletions(-)
 
-diff --git a/src/modules/bluetooth/backend-native.c b/src/modules/bluetooth/backend-native.c
-index 1f65146..442bb64 100644
---- a/src/modules/bluetooth/backend-native.c
-+++ b/src/modules/bluetooth/backend-native.c
-@@ -351,7 +351,8 @@ static DBusMessage *profile_new_connection(DBusConnection *conn, DBusMessage *m,
+Index: pulseaudio/src/modules/bluetooth/backend-native.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/backend-native.c
++++ pulseaudio/src/modules/bluetooth/backend-native.c
+@@ -351,7 +351,8 @@ static DBusMessage *profile_new_connecti
          goto fail;
      }
  
@@ -24,11 +24,11 @@ index 1f65146..442bb64 100644
          pa_log_error("Remote device %s supports HFP as well which is preferred over HSP. Aborting.",
                       d->address);
          goto fail;
-diff --git a/src/modules/bluetooth/bluez5-util.c b/src/modules/bluetooth/bluez5-util.c
-index 747384a..3acc4a5 100644
---- a/src/modules/bluetooth/bluez5-util.c
-+++ b/src/modules/bluetooth/bluez5-util.c
-@@ -299,6 +299,12 @@ bool pa_bluetooth_device_any_transport_connected(const pa_bluetooth_device *d) {
+Index: pulseaudio/src/modules/bluetooth/bluez5-util.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/bluez5-util.c
++++ pulseaudio/src/modules/bluetooth/bluez5-util.c
+@@ -299,6 +299,12 @@ bool pa_bluetooth_device_any_transport_c
      return false;
  }
  
@@ -41,11 +41,11 @@ index 747384a..3acc4a5 100644
  static int transport_state_from_string(const char* value, pa_bluetooth_transport_state_t *state) {
      pa_assert(value);
      pa_assert(state);
-diff --git a/src/modules/bluetooth/bluez5-util.h b/src/modules/bluetooth/bluez5-util.h
-index 3f97de7..9180263 100644
---- a/src/modules/bluetooth/bluez5-util.h
-+++ b/src/modules/bluetooth/bluez5-util.h
-@@ -144,6 +144,8 @@ void pa_bluetooth_transport_unlink(pa_bluetooth_transport *t);
+Index: pulseaudio/src/modules/bluetooth/bluez5-util.h
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/bluez5-util.h
++++ pulseaudio/src/modules/bluetooth/bluez5-util.h
+@@ -144,6 +144,8 @@ void pa_bluetooth_transport_unlink(pa_bl
  void pa_bluetooth_transport_free(pa_bluetooth_transport *t);
  
  bool pa_bluetooth_device_any_transport_connected(const pa_bluetooth_device *d);
@@ -54,10 +54,10 @@ index 3f97de7..9180263 100644
  
  pa_bluetooth_device* pa_bluetooth_discovery_get_device_by_path(pa_bluetooth_discovery *y, const char *path);
  pa_bluetooth_device* pa_bluetooth_discovery_get_device_by_address(pa_bluetooth_discovery *y, const char *remote, const char *local);
-diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
-index 8c5a9cc..b4b627a 100644
---- a/src/modules/bluetooth/module-bluez5-device.c
-+++ b/src/modules/bluetooth/module-bluez5-device.c
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-device.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-device.c
 @@ -165,6 +165,8 @@ struct userdata {
      char *default_profile;
      bool transport_acquire_pending;
@@ -67,7 +67,7 @@ index 8c5a9cc..b4b627a 100644
  };
  
  typedef enum pa_bluetooth_form_factor {
-@@ -2085,13 +2087,6 @@ static int set_profile_cb(pa_card *c, pa_card_profile *new_profile) {
+@@ -2084,13 +2086,6 @@ static int set_profile_cb(pa_card *c, pa
  
          if (!d->transports[*p] || d->transports[*p]->state <= PA_BLUETOOTH_TRANSPORT_STATE_DISCONNECTED) {
              pa_log_warn("Refused to switch profile to %s: Not connected", new_profile->name);
@@ -81,7 +81,7 @@ index 8c5a9cc..b4b627a 100644
              return -PA_ERR_IO;
          }
      }
-@@ -2209,6 +2204,10 @@ static int add_card(struct userdata *u) {
+@@ -2208,6 +2203,10 @@ static int add_card(struct userdata *u)
          u->card->active_profile = pa_hashmap_get(u->card->profiles, "off");
          u->card->save_profile = false;
      }
@@ -92,7 +92,7 @@ index 8c5a9cc..b4b627a 100644
  
      p = PA_CARD_PROFILE_DATA(u->card->active_profile);
      u->profile = *p;
-@@ -2308,6 +2307,23 @@ static pa_hook_result_t device_connection_changed_cb(pa_bluetooth_discovery *y,
+@@ -2307,6 +2306,23 @@ static pa_hook_result_t device_connectio
      return PA_HOOK_OK;
  }
  
@@ -116,7 +116,7 @@ index 8c5a9cc..b4b627a 100644
  /* Run from main thread */
  static pa_hook_result_t transport_state_changed_cb(pa_bluetooth_discovery *y, pa_bluetooth_transport *t, struct userdata *u) {
      pa_assert(t);
-@@ -2317,7 +2333,13 @@ static pa_hook_result_t transport_state_changed_cb(pa_bluetooth_discovery *y, pa
+@@ -2316,7 +2332,13 @@ static pa_hook_result_t transport_state_
                   pa_bluetooth_profile_to_string(t->profile),
                   pa_bluetooth_transport_state_to_string(t->state));
  
@@ -131,7 +131,7 @@ index 8c5a9cc..b4b627a 100644
          pa_assert_se(pa_card_set_profile(u->card, pa_hashmap_get(u->card->profiles, "off"), false) >= 0);
  
      if (t->device == u->device)
-@@ -2504,6 +2526,9 @@ int pa__init(pa_module* m) {
+@@ -2503,6 +2525,9 @@ int pa__init(pa_module* m) {
      if (!(u->msg = pa_msgobject_new(bluetooth_msg)))
          goto fail;
  
@@ -141,7 +141,7 @@ index 8c5a9cc..b4b627a 100644
      u->msg->parent.process_msg = device_process_msg;
      u->msg->card = u->card;
  
-@@ -2589,6 +2614,9 @@ void pa__done(pa_module *m) {
+@@ -2588,6 +2613,9 @@ void pa__done(pa_module *m) {
      if (u->default_profile)
          pa_xfree(u->default_profile);
  
@@ -151,6 +151,3 @@ index 8c5a9cc..b4b627a 100644
      pa_xfree(u);
  }
  
--- 
-2.5.0
-

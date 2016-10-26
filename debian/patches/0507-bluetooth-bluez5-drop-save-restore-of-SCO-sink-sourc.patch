@@ -9,10 +9,10 @@ Still needs to be verified that this can be dropped.
  src/modules/bluetooth/module-bluez5-device.c | 24 ------------------------
  1 file changed, 24 deletions(-)
 
-diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
-index f1e887c..c153aa5 100644
---- a/src/modules/bluetooth/module-bluez5-device.c
-+++ b/src/modules/bluetooth/module-bluez5-device.c
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-device.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-device.c
 @@ -109,9 +109,7 @@ typedef struct sbc_info {
  
  struct hsp_info {
@@ -23,7 +23,7 @@ index f1e887c..c153aa5 100644
  };
  
  struct userdata {
-@@ -2067,22 +2065,6 @@ static pa_card_profile *create_card_profile(struct userdata *u, const char *uuid
+@@ -2066,22 +2064,6 @@ static pa_card_profile *create_card_prof
      return cp;
  }
  
@@ -46,7 +46,7 @@ index f1e887c..c153aa5 100644
  /* Run from main thread */
  static int set_profile_cb(pa_card *c, pa_card_profile *new_profile) {
      struct userdata *u;
-@@ -2231,9 +2213,6 @@ static int add_card(struct userdata *u) {
+@@ -2230,9 +2212,6 @@ static int add_card(struct userdata *u)
      p = PA_CARD_PROFILE_DATA(u->card->active_profile);
      u->profile = *p;
  
@@ -56,7 +56,7 @@ index f1e887c..c153aa5 100644
      pa_log_debug("Created card (current profile %s)",
                   pa_bluetooth_profile_to_string(u->profile));
  
-@@ -2597,9 +2576,6 @@ void pa__done(pa_module *m) {
+@@ -2596,9 +2575,6 @@ void pa__done(pa_module *m) {
      if (u->sbc_info.sbc_initialized)
          sbc_finish(&u->sbc_info.sbc);
  
@@ -66,6 +66,3 @@ index f1e887c..c153aa5 100644
      if (u->msg)
          pa_xfree(u->msg);
  
--- 
-2.6.2
-

@@ -8,11 +8,11 @@ Subject: [PATCH 505/507] bluetooth: bluez5: let user specify a default profile
  src/modules/bluetooth/module-bluez5-device.c | 32 ++++++++++++++++++++++++++++
  1 file changed, 32 insertions(+)
 
-diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
-index 999c254..07f88d0 100644
---- a/src/modules/bluetooth/module-bluez5-device.c
-+++ b/src/modules/bluetooth/module-bluez5-device.c
-@@ -58,6 +58,7 @@ PA_MODULE_DESCRIPTION("BlueZ 5 Bluetooth audio sink and source");
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-device.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+@@ -58,6 +58,7 @@ PA_MODULE_DESCRIPTION("BlueZ 5 Bluetooth
  PA_MODULE_VERSION(PACKAGE_VERSION);
  PA_MODULE_LOAD_ONCE(false);
  PA_MODULE_USAGE("path=<device object path> "
@@ -20,7 +20,7 @@ index 999c254..07f88d0 100644
                  "sco_sink=<name of sink> "
                  "sco_source=<name of source> ");
  
-@@ -74,6 +75,7 @@ PA_MODULE_USAGE("path=<device object path> "
+@@ -74,6 +75,7 @@ PA_MODULE_USAGE("path=<device object pat
  #define USE_SCO_OVER_PCM(u) (u->profile == PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT && (u->hsp.sco_sink && u->hsp.sco_source))
  static const char* const valid_modargs[] = {
      "path",
@@ -36,7 +36,7 @@ index 999c254..07f88d0 100644
      bool transport_acquire_pending;
      pa_io_event *stream_event;
  };
-@@ -2069,6 +2072,7 @@ static int add_card(struct userdata *u) {
+@@ -2068,6 +2071,7 @@ static int add_card(struct userdata *u)
      pa_bluetooth_profile_t *p;
      const char *uuid;
      void *state;
@@ -44,7 +44,7 @@ index 999c254..07f88d0 100644
  
      pa_assert(u);
      pa_assert(u->device);
-@@ -2121,6 +2125,16 @@ static int add_card(struct userdata *u) {
+@@ -2120,6 +2124,16 @@ static int add_card(struct userdata *u)
      *p = PA_BLUETOOTH_PROFILE_OFF;
      pa_hashmap_put(data.profiles, cp->name, cp);
  
@@ -61,7 +61,7 @@ index 999c254..07f88d0 100644
      u->card = pa_card_new(u->core, &data);
      pa_card_new_data_done(&data);
      if (!u->card) {
-@@ -2132,6 +2146,15 @@ static int add_card(struct userdata *u) {
+@@ -2131,6 +2145,15 @@ static int add_card(struct userdata *u)
      u->card->set_profile = set_profile_cb;
  
      p = PA_CARD_PROFILE_DATA(u->card->active_profile);
@@ -77,7 +77,7 @@ index 999c254..07f88d0 100644
      u->profile = *p;
  
      if (USE_SCO_OVER_PCM(u))
-@@ -2246,6 +2269,11 @@ static pa_hook_result_t transport_state_changed_cb(pa_bluetooth_discovery *y, pa
+@@ -2245,6 +2268,11 @@ static pa_hook_result_t transport_state_
      if (t->device == u->device)
          handle_transport_state_change(u, t);
  
@@ -89,7 +89,7 @@ index 999c254..07f88d0 100644
      return PA_HOOK_OK;
  }
  
-@@ -2503,6 +2531,10 @@ void pa__done(pa_module *m) {
+@@ -2502,6 +2530,10 @@ void pa__done(pa_module *m) {
  
      if (u->modargs)
          pa_modargs_free(u->modargs);
@@ -100,6 +100,3 @@ index 999c254..07f88d0 100644
      pa_xfree(u);
  }
  
--- 
-2.6.2
-

@@ -8,11 +8,11 @@ Subject: [PATCH] bluetooth: bluez5: don't reactivate default profile when off
  src/modules/bluetooth/module-bluez5-device.c | 5 -----
  1 file changed, 5 deletions(-)
 
-diff --git a/src/modules/bluetooth/module-bluez5-device.c b/src/modules/bluetooth/module-bluez5-device.c
-index b4f81cd..8c5a9cc 100644
---- a/src/modules/bluetooth/module-bluez5-device.c
-+++ b/src/modules/bluetooth/module-bluez5-device.c
-@@ -2323,11 +2323,6 @@ static pa_hook_result_t transport_state_changed_cb(pa_bluetooth_discovery *y, pa
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-device.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-device.c
+@@ -2322,11 +2322,6 @@ static pa_hook_result_t transport_state_
      if (t->device == u->device)
          handle_transport_state_change(u, t);
  
@@ -24,6 +24,3 @@ index b4f81cd..8c5a9cc 100644
      return PA_HOOK_OK;
  }
  
--- 
-2.5.0
-
