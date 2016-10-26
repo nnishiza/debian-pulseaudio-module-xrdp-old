@@ -1,3 +1,10 @@
+pulseaudio (1:9.0-2ubuntu2) yakkety; urgency=medium
+
+  * Bumping packages off the system requires Conflicts/Replaces, not Breaks.
+  * Adjust version of pulseaudio-module-{udev,x11} dep to account for epoch.
+
+ -- Adam Conrad <adconrad@ubuntu.com>  Mon, 19 Sep 2016 12:57:56 -0600
+
 pulseaudio (1:9.0-2ubuntu1) yakkety; urgency=medium
 
   * Merge with Debian:
