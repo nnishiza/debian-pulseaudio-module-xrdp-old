@@ -29,6 +29,10 @@ pulseaudio (1:9.0-4ubuntu1) UNRELEASED; urgency=medium
       support via trust-store is planned
     - Use conflicts/replaces instead of breaks to handle former
       pulseaudio-module-udev split
+  * 0502-bluetooth-bluez5-bring-back-SCO-over-PCM-support.patch:
+    - Remove patch hunk that set u->transport to NULL. At the time this
+      code was written for 15.10, it was to prevent an assertion. Now with
+      newer versions of pulse, the opposite is happening in some circumstances
 
  -- Luke Yelavich <themuso@ubuntu.com>  Wed, 26 Oct 2016 11:19:16 +1100
 
