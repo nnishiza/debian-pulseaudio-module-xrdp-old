@@ -20,6 +20,7 @@ usr/lib/pulse-*/modules/librtp.so
 [linux-any] usr/lib/pulse-*/modules/module-alsa-sink.so
 [linux-any] usr/lib/pulse-*/modules/module-alsa-source.so
 usr/lib/pulse-*/modules/module-always-sink.so
+usr/lib/pulse-*/modules/module-console-kit.so
 usr/lib/pulse-*/modules/module-device-restore.so
 usr/lib/pulse-*/modules/module-echo-cancel.so
 usr/lib/pulse-*/modules/module-stream-restore.so
