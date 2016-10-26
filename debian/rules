@@ -1,9 +1,12 @@
 #!/usr/bin/make -f
 
-include /usr/share/cdbs/1/rules/debhelper.mk
-include /usr/share/cdbs/1/class/autotools.mk
-include /usr/share/cdbs/1/rules/utils.mk
-include /usr/share/cdbs/1/rules/autoreconf.mk
+DPKG_EXPORT_BUILDFLAGS = 1
+
+DEB_LDFLAGS_MAINT_APPEND = -Wl,--no-as-needed
+
+DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+include /usr/share/dpkg/default.mk
 
 export AUTOPOINT=intltoolize --automake --copy
 
@@ -11,22 +14,11 @@ export AUTOPOINT=intltoolize --automake --copy
 export XDG_RUNTIME_DIR = $(CURDIR)/debian/tmp/tmp/xdgruntimedir
 export CK_TIMEOUT_MULTIPLIER = 0
 
-common-install-arch::
-	find $(DEB_DESTDIR) -name "*.la" -delete
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/alsa/alsa.conf.d
-	cp -a $(CURDIR)/debian/pulse.conf \
-		$(CURDIR)/debian/tmp/usr/share/alsa/alsa.conf.d
-	cp -a $(CURDIR)/debian/pulse-alsa.conf $(CURDIR)/debian/tmp/usr/share/alsa
-	install -d $(CURDIR)/debian/tmp/usr/share/apport/package-hooks
-	cp $(CURDIR)/debian/apport-hook.py $(CURDIR)/debian/tmp/usr/share/apport/package-hooks/source_pulseaudio.py
-
-common-binary-post-install-arch:: list-missing
-
 # Libs should be in the multi-arch path, but the modules should be in the
 # normal directory as pulseaudio is foreign
 DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal-compat \
   --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
-  --with-module-dir=\$${prefix}/lib/pulse-$(DEB_UPSTREAM_VERSION)/modules \
+  --with-module-dir=\$${prefix}/lib/pulse-$(DEB_VERSION_UPSTREAM)/modules \
   --with-zsh-completion-dir=\$${datadir}/zsh/vendor-completions \
   --with-bash-completion-dir=\$${datadir}/bash-completion/completions \
   --with-systemduserunitdir=\$${prefix}/lib/systemd/user \
@@ -36,14 +28,39 @@ ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
   DEB_CONFIGURE_EXTRA_FLAGS += --disable-bluez5
 endif
 
+%:
+	dh $@ --with autoreconf
 
-DEB_DH_MAKESHLIBS_ARGS_ALL = --exclude=usr/lib/pulse-$(DEB_UPSTREAM_VERSION)/modules \
-			     --exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pulseaudio
 
-DEB_DH_SHLIBDEPS_ARGS_ALL = -- -Sdebian/pulseaudio
+override_dh_auto_configure:
+	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS)
 
-LDFLAGS += -Wl,--no-as-needed
+override_dh_auto_install:
+	dh_auto_install
+	find debian/tmp -name "*.la" -delete
+	install -d $(CURDIR)/debian/tmp/usr/share/apport/package-hooks
+	cp $(CURDIR)/debian/apport-hook.py $(CURDIR)/debian/tmp/usr/share/apport/package-hooks/source_pulseaudio.py
+ifeq ($(DEB_HOST_ARCH_OS),linux)
+	mkdir -p $(CURDIR)/debian/tmp/usr/share/alsa/alsa.conf.d
+	cp -a $(CURDIR)/debian/pulse.conf \
+		$(CURDIR)/debian/tmp/usr/share/alsa/alsa.conf.d
+	cp -a $(CURDIR)/debian/pulse-alsa.conf $(CURDIR)/debian/tmp/usr/share/alsa
+endif
 
-DEB_DH_INSTALL_SOURCEDIR = $(CURDIR)/debian/tmp
+override_dh_makeshlibs:
+	sed 's/DEB_VERSION_UPSTREAM/$(DEB_VERSION_UPSTREAM)/' debian/shlibs.local.in > debian/shlibs.local
+	dh_makeshlibs --exclude=usr/lib/pulse-$(DEB_VERSION_UPSTREAM)/modules \
+		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pulseaudio
 
-DEB_MAKE_CHECK_TARGET = check VERBOSE=1
+override_dh_shlibdeps:
+	dh_shlibdeps --libpackage=pulseaudio
+
+override_dh_install:
+	dh_install --fail-missing
+
+override_dh_installdocs:
+	dh_installdocs -A NEWS README
+
+override_dh_clean:
+	dh_clean
+	rm -f debian/shlibs.local

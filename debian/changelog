@@ -1,3 +1,58 @@
+pulseaudio (1:9.0-4ubuntu1) UNRELEASED; urgency=medium
+
+  * Merge with Debian:
+    - epoch (my stupid fault :S)
+    - Add a module to allow pulseaudio to use the Android audio HAL
+    - Adjust gbp.conf file to point to the ubuntu branch for package builds
+    - Disable module-role-cork by default
+    - Load module-x11-bell in the start-pulseaudio-x11 script
+    - Hide pulseaudio from startup apps dialog
+    - Quit daemon if pid file is removed
+    - Avoid abort when poll descriptor is 0, such as when using it with the
+      audioflinger bridge, like done in ubuntu touch
+    - change default rlimit_rttime value to 200 ms
+    - Don't probe UCM profiles, trust that the profile writer knows what they
+      are doing
+    - Add card hook to allow modules to do something before a profile becomes
+      active
+    - Add an option to the bluez discovery module to set the profile
+    - Allow leaving bluetooth transport running while sink and source are
+      suspended.
+    - Add option to module-switch-on-connect to skip abstract devices
+    - Add property to module-device-restore to skip store/restore
+    - Add missing fields for sink_input/source_output info struct to the vala
+      bindings
+    - Add a build/run autopkgtest for libpulse-dev
+    - Drop libsoxr-dev build dep, its in universe
+    - Add support for the trust-store
+    - Add snappy support, preventing snap apps from recording audio, full
+      support via trust-store is planned
+    - Use conflicts/replaces instead of breaks to handle former
+      pulseaudio-module-udev split
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 26 Oct 2016 11:19:16 +1100
+
+pulseaudio (9.0-4) unstable; urgency=medium
+
+  * Generate shlibs.local file on build, to avoid hardcoding
+    on each new upstream version
+  * Enable hardening flags
+  * Fix build on nonlinux archs
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 09 Oct 2016 13:23:58 -0300
+
+pulseaudio (9.0-3) unstable; urgency=medium
+
+  [ Willem Mulder ]
+  * Split equalizer sink module into its own package (Closes: #794650)
+
+  [ Felipe Sateler ]
+  * Switch from CDBS to short-form dh
+  * Use upstream-provided pamon,parec,parecord links instead of creating our own
+  * Now that we ship everything upstream ships, enable --fail-missing
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 28 Aug 2016 13:15:28 -0300
+
 pulseaudio (1:9.0-2ubuntu2) yakkety; urgency=medium
 
   * Bumping packages off the system requires Conflicts/Replaces, not Breaks.

@@ -16,7 +16,7 @@ usr/lib/pulse-*/modules/libprotocol-http.so
 usr/lib/pulse-*/modules/libprotocol-native.so
 usr/lib/pulse-*/modules/libprotocol-simple.so
 usr/lib/pulse-*/modules/librtp.so
-usr/lib/pulse-*/modules/libwebrtc-util.so
+[linux-any] usr/lib/pulse-*/modules/libwebrtc-util.so
 [linux-any] usr/lib/pulse-*/modules/module-alsa-sink.so
 [linux-any] usr/lib/pulse-*/modules/module-alsa-source.so
 usr/lib/pulse-*/modules/module-always-sink.so
@@ -30,7 +30,6 @@ usr/lib/pulse-*/modules/module-combine.so
 usr/lib/pulse-*/modules/module-default-device-restore.so
 usr/lib/pulse-*/modules/module-detect.so
 usr/lib/pulse-*/modules/module-esound-sink.so
-usr/lib/pulse-*/modules/module-equalizer-sink.so
 usr/lib/pulse-*/modules/module-http-protocol-tcp.so
 usr/lib/pulse-*/modules/module-http-protocol-unix.so
 usr/lib/pulse-*/modules/module-intended-roles.so
