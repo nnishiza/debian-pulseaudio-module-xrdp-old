@@ -1,4 +1,4 @@
-pulseaudio (1:9.0-4ubuntu1) UNRELEASED; urgency=medium
+pulseaudio (1:9.0-4ubuntu1) zesty; urgency=medium
 
   * Merge with Debian:
     - epoch (my stupid fault :S)
@@ -36,7 +36,7 @@ pulseaudio (1:9.0-4ubuntu1) UNRELEASED; urgency=medium
       (LP: #1574324)
   * debian/control: Use liblirc-dev instead of liblircclient-dev
 
- -- Luke Yelavich <themuso@ubuntu.com>  Wed, 26 Oct 2016 11:19:16 +1100
+ -- Luke Yelavich <themuso@ubuntu.com>  Fri, 28 Oct 2016 12:20:16 +1100
 
 pulseaudio (9.0-4) unstable; urgency=medium
 
