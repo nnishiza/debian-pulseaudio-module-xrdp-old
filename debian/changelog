@@ -2,8 +2,13 @@ pulseaudio (1:8.0-0ubuntu3.1) UNRELEASED; urgency=medium
 
   * debian/pulseaudio.maintscript: Bump versions for files that need to be
     removed as they are obsolete (LP: #1573296)
+  * 0502-bluetooth-bluez5-bring-back-SCO-over-PCM-support.patch:
+    - Remove patch hunk that set u->transport to NULL. At the time this
+      code was written for 15.10, it was to prevent an assertion. Now with
+      newer versions of pulse, the opposite is happening in some circumstances
+      (LP: #1574324)
 
- -- Luke Yelavich <luke@galactica>  Wed, 27 Apr 2016 13:39:16 +0200
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 27 Apr 2016 13:39:16 +0200
 
 pulseaudio (1:8.0-0ubuntu3) xenial; urgency=medium
 
