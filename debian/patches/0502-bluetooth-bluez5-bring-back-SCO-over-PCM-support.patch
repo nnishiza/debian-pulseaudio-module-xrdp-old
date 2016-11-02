@@ -488,16 +488,6 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
          pa_source_unlink(u->source);
  
      if (u->thread) {
-@@ -1582,7 +1738,8 @@ static void stop_thread(struct userdata
- 
-     if (u->transport) {
-         transport_release(u);
--        u->transport = NULL;
-+        /* Do not set transport pointer to NULL. When failing to switch
-+         * profile NULL u->transport would assert. */
-     }
- 
-     if (u->sink) {
 @@ -1840,6 +1997,22 @@ static pa_card_profile *create_card_prof
      return cp;
  }
