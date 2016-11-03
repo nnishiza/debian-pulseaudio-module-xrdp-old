@@ -1,4 +1,4 @@
-pulseaudio (1:9.0-2ubuntu2.1) UNRELEASED; urgency=medium
+pulseaudio (1:9.0-2ubuntu2.1) yakkety; urgency=medium
 
   * 0502-bluetooth-bluez5-bring-back-SCO-over-PCM-support.patch:
     - Remove patch hunk that set u->transport to NULL. At the time this
@@ -6,7 +6,7 @@ pulseaudio (1:9.0-2ubuntu2.1) UNRELEASED; urgency=medium
       newer versions of pulse, the opposite is happening in some circumstances
       (LP: #1574324)
 
- -- Luke Yelavich <themuso@ubuntu.com>  Thu, 03 Nov 2016 16:38:09 +1100
+ -- Luke Yelavich <themuso@ubuntu.com>  Thu, 03 Nov 2016 16:57:47 +1100
 
 pulseaudio (1:9.0-2ubuntu2) yakkety; urgency=medium
 
