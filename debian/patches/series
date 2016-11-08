@@ -1,4 +1,5 @@
-0001-Fix_detection_of_online_CPUs.patch
+Fix-detection-of-online-CPUs-in-pa_ncpus.patch
+raop-add-compatibility-with-openssl-1.1.0.patch
 
 # Ubuntu specific config/fixes
 0001-volume-config-changes.patch
