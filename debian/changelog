@@ -1,3 +1,12 @@
+pulseaudio (1:9.0-5ubuntu3) UNRELEASED; urgency=medium
+
+  * Re-add pulseaudio equalizer package, my understanding on build deps with
+    main/universe wasn't quite correct, and I only dropped it to get the
+    package through proposed, so a demotion of the equalizer package to
+    universe is the better solution
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Wed, 23 Nov 2016 09:31:24 +1100
+
 pulseaudio (1:9.0-5ubuntu2) zesty; urgency=medium
 
   * Drop pulseaudio equalizer package, python-qt4 is in universe

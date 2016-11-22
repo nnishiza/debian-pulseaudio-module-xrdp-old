@@ -24,6 +24,7 @@ Build-Depends: android-headers-19 (>= 23) [armhf i386 amd64],
     libsbc-dev [linux-any],
     libcap-dev [linux-any],
     libdbus-cpp-dev [armhf i386 amd64],
+    libfftw3-dev,
     libgconf2-dev,
     libglib2.0-dev,
     libhardware-dev [armhf i386 amd64],
@@ -233,6 +234,22 @@ Description: Bluetooth module for PulseAudio sound server
  or audio gateway.
  .
  The module is called module-bluetooth
+
+Package: pulseaudio-equalizer
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends},
+ python, python-qt4, python-sip, python-qt4-dbus, python-dbus
+Breaks: pulseaudio (<< 9.0-3~)
+Replaces: pulseaudio (<< 9.0-3~)
+Description: Equalizer sink module for PulseAudio sound server
+ PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
+ WIN32 systems. It is a drop in replacement for the ESD sound server with
+ much better latency, mixing/re-sampling quality and overall architecture.
+ .
+ This package provides an equalizer sink and an interface to configure the
+ equalizer, qpaeq.
+ .
+ The module is called module-equalizer-sink.
 
 Package: libpulse0
 Section: libs
