@@ -1,8 +1,12 @@
-pulseaudio (9.99.1-1) UNRELEASED; urgency=medium
+pulseaudio (9.99.1-1) experimental; urgency=medium
 
   * New upstream release candidate
+    - Drop all patches, applied upstream
+    - Install new allow-passthrough module
+  * shlibs.local: only the major and minor version
+    elements are used for the internal library SONAMEs
 
- -- Felipe Sateler <fsateler@debian.org>  Tue, 03 Jan 2017 21:10:22 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 04 Jan 2017 15:43:30 -0300
 
 pulseaudio (9.0-5) unstable; urgency=medium
 
