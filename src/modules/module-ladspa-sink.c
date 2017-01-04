@@ -166,7 +166,7 @@ static void get_algorithm_parameters(DBusConnection *conn, DBusMessage *msg, voi
     pa_dbus_append_basic_array(&struct_iter, DBUS_TYPE_DOUBLE, control, u->n_control);
     pa_dbus_append_basic_array(&struct_iter, DBUS_TYPE_BOOLEAN, use_default, u->n_control);
 
-    dbus_message_iter_close_container(&msg_iter, &struct_iter);
+    pa_assert_se(dbus_message_iter_close_container(&msg_iter, &struct_iter));
 
     pa_assert_se(dbus_connection_send(conn, reply, NULL));
 
@@ -978,6 +978,11 @@ int pa__init(pa_module*m) {
     map = master->channel_map;
     if (pa_modargs_get_sample_spec_and_channel_map(ma, &ss, &map, PA_CHANNEL_MAP_DEFAULT) < 0) {
         pa_log("Invalid sample format specification or channel map");
+        goto fail;
+    }
+
+    if (ss.format != PA_SAMPLE_FLOAT32) {
+        pa_log("LADSPA accepts float format only");
         goto fail;
     }
 
