@@ -25,6 +25,8 @@ DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal-compat \
   --disable-bluez4
 
 
+PA_MAJORMINOR = $(shell echo $(DEB_VERSION_UPSTREAM) | sed -r -e 's/^([0-9]+\.[0-9]+).*/\1/')
+
 ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
   DEB_CONFIGURE_EXTRA_FLAGS += --disable-bluez5
 endif
@@ -49,7 +51,7 @@ ifeq ($(DEB_HOST_ARCH_OS),linux)
 endif
 
 override_dh_makeshlibs:
-	sed 's/DEB_VERSION_UPSTREAM/$(DEB_VERSION_UPSTREAM)/' debian/shlibs.local.in > debian/shlibs.local
+	sed 's/PA_MAJORMINOR/$(PA_MAJORMINOR)/' debian/shlibs.local.in > debian/shlibs.local
 	dh_makeshlibs --exclude=usr/lib/pulse-$(DEB_VERSION_UPSTREAM)/modules \
 		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pulseaudio
 
