@@ -1823,7 +1823,11 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
     u->fixed_latency_range = fixed_latency_range;
     u->first = true;
     u->rtpoll = pa_rtpoll_new();
-    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
+
+    if (pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll) < 0) {
+        pa_log("pa_thread_mq_init() failed.");
+        goto fail;
+    }
 
     u->smoother = pa_smoother_new(
             SMOOTHER_ADJUST_USEC,
@@ -1853,6 +1857,15 @@ pa_source *pa_alsa_source_new(pa_module *m, pa_modargs *ma, const char*driver, p
 
     b = use_mmap;
     d = use_tsched;
+
+    /* Force ALSA to reread its configuration if module-alsa-card didn't
+     * do it for us. This matters if our device was hot-plugged after ALSA
+     * has already read its configuration - see
+     * https://bugs.freedesktop.org/show_bug.cgi?id=54029
+     */
+
+    if (!card)
+        snd_config_update_free_global();
 
     if (mapping) {
 

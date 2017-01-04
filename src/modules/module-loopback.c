@@ -59,7 +59,7 @@ PA_MODULE_USAGE(
 
 #define DEFAULT_LATENCY_MSEC 200
 
-#define MEMBLOCKQ_MAXLENGTH (1024*1024*16)
+#define MEMBLOCKQ_MAXLENGTH (1024*1024*32)
 
 #define DEFAULT_ADJUST_TIME_USEC (10*PA_USEC_PER_SEC)
 
@@ -85,19 +85,16 @@ struct userdata {
     pa_usec_t latency;
 
     bool in_pop;
-    size_t min_memblockq_length;
 
     struct {
         int64_t send_counter;
-        size_t source_output_buffer;
         pa_usec_t source_latency;
+        pa_usec_t source_timestamp;
 
         int64_t recv_counter;
         size_t sink_input_buffer;
         pa_usec_t sink_latency;
-
-        size_t min_memblockq_length;
-        size_t max_request;
+        pa_usec_t sink_timestamp;
     } latency_snapshot;
 };
 
@@ -121,8 +118,7 @@ static const char* const valid_modargs[] = {
 enum {
     SINK_INPUT_MESSAGE_POST = PA_SINK_INPUT_MESSAGE_MAX,
     SINK_INPUT_MESSAGE_REWIND,
-    SINK_INPUT_MESSAGE_LATENCY_SNAPSHOT,
-    SINK_INPUT_MESSAGE_MAX_REQUEST_CHANGED
+    SINK_INPUT_MESSAGE_LATENCY_SNAPSHOT
 };
 
 enum {
@@ -167,65 +163,75 @@ static void teardown(struct userdata *u) {
     }
 }
 
+/* rate controller
+ * - maximum deviation from base rate is less than 1%
+ * - can create audible artifacts by changing the rate too quickly
+ * - exhibits hunting with USB or Bluetooth sources
+ */
+static uint32_t rate_controller(
+                uint32_t base_rate,
+                pa_usec_t adjust_time,
+                int32_t latency_difference_usec) {
+
+    uint32_t new_rate;
+    double min_cycles;
+
+    /* Calculate best rate to correct the current latency offset, limit at
+     * slightly below 1% difference from base_rate */
+    min_cycles = (double)abs(latency_difference_usec) / adjust_time / 0.01 + 1;
+    new_rate = base_rate * (1.0 + (double)latency_difference_usec / min_cycles / adjust_time);
+
+    return new_rate;
+}
+
 /* Called from main context */
 static void adjust_rates(struct userdata *u) {
-    size_t buffer, fs;
+    size_t buffer;
     uint32_t old_rate, base_rate, new_rate;
-    pa_usec_t buffer_latency;
+    int32_t latency_difference;
+    pa_usec_t current_buffer_latency, snapshot_delay, current_source_sink_latency, current_latency, latency_at_optimum_rate;
+    pa_usec_t final_latency;
 
     pa_assert(u);
     pa_assert_ctl_context();
 
-    pa_asyncmsgq_send(u->source_output->source->asyncmsgq, PA_MSGOBJECT(u->source_output), SOURCE_OUTPUT_MESSAGE_LATENCY_SNAPSHOT, NULL, 0, NULL);
-    pa_asyncmsgq_send(u->sink_input->sink->asyncmsgq, PA_MSGOBJECT(u->sink_input), SINK_INPUT_MESSAGE_LATENCY_SNAPSHOT, NULL, 0, NULL);
+    /* Rates and latencies*/
+    old_rate = u->sink_input->sample_spec.rate;
+    base_rate = u->source_output->sample_spec.rate;
 
-    buffer =
-        u->latency_snapshot.sink_input_buffer +
-        u->latency_snapshot.source_output_buffer;
-
+    buffer = u->latency_snapshot.sink_input_buffer;
     if (u->latency_snapshot.recv_counter <= u->latency_snapshot.send_counter)
         buffer += (size_t) (u->latency_snapshot.send_counter - u->latency_snapshot.recv_counter);
     else
         buffer = PA_CLIP_SUB(buffer, (size_t) (u->latency_snapshot.recv_counter - u->latency_snapshot.send_counter));
 
-    buffer_latency = pa_bytes_to_usec(buffer, &u->sink_input->sample_spec);
+    current_buffer_latency = pa_bytes_to_usec(buffer, &u->sink_input->sample_spec);
+    snapshot_delay = u->latency_snapshot.source_timestamp - u->latency_snapshot.sink_timestamp;
+    current_source_sink_latency = u->latency_snapshot.sink_latency + u->latency_snapshot.source_latency - snapshot_delay;
+
+    /* Current latency */
+    current_latency = current_source_sink_latency + current_buffer_latency;
+
+    /* Latency at base rate */
+    latency_at_optimum_rate = current_source_sink_latency + current_buffer_latency * old_rate / base_rate;
+
+    final_latency = u->latency;
+    latency_difference = (int32_t)((int64_t)latency_at_optimum_rate - final_latency);
 
     pa_log_debug("Loopback overall latency is %0.2f ms + %0.2f ms + %0.2f ms = %0.2f ms",
                 (double) u->latency_snapshot.sink_latency / PA_USEC_PER_MSEC,
-                (double) buffer_latency / PA_USEC_PER_MSEC,
+                (double) current_buffer_latency / PA_USEC_PER_MSEC,
                 (double) u->latency_snapshot.source_latency / PA_USEC_PER_MSEC,
-                ((double) u->latency_snapshot.sink_latency + buffer_latency + u->latency_snapshot.source_latency) / PA_USEC_PER_MSEC);
+                (double) current_latency / PA_USEC_PER_MSEC);
 
-    pa_log_debug("Should buffer %zu bytes, buffered at minimum %zu bytes",
-                u->latency_snapshot.max_request*2,
-                u->latency_snapshot.min_memblockq_length);
+    pa_log_debug("Loopback latency at base rate is %0.2f ms", (double)latency_at_optimum_rate / PA_USEC_PER_MSEC);
 
-    fs = pa_frame_size(&u->sink_input->sample_spec);
-    old_rate = u->sink_input->sample_spec.rate;
-    base_rate = u->source_output->sample_spec.rate;
+    /* Calculate new rate */
+    new_rate = rate_controller(base_rate, u->adjust_time, latency_difference);
 
-    if (u->latency_snapshot.min_memblockq_length < u->latency_snapshot.max_request*2)
-        new_rate = base_rate - (((u->latency_snapshot.max_request*2 - u->latency_snapshot.min_memblockq_length) / fs) *PA_USEC_PER_SEC)/u->adjust_time;
-    else
-        new_rate = base_rate + (((u->latency_snapshot.min_memblockq_length - u->latency_snapshot.max_request*2) / fs) *PA_USEC_PER_SEC)/u->adjust_time;
-
-    if (new_rate < (uint32_t) (base_rate*0.8) || new_rate > (uint32_t) (base_rate*1.25)) {
-        pa_log_warn("Sample rates too different, not adjusting (%u vs. %u).", base_rate, new_rate);
-        new_rate = base_rate;
-    } else {
-        if (base_rate < new_rate + 20 && new_rate < base_rate + 20)
-          new_rate = base_rate;
-        /* Do the adjustment in small steps; 2‰ can be considered inaudible */
-        if (new_rate < (uint32_t) (old_rate*0.998) || new_rate > (uint32_t) (old_rate*1.002)) {
-            pa_log_info("New rate of %u Hz not within 2‰ of %u Hz, forcing smaller adjustment", new_rate, old_rate);
-            new_rate = PA_CLAMP(new_rate, (uint32_t) (old_rate*0.998), (uint32_t) (old_rate*1.002));
-        }
-    }
-
+    /* Set rate */
     pa_sink_input_set_rate(u->sink_input, new_rate);
     pa_log_debug("[%s] Updated sampling rate to %lu Hz.", u->sink_input->sink->name, (unsigned long) new_rate);
-
-    pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
 }
 
 /* Called from main context */
@@ -236,16 +242,26 @@ static void time_callback(pa_mainloop_api *a, pa_time_event *e, const struct tim
     pa_assert(a);
     pa_assert(u->time_event == e);
 
+    /* Restart timer right away */
+    pa_core_rttime_restart(u->core, u->time_event, pa_rtclock_now() + u->adjust_time);
+
+    /* Get sink and source latency snapshot */
+    pa_asyncmsgq_send(u->sink_input->sink->asyncmsgq, PA_MSGOBJECT(u->sink_input), SINK_INPUT_MESSAGE_LATENCY_SNAPSHOT, NULL, 0, NULL);
+    pa_asyncmsgq_send(u->source_output->source->asyncmsgq, PA_MSGOBJECT(u->source_output), SOURCE_OUTPUT_MESSAGE_LATENCY_SNAPSHOT, NULL, 0, NULL);
+
     adjust_rates(u);
 }
 
-/* Called from main context */
+/* Called from main context
+ * When source or sink changes, give it a third of a second to settle down, then call adjust_rates for the first time */
 static void enable_adjust_timer(struct userdata *u, bool enable) {
     if (enable) {
-        if (u->time_event || u->adjust_time <= 0)
+        if (!u->adjust_time)
             return;
+        if (u->time_event)
+            u->core->mainloop->time_free(u->time_event);
 
-        u->time_event = pa_core_rttime_new(u->module->core, pa_rtclock_now() + u->adjust_time, time_callback, u);
+        u->time_event = pa_core_rttime_new(u->module->core, pa_rtclock_now() + 333 * PA_USEC_PER_MSEC, time_callback, u);
     } else {
         if (!u->time_event)
             return;
@@ -314,8 +330,10 @@ static int source_output_process_msg_cb(pa_msgobject *obj, int code, void *data,
             length = pa_memblockq_get_length(u->source_output->thread_info.delay_memblockq);
 
             u->latency_snapshot.send_counter = u->send_counter;
-            u->latency_snapshot.source_output_buffer = u->source_output->thread_info.resampler ? pa_resampler_result(u->source_output->thread_info.resampler, length) : length;
-            u->latency_snapshot.source_latency = pa_source_get_latency_within_thread(u->source_output->source);
+            /* Add content of delay memblockq to the source latency */
+            u->latency_snapshot.source_latency = pa_source_get_latency_within_thread(u->source_output->source) +
+                                                 pa_bytes_to_usec(length, &u->source_output->source->sample_spec);
+            u->latency_snapshot.source_timestamp = pa_rtclock_now();
 
             return 0;
         }
@@ -439,20 +457,6 @@ static void source_output_suspend_cb(pa_source_output *o, bool suspended) {
 }
 
 /* Called from output thread context */
-static void update_min_memblockq_length(struct userdata *u) {
-    size_t length;
-
-    pa_assert(u);
-    pa_sink_input_assert_io_context(u->sink_input);
-
-    length = pa_memblockq_get_length(u->memblockq);
-
-    if (u->min_memblockq_length == (size_t) -1 ||
-        length < u->min_memblockq_length)
-        u->min_memblockq_length = length;
-}
-
-/* Called from output thread context */
 static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk) {
     struct userdata *u;
 
@@ -473,8 +477,6 @@ static int sink_input_pop_cb(pa_sink_input *i, size_t nbytes, pa_memchunk *chunk
 
     chunk->length = PA_MIN(chunk->length, nbytes);
     pa_memblockq_drop(u->memblockq, chunk->length);
-
-    update_min_memblockq_length(u);
 
     return 0;
 }
@@ -517,8 +519,6 @@ static int sink_input_process_msg_cb(pa_msgobject *obj, int code, void *data, in
             else
                 pa_memblockq_flush_write(u->memblockq, true);
 
-            update_min_memblockq_length(u);
-
             /* Is this the end of an underrun? Then let's start things
              * right-away */
             if (!u->in_pop &&
@@ -546,40 +546,20 @@ static int sink_input_process_msg_cb(pa_msgobject *obj, int code, void *data, in
 
             u->recv_counter -= offset;
 
-            update_min_memblockq_length(u);
-
             return 0;
 
         case SINK_INPUT_MESSAGE_LATENCY_SNAPSHOT: {
             size_t length;
 
-            update_min_memblockq_length(u);
-
             length = pa_memblockq_get_length(u->sink_input->thread_info.render_memblockq);
 
             u->latency_snapshot.recv_counter = u->recv_counter;
-            u->latency_snapshot.sink_input_buffer =
-                pa_memblockq_get_length(u->memblockq) +
-                (u->sink_input->thread_info.resampler ? pa_resampler_request(u->sink_input->thread_info.resampler, length) : length);
-            u->latency_snapshot.sink_latency = pa_sink_get_latency_within_thread(u->sink_input->sink);
+            u->latency_snapshot.sink_input_buffer = pa_memblockq_get_length(u->memblockq);
+            /* Add content of render memblockq to sink latency */
+            u->latency_snapshot.sink_latency = pa_sink_get_latency_within_thread(u->sink_input->sink) +
+                                               pa_bytes_to_usec(length, &u->sink_input->sink->sample_spec);
+            u->latency_snapshot.sink_timestamp = pa_rtclock_now();
 
-            u->latency_snapshot.max_request = pa_sink_input_get_max_request(u->sink_input);
-
-            u->latency_snapshot.min_memblockq_length = u->min_memblockq_length;
-            u->min_memblockq_length = (size_t) -1;
-
-            return 0;
-        }
-
-        case SINK_INPUT_MESSAGE_MAX_REQUEST_CHANGED: {
-            /* This message is sent from the IO thread to the main
-             * thread! So don't be confused. All the user cases above
-             * are executed in thread context, but this one is not! */
-
-            pa_assert_ctl_context();
-
-            if (u->time_event)
-                adjust_rates(u);
             return 0;
         }
     }
@@ -602,8 +582,6 @@ static void sink_input_attach_cb(pa_sink_input *i) {
 
     pa_memblockq_set_prebuf(u->memblockq, pa_sink_input_get_max_request(i)*2);
     pa_memblockq_set_maxrewind(u->memblockq, pa_sink_input_get_max_rewind(i));
-
-    u->min_memblockq_length = (size_t) -1;
 }
 
 /* Called from output thread context */
@@ -641,7 +619,6 @@ static void sink_input_update_max_request_cb(pa_sink_input *i, size_t nbytes) {
 
     pa_memblockq_set_prebuf(u->memblockq, nbytes*2);
     pa_log_info("Max request changed");
-    pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(u->sink_input), SINK_INPUT_MESSAGE_MAX_REQUEST_CHANGED, NULL, 0, NULL, NULL);
 }
 
 /* Called from main thread */
@@ -966,6 +943,10 @@ int pa__init(pa_module *m) {
     pa_memblock_unref(silence.memblock);
 
     u->asyncmsgq = pa_asyncmsgq_new(0);
+    if (!u->asyncmsgq) {
+        pa_log("pa_asyncmsgq_new() failed.");
+        goto fail;
+    }
 
     if (!pa_proplist_contains(u->source_output->proplist, PA_PROP_MEDIA_NAME))
         pa_proplist_setf(u->source_output->proplist, PA_PROP_MEDIA_NAME, "Loopback to %s",

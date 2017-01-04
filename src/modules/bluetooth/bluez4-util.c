@@ -77,6 +77,7 @@ static pa_dbus_pending* send_and_add_to_pending(pa_bluez4_discovery *y, DBusMess
                                                 void *call_data);
 static void found_adapter(pa_bluez4_discovery *y, const char *path);
 static pa_bluez4_device *found_device(pa_bluez4_discovery *y, const char* path);
+static void transport_set_state(pa_bluez4_transport *transport, pa_bluez4_transport_state_t state);
 
 static pa_bluez4_audio_state_t audio_state_from_string(const char* value) {
     pa_assert(value);
@@ -95,13 +96,13 @@ static pa_bluez4_audio_state_t audio_state_from_string(const char* value) {
 
 const char *pa_bluez4_profile_to_string(pa_bluez4_profile_t profile) {
     switch(profile) {
-        case PA_BLUEZ4_PROFILE_A2DP:
+        case PA_BLUEZ4_PROFILE_A2DP_SINK:
             return "a2dp";
         case PA_BLUEZ4_PROFILE_A2DP_SOURCE:
             return "a2dp_source";
-        case PA_BLUEZ4_PROFILE_HSP:
+        case PA_BLUEZ4_PROFILE_HEADSET_HEAD_UNIT:
             return "hsp";
-        case PA_BLUEZ4_PROFILE_HFGW:
+        case PA_BLUEZ4_PROFILE_HEADSET_AUDIO_GATEWAY:
             return "hfgw";
         case PA_BLUEZ4_PROFILE_OFF:
             pa_assert_not_reached();
@@ -115,16 +116,16 @@ static int profile_from_interface(const char *interface, pa_bluez4_profile_t *p)
     pa_assert(p);
 
     if (pa_streq(interface, "org.bluez.AudioSink")) {
-        *p = PA_BLUEZ4_PROFILE_A2DP;
+        *p = PA_BLUEZ4_PROFILE_A2DP_SINK;
         return 0;
     } else if (pa_streq(interface, "org.bluez.AudioSource")) {
         *p = PA_BLUEZ4_PROFILE_A2DP_SOURCE;
         return 0;
     } else if (pa_streq(interface, "org.bluez.Headset")) {
-        *p = PA_BLUEZ4_PROFILE_HSP;
+        *p = PA_BLUEZ4_PROFILE_HEADSET_HEAD_UNIT;
         return 0;
     } else if (pa_streq(interface, "org.bluez.HandsfreeGateway")) {
-        *p = PA_BLUEZ4_PROFILE_HFGW;
+        *p = PA_BLUEZ4_PROFILE_HEADSET_AUDIO_GATEWAY;
         return 0;
     }
 
@@ -146,23 +147,6 @@ static pa_bluez4_transport_state_t audio_state_to_transport_state(pa_bluez4_audi
     pa_assert_not_reached();
 }
 
-static pa_bluez4_uuid *uuid_new(const char *uuid) {
-    pa_bluez4_uuid *u;
-
-    u = pa_xnew(pa_bluez4_uuid, 1);
-    u->uuid = pa_xstrdup(uuid);
-    PA_LLIST_INIT(pa_bluez4_uuid, u);
-
-    return u;
-}
-
-static void uuid_free(pa_bluez4_uuid *u) {
-    pa_assert(u);
-
-    pa_xfree(u->uuid);
-    pa_xfree(u);
-}
-
 static pa_bluez4_device* device_new(pa_bluez4_discovery *discovery, const char *path) {
     pa_bluez4_device *d;
     unsigned i;
@@ -181,7 +165,7 @@ static pa_bluez4_device* device_new(pa_bluez4_discovery *discovery, const char *
     d->path = pa_xstrdup(path);
     d->paired = -1;
     d->alias = NULL;
-    PA_LLIST_HEAD_INIT(pa_bluez4_uuid, d->uuids);
+    d->uuids = pa_hashmap_new_full(pa_idxset_string_hash_func, pa_idxset_string_compare_func, NULL, pa_xfree);
     d->address = NULL;
     d->class = -1;
     d->trusted = -1;
@@ -204,7 +188,6 @@ static void transport_free(pa_bluez4_transport *t) {
 }
 
 static void device_free(pa_bluez4_device *d) {
-    pa_bluez4_uuid *u;
     pa_bluez4_transport *t;
     unsigned i;
 
@@ -216,15 +199,12 @@ static void device_free(pa_bluez4_device *d) {
 
         d->transports[i] = NULL;
         pa_hashmap_remove(d->discovery->transports, t->path);
-        t->state = PA_BLUEZ4_TRANSPORT_STATE_DISCONNECTED;
-        pa_hook_fire(&d->discovery->hooks[PA_BLUEZ4_HOOK_TRANSPORT_STATE_CHANGED], t);
+        transport_set_state(t, PA_BLUEZ4_TRANSPORT_STATE_DISCONNECTED);
         transport_free(t);
     }
 
-    while ((u = d->uuids)) {
-        PA_LLIST_REMOVE(pa_bluez4_uuid, d->uuids, u);
-        uuid_free(u);
-    }
+    if (d->uuids)
+        pa_hashmap_free(d->uuids);
 
     pa_xfree(d->name);
     pa_xfree(d->path);
@@ -416,7 +396,6 @@ static int parse_device_property(pa_bluez4_device *d, DBusMessageIter *i, bool i
         }
 
         case DBUS_TYPE_ARRAY: {
-
             DBusMessageIter ai;
             dbus_message_iter_recurse(&variant_i, &ai);
 
@@ -424,42 +403,46 @@ static int parse_device_property(pa_bluez4_device *d, DBusMessageIter *i, bool i
                 DBusMessage *m;
                 bool has_audio = false;
 
+                /* bluetoothd never removes UUIDs from a device object so we
+                 * don't need to check for disappeared UUIDs here. */
                 while (dbus_message_iter_get_arg_type(&ai) != DBUS_TYPE_INVALID) {
-                    pa_bluez4_uuid *node;
                     const char *value;
+                    char *uuid;
                     struct pa_bluez4_hook_uuid_data uuiddata;
 
                     dbus_message_iter_get_basic(&ai, &value);
 
-                    if (pa_bluez4_uuid_has(d->uuids, value)) {
+                    if (pa_hashmap_get(d->uuids, value)) {
                         dbus_message_iter_next(&ai);
                         continue;
                     }
 
-                    node = uuid_new(value);
-                    PA_LLIST_PREPEND(pa_bluez4_uuid, d->uuids, node);
+                    uuid = pa_xstrdup(value);
+                    pa_hashmap_put(d->uuids, uuid, uuid);
+
+                    pa_log_debug("%s: %s", key, value);
 
                     uuiddata.device = d;
                     uuiddata.uuid = value;
                     pa_hook_fire(&d->discovery->hooks[PA_BLUEZ4_HOOK_DEVICE_UUID_ADDED], &uuiddata);
 
                     /* Vudentz said the interfaces are here when the UUIDs are announced */
-                    if (strcasecmp(HSP_AG_UUID, value) == 0 || strcasecmp(HFP_AG_UUID, value) == 0) {
+                    if (pa_streq(PA_BLUEZ4_UUID_HSP_AG, value) || pa_streq(PA_BLUEZ4_UUID_HFP_AG, value)) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.HandsfreeGateway",
                                                                       "GetProperties"));
                         send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                         has_audio = true;
-                    } else if (strcasecmp(HSP_HS_UUID, value) == 0 || strcasecmp(HFP_HS_UUID, value) == 0) {
+                    } else if (pa_streq(PA_BLUEZ4_UUID_HSP_HS, value) || pa_streq(PA_BLUEZ4_UUID_HFP_HF, value)) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.Headset",
                                                                       "GetProperties"));
                         send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                         has_audio = true;
-                    } else if (strcasecmp(A2DP_SINK_UUID, value) == 0) {
+                    } else if (pa_streq(PA_BLUEZ4_UUID_A2DP_SINK, value)) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.AudioSink",
                                                                       "GetProperties"));
                         send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
                         has_audio = true;
-                    } else if (strcasecmp(A2DP_SOURCE_UUID, value) == 0) {
+                    } else if (pa_streq(PA_BLUEZ4_UUID_A2DP_SOURCE, value)) {
                         pa_assert_se(m = dbus_message_new_method_call("org.bluez", d->path, "org.bluez.AudioSource",
                                                                       "GetProperties"));
                         send_and_add_to_pending(d->discovery, m, get_properties_reply, d);
@@ -532,7 +515,6 @@ static int parse_audio_property(pa_bluez4_device *d, const char *interface, DBus
 
             if (pa_streq(key, "State")) {
                 pa_bluez4_audio_state_t state = audio_state_from_string(value);
-                pa_bluez4_transport_state_t old_state;
 
                 pa_log_debug("Device %s interface %s property 'State' changed to value '%s'", d->path, interface, value);
 
@@ -551,16 +533,7 @@ static int parse_audio_property(pa_bluez4_device *d, const char *interface, DBus
                 if (!transport)
                     break;
 
-                old_state = transport->state;
-                transport->state = audio_state_to_transport_state(state);
-
-                if (transport->state != old_state) {
-                    pa_log_debug("Transport %s (profile %s) changed state from %s to %s.", transport->path,
-                                 pa_bluez4_profile_to_string(transport->profile), transport_state_to_string(old_state),
-                                 transport_state_to_string(transport->state));
-
-                    pa_hook_fire(&d->discovery->hooks[PA_BLUEZ4_HOOK_TRANSPORT_STATE_CHANGED], transport);
-                }
+                transport_set_state(transport, audio_state_to_transport_state(state));
             }
 
             break;
@@ -684,13 +657,13 @@ static void get_properties_reply(DBusPendingCall *pending, void *userdata) {
 
     pa_assert(p->call_data == d);
 
-    if (d != NULL)
+    if (d != NULL) {
         old_any_connected = pa_bluez4_device_any_audio_connected(d);
+        valid = dbus_message_get_type(r) == DBUS_MESSAGE_TYPE_ERROR ? -1 : 1;
 
-    valid = dbus_message_get_type(r) == DBUS_MESSAGE_TYPE_ERROR ? -1 : 1;
-
-    if (dbus_message_is_method_call(p->message, "org.bluez.Device", "GetProperties"))
-        d->device_info_valid = valid;
+        if (dbus_message_is_method_call(p->message, "org.bluez.Device", "GetProperties"))
+            d->device_info_valid = valid;
+    }
 
     if (dbus_message_is_error(r, DBUS_ERROR_SERVICE_UNKNOWN)) {
         pa_log_debug("Bluetooth daemon is apparently not available.");
@@ -829,7 +802,7 @@ static void register_endpoint(pa_bluez4_discovery *y, const char *path, const ch
 
     pa_dbus_append_basic_variant_dict_entry(&d, "Codec", DBUS_TYPE_BYTE, &codec);
 
-    if (pa_streq(uuid, HFP_AG_UUID) || pa_streq(uuid, HFP_HS_UUID)) {
+    if (pa_streq(uuid, PA_BLUEZ4_UUID_HFP_AG) || pa_streq(uuid, PA_BLUEZ4_UUID_HFP_HF)) {
         uint8_t capability = 0;
         pa_dbus_append_basic_array_variant_dict_entry(&d, "Capabilities", DBUS_TYPE_BYTE, &capability, 1);
     } else {
@@ -860,10 +833,10 @@ static void found_adapter(pa_bluez4_discovery *y, const char *path) {
     pa_assert_se(m = dbus_message_new_method_call("org.bluez", path, "org.bluez.Adapter", "GetProperties"));
     send_and_add_to_pending(y, m, get_properties_reply, NULL);
 
-    register_endpoint(y, path, ENDPOINT_PATH_HFP_AG, HFP_AG_UUID);
-    register_endpoint(y, path, ENDPOINT_PATH_HFP_HS, HFP_HS_UUID);
-    register_endpoint(y, path, ENDPOINT_PATH_A2DP_SOURCE, A2DP_SOURCE_UUID);
-    register_endpoint(y, path, ENDPOINT_PATH_A2DP_SINK, A2DP_SINK_UUID);
+    register_endpoint(y, path, ENDPOINT_PATH_HFP_AG, PA_BLUEZ4_UUID_HFP_AG);
+    register_endpoint(y, path, ENDPOINT_PATH_HFP_HS, PA_BLUEZ4_UUID_HFP_HF);
+    register_endpoint(y, path, ENDPOINT_PATH_A2DP_SOURCE, PA_BLUEZ4_UUID_A2DP_SOURCE);
+    register_endpoint(y, path, ENDPOINT_PATH_A2DP_SINK, PA_BLUEZ4_UUID_A2DP_SINK);
 }
 
 static void list_adapters(pa_bluez4_discovery *y) {
@@ -915,7 +888,7 @@ static DBusHandlerResult filter_cb(DBusConnection *bus, DBusMessage *m, void *us
 
     dbus_error_init(&err);
 
-    pa_log_debug("dbus: interface=%s, path=%s, member=%s\n",
+    pa_log_debug("dbus: interface=%s, path=%s, member=%s",
             dbus_message_get_interface(m),
             dbus_message_get_path(m),
             dbus_message_get_member(m));
@@ -1214,7 +1187,7 @@ void pa_bluez4_transport_set_microphone_gain(pa_bluez4_transport *t, uint16_t va
     dbus_uint16_t gain = PA_MIN(value, HSP_MAX_GAIN);
 
     pa_assert(t);
-    pa_assert(t->profile == PA_BLUEZ4_PROFILE_HSP);
+    pa_assert(t->profile == PA_BLUEZ4_PROFILE_HEADSET_HEAD_UNIT);
 
     set_property(t->device->discovery, "org.bluez", t->device->path, "org.bluez.Headset",
                  "MicrophoneGain", DBUS_TYPE_UINT16, &gain);
@@ -1224,7 +1197,7 @@ void pa_bluez4_transport_set_speaker_gain(pa_bluez4_transport *t, uint16_t value
     dbus_uint16_t gain = PA_MIN(value, HSP_MAX_GAIN);
 
     pa_assert(t);
-    pa_assert(t->profile == PA_BLUEZ4_PROFILE_HSP);
+    pa_assert(t->profile == PA_BLUEZ4_PROFILE_HEADSET_HEAD_UNIT);
 
     set_property(t->device->discovery, "org.bluez", t->device->path, "org.bluez.Headset",
                  "SpeakerGain", DBUS_TYPE_UINT16, &gain);
@@ -1263,6 +1236,18 @@ static pa_bluez4_transport *transport_new(pa_bluez4_device *d, const char *owner
     t->state = audio_state_to_transport_state(d->profile_state[p]);
 
     return t;
+}
+
+static void transport_set_state(pa_bluez4_transport *transport, pa_bluez4_transport_state_t state) {
+    if (transport->state == state)
+        return;
+
+    pa_log_debug("Transport %s state: %s -> %s",
+                 transport->path, transport_state_to_string(transport->state), transport_state_to_string(state));
+
+    transport->state = state;
+
+    pa_hook_fire(&transport->device->discovery->hooks[PA_BLUEZ4_HOOK_TRANSPORT_STATE_CHANGED], transport);
 }
 
 static DBusMessage *endpoint_set_configuration(DBusConnection *conn, DBusMessage *m, void *userdata) {
@@ -1344,11 +1329,11 @@ static DBusMessage *endpoint_set_configuration(DBusConnection *conn, DBusMessage
         goto fail;
 
     if (dbus_message_has_path(m, ENDPOINT_PATH_HFP_AG))
-        p = PA_BLUEZ4_PROFILE_HSP;
+        p = PA_BLUEZ4_PROFILE_HEADSET_HEAD_UNIT;
     else if (dbus_message_has_path(m, ENDPOINT_PATH_HFP_HS))
-        p = PA_BLUEZ4_PROFILE_HFGW;
+        p = PA_BLUEZ4_PROFILE_HEADSET_AUDIO_GATEWAY;
     else if (dbus_message_has_path(m, ENDPOINT_PATH_A2DP_SOURCE))
-        p = PA_BLUEZ4_PROFILE_A2DP;
+        p = PA_BLUEZ4_PROFILE_A2DP_SINK;
     else
         p = PA_BLUEZ4_PROFILE_A2DP_SOURCE;
 
@@ -1409,8 +1394,7 @@ static DBusMessage *endpoint_clear_configuration(DBusConnection *c, DBusMessage 
         pa_log_debug("Clearing transport %s profile %d", t->path, t->profile);
         t->device->transports[t->profile] = NULL;
         pa_hashmap_remove(y->transports, t->path);
-        t->state = PA_BLUEZ4_TRANSPORT_STATE_DISCONNECTED;
-        pa_hook_fire(&y->hooks[PA_BLUEZ4_HOOK_TRANSPORT_STATE_CHANGED], t);
+        transport_set_state(t, PA_BLUEZ4_TRANSPORT_STATE_DISCONNECTED);
 
         if (old_any_connected != pa_bluez4_device_any_audio_connected(t->device))
             run_callback(t->device, false);
@@ -1887,17 +1871,4 @@ char *pa_bluez4_cleanup_name(const char *name) {
     *d = 0;
 
     return t;
-}
-
-bool pa_bluez4_uuid_has(pa_bluez4_uuid *uuids, const char *uuid) {
-    pa_assert(uuid);
-
-    while (uuids) {
-        if (strcasecmp(uuids->uuid, uuid) == 0)
-            return true;
-
-        uuids = uuids->next;
-    }
-
-    return false;
 }
