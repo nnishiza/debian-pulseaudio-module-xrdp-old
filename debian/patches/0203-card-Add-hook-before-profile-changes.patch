@@ -14,20 +14,20 @@ Index: pulseaudio/src/pulsecore/card.c
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/card.c
 +++ pulseaudio/src/pulsecore/card.c
-@@ -303,6 +303,8 @@ int pa_card_set_profile(pa_card *c, pa_c
+@@ -308,6 +308,8 @@ int pa_card_set_profile(pa_card *c, pa_c
          return 0;
      }
  
 +    pa_hook_fire(&c->core->hooks[PA_CORE_HOOK_CARD_PROFILE_CHANGING], profile);
 +
-     if ((r = c->set_profile(c, profile)) < 0)
-         return r;
- 
+     /* If we're setting the initial profile, we shouldn't call set_profile(),
+      * because the implementations don't expect that (for historical reasons).
+      * We should just set c->active_profile, and the implementations will
 Index: pulseaudio/src/pulsecore/core.h
 ===================================================================
 --- pulseaudio.orig/src/pulsecore/core.h
 +++ pulseaudio/src/pulsecore/core.h
-@@ -122,6 +122,7 @@ typedef enum pa_core_hook {
+@@ -123,6 +123,7 @@ typedef enum pa_core_hook {
      PA_CORE_HOOK_CARD_UNLINK,
      PA_CORE_HOOK_CARD_PREFERRED_PORT_CHANGED,
      PA_CORE_HOOK_CARD_PROFILE_CHANGED,

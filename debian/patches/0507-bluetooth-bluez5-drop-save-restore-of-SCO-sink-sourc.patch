@@ -23,7 +23,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
  };
  
  struct userdata {
-@@ -2066,22 +2064,6 @@ static pa_card_profile *create_card_prof
+@@ -2081,22 +2079,6 @@ static pa_card_profile *create_card_prof
      return cp;
  }
  
@@ -46,7 +46,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
  /* Run from main thread */
  static int set_profile_cb(pa_card *c, pa_card_profile *new_profile) {
      struct userdata *u;
-@@ -2230,9 +2212,6 @@ static int add_card(struct userdata *u)
+@@ -2261,9 +2243,6 @@ static int add_card(struct userdata *u)
      p = PA_CARD_PROFILE_DATA(u->card->active_profile);
      u->profile = *p;
  
@@ -56,7 +56,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
      pa_log_debug("Created card (current profile %s)",
                   pa_bluetooth_profile_to_string(u->profile));
  
-@@ -2596,9 +2575,6 @@ void pa__done(pa_module *m) {
+@@ -2622,9 +2601,6 @@ void pa__done(pa_module *m) {
      if (u->sbc_info.sbc_initialized)
          sbc_finish(&u->sbc_info.sbc);
  

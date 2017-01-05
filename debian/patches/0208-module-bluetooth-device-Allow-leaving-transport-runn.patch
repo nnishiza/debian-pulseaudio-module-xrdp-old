@@ -39,7 +39,7 @@ Index: pulseaudio/src/modules/bluetooth/bluez4-util.c
  struct pa_bluez4_discovery {
      PA_REFCNT_DECLARE;
  
-@@ -504,6 +507,9 @@ static int parse_audio_property(pa_bluez
+@@ -487,6 +490,9 @@ static int parse_audio_property(pa_bluez
      DBusMessageIter variant_i;
      bool is_audio_interface;
      pa_bluez4_profile_t p = PA_BLUEZ4_PROFILE_OFF;
@@ -49,8 +49,8 @@ Index: pulseaudio/src/modules/bluetooth/bluez4-util.c
  
      pa_assert(d);
      pa_assert(interface);
-@@ -535,6 +541,23 @@ static int parse_audio_property(pa_bluez
-                 pa_bluez4_transport_state_t old_state;
+@@ -517,6 +523,23 @@ static int parse_audio_property(pa_bluez
+                 pa_bluez4_audio_state_t state = audio_state_from_string(value);
  
                  pa_log_debug("Device %s interface %s property 'State' changed to value '%s'", d->path, interface, value);
 +                /* Device may change state again (e.g. suspend itself) before previous state change
@@ -197,7 +197,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
      }
  
      if (u->sink) {
-@@ -2509,6 +2583,10 @@ int pa__init(pa_module *m) {
+@@ -2547,6 +2621,10 @@ int pa__init(pa_module *m) {
          pa_hook_connect(pa_bluez4_discovery_hook(u->discovery, PA_BLUEZ4_HOOK_TRANSPORT_SPEAKER_GAIN_CHANGED),
                          PA_HOOK_NORMAL, (pa_hook_cb_t) transport_speaker_gain_changed_cb, u);
  
@@ -208,7 +208,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez4-device.c
      /* Add the card structure. This will also initialize the default profile */
      if (add_card(u) < 0)
          goto fail;
-@@ -2588,6 +2666,9 @@ void pa__done(pa_module *m) {
+@@ -2626,6 +2704,9 @@ void pa__done(pa_module *m) {
      if (u->transport_speaker_changed_slot)
          pa_hook_slot_free(u->transport_speaker_changed_slot);
  

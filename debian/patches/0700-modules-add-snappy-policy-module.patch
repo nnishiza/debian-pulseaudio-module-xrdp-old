@@ -14,7 +14,7 @@ Index: pulseaudio/src/Makefile.am
 ===================================================================
 --- pulseaudio.orig/src/Makefile.am
 +++ pulseaudio/src/Makefile.am
-@@ -1224,6 +1224,11 @@ modlibexec_LTLIBRARIES += \
+@@ -1239,6 +1239,11 @@ modlibexec_LTLIBRARIES += \
  		module-esound-sink.la
  endif
  
@@ -26,7 +26,7 @@ Index: pulseaudio/src/Makefile.am
  # See comment at librtp.la above
  if !OS_IS_WIN32
  modlibexec_LTLIBRARIES += \
-@@ -1611,6 +1616,11 @@ SYMDEF_FILES += \
+@@ -1620,6 +1625,11 @@ SYMDEF_FILES += \
  		module-esound-sink-symdef.h
  endif
  
@@ -38,7 +38,7 @@ Index: pulseaudio/src/Makefile.am
  EXTRA_DIST += $(SYMDEF_FILES)
  BUILT_SOURCES += $(SYMDEF_FILES) builddirs
  
-@@ -2220,6 +2230,14 @@ module_trust_store_la_LIBADD = $(MODULE_
+@@ -2221,6 +2231,14 @@ module_trust_store_la_LIBADD = $(MODULE_
  module_trust_store_la_CFLAGS = $(AM_CFLAGS) -DHAVE_TRUST_STORE=1
  endif
  
@@ -160,7 +160,7 @@ Index: pulseaudio/configure.ac
 ===================================================================
 --- pulseaudio.orig/configure.ac
 +++ pulseaudio/configure.ac
-@@ -1475,6 +1475,19 @@ AS_IF([test "x$enable_trust_store" = "xy
+@@ -1450,6 +1450,19 @@ AS_IF([test "x$enable_trust_store" = "xy
  
  AM_CONDITIONAL([HAVE_TRUST_STORE], [test "x$HAVE_TRUST_STORE" = "x1"])
  
@@ -180,7 +180,7 @@ Index: pulseaudio/configure.ac
  
  ###################################
  #            Output               #
-@@ -1655,6 +1668,8 @@ AS_IF([test "x$HAVE_ESOUND" = "x1" -a "x
+@@ -1629,6 +1642,8 @@ AS_IF([test "x$HAVE_ESOUND" = "x1" -a "x
  AS_IF([test "x$HAVE_GCOV" = "x1"], ENABLE_GCOV=yes, ENABLE_GCOV=no)
  AS_IF([test "x$HAVE_LIBCHECK" = "x1"], ENABLE_TESTS=yes, ENABLE_TESTS=no)
  AS_IF([test "x$enable_legacy_database_entry_format" != "xno"], ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=yes, ENABLE_LEGACY_DATABASE_ENTRY_FORMAT=no)
@@ -189,7 +189,7 @@ Index: pulseaudio/configure.ac
  
  echo "
   ---{ $PACKAGE_NAME $VERSION }---
-@@ -1715,6 +1730,8 @@ echo "
+@@ -1688,6 +1703,8 @@ echo "
      Enable soxr (resampler):       ${ENABLE_SOXR}
      Enable WebRTC echo canceller:  ${ENABLE_WEBRTC}
      Enable Ubuntu trust store:     ${ENABLE_TRUST_STORE}

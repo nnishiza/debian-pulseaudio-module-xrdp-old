@@ -10,10 +10,10 @@ Subject: [PATCH 501/507] bluetooth: bluez5: ofono: add support for HFP gateway
  src/modules/bluetooth/bluez5-util.h   |  1 +
  3 files changed, 73 insertions(+), 30 deletions(-)
 
-diff --git a/src/modules/bluetooth/backend-ofono.c b/src/modules/bluetooth/backend-ofono.c
-index 755df9e..c77be54 100644
---- a/src/modules/bluetooth/backend-ofono.c
-+++ b/src/modules/bluetooth/backend-ofono.c
+Index: pulseaudio/src/modules/bluetooth/backend-ofono.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/backend-ofono.c
++++ pulseaudio/src/modules/bluetooth/backend-ofono.c
 @@ -37,6 +37,7 @@
  #define OFONO_SERVICE "org.ofono"
  #define HF_AUDIO_AGENT_INTERFACE OFONO_SERVICE ".HandsfreeAudioAgent"
@@ -40,7 +40,7 @@ index 755df9e..c77be54 100644
          pa_assert_se(m = dbus_message_new_method_call(t->owner, t->path, "org.ofono.HandsfreeAudioCard", "Connect"));
          pa_assert_se(dbus_connection_send(pa_dbus_connection_get(card->backend->connection), m, NULL));
  
-@@ -176,12 +179,6 @@ static int hf_audio_agent_transport_acquire(pa_bluetooth_transport *t, bool opti
+@@ -176,12 +179,6 @@ static int hf_audio_agent_transport_acqu
  
      t->codec = card->codec;
  
@@ -53,7 +53,7 @@ index 755df9e..c77be54 100644
      return card->fd;
  }
  
-@@ -190,18 +187,28 @@ static void hf_audio_agent_transport_release(pa_bluetooth_transport *t) {
+@@ -190,18 +187,28 @@ static void hf_audio_agent_transport_rel
  
      pa_assert(card);
  
@@ -70,16 +70,16 @@ index 755df9e..c77be54 100644
 +    if (card->fd > 0) {
 +        pa_log_debug("Transport available for card %s (fd %d), releasing now",
 +                 card->path, card->fd);
++
++        /* shutdown to make sure connection is dropped immediately */
++        shutdown(card->fd, SHUT_RDWR);
++        close(card->fd);
++        card->fd = -1;
  
 -    /* shutdown to make sure connection is dropped immediately */
 -    shutdown(card->fd, SHUT_RDWR);
 -    close(card->fd);
 -    card->fd = -1;
-+        /* shutdown to make sure connection is dropped immediately */
-+        shutdown(card->fd, SHUT_RDWR);
-+        close(card->fd);
-+        card->fd = -1;
-+
 +        pa_log_debug("Successfully released transport for card %s", card->path);
 +
 +        pa_bluetooth_transport_set_state(t, PA_BLUETOOTH_TRANSPORT_STATE_IDLE);
@@ -88,7 +88,7 @@ index 755df9e..c77be54 100644
  }
  
  static void hf_audio_agent_card_found(pa_bluetooth_backend *backend, const char *path, DBusMessageIter *props_i) {
-@@ -209,6 +216,7 @@ static void hf_audio_agent_card_found(pa_bluetooth_backend *backend, const char
+@@ -209,6 +216,7 @@ static void hf_audio_agent_card_found(pa
      const char *key, *value;
      struct hf_audio_card *card;
      pa_bluetooth_device *d;
@@ -96,7 +96,7 @@ index 755df9e..c77be54 100644
  
      pa_assert(backend);
      pa_assert(path);
-@@ -227,23 +235,30 @@ static void hf_audio_agent_card_found(pa_bluetooth_backend *backend, const char
+@@ -227,22 +235,29 @@ static void hf_audio_agent_card_found(pa
          dbus_message_iter_next(&i);
          dbus_message_iter_recurse(&i, &value_i);
  
@@ -106,7 +106,8 @@ index 755df9e..c77be54 100644
 -        }
 +        if ((c = dbus_message_iter_get_arg_type(&value_i)) == DBUS_TYPE_STRING) {
 +            dbus_message_iter_get_basic(&value_i, &value);
-+
+ 
+-        dbus_message_iter_get_basic(&value_i, &value);
 +            if (pa_streq(key, "Type")) {
 +                if (pa_streq(value, "gateway"))
 +                    profile = PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT;
@@ -120,27 +121,25 @@ index 755df9e..c77be54 100644
 +                card->local_address = pa_xstrdup(value);
 +            }
  
--        dbus_message_iter_get_basic(&value_i, &value);
-+            pa_log_debug("%s: %s", key, value);
- 
 -        if (pa_streq(key, "RemoteAddress")) {
 -            pa_xfree(card->remote_address);
 -            card->remote_address = pa_xstrdup(value);
 -        } else if (pa_streq(key, "LocalAddress")) {
 -            pa_xfree(card->local_address);
 -            card->local_address = pa_xstrdup(value);
+-        }
++            pa_log_debug("%s: %s", key, value);
+ 
+-        pa_log_debug("%s: %s", key, value);
 +        } else if ((c = dbus_message_iter_get_arg_type(&value_i)) == DBUS_TYPE_UINT16) {
 +            /* Ignore for now */
 +        } else {
 +            pa_log_error("Invalid properties for %s: expected 's' or 'q', received '%c'", path, c);
-         }
++        }
  
--        pa_log_debug("%s: %s", key, value);
--
          dbus_message_iter_next(props_i);
      }
- 
-@@ -253,7 +268,7 @@ static void hf_audio_agent_card_found(pa_bluetooth_backend *backend, const char
+@@ -253,7 +268,7 @@ static void hf_audio_agent_card_found(pa
          goto fail;
      }
  
@@ -149,7 +148,7 @@ index 755df9e..c77be54 100644
      card->transport->acquire = hf_audio_agent_transport_acquire;
      card->transport->release = hf_audio_agent_transport_release;
      card->transport->userdata = card;
-@@ -529,12 +544,25 @@ static DBusMessage *hf_audio_agent_new_connection(DBusConnection *c, DBusMessage
+@@ -529,12 +544,25 @@ static DBusMessage *hf_audio_agent_new_c
  
      card = pa_hashmap_get(backend->cards, path);
  
@@ -177,11 +176,11 @@ index 755df9e..c77be54 100644
      pa_log_debug("New audio connection on card %s (fd=%d, codec=%d)", path, fd, codec);
  
      card->fd = fd;
-diff --git a/src/modules/bluetooth/bluez5-util.c b/src/modules/bluetooth/bluez5-util.c
-index 03c76bf..2f2f277 100644
---- a/src/modules/bluetooth/bluez5-util.c
-+++ b/src/modules/bluetooth/bluez5-util.c
-@@ -1158,6 +1158,20 @@ const char *pa_bluetooth_profile_to_string(pa_bluetooth_profile_t profile) {
+Index: pulseaudio/src/modules/bluetooth/bluez5-util.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/bluez5-util.c
++++ pulseaudio/src/modules/bluetooth/bluez5-util.c
+@@ -1273,6 +1273,20 @@ const char *pa_bluetooth_profile_to_stri
      return NULL;
  }
  
@@ -202,11 +201,11 @@ index 03c76bf..2f2f277 100644
  static DBusMessage *endpoint_set_configuration(DBusConnection *conn, DBusMessage *m, void *userdata) {
      pa_bluetooth_discovery *y = userdata;
      pa_bluetooth_device *d;
-diff --git a/src/modules/bluetooth/bluez5-util.h b/src/modules/bluetooth/bluez5-util.h
-index d66e8a3..df44c01 100644
---- a/src/modules/bluetooth/bluez5-util.h
-+++ b/src/modules/bluetooth/bluez5-util.h
-@@ -151,6 +151,7 @@ pa_bluetooth_device* pa_bluetooth_discovery_get_device_by_address(pa_bluetooth_d
+Index: pulseaudio/src/modules/bluetooth/bluez5-util.h
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/bluez5-util.h
++++ pulseaudio/src/modules/bluetooth/bluez5-util.h
+@@ -153,6 +153,7 @@ pa_bluetooth_device* pa_bluetooth_discov
  pa_hook* pa_bluetooth_discovery_hook(pa_bluetooth_discovery *y, pa_bluetooth_hook_t hook);
  
  const char *pa_bluetooth_profile_to_string(pa_bluetooth_profile_t profile);
@@ -214,6 +213,3 @@ index d66e8a3..df44c01 100644
  
  #define HEADSET_BACKEND_OFONO 0
  #define HEADSET_BACKEND_NATIVE 1
--- 
-2.6.2
-

@@ -12,7 +12,7 @@ Index: pulseaudio/src/modules/bluetooth/module-bluez5-device.c
 ===================================================================
 --- pulseaudio.orig/src/modules/bluetooth/module-bluez5-device.c
 +++ pulseaudio/src/modules/bluetooth/module-bluez5-device.c
-@@ -2322,11 +2322,6 @@ static pa_hook_result_t transport_state_
+@@ -2353,11 +2353,6 @@ static pa_hook_result_t transport_state_
      if (t->device == u->device)
          handle_transport_state_change(u, t);
  

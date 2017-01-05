@@ -8,11 +8,11 @@ Subject: [PATCH] bluetooth: bluez5: add guards to prevent HFP and HSP
  src/modules/bluetooth/backend-native.c | 18 +++++++++++++++++-
  1 file changed, 17 insertions(+), 1 deletion(-)
 
-diff --git a/src/modules/bluetooth/backend-native.c b/src/modules/bluetooth/backend-native.c
-index 8d9d95c..1f65146 100644
---- a/src/modules/bluetooth/backend-native.c
-+++ b/src/modules/bluetooth/backend-native.c
-@@ -340,6 +340,23 @@ static DBusMessage *profile_new_connection(DBusConnection *conn, DBusMessage *m,
+Index: pulseaudio/src/modules/bluetooth/backend-native.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/backend-native.c
++++ pulseaudio/src/modules/bluetooth/backend-native.c
+@@ -342,6 +342,23 @@ static DBusMessage *profile_new_connecti
          goto fail;
      }
  
@@ -36,14 +36,11 @@ index 8d9d95c..1f65146 100644
      pa_assert_se(dbus_message_iter_next(&arg_i));
  
      pa_assert(dbus_message_iter_get_arg_type(&arg_i) == DBUS_TYPE_UNIX_FD);
-@@ -349,7 +366,6 @@ static DBusMessage *profile_new_connection(DBusConnection *conn, DBusMessage *m,
+@@ -351,7 +368,6 @@ static DBusMessage *profile_new_connecti
  
      sender = dbus_message_get_sender(m);
  
 -    p = PA_BLUETOOTH_PROFILE_HEADSET_HEAD_UNIT;
      pathfd = pa_sprintf_malloc ("%s/fd%d", path, fd);
-     d->transports[p] = t = pa_bluetooth_transport_new(d, sender, pathfd, p, NULL, 0);
+     t = pa_bluetooth_transport_new(d, sender, pathfd, p, NULL, 0);
      pa_xfree(pathfd);
--- 
-2.1.4
-

@@ -9,11 +9,11 @@ Subject: [PATCH 504/507] bluetooth: bluez5: add support for both mode
  src/modules/bluetooth/module-bluez5-discover.c | 10 ++++++++--
  3 files changed, 12 insertions(+), 3 deletions(-)
 
-diff --git a/src/modules/bluetooth/bluez5-util.c b/src/modules/bluetooth/bluez5-util.c
-index 2f2f277..747384a 100644
---- a/src/modules/bluetooth/bluez5-util.c
-+++ b/src/modules/bluetooth/bluez5-util.c
-@@ -915,7 +915,9 @@ static void get_managed_objects_reply(DBusPendingCall *pending, void *userdata)
+Index: pulseaudio/src/modules/bluetooth/bluez5-util.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/bluez5-util.c
++++ pulseaudio/src/modules/bluetooth/bluez5-util.c
+@@ -1030,7 +1030,9 @@ static void get_managed_objects_reply(DB
  
      if (!y->ofono_backend && y->headset_backend != HEADSET_BACKEND_NATIVE)
          y->ofono_backend = pa_bluetooth_ofono_backend_new(y->core, y);
@@ -24,11 +24,11 @@ index 2f2f277..747384a 100644
          y->native_backend = pa_bluetooth_native_backend_new(y->core, y);
  
  finish:
-diff --git a/src/modules/bluetooth/bluez5-util.h b/src/modules/bluetooth/bluez5-util.h
-index df44c01..3f97de7 100644
---- a/src/modules/bluetooth/bluez5-util.h
-+++ b/src/modules/bluetooth/bluez5-util.h
-@@ -156,6 +156,7 @@ const char *pa_bluetooth_transport_state_to_string(pa_bluetooth_transport_state_
+Index: pulseaudio/src/modules/bluetooth/bluez5-util.h
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/bluez5-util.h
++++ pulseaudio/src/modules/bluetooth/bluez5-util.h
+@@ -158,6 +158,7 @@ const char *pa_bluetooth_transport_state
  #define HEADSET_BACKEND_OFONO 0
  #define HEADSET_BACKEND_NATIVE 1
  #define HEADSET_BACKEND_AUTO 2
@@ -36,11 +36,11 @@ index df44c01..3f97de7 100644
  
  pa_bluetooth_discovery* pa_bluetooth_discovery_get(pa_core *core, int headset_backend);
  pa_bluetooth_discovery* pa_bluetooth_discovery_ref(pa_bluetooth_discovery *y);
-diff --git a/src/modules/bluetooth/module-bluez5-discover.c b/src/modules/bluetooth/module-bluez5-discover.c
-index 40ce562..831e9e2 100644
---- a/src/modules/bluetooth/module-bluez5-discover.c
-+++ b/src/modules/bluetooth/module-bluez5-discover.c
-@@ -37,7 +37,7 @@ PA_MODULE_DESCRIPTION("Detect available BlueZ 5 Bluetooth audio devices and load
+Index: pulseaudio/src/modules/bluetooth/module-bluez5-discover.c
+===================================================================
+--- pulseaudio.orig/src/modules/bluetooth/module-bluez5-discover.c
++++ pulseaudio/src/modules/bluetooth/module-bluez5-discover.c
+@@ -37,7 +37,7 @@ PA_MODULE_DESCRIPTION("Detect available
  PA_MODULE_VERSION(PACKAGE_VERSION);
  PA_MODULE_LOAD_ONCE(true);
  PA_MODULE_USAGE(
@@ -49,7 +49,7 @@ index 40ce562..831e9e2 100644
      "sco_sink=<name of sink> "
      "sco_source=<name of source> "
  );
-@@ -106,7 +106,11 @@ static pa_hook_result_t device_connection_changed_cb(pa_bluetooth_discovery *y,
+@@ -106,7 +106,11 @@ static pa_hook_result_t device_connectio
  }
  
  #ifdef HAVE_BLUEZ_5_NATIVE_HEADSET
@@ -73,6 +73,3 @@ index 40ce562..831e9e2 100644
          goto fail;
      }
  
--- 
-2.6.2
-
