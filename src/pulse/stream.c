@@ -33,6 +33,7 @@
 #include <pulse/fork-detect.h>
 
 #include <pulsecore/pstream-util.h>
+#include <pulsecore/sample-util.h>
 #include <pulsecore/log.h>
 #include <pulsecore/hashmap.h>
 #include <pulsecore/macro.h>
@@ -1137,18 +1138,16 @@ void pa_create_stream_callback(pa_pdispatch *pd, uint32_t command, uint32_t tag,
         || s->context->version >= 22) {
 
         pa_format_info *f = pa_format_info_new();
-        pa_tagstruct_get_format_info(t, f);
 
-        if (pa_format_info_valid(f))
-            s->format = f;
-        else {
+        if (pa_tagstruct_get_format_info(t, f) < 0 || !pa_format_info_valid(f)) {
             pa_format_info_free(f);
             if (s->n_formats > 0) {
                 /* We used the extended API, so we should have got back a proper format */
                 pa_context_fail(s->context, PA_ERR_PROTOCOL);
                 goto finish;
             }
-        }
+        } else
+            s->format = f;
     }
 
     if (!pa_tagstruct_eof(t)) {
@@ -1534,8 +1533,12 @@ int pa_stream_write_ext_free(
                 chunk.length = t_length;
             } else {
                 void *d;
+                size_t blk_size_max;
 
-                chunk.length = PA_MIN(t_length, pa_mempool_block_size_max(s->context->mempool));
+                /* Break large audio streams into _aligned_ blocks or the
+                 * other endpoint will happily discard them upon arrival. */
+                blk_size_max = pa_frame_align(pa_mempool_block_size_max(s->context->mempool), &s->sample_spec);
+                chunk.length = PA_MIN(t_length, blk_size_max);
                 chunk.memblock = pa_memblock_new(s->context->mempool, chunk.length);
 
                 d = pa_memblock_acquire(chunk.memblock);

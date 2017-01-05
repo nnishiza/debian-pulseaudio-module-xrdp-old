@@ -6,12 +6,12 @@ pulse-daemon.conf \- PulseAudio daemon configuration file
 
 \fI~/.config/pulse/daemon.conf.d/*.conf\fB
 
-\fI/etc/pulse/daemon.conf\fB
+\fI/usr/local/etc/pulse/daemon.conf\fB
 
-\fI/etc/pulse/daemon.conf.d/*.conf\fB
+\fI/usr/local/etc/pulse/daemon.conf.d/*.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a configuration file on startup. If the per-user file \fI~/.config/pulse/daemon.conf\f1 exists, it is used, otherwise the system configuration file \fI/etc/pulse/daemon.conf\f1 is used. In addition to those main files, configuration directives can also be put in files under directories \fI~/.config/pulse/daemon.conf.d/\f1 and \fI/etc/pulse/daemon.conf.d/\f1. Those files have to have the .conf file name extension, but otherwise the file names can be chosen freely. The files under daemon.conf.d are processed in alphabetical order. In case the same option is set in multiple files, the last file to set an option overrides earlier files. The main daemon.conf file is processed first, so options set in files under daemon.conf.d override the main file.
+The PulseAudio sound server reads configuration directives from a configuration file on startup. If the per-user file \fI~/.config/pulse/daemon.conf\f1 exists, it is used, otherwise the system configuration file \fI/usr/local/etc/pulse/daemon.conf\f1 is used. In addition to those main files, configuration directives can also be put in files under directories \fI~/.config/pulse/daemon.conf.d/\f1 and \fI/usr/local/etc/pulse/daemon.conf.d/\f1. Those files have to have the .conf file name extension, but otherwise the file names can be chosen freely. The files under daemon.conf.d are processed in alphabetical order. In case the same option is set in multiple files, the last file to set an option overrides earlier files. The main daemon.conf file is processed first, so options set in files under daemon.conf.d override the main file.
 
 Please note that the server also reads a configuration script on startup. See \fBdefault.pa(5)\f1.
 
@@ -46,7 +46,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBenable-shm=\f1 Enable data transfer via POSIX or memfd shared memory. Takes a boolean argument, defaults to \fByes\f1. The \fB--disable-shm\f1 command line argument takes precedence.
 .TP
-\fBenable-memfd=\f1. Enable memfd shared memory. Takes a boolean argument, defaults to \fBno\f1.
+\fBenable-memfd=\f1. Enable memfd shared memory. Takes a boolean argument, defaults to \fByes\f1.
 .TP
 \fBshm-size-bytes=\f1 Sets the shared memory segment size for the daemon, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
 .TP
@@ -71,7 +71,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBdl-search-path=\f1 The path where to look for dynamic shared objects (DSOs/plugins). You may specify more than one path separated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
 .TP
-\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.config/pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
+\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.config/pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/usr/local/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/usr/local/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
 .TP
 \fBload-default-script-file=\f1 Load the default configuration script file as specified in \fBdefault-script-file=\f1. Defaults to \fByes\f1.
 .SH LOGGING

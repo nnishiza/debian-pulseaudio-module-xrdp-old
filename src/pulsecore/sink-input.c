@@ -44,7 +44,7 @@
 /* #define SINK_INPUT_DEBUG */
 
 #define MEMBLOCKQ_MAXLENGTH (32*1024*1024)
-#define CONVERT_BUFFER_LENGTH (PA_PAGE_SIZE)
+#define CONVERT_BUFFER_LENGTH (pa_page_size())
 
 PA_DEFINE_PUBLIC_CLASS(pa_sink_input, pa_msgobject);
 
@@ -645,7 +645,7 @@ void pa_sink_input_unlink(pa_sink_input *i) {
     bool linked;
     pa_source_output *o, PA_UNUSED *p = NULL;
 
-    pa_assert(i);
+    pa_sink_input_assert_ref(i);
     pa_assert_ctl_context();
 
     /* See pa_sink_unlink() for a couple of comments how this function
@@ -697,16 +697,16 @@ void pa_sink_input_unlink(pa_sink_input *i) {
 
     reset_callbacks(i);
 
-    if (linked) {
-        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_REMOVE, i->index);
-        pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_UNLINK_POST], i);
-    }
-
     if (i->sink) {
         if (PA_SINK_IS_LINKED(pa_sink_get_state(i->sink)))
             pa_sink_update_status(i->sink);
 
         i->sink = NULL;
+    }
+
+    if (linked) {
+        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_REMOVE, i->index);
+        pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_UNLINK_POST], i);
     }
 
     pa_core_maybe_vacuum(i->core);
@@ -721,9 +721,7 @@ static void sink_input_free(pa_object *o) {
     pa_assert(i);
     pa_assert_ctl_context();
     pa_assert(pa_sink_input_refcnt(i) == 0);
-
-    if (PA_SINK_INPUT_IS_LINKED(i->state))
-        pa_sink_input_unlink(i);
+    pa_assert(!PA_SINK_INPUT_IS_LINKED(i->state));
 
     pa_log_info("Freeing input %u \"%s\"", i->index,
                 i->proplist ? pa_strnull(pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME)) : "");
@@ -1435,10 +1433,10 @@ void pa_sink_input_set_property(pa_sink_input *i, const char *key, const char *v
 
     if (pa_proplist_contains(i->proplist, key)) {
         old_value = pa_xstrdup(pa_proplist_gets(i->proplist, key));
-        if (value && old_value) {
-            if (pa_streq(value, old_value))
-                goto finish;
-        } else
+        if (value && old_value && pa_streq(value, old_value))
+            goto finish;
+
+        if (!old_value)
             old_value = pa_xstrdup("(data)");
     } else {
         if (!value)
@@ -2298,6 +2296,30 @@ int pa_sink_input_update_rate(pa_sink_input *i) {
     pa_log_debug("Updated resampler for sink input %d", i->index);
 
     return 0;
+}
+
+/* Called from the IO thread. */
+void pa_sink_input_attach(pa_sink_input *i) {
+    pa_assert(i);
+    pa_assert(!i->thread_info.attached);
+
+    i->thread_info.attached = true;
+
+    if (i->attach)
+        i->attach(i);
+}
+
+/* Called from the IO thread. */
+void pa_sink_input_detach(pa_sink_input *i) {
+    pa_assert(i);
+
+    if (!i->thread_info.attached)
+        return;
+
+    i->thread_info.attached = false;
+
+    if (i->detach)
+        i->detach(i);
 }
 
 /* Called from the main thread. */

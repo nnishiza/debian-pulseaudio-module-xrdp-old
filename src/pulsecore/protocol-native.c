@@ -261,158 +261,6 @@ static void source_output_send_event_cb(pa_source_output *o, const char *event, 
 static int sink_input_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offset, pa_memchunk *chunk);
 static int source_output_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offset, pa_memchunk *chunk);
 
-static void command_exit(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_create_playback_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_drain_playback_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_create_record_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_delete_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_auth(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_client_name(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_lookup(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_stat(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_get_playback_latency(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_get_record_latency(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_create_upload_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_finish_upload_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_play_sample(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_remove_sample(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_get_info(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_get_info_list(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_get_server_info(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_subscribe(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_volume(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_mute(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_cork_playback_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_trigger_or_flush_or_prebuf_playback_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_default_sink_or_source(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_stream_name(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_kill(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_load_module(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_unload_module(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_cork_record_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_flush_record_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_move_stream(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_suspend(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_stream_buffer_attr(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_update_stream_sample_rate(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_update_proplist(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_remove_proplist(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_extension(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_card_profile(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_sink_or_source_port(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_set_port_latency_offset(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_enable_srbchannel(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-static void command_register_memfd_shmid(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_tagstruct *t, void *userdata);
-
-static const pa_pdispatch_cb_t command_table[PA_COMMAND_MAX] = {
-    [PA_COMMAND_ERROR] = NULL,
-    [PA_COMMAND_TIMEOUT] = NULL,
-    [PA_COMMAND_REPLY] = NULL,
-    [PA_COMMAND_CREATE_PLAYBACK_STREAM] = command_create_playback_stream,
-    [PA_COMMAND_DELETE_PLAYBACK_STREAM] = command_delete_stream,
-    [PA_COMMAND_DRAIN_PLAYBACK_STREAM] = command_drain_playback_stream,
-    [PA_COMMAND_CREATE_RECORD_STREAM] = command_create_record_stream,
-    [PA_COMMAND_DELETE_RECORD_STREAM] = command_delete_stream,
-    [PA_COMMAND_AUTH] = command_auth,
-    [PA_COMMAND_REQUEST] = NULL,
-    [PA_COMMAND_EXIT] = command_exit,
-    [PA_COMMAND_SET_CLIENT_NAME] = command_set_client_name,
-    [PA_COMMAND_LOOKUP_SINK] = command_lookup,
-    [PA_COMMAND_LOOKUP_SOURCE] = command_lookup,
-    [PA_COMMAND_STAT] = command_stat,
-    [PA_COMMAND_GET_PLAYBACK_LATENCY] = command_get_playback_latency,
-    [PA_COMMAND_GET_RECORD_LATENCY] = command_get_record_latency,
-    [PA_COMMAND_CREATE_UPLOAD_STREAM] = command_create_upload_stream,
-    [PA_COMMAND_DELETE_UPLOAD_STREAM] = command_delete_stream,
-    [PA_COMMAND_FINISH_UPLOAD_STREAM] = command_finish_upload_stream,
-    [PA_COMMAND_PLAY_SAMPLE] = command_play_sample,
-    [PA_COMMAND_REMOVE_SAMPLE] = command_remove_sample,
-    [PA_COMMAND_GET_SINK_INFO] = command_get_info,
-    [PA_COMMAND_GET_SOURCE_INFO] = command_get_info,
-    [PA_COMMAND_GET_CLIENT_INFO] = command_get_info,
-    [PA_COMMAND_GET_CARD_INFO] = command_get_info,
-    [PA_COMMAND_GET_MODULE_INFO] = command_get_info,
-    [PA_COMMAND_GET_SINK_INPUT_INFO] = command_get_info,
-    [PA_COMMAND_GET_SOURCE_OUTPUT_INFO] = command_get_info,
-    [PA_COMMAND_GET_SAMPLE_INFO] = command_get_info,
-    [PA_COMMAND_GET_SINK_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_SOURCE_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_MODULE_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_CLIENT_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_CARD_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_SINK_INPUT_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_SOURCE_OUTPUT_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_SAMPLE_INFO_LIST] = command_get_info_list,
-    [PA_COMMAND_GET_SERVER_INFO] = command_get_server_info,
-    [PA_COMMAND_SUBSCRIBE] = command_subscribe,
-
-    [PA_COMMAND_SET_SINK_VOLUME] = command_set_volume,
-    [PA_COMMAND_SET_SINK_INPUT_VOLUME] = command_set_volume,
-    [PA_COMMAND_SET_SOURCE_VOLUME] = command_set_volume,
-    [PA_COMMAND_SET_SOURCE_OUTPUT_VOLUME] = command_set_volume,
-
-    [PA_COMMAND_SET_SINK_MUTE] = command_set_mute,
-    [PA_COMMAND_SET_SINK_INPUT_MUTE] = command_set_mute,
-    [PA_COMMAND_SET_SOURCE_MUTE] = command_set_mute,
-    [PA_COMMAND_SET_SOURCE_OUTPUT_MUTE] = command_set_mute,
-
-    [PA_COMMAND_SUSPEND_SINK] = command_suspend,
-    [PA_COMMAND_SUSPEND_SOURCE] = command_suspend,
-
-    [PA_COMMAND_CORK_PLAYBACK_STREAM] = command_cork_playback_stream,
-    [PA_COMMAND_FLUSH_PLAYBACK_STREAM] = command_trigger_or_flush_or_prebuf_playback_stream,
-    [PA_COMMAND_TRIGGER_PLAYBACK_STREAM] = command_trigger_or_flush_or_prebuf_playback_stream,
-    [PA_COMMAND_PREBUF_PLAYBACK_STREAM] = command_trigger_or_flush_or_prebuf_playback_stream,
-
-    [PA_COMMAND_CORK_RECORD_STREAM] = command_cork_record_stream,
-    [PA_COMMAND_FLUSH_RECORD_STREAM] = command_flush_record_stream,
-
-    [PA_COMMAND_SET_DEFAULT_SINK] = command_set_default_sink_or_source,
-    [PA_COMMAND_SET_DEFAULT_SOURCE] = command_set_default_sink_or_source,
-    [PA_COMMAND_SET_PLAYBACK_STREAM_NAME] = command_set_stream_name,
-    [PA_COMMAND_SET_RECORD_STREAM_NAME] = command_set_stream_name,
-    [PA_COMMAND_KILL_CLIENT] = command_kill,
-    [PA_COMMAND_KILL_SINK_INPUT] = command_kill,
-    [PA_COMMAND_KILL_SOURCE_OUTPUT] = command_kill,
-    [PA_COMMAND_LOAD_MODULE] = command_load_module,
-    [PA_COMMAND_UNLOAD_MODULE] = command_unload_module,
-
-    [PA_COMMAND_GET_AUTOLOAD_INFO___OBSOLETE] = NULL,
-    [PA_COMMAND_GET_AUTOLOAD_INFO_LIST___OBSOLETE] = NULL,
-    [PA_COMMAND_ADD_AUTOLOAD___OBSOLETE] = NULL,
-    [PA_COMMAND_REMOVE_AUTOLOAD___OBSOLETE] = NULL,
-
-    [PA_COMMAND_MOVE_SINK_INPUT] = command_move_stream,
-    [PA_COMMAND_MOVE_SOURCE_OUTPUT] = command_move_stream,
-
-    [PA_COMMAND_SET_PLAYBACK_STREAM_BUFFER_ATTR] = command_set_stream_buffer_attr,
-    [PA_COMMAND_SET_RECORD_STREAM_BUFFER_ATTR] = command_set_stream_buffer_attr,
-
-    [PA_COMMAND_UPDATE_PLAYBACK_STREAM_SAMPLE_RATE] = command_update_stream_sample_rate,
-    [PA_COMMAND_UPDATE_RECORD_STREAM_SAMPLE_RATE] = command_update_stream_sample_rate,
-
-    [PA_COMMAND_UPDATE_RECORD_STREAM_PROPLIST] = command_update_proplist,
-    [PA_COMMAND_UPDATE_PLAYBACK_STREAM_PROPLIST] = command_update_proplist,
-    [PA_COMMAND_UPDATE_CLIENT_PROPLIST] = command_update_proplist,
-
-    [PA_COMMAND_REMOVE_RECORD_STREAM_PROPLIST] = command_remove_proplist,
-    [PA_COMMAND_REMOVE_PLAYBACK_STREAM_PROPLIST] = command_remove_proplist,
-    [PA_COMMAND_REMOVE_CLIENT_PROPLIST] = command_remove_proplist,
-
-    [PA_COMMAND_SET_CARD_PROFILE] = command_set_card_profile,
-
-    [PA_COMMAND_SET_SINK_PORT] = command_set_sink_or_source_port,
-    [PA_COMMAND_SET_SOURCE_PORT] = command_set_sink_or_source_port,
-
-    [PA_COMMAND_SET_PORT_LATENCY_OFFSET] = command_set_port_latency_offset,
-
-    [PA_COMMAND_ENABLE_SRBCHANNEL] = command_enable_srbchannel,
-
-    [PA_COMMAND_REGISTER_MEMFD_SHMID] = command_register_memfd_shmid,
-
-    [PA_COMMAND_EXTENSION] = command_extension
-};
-
 /* structure management */
 
 /* Called from main context */
@@ -1263,8 +1111,7 @@ out:
 
 /* Called from IO context */
 static void playback_stream_request_bytes(playback_stream *s) {
-    size_t m, minreq;
-    int previous_missing;
+    size_t m;
 
     playback_stream_assert_ref(s);
 
@@ -1284,11 +1131,7 @@ static void playback_stream_request_bytes(playback_stream *s) {
     pa_log("request_bytes(%lu)", (unsigned long) m);
 #endif
 
-    previous_missing = pa_atomic_add(&s->missing, (int) m);
-    minreq = pa_memblockq_get_minreq(s->memblockq);
-
-    if (pa_memblockq_prebuf_active(s->memblockq) ||
-        (previous_missing < (int) minreq && previous_missing + (int) m >= (int) minreq))
+    if (pa_atomic_add(&s->missing, (int) m) <= 0)
         pa_asyncmsgq_post(pa_thread_mq_get()->outq, PA_MSGOBJECT(s), PLAYBACK_STREAM_MESSAGE_REQUEST_DATA, NULL, 0, NULL, NULL);
 }
 
@@ -2718,17 +2561,17 @@ static void command_auth(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_ta
     /* Starting with protocol version 13 the MSB of the version tag
        reflects if shm is available for this pa_native_connection or
        not. */
-    if (c->version >= 13) {
-        shm_on_remote = !!(c->version & 0x80000000U);
+    if ((c->version & PA_PROTOCOL_VERSION_MASK) >= 13) {
+        shm_on_remote = !!(c->version & PA_PROTOCOL_FLAG_SHM);
 
         /* Starting with protocol version 31, the second MSB of the version
          * tag reflects whether memfd is supported on the other PA end. */
-        if (c->version >= 31)
-            memfd_on_remote = !!(c->version & 0x40000000U);
+        if ((c->version & PA_PROTOCOL_VERSION_MASK) >= 31)
+            memfd_on_remote = !!(c->version & PA_PROTOCOL_FLAG_MEMFD);
 
         /* Reserve the two most-significant _bytes_ of the version tag
          * for flags. */
-        c->version &= 0x0000FFFFU;
+        c->version &= PA_PROTOCOL_VERSION_MASK;
     }
 
     pa_log_debug("Protocol version: remote %u, local %u", c->version, PA_PROTOCOL_VERSION);
@@ -2815,12 +2658,18 @@ static void command_auth(pa_pdispatch *pd, uint32_t command, uint32_t tag, pa_ta
     pa_log_debug("Negotiated SHM: %s", pa_yes_no(do_shm));
     pa_pstream_enable_shm(c->pstream, do_shm);
 
+    /* Do not declare memfd support for 9.0 client libraries (protocol v31).
+     *
+     * Although they support memfd transport, such 9.0 clients has an iochannel
+     * bug that would break memfd audio if they're run in 32-bit mode over a
+     * 64-bit kernel. Thus influence them to use the POSIX shared memory model
+     * instead. Check commit 451d1d676237c81 for further details. */
     do_memfd =
-        do_shm && pa_mempool_is_memfd_backed(c->protocol->core->mempool);
+        c->version >= 32 && do_shm && pa_mempool_is_memfd_backed(c->protocol->core->mempool);
 
     shm_type = PA_MEM_TYPE_PRIVATE;
     if (do_shm) {
-        if (c->version >= 31 && memfd_on_remote && do_memfd) {
+        if (do_memfd && memfd_on_remote) {
             pa_pstream_enable_memfd(c->pstream);
             shm_type = PA_MEM_TYPE_SHARED_MEMFD;
         } else
@@ -4976,6 +4825,115 @@ static void command_set_port_latency_offset(pa_pdispatch *pd, uint32_t command, 
 
     pa_pstream_send_simple_ack(c->pstream, tag);
 }
+
+static const pa_pdispatch_cb_t command_table[PA_COMMAND_MAX] = {
+    [PA_COMMAND_ERROR] = NULL,
+    [PA_COMMAND_TIMEOUT] = NULL,
+    [PA_COMMAND_REPLY] = NULL,
+    [PA_COMMAND_CREATE_PLAYBACK_STREAM] = command_create_playback_stream,
+    [PA_COMMAND_DELETE_PLAYBACK_STREAM] = command_delete_stream,
+    [PA_COMMAND_DRAIN_PLAYBACK_STREAM] = command_drain_playback_stream,
+    [PA_COMMAND_CREATE_RECORD_STREAM] = command_create_record_stream,
+    [PA_COMMAND_DELETE_RECORD_STREAM] = command_delete_stream,
+    [PA_COMMAND_AUTH] = command_auth,
+    [PA_COMMAND_REQUEST] = NULL,
+    [PA_COMMAND_EXIT] = command_exit,
+    [PA_COMMAND_SET_CLIENT_NAME] = command_set_client_name,
+    [PA_COMMAND_LOOKUP_SINK] = command_lookup,
+    [PA_COMMAND_LOOKUP_SOURCE] = command_lookup,
+    [PA_COMMAND_STAT] = command_stat,
+    [PA_COMMAND_GET_PLAYBACK_LATENCY] = command_get_playback_latency,
+    [PA_COMMAND_GET_RECORD_LATENCY] = command_get_record_latency,
+    [PA_COMMAND_CREATE_UPLOAD_STREAM] = command_create_upload_stream,
+    [PA_COMMAND_DELETE_UPLOAD_STREAM] = command_delete_stream,
+    [PA_COMMAND_FINISH_UPLOAD_STREAM] = command_finish_upload_stream,
+    [PA_COMMAND_PLAY_SAMPLE] = command_play_sample,
+    [PA_COMMAND_REMOVE_SAMPLE] = command_remove_sample,
+    [PA_COMMAND_GET_SINK_INFO] = command_get_info,
+    [PA_COMMAND_GET_SOURCE_INFO] = command_get_info,
+    [PA_COMMAND_GET_CLIENT_INFO] = command_get_info,
+    [PA_COMMAND_GET_CARD_INFO] = command_get_info,
+    [PA_COMMAND_GET_MODULE_INFO] = command_get_info,
+    [PA_COMMAND_GET_SINK_INPUT_INFO] = command_get_info,
+    [PA_COMMAND_GET_SOURCE_OUTPUT_INFO] = command_get_info,
+    [PA_COMMAND_GET_SAMPLE_INFO] = command_get_info,
+    [PA_COMMAND_GET_SINK_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_SOURCE_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_MODULE_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_CLIENT_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_CARD_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_SINK_INPUT_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_SOURCE_OUTPUT_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_SAMPLE_INFO_LIST] = command_get_info_list,
+    [PA_COMMAND_GET_SERVER_INFO] = command_get_server_info,
+    [PA_COMMAND_SUBSCRIBE] = command_subscribe,
+
+    [PA_COMMAND_SET_SINK_VOLUME] = command_set_volume,
+    [PA_COMMAND_SET_SINK_INPUT_VOLUME] = command_set_volume,
+    [PA_COMMAND_SET_SOURCE_VOLUME] = command_set_volume,
+    [PA_COMMAND_SET_SOURCE_OUTPUT_VOLUME] = command_set_volume,
+
+    [PA_COMMAND_SET_SINK_MUTE] = command_set_mute,
+    [PA_COMMAND_SET_SINK_INPUT_MUTE] = command_set_mute,
+    [PA_COMMAND_SET_SOURCE_MUTE] = command_set_mute,
+    [PA_COMMAND_SET_SOURCE_OUTPUT_MUTE] = command_set_mute,
+
+    [PA_COMMAND_SUSPEND_SINK] = command_suspend,
+    [PA_COMMAND_SUSPEND_SOURCE] = command_suspend,
+
+    [PA_COMMAND_CORK_PLAYBACK_STREAM] = command_cork_playback_stream,
+    [PA_COMMAND_FLUSH_PLAYBACK_STREAM] = command_trigger_or_flush_or_prebuf_playback_stream,
+    [PA_COMMAND_TRIGGER_PLAYBACK_STREAM] = command_trigger_or_flush_or_prebuf_playback_stream,
+    [PA_COMMAND_PREBUF_PLAYBACK_STREAM] = command_trigger_or_flush_or_prebuf_playback_stream,
+
+    [PA_COMMAND_CORK_RECORD_STREAM] = command_cork_record_stream,
+    [PA_COMMAND_FLUSH_RECORD_STREAM] = command_flush_record_stream,
+
+    [PA_COMMAND_SET_DEFAULT_SINK] = command_set_default_sink_or_source,
+    [PA_COMMAND_SET_DEFAULT_SOURCE] = command_set_default_sink_or_source,
+    [PA_COMMAND_SET_PLAYBACK_STREAM_NAME] = command_set_stream_name,
+    [PA_COMMAND_SET_RECORD_STREAM_NAME] = command_set_stream_name,
+    [PA_COMMAND_KILL_CLIENT] = command_kill,
+    [PA_COMMAND_KILL_SINK_INPUT] = command_kill,
+    [PA_COMMAND_KILL_SOURCE_OUTPUT] = command_kill,
+    [PA_COMMAND_LOAD_MODULE] = command_load_module,
+    [PA_COMMAND_UNLOAD_MODULE] = command_unload_module,
+
+    [PA_COMMAND_GET_AUTOLOAD_INFO___OBSOLETE] = NULL,
+    [PA_COMMAND_GET_AUTOLOAD_INFO_LIST___OBSOLETE] = NULL,
+    [PA_COMMAND_ADD_AUTOLOAD___OBSOLETE] = NULL,
+    [PA_COMMAND_REMOVE_AUTOLOAD___OBSOLETE] = NULL,
+
+    [PA_COMMAND_MOVE_SINK_INPUT] = command_move_stream,
+    [PA_COMMAND_MOVE_SOURCE_OUTPUT] = command_move_stream,
+
+    [PA_COMMAND_SET_PLAYBACK_STREAM_BUFFER_ATTR] = command_set_stream_buffer_attr,
+    [PA_COMMAND_SET_RECORD_STREAM_BUFFER_ATTR] = command_set_stream_buffer_attr,
+
+    [PA_COMMAND_UPDATE_PLAYBACK_STREAM_SAMPLE_RATE] = command_update_stream_sample_rate,
+    [PA_COMMAND_UPDATE_RECORD_STREAM_SAMPLE_RATE] = command_update_stream_sample_rate,
+
+    [PA_COMMAND_UPDATE_RECORD_STREAM_PROPLIST] = command_update_proplist,
+    [PA_COMMAND_UPDATE_PLAYBACK_STREAM_PROPLIST] = command_update_proplist,
+    [PA_COMMAND_UPDATE_CLIENT_PROPLIST] = command_update_proplist,
+
+    [PA_COMMAND_REMOVE_RECORD_STREAM_PROPLIST] = command_remove_proplist,
+    [PA_COMMAND_REMOVE_PLAYBACK_STREAM_PROPLIST] = command_remove_proplist,
+    [PA_COMMAND_REMOVE_CLIENT_PROPLIST] = command_remove_proplist,
+
+    [PA_COMMAND_SET_CARD_PROFILE] = command_set_card_profile,
+
+    [PA_COMMAND_SET_SINK_PORT] = command_set_sink_or_source_port,
+    [PA_COMMAND_SET_SOURCE_PORT] = command_set_sink_or_source_port,
+
+    [PA_COMMAND_SET_PORT_LATENCY_OFFSET] = command_set_port_latency_offset,
+
+    [PA_COMMAND_ENABLE_SRBCHANNEL] = command_enable_srbchannel,
+
+    [PA_COMMAND_REGISTER_MEMFD_SHMID] = command_register_memfd_shmid,
+
+    [PA_COMMAND_EXTENSION] = command_extension
+};
 
 /*** pstream callbacks ***/
 

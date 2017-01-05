@@ -548,7 +548,8 @@ static void source_output_set_state(pa_source_output *o, pa_source_output_state_
 /* Called from main context */
 void pa_source_output_unlink(pa_source_output*o) {
     bool linked;
-    pa_assert(o);
+
+    pa_source_output_assert_ref(o);
     pa_assert_ctl_context();
 
     /* See pa_sink_unlink() for a couple of comments how this function
@@ -590,16 +591,16 @@ void pa_source_output_unlink(pa_source_output*o) {
 
     reset_callbacks(o);
 
-    if (linked) {
-        pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_REMOVE, o->index);
-        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST], o);
-    }
-
     if (o->source) {
         if (PA_SOURCE_IS_LINKED(pa_source_get_state(o->source)))
             pa_source_update_status(o->source);
 
         o->source = NULL;
+    }
+
+    if (linked) {
+        pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT|PA_SUBSCRIPTION_EVENT_REMOVE, o->index);
+        pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_UNLINK_POST], o);
     }
 
     pa_core_maybe_vacuum(o->core);
@@ -614,9 +615,7 @@ static void source_output_free(pa_object* mo) {
     pa_assert(o);
     pa_assert_ctl_context();
     pa_assert(pa_source_output_refcnt(o) == 0);
-
-    if (PA_SOURCE_OUTPUT_IS_LINKED(o->state))
-        pa_source_output_unlink(o);
+    pa_assert(!PA_SOURCE_OUTPUT_IS_LINKED(o->state));
 
     pa_log_info("Freeing output %u \"%s\"", o->index,
                 o->proplist ? pa_strnull(pa_proplist_gets(o->proplist, PA_PROP_MEDIA_NAME)) : "");
@@ -1087,10 +1086,10 @@ void pa_source_output_set_property(pa_source_output *o, const char *key, const c
 
     if (pa_proplist_contains(o->proplist, key)) {
         old_value = pa_xstrdup(pa_proplist_gets(o->proplist, key));
-        if (value && old_value) {
-            if (pa_streq(value, old_value))
-                goto finish;
-        } else
+        if (value && old_value && pa_streq(value, old_value))
+            goto finish;
+
+        if (!old_value)
             old_value = pa_xstrdup("(data)");
     } else {
         if (!value)
@@ -1107,7 +1106,7 @@ void pa_source_output_set_property(pa_source_output *o, const char *key, const c
         new_value = "(unset)";
     }
 
-    if (PA_SINK_INPUT_IS_LINKED(o->state)) {
+    if (PA_SOURCE_OUTPUT_IS_LINKED(o->state)) {
         pa_log_debug("Source output %u: proplist[%s]: %s -> %s", o->index, key, old_value, new_value);
         pa_hook_fire(&o->core->hooks[PA_CORE_HOOK_SOURCE_OUTPUT_PROPLIST_CHANGED], o);
         pa_subscription_post(o->core, PA_SUBSCRIPTION_EVENT_SOURCE_OUTPUT | PA_SUBSCRIPTION_EVENT_CHANGE, o->index);
@@ -1752,6 +1751,30 @@ int pa_source_output_update_rate(pa_source_output *o) {
     pa_log_debug("Updated resampler for source output %d", o->index);
 
     return 0;
+}
+
+/* Called from the IO thread. */
+void pa_source_output_attach(pa_source_output *o) {
+    pa_assert(o);
+    pa_assert(!o->thread_info.attached);
+
+    o->thread_info.attached = true;
+
+    if (o->attach)
+        o->attach(o);
+}
+
+/* Called from the IO thread. */
+void pa_source_output_detach(pa_source_output *o) {
+    pa_assert(o);
+
+    if (!o->thread_info.attached)
+        return;
+
+    o->thread_info.attached = false;
+
+    if (o->detach)
+        o->detach(o);
 }
 
 /* Called from the main thread. */

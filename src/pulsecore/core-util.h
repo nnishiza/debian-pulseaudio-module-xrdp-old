@@ -249,6 +249,10 @@ void pa_reduce(unsigned *num, unsigned *den);
 
 unsigned pa_ncpus(void);
 
+/* Replaces all occurrences of `a' in `s' with `b'. The caller has to free the
+ * returned string. All parameters must be non-NULL and additionally `a' must
+ * not be a zero-length string.
+ */
 char *pa_replace(const char*s, const char*a, const char *b);
 
 /* Escapes p by inserting backslashes in front of backslashes. chars is a
@@ -297,5 +301,18 @@ bool pa_running_in_vm(void);
 #ifdef OS_IS_WIN32
 char *pa_win32_get_toplevel(HANDLE handle);
 #endif
+
+size_t pa_page_size(void);
+
+/* Rounds down */
+static inline void* PA_PAGE_ALIGN_PTR(const void *p) {
+    return (void*) (((size_t) p) & ~(pa_page_size() - 1));
+}
+
+/* Rounds up */
+static inline size_t PA_PAGE_ALIGN(size_t l) {
+    size_t page_size = pa_page_size();
+    return (l + page_size - 1) & ~(page_size - 1);
+}
 
 #endif

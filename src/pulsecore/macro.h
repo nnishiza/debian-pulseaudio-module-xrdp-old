@@ -44,17 +44,6 @@
 #endif
 #endif
 
-#if defined(PAGE_SIZE)
-#define PA_PAGE_SIZE ((size_t) PAGE_SIZE)
-#elif defined(PAGESIZE)
-#define PA_PAGE_SIZE ((size_t) PAGESIZE)
-#elif defined(HAVE_SYSCONF)
-#define PA_PAGE_SIZE ((size_t) (sysconf(_SC_PAGE_SIZE)))
-#else
-/* Let's hope it's like x86. */
-#define PA_PAGE_SIZE ((size_t) 4096)
-#endif
-
 /* Rounds down */
 static inline void* PA_ALIGN_PTR(const void *p) {
     return (void*) (((size_t) p) & ~(sizeof(void*) - 1));
@@ -63,16 +52,6 @@ static inline void* PA_ALIGN_PTR(const void *p) {
 /* Rounds up */
 static inline size_t PA_ALIGN(size_t l) {
     return ((l + sizeof(void*) - 1) & ~(sizeof(void*) - 1));
-}
-
-/* Rounds down */
-static inline void* PA_PAGE_ALIGN_PTR(const void *p) {
-    return (void*) (((size_t) p) & ~(PA_PAGE_SIZE - 1));
-}
-
-/* Rounds up */
-static inline size_t PA_PAGE_ALIGN(size_t l) {
-    return (l + PA_PAGE_SIZE - 1) & ~(PA_PAGE_SIZE - 1);
 }
 
 #if defined(__GNUC__)
@@ -190,7 +169,7 @@ static inline size_t PA_PAGE_ALIGN(size_t l) {
 #define pa_return_if_fail(expr)                                         \
     do {                                                                \
         if (PA_UNLIKELY(!(expr))) {                                     \
-            pa_log_debug("Assertion '%s' failed at %s:%u, function %s.\n", #expr , __FILE__, __LINE__, PA_PRETTY_FUNCTION); \
+            pa_log_debug("Assertion '%s' failed at %s:%u, function %s.", #expr , __FILE__, __LINE__, PA_PRETTY_FUNCTION); \
             return;                                                     \
         }                                                               \
     } while(false)
@@ -198,7 +177,7 @@ static inline size_t PA_PAGE_ALIGN(size_t l) {
 #define pa_return_val_if_fail(expr, val)                                \
     do {                                                                \
         if (PA_UNLIKELY(!(expr))) {                                     \
-            pa_log_debug("Assertion '%s' failed at %s:%u, function %s.\n", #expr , __FILE__, __LINE__, PA_PRETTY_FUNCTION); \
+            pa_log_debug("Assertion '%s' failed at %s:%u, function %s.", #expr , __FILE__, __LINE__, PA_PRETTY_FUNCTION); \
             return (val);                                               \
         }                                                               \
     } while(false)

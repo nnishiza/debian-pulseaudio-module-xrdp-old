@@ -366,6 +366,7 @@ static int report_jack_state(snd_mixer_elem_t *melem, unsigned int mask) {
     void *state;
     pa_alsa_jack *jack;
     struct temp_port_avail *tp, *tports;
+    pa_card_profile *profile;
 
     pa_assert(u);
 
@@ -425,6 +426,32 @@ static int report_jack_state(snd_mixer_elem_t *melem, unsigned int mask) {
     for (tp = tports; tp->port; tp++)
         if (tp->avail == PA_AVAILABLE_NO)
            pa_device_port_set_available(tp->port, tp->avail);
+
+    /* Update profile availabilities. The logic could be improved; for now we
+     * only set obviously unavailable profiles (those that contain only
+     * unavailable ports) to PA_AVAILABLE_NO and all others to
+     * PA_AVAILABLE_UNKNOWN. */
+    PA_HASHMAP_FOREACH(profile, u->card->profiles, state) {
+        pa_device_port *port;
+        void *state2;
+        pa_available_t available = PA_AVAILABLE_NO;
+
+        /* Don't touch the "off" profile. */
+        if (profile->n_sources == 0 && profile->n_sinks == 0)
+            continue;
+
+        PA_HASHMAP_FOREACH(port, u->card->ports, state2) {
+            if (!pa_hashmap_get(port->profiles, profile->name))
+                continue;
+
+            if (port->available != PA_AVAILABLE_NO) {
+                available = PA_AVAILABLE_UNKNOWN;
+                break;
+            }
+        }
+
+        pa_card_profile_set_available(profile, available);
+    }
 
     pa_xfree(tports);
     return 0;
@@ -671,7 +698,7 @@ int pa__init(pa_module *m) {
     struct userdata *u;
     pa_reserve_wrapper *reserve = NULL;
     const char *description;
-    const char *profile = NULL;
+    const char *profile_str = NULL;
     char *fn = NULL;
     bool namereg_fail = false;
 
@@ -714,7 +741,18 @@ int pa__init(pa_module *m) {
         }
     }
 
-    pa_modargs_get_value_boolean(u->modargs, "use_ucm", &u->use_ucm);
+    if (pa_modargs_get_value_boolean(u->modargs, "use_ucm", &u->use_ucm) < 0) {
+        pa_log("Failed to parse use_ucm argument.");
+        goto fail;
+    }
+
+    /* Force ALSA to reread its configuration. This matters if our device
+     * was hot-plugged after ALSA has already read its configuration - see
+     * https://bugs.freedesktop.org/show_bug.cgi?id=54029
+     */
+
+    snd_config_update_free_global();
+
     if (u->use_ucm && !pa_alsa_ucm_query_profiles(&u->ucm, u->alsa_card_index)) {
         pa_log_info("Found UCM profiles");
 
@@ -799,9 +837,6 @@ int pa__init(pa_module *m) {
         goto fail;
     }
 
-    if ((profile = pa_modargs_get_value(u->modargs, "profile", NULL)))
-        pa_card_new_data_set_profile(&data, profile);
-
     u->card = pa_card_new(m->core, &data);
     pa_card_new_data_done(&data);
 
@@ -815,6 +850,26 @@ int pa__init(pa_module *m) {
             (pa_hook_cb_t) card_suspend_changed, u);
 
     init_jacks(u);
+
+    pa_card_choose_initial_profile(u->card);
+
+    /* If the "profile" modarg is given, we have to override whatever the usual
+     * policy chose in pa_card_choose_initial_profile(). */
+    profile_str = pa_modargs_get_value(u->modargs, "profile", NULL);
+    if (profile_str) {
+        pa_card_profile *profile;
+
+        profile = pa_hashmap_get(u->card->profiles, profile_str);
+        if (!profile) {
+            pa_log("No such profile: %s", profile_str);
+            goto fail;
+        }
+
+        pa_card_set_profile(u->card, profile, false);
+    }
+
+    pa_card_put(u->card);
+
     init_profile(u);
     init_eld_ctls(u);
 

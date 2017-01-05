@@ -79,6 +79,7 @@ usr/lib/pulse-*/modules/module-switch-on-port-available.so
 usr/lib/pulse-*/modules/module-virtual-surround-sink.so
 usr/lib/pulse-*/modules/module-snappy-policy.so
 usr/lib/pulse-*/modules/module-x11*.so
+usr/lib/pulse-*/modules/module-allow-passthrough.so
 [linux-any] usr/lib/pulse-*/modules/module-systemd-login.so
 [linux-any] usr/lib/systemd/user/pulseaudio.*
 usr/share/bash-completion/completions/*

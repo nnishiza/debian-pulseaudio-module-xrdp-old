@@ -1,3 +1,47 @@
+pulseaudio (1:9.99.1-1ubuntu1~zesty1) UNRELEASED; urgency=medium
+
+  * Merge with Debian experimental:
+    - epoch (my stupid fault :S)
+    - Add a module to allow pulseaudio to use the Android audio HAL
+    - Adjust gbp.conf file to point to the ubuntu branch for package builds
+    - Disable module-role-cork by default
+    - Load module-x11-bell in the start-pulseaudio-x11 script
+    - Hide pulseaudio from startup apps dialog
+    - Quit daemon if pid file is removed
+    - Avoid abort when poll descriptor is 0, such as when using it with the
+      audioflinger bridge, like done in ubuntu touch
+    - change default rlimit_rttime value to 200 ms
+    - Don't probe UCM profiles, trust that the profile writer knows what they
+      are doing
+    - Add card hook to allow modules to do something before a profile becomes
+      active
+    - Add an option to the bluez discovery module to set the profile
+    - Allow leaving bluetooth transport running while sink and source are
+      suspended.
+    - Add option to module-switch-on-connect to skip abstract devices
+    - Add property to module-device-restore to skip store/restore
+    - Add missing fields for sink_input/source_output info struct to the vala
+      bindings
+    - Add a build/run autopkgtest for libpulse-dev
+    - Drop libsoxr-dev build dep, its in universe
+    - Add support for the trust-store
+    - Add snappy support, preventing snap apps from recording audio, full
+      support via trust-store is planned
+    - Add epoch to conflicts/replaces
+    - Use liblirc-dev instead of liblircclient-dev
+
+ -- Luke Yelavich <themuso@ubuntu.com>  Fri, 06 Jan 2017 09:05:55 +1100
+
+pulseaudio (9.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+    - Drop all patches, applied upstream
+    - Install new allow-passthrough module
+  * shlibs.local: only the major and minor version
+    elements are used for the internal library SONAMEs
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 04 Jan 2017 15:43:30 -0300
+
 pulseaudio (1:9.0-5ubuntu3) zesty; urgency=medium
 
   * Re-add pulseaudio equalizer package, my understanding on build deps with

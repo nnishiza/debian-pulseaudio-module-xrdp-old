@@ -40,11 +40,11 @@ AC_SUBST(PA_MINOR, pa_minor)
 AC_SUBST(PA_MAJORMINOR, pa_major.pa_minor)
 
 AC_SUBST(PA_API_VERSION, 12)
-AC_SUBST(PA_PROTOCOL_VERSION, 31)
+AC_SUBST(PA_PROTOCOL_VERSION, 32)
 
 # The stable ABI for client applications, for the version info x:y:z
 # always will hold y=z
-AC_SUBST(LIBPULSE_VERSION_INFO, [20:0:20])
+AC_SUBST(LIBPULSE_VERSION_INFO, [20:1:20])
 
 # A simplified, synchronous, ABI-stable interface for client
 # applications, for the version info x:y:z always will hold y=z
@@ -84,7 +84,7 @@ AM_PROG_CC_C_O
 # Only required if you want the WebRTC canceller -- no runtime dep on
 # libstdc++ otherwise
 AC_PROG_CXX
-AX_CXX_COMPILE_STDCXX_11
+AX_CXX_COMPILE_STDCXX_11([ext],[optional])
 AC_PROG_GCC_TRADITIONAL
 AC_USE_SYSTEM_EXTENSIONS
 
@@ -668,17 +668,13 @@ AC_ARG_ENABLE([tests],
     AS_HELP_STRING([--disable-tests],[Disable unit tests]))
 
 AS_IF([test "x$enable_tests" != "xno"],
-    [PKG_CHECK_MODULES(LIBCHECK, [ check ], HAVE_LIBCHECK=1, HAVE_LIBCHECK=0)],
+    [PKG_CHECK_MODULES(LIBCHECK, [ check >= 0.9.10 ], HAVE_LIBCHECK=1, HAVE_LIBCHECK=0)],
     HAVE_LIBCHECK=0)
 
 AS_IF([test "x$enable_tests" = "xyes" && test "x$HAVE_LIBCHECK" = "x0"],
-    [AC_MSG_ERROR([*** check library not found])])
+    [AC_MSG_ERROR([*** check library not found or too old])])
 
 AM_CONDITIONAL([HAVE_TESTS], [test "x$HAVE_LIBCHECK" = x1])
-
-#### json parsing ####
-
-PKG_CHECK_MODULES(LIBJSON, [ json-c >= 0.11 ])
 
 #### Sound file ####
 
@@ -1194,30 +1190,6 @@ AS_IF([test "x$with_soxr" = "xyes" && test "x$HAVE_SOXR" = "x0"],
 AM_CONDITIONAL([HAVE_SOXR], [test "x$HAVE_SOXR" = "x1"])
 AS_IF([test "x$HAVE_SOXR" = "x1"], AC_DEFINE([HAVE_SOXR], 1, [Have soxr]))
 
-#### Xen support (optional) ####
-
-AC_ARG_ENABLE([xen],
-    AS_HELP_STRING([--disable-xen],[Disable optional Xen paravirtualized driver]))
-
-XEN_CFLAGS=
-XEN_LIBS=
-
-AS_IF([test "x$enable_xen" != "xno"],
-    [
-        HAVE_XEN=1
-        AC_CHECK_HEADER(xenctrl.h, [], [HAVE_XEN=0])
-        AC_CHECK_HEADER(xs.h, [], [HAVE_XEN=0])
-        AC_CHECK_LIB(xenctrl, xc_interface_open, [XEN_LIBS="$XEN_LIBS -lxenctrl"], [HAVE_XEN=0])
-        AC_CHECK_LIB(xenstore, xs_domain_open, [XEN_LIBS="$XEN_LIBS -lxenstore"], [HAVE_XEN=0])
-    ],
-    HAVE_XEN=0)
-
-AS_IF([test "x$enable_xen" = "xyes" && test "x$HAVE_XEN" = "x0"],
-    [AC_MSG_ERROR([*** Xen development headers or libraries not found])])
-
-AC_SUBST(XEN_CFLAGS)
-AC_SUBST(XEN_LIBS)
-AM_CONDITIONAL([HAVE_XEN], [test "x$HAVE_XEN" = x1])
 
 #### gcov support (optional) #####
 
@@ -1414,6 +1386,9 @@ fi
 AC_ARG_ENABLE([webrtc-aec],
     AS_HELP_STRING([--enable-webrtc-aec], [Enable the optional WebRTC-based echo canceller]))
 
+AS_IF([test "x$enable_webrtc_aec" = "xyes" && test "$HAVE_CXX11" = "0"],
+    [AC_MSG_ERROR([*** webrtc-audio-processing needs C++11 support])])
+
 AS_IF([test "x$enable_webrtc_aec" != "xno"],
     [PKG_CHECK_MODULES(WEBRTC, [ webrtc-audio-processing >= 0.2 ], [HAVE_WEBRTC=1], [HAVE_WEBRTC=0])],
     [HAVE_WEBRTC=0])
@@ -1577,7 +1552,6 @@ AS_IF([test "x$HAVE_AVAHI" = "x1"], ENABLE_AVAHI=yes, ENABLE_AVAHI=no)
 AS_IF([test "x$HAVE_JACK" = "x1"], ENABLE_JACK=yes, ENABLE_JACK=no)
 AS_IF([test "x$HAVE_LIBASYNCNS" = "x1"], ENABLE_LIBASYNCNS=yes, ENABLE_LIBASYNCNS=no)
 AS_IF([test "x$HAVE_LIRC" = "x1"], ENABLE_LIRC=yes, ENABLE_LIRC=no)
-AS_IF([test "x$HAVE_XEN" = "x1"], ENABLE_XEN=yes, ENABLE_XEN=no)
 AS_IF([test "x$HAVE_DBUS" = "x1"], ENABLE_DBUS=yes, ENABLE_DBUS=no)
 AS_IF([test "x$HAVE_UDEV" = "x1"], ENABLE_UDEV=yes, ENABLE_UDEV=no)
 AS_IF([test "x$HAVE_SYSTEMD_DAEMON" = "x1"], ENABLE_SYSTEMD_DAEMON=yes, ENABLE_SYSTEMD_DAEMON=no)
@@ -1640,7 +1614,6 @@ echo "
     Enable Jack:                   ${ENABLE_JACK}
     Enable Async DNS:              ${ENABLE_LIBASYNCNS}
     Enable LIRC:                   ${ENABLE_LIRC}
-    Enable Xen PV driver:          ${ENABLE_XEN}
     Enable D-Bus:                  ${ENABLE_DBUS}
       Enable BlueZ 4:              ${ENABLE_BLUEZ_4}
       Enable BlueZ 5:              ${ENABLE_BLUEZ_5}

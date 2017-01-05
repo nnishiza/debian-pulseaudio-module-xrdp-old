@@ -1,6 +1,3 @@
-Fix-detection-of-online-CPUs-in-pa_ncpus.patch
-raop-add-compatibility-with-openssl-1.1.0.patch
-
 # Ubuntu specific config/fixes
 0001-volume-config-changes.patch
 0005-dont-load-cork-music-on-phone.patch
