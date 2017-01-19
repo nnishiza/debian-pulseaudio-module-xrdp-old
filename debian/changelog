@@ -1,8 +1,11 @@
-pulseaudio (10.0-1) UNRELEASED; urgency=medium
+pulseaudio (10.0-1) unstable; urgency=medium
 
   * New upstream release
+    - Memfd is enabled by default. This unbreaks using pa within firejail or
+      similar. (Closes: #804120)
+  * Document qpaeq AGPL license
 
- -- Felipe Sateler <fsateler@debian.org>  Thu, 19 Jan 2017 20:05:23 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 19 Jan 2017 20:49:55 -0300
 
 pulseaudio (9.99.1-1) experimental; urgency=medium
 
