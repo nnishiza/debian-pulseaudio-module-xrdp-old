@@ -1,4 +1,4 @@
-pulseaudio (1:9.99.1-1ubuntu1~zesty1) UNRELEASED; urgency=medium
+pulseaudio (1:10.0-1ubuntu1) UNRELEASED; urgency=medium
 
   * Merge with Debian experimental:
     - epoch (my stupid fault :S)
@@ -31,6 +31,15 @@ pulseaudio (1:9.99.1-1ubuntu1~zesty1) UNRELEASED; urgency=medium
     - Use liblirc-dev instead of liblircclient-dev
 
  -- Luke Yelavich <themuso@ubuntu.com>  Fri, 06 Jan 2017 09:05:55 +1100
+
+pulseaudio (10.0-1) unstable; urgency=medium
+
+  * New upstream release
+    - Memfd is enabled by default. This unbreaks using pa within firejail or
+      similar. (Closes: #804120)
+  * Document qpaeq AGPL license
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 19 Jan 2017 20:49:55 -0300
 
 pulseaudio (9.99.1-1) experimental; urgency=medium
 

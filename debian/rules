@@ -61,7 +61,7 @@ override_dh_install:
 	dh_install --fail-missing
 
 override_dh_installdocs:
-	dh_installdocs -A NEWS README
+	dh_installdocs -A NEWS README AGPL
 
 override_dh_clean:
 	dh_clean
