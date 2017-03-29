@@ -1,12 +1,13 @@
-Index: pulseaudio/src/daemon/start-pulseaudio-x11.in
+Index: pulseaudio-10.0/src/daemon/start-pulseaudio-x11.in
 ===================================================================
---- pulseaudio.orig/src/daemon/start-pulseaudio-x11.in
-+++ pulseaudio/src/daemon/start-pulseaudio-x11.in
-@@ -20,6 +20,7 @@ set -e
+--- pulseaudio-10.0.orig/src/daemon/start-pulseaudio-x11.in
++++ pulseaudio-10.0/src/daemon/start-pulseaudio-x11.in
+@@ -20,6 +20,8 @@ set -e
  if [ x"$DISPLAY" != x ] ; then
  
      @PACTL_BINARY@ load-module module-x11-publish "display=$DISPLAY" > /dev/null
 +    @PACTL_BINARY@ load-module module-x11-bell "display=$DISPLAY" "sample=bell.ogg" > /dev/null
++    @PACTL_BINARY@ upload-sample /usr/share/sounds/ubuntu/stereo/bell.ogg bell.ogg > /dev/null
      @PACTL_BINARY@ load-module module-x11-cork-request "display=$DISPLAY" > /dev/null
  
      if [ x"$KDE_FULL_SESSION" = x"true" ]; then

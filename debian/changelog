@@ -1,3 +1,14 @@
+pulseaudio (1:10.0-1ubuntu2) zesty; urgency=medium
+
+  * debian/patches/0006-load-module-x11-bell.patch:
+    - Upload bell.ogg sample via pactl for module-x11-bell.  Original patch
+      by Daniel Hahler. (LP: #769314)
+  * debian/control:
+    - Add ubuntu-sounds to Suggests list, since it ships the sound used by
+      default in above patch now.
+
+ -- Michael Terry <mterry@ubuntu.com>  Wed, 29 Mar 2017 14:24:19 -0400
+
 pulseaudio (1:10.0-1ubuntu1) zesty; urgency=medium
 
   * Merge with Debian experimental:
