@@ -1,3 +1,9 @@
+pulseaudio-module-xrdp (7.1-2~bpo8+1wm1) jessie-backports; urgency=medium
+
+  * New package
+
+ -- Nobuyuki Nishizawa <nobuyuki@westmarsh.jp>  Fri, 05 May 2017 20:56:47 +0900
+
 pulseaudio (7.1-2~bpo8+1) jessie-backports; urgency=medium
 
   * Rebuild for jessie-backports.
