@@ -39,6 +39,17 @@
 #endif
 
 #ifdef HAVE_SYSTEMD_JOURNAL
+
+/* sd_journal_send() implicitly add fields for the source file,
+ * function name and code line from where it's invoked. As the
+ * correct code location fields CODE_FILE, CODE_LINE and
+ * CODE_FUNC are already handled by this module, we do not want
+ * the automatic values supplied by the systemd journal API.
+ *
+ * Without suppressing these, both the actual log event source
+ * and the call to sd_journal_send() will be logged. */
+#define SD_JOURNAL_SUPPRESS_LOCATION
+
 #include <systemd/sd-journal.h>
 #endif
 
@@ -60,6 +71,7 @@
 #include "log.h"
 
 #define ENV_LOG_SYSLOG "PULSE_LOG_SYSLOG"
+#define ENV_LOG_JOURNAL "PULSE_LOG_JOURNAL"
 #define ENV_LOG_LEVEL "PULSE_LOG"
 #define ENV_LOG_COLORS "PULSE_LOG_COLORS"
 #define ENV_LOG_PRINT_TIME "PULSE_LOG_TIME"
@@ -293,6 +305,13 @@ static void init_defaults(void) {
             target_override_set = true;
         }
 
+#ifdef HAVE_SYSTEMD_JOURNAL
+        if (getenv(ENV_LOG_JOURNAL)) {
+            target_override = PA_LOG_JOURNAL;
+            target_override_set = true;
+        }
+#endif
+
         if ((e = getenv(ENV_LOG_LEVEL))) {
             maximum_level_override = (pa_log_level_t) atoi(e);
 
@@ -493,6 +512,7 @@ void pa_log_levelv_meta(
                                 "CODE_FILE=%s", file,
                                 "CODE_FUNC=%s", func,
                                 "CODE_LINE=%d", line,
+                                "PULSE_BACKTRACE=%s", pa_strempty(bt),
                                 NULL) < 0) {
 #ifdef HAVE_SYSLOG_H
                     pa_log_target new_target = { .type = PA_LOG_SYSLOG, .file = NULL };

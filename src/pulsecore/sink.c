@@ -50,7 +50,7 @@
 #include "sink.h"
 
 #define MAX_MIX_CHANNELS 32
-#define MIX_BUFFER_LENGTH (PA_PAGE_SIZE)
+#define MIX_BUFFER_LENGTH (pa_page_size())
 #define ABSOLUTE_MIN_LATENCY (500)
 #define ABSOLUTE_MAX_LATENCY (10*PA_USEC_PER_SEC)
 #define DEFAULT_FIXED_LATENCY (250*PA_USEC_PER_MSEC)
@@ -310,9 +310,9 @@ pa_sink* pa_sink_new(
         s->active_port = pa_device_port_find_best(s->ports);
 
     if (s->active_port)
-        s->latency_offset = s->active_port->latency_offset;
+        s->port_latency_offset = s->active_port->latency_offset;
     else
-        s->latency_offset = 0;
+        s->port_latency_offset = 0;
 
     s->save_volume = data->save_volume;
     s->save_muted = data->save_muted;
@@ -345,7 +345,7 @@ pa_sink* pa_sink_new(
     pa_sw_cvolume_multiply(&s->thread_info.current_hw_volume, &s->soft_volume, &s->real_volume);
     s->thread_info.volume_change_safety_margin = core->deferred_volume_safety_margin_usec;
     s->thread_info.volume_change_extra_delay = core->deferred_volume_extra_delay_usec;
-    s->thread_info.latency_offset = s->latency_offset;
+    s->thread_info.port_latency_offset = s->port_latency_offset;
 
     /* FIXME: This should probably be moved to pa_sink_put() */
     pa_assert_se(pa_idxset_put(core->sinks, s, &s->index) >= 0);
@@ -669,16 +669,17 @@ void pa_sink_unlink(pa_sink* s) {
     bool linked;
     pa_sink_input *i, PA_UNUSED *j = NULL;
 
-    pa_assert(s);
+    pa_sink_assert_ref(s);
     pa_assert_ctl_context();
 
     /* Please note that pa_sink_unlink() does more than simply
      * reversing pa_sink_put(). It also undoes the registrations
      * already done in pa_sink_new()! */
 
-    /* All operations here shall be idempotent, i.e. pa_sink_unlink()
-     * may be called multiple times on the same sink without bad
-     * effects. */
+    if (s->unlink_requested)
+        return;
+
+    s->unlink_requested = true;
 
     linked = PA_SINK_IS_LINKED(s->state);
 
@@ -721,9 +722,7 @@ static void sink_free(pa_object *o) {
     pa_assert(s);
     pa_assert_ctl_context();
     pa_assert(pa_sink_refcnt(s) == 0);
-
-    if (PA_SINK_IS_LINKED(s->state))
-        pa_sink_unlink(s);
+    pa_assert(!PA_SINK_IS_LINKED(s->state));
 
     pa_log_info("Freeing sink %u \"%s\"", s->index, s->name);
 
@@ -950,18 +949,42 @@ size_t pa_sink_process_input_underruns(pa_sink *s, size_t left_to_play) {
 
     PA_HASHMAP_FOREACH(i, s->thread_info.inputs, state) {
         size_t uf = i->thread_info.underrun_for_sink;
-        if (uf == 0)
-            continue;
-        if (uf >= left_to_play) {
-            if (pa_sink_input_process_underrun(i))
-                continue;
+
+        /* Propagate down the filter tree */
+        if (i->origin_sink) {
+            size_t filter_result, left_to_play_origin;
+
+            /* The recursive call works in the origin sink domain ... */
+            left_to_play_origin = pa_convert_size(left_to_play, &i->sink->sample_spec, &i->origin_sink->sample_spec);
+
+            /* .. and returns the time to sleep before waking up. We need the
+             * underrun duration for comparisons, so we undo the subtraction on
+             * the return value... */
+            filter_result = left_to_play_origin - pa_sink_process_input_underruns(i->origin_sink, left_to_play_origin);
+
+            /* ... and convert it back to the master sink domain */
+            filter_result = pa_convert_size(filter_result, &i->origin_sink->sample_spec, &i->sink->sample_spec);
+
+            /* Remember the longest underrun so far */
+            if (filter_result > result)
+                result = filter_result;
         }
-        else if (uf > result)
+
+        if (uf == 0) {
+            /* No underrun here, move on */
+            continue;
+        } else if (uf >= left_to_play) {
+            /* The sink has possibly consumed all the data the sink input provided */
+            pa_sink_input_process_underrun(i);
+        } else if (uf > result) {
+            /* Remember the longest underrun so far */
             result = uf;
+        }
     }
 
     if (result > 0)
-        pa_log_debug("Found underrun %ld bytes ago (%ld bytes ahead in playback buffer)", (long) result, (long) left_to_play - result);
+        pa_log_debug("%s: Found underrun %ld bytes ago (%ld bytes ahead in playback buffer)", s->name,
+                (long) result, (long) left_to_play - result);
     return left_to_play - result;
 }
 
@@ -1483,8 +1506,8 @@ pa_usec_t pa_sink_get_latency(pa_sink *s) {
 
     /* usec is unsigned, so check that the offset can be added to usec without
      * underflowing. */
-    if (-s->latency_offset <= (int64_t) usec)
-        usec += s->latency_offset;
+    if (-s->port_latency_offset <= (int64_t) usec)
+        usec += s->port_latency_offset;
     else
         usec = 0;
 
@@ -1517,8 +1540,8 @@ pa_usec_t pa_sink_get_latency_within_thread(pa_sink *s) {
 
     /* usec is unsigned, so check that the offset can be added to usec without
      * underflowing. */
-    if (-s->thread_info.latency_offset <= (int64_t) usec)
-        usec += s->thread_info.latency_offset;
+    if (-s->thread_info.port_latency_offset <= (int64_t) usec)
+        usec += s->thread_info.port_latency_offset;
     else
         usec = 0;
 
@@ -2358,7 +2381,7 @@ unsigned pa_sink_used_by(pa_sink *s) {
 }
 
 /* Called from main thread */
-unsigned pa_sink_check_suspend(pa_sink *s) {
+unsigned pa_sink_check_suspend(pa_sink *s, pa_sink_input *ignore_input, pa_source_output *ignore_output) {
     unsigned ret;
     pa_sink_input *i;
     uint32_t idx;
@@ -2373,6 +2396,9 @@ unsigned pa_sink_check_suspend(pa_sink *s) {
 
     PA_IDXSET_FOREACH(i, s->inputs, idx) {
         pa_sink_input_state_t st;
+
+        if (i == ignore_input)
+            continue;
 
         st = pa_sink_input_get_state(i);
 
@@ -2394,7 +2420,7 @@ unsigned pa_sink_check_suspend(pa_sink *s) {
     }
 
     if (s->monitor_source)
-        ret += pa_source_check_suspend(s->monitor_source);
+        ret += pa_source_check_suspend(s->monitor_source, ignore_output);
 
     return ret;
 }
@@ -2464,11 +2490,7 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
                 i->thread_info.sync_next->thread_info.sync_prev = i;
             }
 
-            pa_assert(!i->thread_info.attached);
-            i->thread_info.attached = true;
-
-            if (i->attach)
-                i->attach(i);
+            pa_sink_input_attach(i);
 
             pa_sink_input_set_state_within_thread(i, i->state);
 
@@ -2510,13 +2532,9 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
              * sink input handling a few lines down at
              * PA_SINK_MESSAGE_START_MOVE, too. */
 
-            if (i->detach)
-                i->detach(i);
+            pa_sink_input_detach(i);
 
             pa_sink_input_set_state_within_thread(i, i->state);
-
-            pa_assert(i->thread_info.attached);
-            i->thread_info.attached = false;
 
             /* Since the caller sleeps in pa_sink_input_unlink(),
              * we can safely access data outside of thread_info even
@@ -2609,11 +2627,7 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
                 }
             }
 
-            if (i->detach)
-                i->detach(i);
-
-            pa_assert(i->thread_info.attached);
-            i->thread_info.attached = false;
+            pa_sink_input_detach(i);
 
             /* Let's remove the sink input ...*/
             pa_hashmap_remove_and_free(s->thread_info.inputs, PA_UINT32_TO_PTR(i->index));
@@ -2639,11 +2653,7 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
 
             pa_hashmap_put(s->thread_info.inputs, PA_UINT32_TO_PTR(i->index), pa_sink_input_ref(i));
 
-            pa_assert(!i->thread_info.attached);
-            i->thread_info.attached = true;
-
-            if (i->attach)
-                i->attach(i);
+            pa_sink_input_attach(i);
 
             if (i->thread_info.state != PA_SINK_INPUT_CORKED) {
                 pa_usec_t usec = 0;
@@ -2864,8 +2874,8 @@ int pa_sink_process_msg(pa_msgobject *o, int code, void *userdata, int64_t offse
             pa_sink_get_mute(s, true);
             return 0;
 
-        case PA_SINK_MESSAGE_SET_LATENCY_OFFSET:
-            s->thread_info.latency_offset = offset;
+        case PA_SINK_MESSAGE_SET_PORT_LATENCY_OFFSET:
+            s->thread_info.port_latency_offset = offset;
             return 0;
 
         case PA_SINK_MESSAGE_GET_LATENCY:
@@ -2906,8 +2916,7 @@ void pa_sink_detach_within_thread(pa_sink *s) {
     pa_assert(PA_SINK_IS_LINKED(s->thread_info.state));
 
     PA_HASHMAP_FOREACH(i, s->thread_info.inputs, state)
-        if (i->detach)
-            i->detach(i);
+        pa_sink_input_detach(i);
 
     if (s->monitor_source)
         pa_source_detach_within_thread(s->monitor_source);
@@ -2923,8 +2932,7 @@ void pa_sink_attach_within_thread(pa_sink *s) {
     pa_assert(PA_SINK_IS_LINKED(s->thread_info.state));
 
     PA_HASHMAP_FOREACH(i, s->thread_info.inputs, state)
-        if (i->attach)
-            i->attach(i);
+        pa_sink_input_attach(i);
 
     if (s->monitor_source)
         pa_source_attach_within_thread(s->monitor_source);
@@ -3264,15 +3272,15 @@ void pa_sink_set_fixed_latency_within_thread(pa_sink *s, pa_usec_t latency) {
 }
 
 /* Called from main context */
-void pa_sink_set_latency_offset(pa_sink *s, int64_t offset) {
+void pa_sink_set_port_latency_offset(pa_sink *s, int64_t offset) {
     pa_sink_assert_ref(s);
 
-    s->latency_offset = offset;
+    s->port_latency_offset = offset;
 
     if (PA_SINK_IS_LINKED(s->state))
-        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_LATENCY_OFFSET, NULL, offset, NULL) == 0);
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SINK_MESSAGE_SET_PORT_LATENCY_OFFSET, NULL, offset, NULL) == 0);
     else
-        s->thread_info.latency_offset = offset;
+        s->thread_info.port_latency_offset = offset;
 }
 
 /* Called from main context */
@@ -3345,7 +3353,7 @@ int pa_sink_set_port(pa_sink *s, const char *name, bool save) {
     s->active_port = port;
     s->save_port = save;
 
-    pa_sink_set_latency_offset(s, s->active_port->latency_offset);
+    pa_sink_set_port_latency_offset(s, s->active_port->latency_offset);
 
     pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SINK_PORT_CHANGED], s);
 

@@ -51,7 +51,7 @@ int main(int argc, char *argv[]) {
 
     pa_log_set_level(PA_LOG_DEBUG);
 
-    pa_assert_se(pool = pa_mempool_new(false, 0));
+    pa_assert_se(pool = pa_mempool_new(PA_MEM_TYPE_PRIVATE, 0, true));
 
     for (i = 0; maps[i].channels > 0; i++)
         for (j = 0; maps[j].channels > 0; j++) {
@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
             pa_resampler *r;
             pa_sample_spec ss1, ss2;
 
-            pa_log_info("Converting from '%s' to '%s'.\n", pa_channel_map_snprint(a, sizeof(a), &maps[i]), pa_channel_map_snprint(b, sizeof(b), &maps[j]));
+            pa_log_info("Converting from '%s' to '%s'.", pa_channel_map_snprint(a, sizeof(a), &maps[i]), pa_channel_map_snprint(b, sizeof(b), &maps[j]));
 
             ss1.channels = maps[i].channels;
             ss2.channels = maps[j].channels;
@@ -75,7 +75,7 @@ int main(int argc, char *argv[]) {
             pa_resampler_free(r);
         }
 
-    pa_mempool_free(pool);
+    pa_mempool_unref(pool);
 
     return 0;
 }

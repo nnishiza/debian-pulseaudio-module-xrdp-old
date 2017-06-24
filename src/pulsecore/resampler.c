@@ -431,6 +431,8 @@ pa_resampler* pa_resampler_new(
     return r;
 
 fail:
+    if (r->lfe_filter)
+      pa_lfe_filter_free(r->lfe_filter);
     pa_xfree(r);
 
     return NULL;
@@ -682,6 +684,11 @@ int pa_resample_method_supported(pa_resample_method_t m) {
     if (m >= PA_RESAMPLER_SPEEX_FLOAT_BASE && m <= PA_RESAMPLER_SPEEX_FLOAT_MAX)
         return 0;
     if (m >= PA_RESAMPLER_SPEEX_FIXED_BASE && m <= PA_RESAMPLER_SPEEX_FIXED_MAX)
+        return 0;
+#endif
+
+#ifndef HAVE_SOXR
+    if (m >= PA_RESAMPLER_SOXR_MQ && m <= PA_RESAMPLER_SOXR_VHQ)
         return 0;
 #endif
 
@@ -1149,7 +1156,7 @@ static void setup_remap(const pa_resampler *r, pa_remap_t *m, bool *lfe_remixed)
         pa_strbuf_puts(s, "\n");
     }
 
-    pa_log_debug("Channel matrix:\n%s", t = pa_strbuf_tostring_free(s));
+    pa_log_debug("Channel matrix:\n%s", t = pa_strbuf_to_string_free(s));
     pa_xfree(t);
 
     /* initialize the remapping function */

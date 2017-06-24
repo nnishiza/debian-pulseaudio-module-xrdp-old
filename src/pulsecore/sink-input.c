@@ -44,7 +44,7 @@
 /* #define SINK_INPUT_DEBUG */
 
 #define MEMBLOCKQ_MAXLENGTH (32*1024*1024)
-#define CONVERT_BUFFER_LENGTH (PA_PAGE_SIZE)
+#define CONVERT_BUFFER_LENGTH (pa_page_size())
 
 PA_DEFINE_PUBLIC_CLASS(pa_sink_input, pa_msgobject);
 
@@ -645,7 +645,7 @@ void pa_sink_input_unlink(pa_sink_input *i) {
     bool linked;
     pa_source_output *o, PA_UNUSED *p = NULL;
 
-    pa_assert(i);
+    pa_sink_input_assert_ref(i);
     pa_assert_ctl_context();
 
     /* See pa_sink_unlink() for a couple of comments how this function
@@ -697,16 +697,16 @@ void pa_sink_input_unlink(pa_sink_input *i) {
 
     reset_callbacks(i);
 
-    if (linked) {
-        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_REMOVE, i->index);
-        pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_UNLINK_POST], i);
-    }
-
     if (i->sink) {
         if (PA_SINK_IS_LINKED(pa_sink_get_state(i->sink)))
             pa_sink_update_status(i->sink);
 
         i->sink = NULL;
+    }
+
+    if (linked) {
+        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_REMOVE, i->index);
+        pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_UNLINK_POST], i);
     }
 
     pa_core_maybe_vacuum(i->core);
@@ -721,9 +721,7 @@ static void sink_input_free(pa_object *o) {
     pa_assert(i);
     pa_assert_ctl_context();
     pa_assert(pa_sink_input_refcnt(i) == 0);
-
-    if (PA_SINK_INPUT_IS_LINKED(i->state))
-        pa_sink_input_unlink(i);
+    pa_assert(!PA_SINK_INPUT_IS_LINKED(i->state));
 
     pa_log_info("Freeing input %u \"%s\"", i->index,
                 i->proplist ? pa_strnull(pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME)) : "");
@@ -1426,17 +1424,124 @@ void pa_sink_input_set_mute(pa_sink_input *i, bool mute, bool save) {
     pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_MUTE_CHANGED], i);
 }
 
-/* Called from main thread */
-void pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_proplist *p) {
-    pa_sink_input_assert_ref(i);
-    pa_assert_ctl_context();
+void pa_sink_input_set_property(pa_sink_input *i, const char *key, const char *value) {
+    char *old_value = NULL;
+    const char *new_value;
 
-    if (p)
-        pa_proplist_update(i->proplist, mode, p);
+    pa_assert(i);
+    pa_assert(key);
+
+    if (pa_proplist_contains(i->proplist, key)) {
+        old_value = pa_xstrdup(pa_proplist_gets(i->proplist, key));
+        if (value && old_value && pa_streq(value, old_value))
+            goto finish;
+
+        if (!old_value)
+            old_value = pa_xstrdup("(data)");
+    } else {
+        if (!value)
+            goto finish;
+
+        old_value = pa_xstrdup("(unset)");
+    }
+
+    if (value) {
+        pa_proplist_sets(i->proplist, key, value);
+        new_value = value;
+    } else {
+        pa_proplist_unset(i->proplist, key);
+        new_value = "(unset)";
+    }
 
     if (PA_SINK_INPUT_IS_LINKED(i->state)) {
+        pa_log_debug("Sink input %u: proplist[%s]: %s -> %s", i->index, key, old_value, new_value);
         pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED], i);
-        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
+        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT | PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
+    }
+
+finish:
+    pa_xfree(old_value);
+}
+
+void pa_sink_input_set_property_arbitrary(pa_sink_input *i, const char *key, const uint8_t *value, size_t nbytes) {
+    const uint8_t *old_value;
+    size_t old_nbytes;
+    const char *old_value_str;
+    const char *new_value_str;
+
+    pa_assert(i);
+    pa_assert(key);
+
+    if (pa_proplist_get(i->proplist, key, (const void **) &old_value, &old_nbytes) >= 0) {
+        if (value && nbytes == old_nbytes && !memcmp(value, old_value, nbytes))
+            return;
+
+        old_value_str = "(data)";
+
+    } else {
+        if (!value)
+            return;
+
+        old_value_str = "(unset)";
+    }
+
+    if (value) {
+        pa_proplist_set(i->proplist, key, value, nbytes);
+        new_value_str = "(data)";
+    } else {
+        pa_proplist_unset(i->proplist, key);
+        new_value_str = "(unset)";
+    }
+
+    if (PA_SINK_INPUT_IS_LINKED(i->state)) {
+        pa_log_debug("Sink input %u: proplist[%s]: %s -> %s", i->index, key, old_value_str, new_value_str);
+        pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED], i);
+        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT | PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
+    }
+}
+
+/* Called from main thread */
+void pa_sink_input_update_proplist(pa_sink_input *i, pa_update_mode_t mode, pa_proplist *p) {
+    void *state;
+    const char *key;
+    const uint8_t *value;
+    size_t nbytes;
+
+    pa_sink_input_assert_ref(i);
+    pa_assert(p);
+    pa_assert_ctl_context();
+
+    switch (mode) {
+        case PA_UPDATE_SET: {
+            /* Delete everything that is not in p. */
+            for (state = NULL; (key = pa_proplist_iterate(i->proplist, &state));) {
+                if (!pa_proplist_contains(p, key))
+                    pa_sink_input_set_property(i, key, NULL);
+            }
+
+            /* Fall through. */
+        }
+
+        case PA_UPDATE_REPLACE: {
+            for (state = NULL; (key = pa_proplist_iterate(p, &state));) {
+                pa_proplist_get(p, key, (const void **) &value, &nbytes);
+                pa_sink_input_set_property_arbitrary(i, key, value, nbytes);
+            }
+
+            break;
+        }
+
+        case PA_UPDATE_MERGE: {
+            for (state = NULL; (key = pa_proplist_iterate(p, &state));) {
+                if (pa_proplist_contains(i->proplist, key))
+                    continue;
+
+                pa_proplist_get(p, key, (const void **) &value, &nbytes);
+                pa_sink_input_set_property_arbitrary(i, key, value, nbytes);
+            }
+
+            break;
+        }
     }
 }
 
@@ -1465,31 +1570,6 @@ int pa_sink_input_set_rate(pa_sink_input *i, uint32_t rate) {
 
     pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
     return 0;
-}
-
-/* Called from main context */
-void pa_sink_input_set_name(pa_sink_input *i, const char *name) {
-    const char *old;
-    pa_sink_input_assert_ref(i);
-    pa_assert_ctl_context();
-
-    if (!name && !pa_proplist_contains(i->proplist, PA_PROP_MEDIA_NAME))
-        return;
-
-    old = pa_proplist_gets(i->proplist, PA_PROP_MEDIA_NAME);
-
-    if (old && name && pa_streq(old, name))
-        return;
-
-    if (name)
-        pa_proplist_sets(i->proplist, PA_PROP_MEDIA_NAME, name);
-    else
-        pa_proplist_unset(i->proplist, PA_PROP_MEDIA_NAME);
-
-    if (PA_SINK_INPUT_IS_LINKED(i->state)) {
-        pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_PROPLIST_CHANGED], i);
-        pa_subscription_post(i->core, PA_SUBSCRIPTION_EVENT_SINK_INPUT|PA_SUBSCRIPTION_EVENT_CHANGE, i->index);
-    }
 }
 
 /* Called from main context */
@@ -1538,6 +1618,9 @@ bool pa_sink_input_may_move_to(pa_sink_input *i, pa_sink *dest) {
     if (dest == i->sink)
         return true;
 
+    if (dest->unlink_requested)
+        return false;
+
     if (!pa_sink_input_may_move(i))
         return false;
 
@@ -1579,6 +1662,8 @@ int pa_sink_input_start_move(pa_sink_input *i) {
 
     if ((r = pa_hook_fire(&i->core->hooks[PA_CORE_HOOK_SINK_INPUT_MOVE_START], i)) < 0)
         return r;
+
+    pa_log_debug("Starting to move sink input %u from '%s'", (unsigned) i->index, i->sink->name);
 
     /* Kill directly connected outputs */
     while ((o = pa_idxset_first(i->direct_outputs, NULL))) {
@@ -2211,6 +2296,30 @@ int pa_sink_input_update_rate(pa_sink_input *i) {
     pa_log_debug("Updated resampler for sink input %d", i->index);
 
     return 0;
+}
+
+/* Called from the IO thread. */
+void pa_sink_input_attach(pa_sink_input *i) {
+    pa_assert(i);
+    pa_assert(!i->thread_info.attached);
+
+    i->thread_info.attached = true;
+
+    if (i->attach)
+        i->attach(i);
+}
+
+/* Called from the IO thread. */
+void pa_sink_input_detach(pa_sink_input *i) {
+    pa_assert(i);
+
+    if (!i->thread_info.attached)
+        return;
+
+    i->thread_info.attached = false;
+
+    if (i->detach)
+        i->detach(i);
 }
 
 /* Called from the main thread. */

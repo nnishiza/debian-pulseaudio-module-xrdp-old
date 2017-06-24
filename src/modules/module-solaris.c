@@ -412,10 +412,12 @@ static int sink_process_msg(pa_msgobject *o, int code, void *data, int64_t offse
                         pa_smoother_resume(u->smoother, pa_rtclock_now(), true);
 
                         if (!u->source || u->source_suspended) {
+                            bool mute;
                             if (unsuspend(u) < 0)
                                 return -1;
                             u->sink->get_volume(u->sink);
-                            u->sink->get_mute(u->sink);
+                            if (u->sink->get_mute(u->sink, &mute) >= 0)
+                                pa_sink_set_mute(u->sink, mute, false);
                         }
                         u->sink_suspended = false;
                     }
@@ -909,7 +911,11 @@ int pa__init(pa_module *m) {
     pa_memchunk_reset(&u->memchunk);
 
     u->rtpoll = pa_rtpoll_new();
-    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
+
+    if (pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll) < 0) {
+        pa_log("pa_thread_mq_init() failed.");
+        goto fail;
+    }
 
     u->rtpoll_item = NULL;
     build_pollfd(u);
@@ -1033,8 +1039,12 @@ int pa__init(pa_module *m) {
 
         if (sink_new_data.muted_is_set)
             u->sink->set_mute(u->sink);
-        else
-            u->sink->get_mute(u->sink);
+        else {
+            bool mute;
+
+            if (u->sink->get_mute(u->sink, &mute) >= 0)
+                pa_sink_set_mute(u->sink, mute, false);
+        }
 
         pa_sink_put(u->sink);
     }

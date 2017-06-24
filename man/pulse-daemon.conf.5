@@ -4,10 +4,16 @@ pulse-daemon.conf \- PulseAudio daemon configuration file
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/daemon.conf\fB
 
-\fI/etc/pulse/daemon.conf\fB
+\fI~/.config/pulse/daemon.conf.d/*.conf\fB
+
+\fI/usr/local/etc/pulse/daemon.conf\fB
+
+\fI/usr/local/etc/pulse/daemon.conf.d/*.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio sound server reads configuration directives from a file \fI~/.config/pulse/daemon.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/daemon.conf\f1. Please note that the server also reads a configuration script on startup \fIdefault.pa\f1 which also contains runtime configuration directives.
+The PulseAudio sound server reads configuration directives from a configuration file on startup. If the per-user file \fI~/.config/pulse/daemon.conf\f1 exists, it is used, otherwise the system configuration file \fI/usr/local/etc/pulse/daemon.conf\f1 is used. In addition to those main files, configuration directives can also be put in files under directories \fI~/.config/pulse/daemon.conf.d/\f1 and \fI/usr/local/etc/pulse/daemon.conf.d/\f1. Those files have to have the .conf file name extension, but otherwise the file names can be chosen freely. The files under daemon.conf.d are processed in alphabetical order. In case the same option is set in multiple files, the last file to set an option overrides earlier files. The main daemon.conf file is processed first, so options set in files under daemon.conf.d override the main file.
+
+Please note that the server also reads a configuration script on startup. See \fBdefault.pa(5)\f1.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -26,9 +32,9 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBenable-remixing=\f1 If disabled never upmix or downmix channels to different channel maps. Instead, do a simple name-based matching only. Defaults to \fByes.\f1
 .TP
-\fBenable-lfe-remixing=\f1 If disabled when upmixing or downmixing ignore LFE channels. When this option is disabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fByes\f1.
+\fBenable-lfe-remixing=\f1 If disabled when upmixing or downmixing ignore LFE channels. When this option is disabled the output LFE channel will only get a signal when an input LFE channel is available as well. If no input LFE channel is available the output LFE channel will always be 0. If no output LFE channel is available the signal on the input LFE channel will be ignored. Defaults to \fBno\f1.
 .TP
-\fBlfe-crossover-freq=\f1 The crossover frequency (in Hz) for the LFE filter. Defaults to 120 Hz. Set it to 0 to disable the LFE filter.
+\fBlfe-crossover-freq=\f1 The crossover frequency (in Hz) for the LFE filter. Set it to 0 to disable the LFE filter. Defaults to 0.
 .TP
 \fBuse-pid-file=\f1 Create a PID file in the runtime directory (\fI$XDG_RUNTIME_DIR/pulse/pid\f1). If this is enabled you may use commands like \fB--kill\f1 or \fB--check\f1. If you are planning to start more than one PulseAudio process per user, you better disable this option since it effectively disables multiple instances. Takes a boolean argument, defaults to \fByes\f1. The \fB--use-pid-file\f1 command line option takes precedence.
 .TP
@@ -38,7 +44,9 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBlocal-server-type=\f1 Please don't use this option if you don't have to! This option is currently only useful when you want D-Bus clients to use a remote server. This option may be removed in future versions. If you only want to run PulseAudio in the system mode, use the \fBsystem-instance\f1 option. This option takes one of \fBuser\f1, \fBsystem\f1 or \fBnone\f1 as the argument. This is essentially a duplicate for the \fBsystem-instance\f1 option. The difference is the \fBnone\f1 option, which is useful when you want to use a remote server with D-Bus clients. If both this and \fBsystem-instance\f1 are defined, this option takes precedence. Defaults to whatever the \fBsystem-instance\f1 is set.
 .TP
-\fBenable-shm=\f1 Enable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fByes\f1. The \fB--disable-shm\f1 command line argument takes precedence.
+\fBenable-shm=\f1 Enable data transfer via POSIX or memfd shared memory. Takes a boolean argument, defaults to \fByes\f1. The \fB--disable-shm\f1 command line argument takes precedence.
+.TP
+\fBenable-memfd=\f1. Enable memfd shared memory. Takes a boolean argument, defaults to \fByes\f1.
 .TP
 \fBshm-size-bytes=\f1 Sets the shared memory segment size for the daemon, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
 .TP
@@ -49,7 +57,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBhigh-priority=\f1 Renice the daemon after startup to become a high-priority process. This a good idea if you experience drop-outs during playback. However, this is a certain security issue, since it works when called SUID root only, or RLIMIT_NICE is used. root is dropped immediately after gaining the nice level on startup, thus it is presumably safe. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to \fByes\f1. The \fB--high-priority\f1 command line option takes precedence.
 .TP
-\fBrealtime-scheduling=\f1 Try to acquire SCHED_FIFO scheduling for the IO threads. The same security concerns as mentioned above apply. However, if PA enters an endless loop, realtime scheduling causes a system lockup. Thus, realtime scheduling should only be enabled on trusted machines for now. Please not that only the IO threads of PulseAudio are made real-time. The controlling thread is left a normally scheduled thread. Thus enabling the high-priority option is orthogonal. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to \fByes\f1. The \fB--realtime\f1 command line option takes precedence.
+\fBrealtime-scheduling=\f1 Try to acquire SCHED_FIFO scheduling for the IO threads. The same security concerns as mentioned above apply. However, if PA enters an endless loop, realtime scheduling causes a system lockup. Thus, realtime scheduling should only be enabled on trusted machines for now. Please note that only the IO threads of PulseAudio are made real-time. The controlling thread is left a normally scheduled thread. Thus enabling the high-priority option is orthogonal. See \fBpulseaudio(1)\f1 for more information. Takes a boolean argument, defaults to \fByes\f1. The \fB--realtime\f1 command line option takes precedence.
 .TP
 \fBrealtime-priority=\f1 The realtime priority to acquire, if \fBrealtime-scheduling\f1 is enabled. Note: JACK uses 10 by default, 9 for clients. Thus it is recommended to choose the PulseAudio real-time priorities lower. Some PulseAudio threads might choose a priority a little lower or higher than the specified value. Defaults to \fB5\f1.
 .TP
@@ -63,7 +71,7 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBdl-search-path=\f1 The path where to look for dynamic shared objects (DSOs/plugins). You may specify more than one path separated by colons. The default path depends on compile time settings. The \fB--dl-search-path\f1 command line option takes precedence. 
 .TP
-\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.config/pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
+\fBdefault-script-file=\f1 The default configuration script file to load. Specify an empty string for not loading a default script file. The default behaviour is to load \fI~/.config/pulse/default.pa\f1, and if that file does not exist fall back to the system wide installed version \fI/usr/local/etc/pulse/default.pa\f1. If run in system-wide mode the file \fI/usr/local/etc/pulse/system.pa\f1 is used instead. If \fB-n\f1 is passed on the command line or \fBdefault-script-file=\f1 is disabled the default configuration script is ignored.
 .TP
 \fBload-default-script-file=\f1 Load the default configuration script file as specified in \fBdefault-script-file=\f1. Defaults to \fByes\f1.
 .SH LOGGING

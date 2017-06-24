@@ -21,6 +21,7 @@
 
 #include "device-port.h"
 #include <pulsecore/card.h>
+#include <pulsecore/core-util.h>
 
 PA_DEFINE_PUBLIC_CLASS(pa_device_port, pa_object);
 
@@ -65,6 +66,15 @@ void pa_device_port_new_data_done(pa_device_port_new_data *data) {
     pa_xfree(data->description);
 }
 
+void pa_device_port_set_preferred_profile(pa_device_port *p, const char *new_pp) {
+    pa_assert(p);
+
+    if (!pa_safe_streq(p->preferred_profile, new_pp)) {
+        pa_xfree(p->preferred_profile);
+        p->preferred_profile = pa_xstrdup(new_pp);
+    }
+}
+
 void pa_device_port_set_available(pa_device_port *p, pa_available_t status) {
     pa_assert(p);
 
@@ -94,12 +104,16 @@ static void device_port_free(pa_object *o) {
     pa_assert(p);
     pa_assert(pa_device_port_refcnt(p) == 0);
 
+    if (p->impl_free)
+        p->impl_free(p);
+
     if (p->proplist)
         pa_proplist_free(p->proplist);
 
     if (p->profiles)
         pa_hashmap_free(p->profiles);
 
+    pa_xfree(p->preferred_profile);
     pa_xfree(p->name);
     pa_xfree(p->description);
     pa_xfree(p);
@@ -150,7 +164,7 @@ void pa_device_port_set_latency_offset(pa_device_port *p, int64_t offset) {
 
             PA_IDXSET_FOREACH(sink, p->core->sinks, state) {
                 if (sink->active_port == p) {
-                    pa_sink_set_latency_offset(sink, p->latency_offset);
+                    pa_sink_set_port_latency_offset(sink, p->latency_offset);
                     break;
                 }
             }
@@ -163,7 +177,7 @@ void pa_device_port_set_latency_offset(pa_device_port *p, int64_t offset) {
 
             PA_IDXSET_FOREACH(source, p->core->sources, state) {
                 if (source->active_port == p) {
-                    pa_source_set_latency_offset(source, p->latency_offset);
+                    pa_source_set_port_latency_offset(source, p->latency_offset);
                     break;
                 }
             }

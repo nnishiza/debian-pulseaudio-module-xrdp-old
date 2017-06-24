@@ -1020,8 +1020,7 @@ static int update_sw_params(struct userdata *u) {
 /* Called from IO Context on unsuspend or from main thread when creating sink */
 static void reset_watermark(struct userdata *u, size_t tsched_watermark, pa_sample_spec *ss,
                             bool in_thread) {
-    u->tsched_watermark = pa_usec_to_bytes_round_up(pa_bytes_to_usec_round_up(tsched_watermark, ss),
-                                                    &u->sink->sample_spec);
+    u->tsched_watermark = pa_convert_size(tsched_watermark, ss, &u->sink->sample_spec);
 
     u->watermark_inc_step = pa_usec_to_bytes(TSCHED_WATERMARK_INC_STEP_USEC, &u->sink->sample_spec);
     u->watermark_dec_step = pa_usec_to_bytes(TSCHED_WATERMARK_DEC_STEP_USEC, &u->sink->sample_spec);
@@ -1628,8 +1627,10 @@ static int process_rewind(struct userdata *u) {
     pa_log_debug("Requested to rewind %lu bytes.", (unsigned long) rewind_nbytes);
 
     if (PA_UNLIKELY((unused = pa_alsa_safe_avail(u->pcm_handle, u->hwbuf_size, &u->sink->sample_spec)) < 0)) {
-        pa_log("snd_pcm_avail() failed: %s", pa_alsa_strerror((int) unused));
-        return -1;
+        if (try_recover(u, "snd_pcm_avail", (int) unused) < 0) {
+            pa_log_warn("Trying to recover from underrun failed during rewind");
+            return -1;
+        }
     }
 
     unused_nbytes = (size_t) unused * u->frame_size;
@@ -2114,7 +2115,11 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
     u->first = true;
     u->rewind_safeguard = rewind_safeguard;
     u->rtpoll = pa_rtpoll_new();
-    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
+
+    if (pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll) < 0) {
+        pa_log("pa_thread_mq_init() failed.");
+        goto fail;
+    }
 
     u->smoother = pa_smoother_new(
             SMOOTHER_ADJUST_USEC,
@@ -2144,6 +2149,15 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
 
     b = use_mmap;
     d = use_tsched;
+
+    /* Force ALSA to reread its configuration if module-alsa-card didn't
+     * do it for us. This matters if our device was hot-plugged after ALSA
+     * has already read its configuration - see
+     * https://bugs.freedesktop.org/show_bug.cgi?id=54029
+     */
+
+    if (!card)
+        snd_config_update_free_global();
 
     if (mapping) {
 
@@ -2225,7 +2239,13 @@ pa_sink *pa_alsa_sink_new(pa_module *m, pa_modargs *ma, const char*driver, pa_ca
             pa_log_info("Disabling latency range changes on underrun");
     }
 
-    if (is_iec958(u) || is_hdmi(u))
+    /* All passthrough formats supported by PulseAudio require
+     * IEC61937 framing with two fake channels. So, passthrough
+     * clients will always send two channels. Multichannel sinks
+     * cannot accept that, because nobody implemented sink channel count
+     * switching so far. So just don't show known non-working settings
+     * to the user. */
+    if ((is_iec958(u) || is_hdmi(u)) && ss.channels == 2)
         set_formats = true;
 
     u->rates = pa_alsa_get_supported_rates(u->pcm_handle, ss.rate);

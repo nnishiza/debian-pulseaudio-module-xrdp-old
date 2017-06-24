@@ -1,19 +1,156 @@
-PulseAudio 7.1
+PulseAudio 10.0
 
 Changes at a glance:
 
-  * Fix a crasher when using srbchannel
-  * Fix a build system typo that caused symlinks to turn up in /
-  * Make Xonar cards work better
-  * Other minor  bug fixes and improvements
+ * Automatically switch Bluetooth profile when using VoIP applications
+ * New module for prioritizing passthrough streams (module-allow-passthrough)
+ * Fix hotplugging support for USB surround sound cards
+ * Separate volumes for Bluetooth A2DP and HSP profiles
+ * memfd-based shared memory mechanism enabled by default
+ * Removed module-xenpv-sink
+ * Dropped dependency to json-c
+ * When using systemd to start PulseAudio, pulseaudio.socket is always started
+   first
+ * Compatibility with OpenSSL 1.1.0
+ * Clarified qpaeq license
 
-Contributors:
+Detailed change log:
 
-  David Henningsson (4):
-  Felipe Sateler (2):
-  Georg Chini (1):
-  Takashi Iwai (1):
-  Tanu Kaskinen (3):
+  https://www.freedesktop.org/wiki/Software/PulseAudio/Notes/10.0/
+
+Contributors
+
+  Ahmed S. Darwish
+  Aidan Gauland
+  Alexander E. Patrakov
+  Anton Lundin
+  Arun Raghavan
+  Balázs Úr
+  Chris Billington
+  Cédric Valmary
+  Deepak Srivastava
+  Dušan Kazik
+  Felipe Sateler
+  Fran Dieguez
+  Georg Chini
+  Guillaume Desmottes
+  Jan Alexander Steffens
+  John Paul Adrian Glaubitz
+  Juha Kuikka
+  Juho Hämäläinen
+  KimJeongYeon
+  Marcin Lewandowski
+  Mario Blättermann
+  Moo
+  Nils Schneider
+  Pali Rohár
+  Peter Meerwald-Stadler
+  Philip Withnall
+  Pierre Ossman
+  Piotr Drąg
+  Rikard Söderström
+  Romain Naour
+  Sylvain Baubeau
+  Tanu Kaskinen
+  Ulrich Eckhardt
+  Viktar Vaŭčkievič
+
+
+PulseAudio 9.0
+
+Changes at a glance:
+
+ * Automatic routing improvements
+ * Beamforming and various other new features in the WebRTC echo canceller
+ * Various improvements in module-role-cork and module-role-ducking
+ * LFE remixing disabled by default
+ * memfd-backed shared memory transport
+ * Support for sample rates up to 384 kHz
+ * webrtc-audio-processing dependency minimum version bumped to 0.2
+ * Changed the C standard from C99 to C11.
+
+Detailed change log:
+
+  http://www.freedesktop.org/wiki/Software/PulseAudio/Notes/9.0
+
+Contributors
+
+  Ahmed S. Darwish
+  Alexander E. Patrakov
+  Arun Raghavan
+  Barun Kumar Singh
+  David Henningsson
+  Deepak Srivastava
+  Gabor Kelemen
+  Georg Chini
+  Jeremy Huddleston Sequoia
+  Jonathan Perkin
+  Juho Hämäläinen
+  Jungsup Lee
+  Kamil Rytarowski
+  Marcin Lewandowski
+  Milo Casagrande
+  Muhammet Kara
+  Nazar Mokrynskyi
+  Peter Meerwald
+  Piotr Drąg
+  Sachin Kumar Chauhan
+  Sangchul Lee
+  Tanu Kaskinen
+  YunQiang Su
+
+
+PulseAudio 8.0
+
+Changes at a glance:
+
+ * Automatic routing more likely to change profile
+ * OS X and NetBSD support improvements
+ * Systemd journal logging for clients
+ * New LFE balance programming interface
+ * Module-dbus-protocol improvements
+ * More flexible configuration file handling
+ * pulsecore-8.0.so moved to a private directory
+ * New script for measuring memory consumption
+ * Various bug fixes and small improvements
+
+Detailed change log:
+
+  http://www.freedesktop.org/wiki/Software/PulseAudio/Notes/8.0
+
+Contributors
+
+  Ahmed S. Darwish
+  Alexander E. Patrakov
+  Andrey Semashev
+  Arun Raghavan
+  David Henningsson
+  Deepak Srivastava
+  Felipe Sateler
+  Georg Chini
+  Jason Gerecke
+  John Horan
+  Juho Hämäläinen
+  Julien Isorce
+  Kamil Rytarowski
+  KimJeongYeon
+  Kiran Krishnappa
+  Lev Melnikovsky
+  Manish Sogi
+  Mihai Moldovan
+  Mingye Wang
+  Nazar Mokrynskyi
+  Peter Mattern
+  Peter Meerwald
+  Pierre Ossman
+  Ross Burton
+  Shawn Walker
+  Takashi Iwai
+  Tanu Kaskinen
+  Thomas Petazzoni
+  Yuri Chornoivan
+  Zbigniew Kempczyński
+  jungsup lee
 
 
 PulseAudio 7.0

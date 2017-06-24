@@ -53,8 +53,12 @@
 #endif
 
 #ifdef HAVE_STRTOD_L
+#ifdef HAVE_LOCALE_H
 #include <locale.h>
+#endif
+#ifdef HAVE_XLOCALE_H
 #include <xlocale.h>
+#endif
 #endif
 
 #ifdef HAVE_SCHED_H
@@ -106,7 +110,6 @@
 #endif
 
 #ifdef __APPLE__
-#include <xlocale.h>
 #include <mach/mach_init.h>
 #include <mach/thread_act.h>
 #include <mach/thread_policy.h>
@@ -135,6 +138,7 @@
 #include <pulsecore/strlist.h>
 #include <pulsecore/cpu-x86.h>
 #include <pulsecore/pipe.h>
+#include <pulsecore/once.h>
 
 #include "core-util.h"
 
@@ -343,7 +347,7 @@ again:
 #endif
 
 #ifdef HAVE_FCHMOD
-    if (fchmod(fd, m) < 0) {
+    if ((st.st_mode & 07777) != m && fchmod(fd, m) < 0) {
         pa_assert_se(pa_close(fd) >= 0);
         goto fail;
     };
@@ -726,7 +730,7 @@ static int set_scheduler(int rtprio) {
     /* Try to talk to RealtimeKit */
 
     if (!(bus = dbus_bus_get_private(DBUS_BUS_SYSTEM, &error))) {
-        pa_log("Failed to connect to system bus: %s\n", error.message);
+        pa_log("Failed to connect to system bus: %s", error.message);
         dbus_error_free(&error);
         errno = -EIO;
         return -1;
@@ -743,7 +747,7 @@ static int set_scheduler(int rtprio) {
         r = getrlimit(RLIMIT_RTTIME, &rl);
 
         if (r >= 0 && (long long) rl.rlim_max > rttime) {
-            pa_log_info("Clamping rlimit-rttime to %lld for RealtimeKit\n", rttime);
+            pa_log_info("Clamping rlimit-rttime to %lld for RealtimeKit", rttime);
             rl.rlim_cur = rl.rlim_max = rttime;
             r = setrlimit(RLIMIT_RTTIME, &rl);
 
@@ -863,7 +867,7 @@ static int set_nice(int nice_level) {
     /* Try to talk to RealtimeKit */
 
     if (!(bus = dbus_bus_get_private(DBUS_BUS_SYSTEM, &error))) {
-        pa_log("Failed to connect to system bus: %s\n", error.message);
+        pa_log("Failed to connect to system bus: %s", error.message);
         dbus_error_free(&error);
         errno = -EIO;
         return -1;
@@ -2329,7 +2333,7 @@ int pa_atou(const char *s, uint32_t *ret_u) {
     pa_assert(ret_u);
 
     /* strtoul() ignores leading spaces. We don't. */
-    if (isspace(*s)) {
+    if (isspace((unsigned char)*s)) {
         errno = EINVAL;
         return -1;
     }
@@ -2373,7 +2377,7 @@ int pa_atol(const char *s, long *ret_l) {
     pa_assert(ret_l);
 
     /* strtol() ignores leading spaces. We don't. */
-    if (isspace(*s)) {
+    if (isspace((unsigned char)*s)) {
         errno = EINVAL;
         return -1;
     }
@@ -2418,7 +2422,7 @@ int pa_atod(const char *s, double *ret_d) {
     pa_assert(ret_d);
 
     /* strtod() ignores leading spaces. We don't. */
-    if (isspace(*s)) {
+    if (isspace((unsigned char)*s)) {
         errno = EINVAL;
         return -1;
     }
@@ -2532,8 +2536,10 @@ char *pa_getcwd(void) {
         if (getcwd(p, l))
             return p;
 
-        if (errno != ERANGE)
+        if (errno != ERANGE) {
+            pa_xfree(p);
             return NULL;
+        }
 
         pa_xfree(p);
         l *= 2;
@@ -2548,6 +2554,7 @@ void *pa_will_need(const void *p, size_t l) {
     size_t size;
     int r = ENOTSUP;
     size_t bs;
+    const size_t page_size = pa_page_size();
 
     pa_assert(p);
     pa_assert(l > 0);
@@ -2572,7 +2579,7 @@ void *pa_will_need(const void *p, size_t l) {
 #ifdef RLIMIT_MEMLOCK
     pa_assert_se(getrlimit(RLIMIT_MEMLOCK, &rlim) == 0);
 
-    if (rlim.rlim_cur < PA_PAGE_SIZE) {
+    if (rlim.rlim_cur < page_size) {
         pa_log_debug("posix_madvise() failed (or doesn't exist), resource limits don't allow mlock(), can't page in data: %s", pa_cstrerror(r));
         errno = EPERM;
         return (void*) p;
@@ -2580,7 +2587,7 @@ void *pa_will_need(const void *p, size_t l) {
 
     bs = PA_PAGE_ALIGN((size_t) rlim.rlim_cur);
 #else
-    bs = PA_PAGE_SIZE*4;
+    bs = page_size*4;
 #endif
 
     pa_log_debug("posix_madvise() failed (or doesn't exist), trying mlock(): %s", pa_cstrerror(r));
@@ -3058,14 +3065,28 @@ char *pa_machine_id(void) {
     char *h;
 
     /* The returned value is supposed be some kind of ascii identifier
-     * that is unique and stable across reboots. */
+     * that is unique and stable across reboots. First we try if the machine-id
+     * file is available. If it's available, that's great, since it provides an
+     * identifier that suits our needs perfectly. If it's not, we fall back to
+     * the hostname, which is not as good, since it can change over time. */
 
-    /* First we try the /etc/machine-id, which is the best option we
-     * have, since it fits perfectly our needs and is not as volatile
-     * as the hostname which might be set from dhcp. */
-
+    /* We search for the machine-id file from four locations. The first two are
+     * relative to the configured installation prefix, but if we're installed
+     * under /usr/local, for example, it's likely that the machine-id won't be
+     * found there, so we also try the hardcoded paths.
+     *
+     * PA_MACHINE_ID or PA_MACHINE_ID_FALLBACK might exist on a Windows system,
+     * but the last two hardcoded paths certainly don't, hence we don't try
+     * them on Windows. */
     if ((f = pa_fopen_cloexec(PA_MACHINE_ID, "r")) ||
-        (f = pa_fopen_cloexec(PA_MACHINE_ID_FALLBACK, "r"))) {
+        (f = pa_fopen_cloexec(PA_MACHINE_ID_FALLBACK, "r")) ||
+#if !defined(OS_IS_WIN32)
+        (f = pa_fopen_cloexec("/etc/machine-id", "r")) ||
+        (f = pa_fopen_cloexec("/var/lib/dbus/machine-id", "r"))
+#else
+        false
+#endif
+        ) {
         char ln[34] = "", *r;
 
         r = fgets(ln, sizeof(ln)-1, f);
@@ -3160,8 +3181,8 @@ void pa_reduce(unsigned *num, unsigned *den) {
 unsigned pa_ncpus(void) {
     long ncpus;
 
-#ifdef _SC_NPROCESSORS_CONF
-    ncpus = sysconf(_SC_NPROCESSORS_CONF);
+#ifdef _SC_NPROCESSORS_ONLN
+    ncpus = sysconf(_SC_NPROCESSORS_ONLN);
 #else
     ncpus = 1;
 #endif
@@ -3175,6 +3196,7 @@ char *pa_replace(const char*s, const char*a, const char *b) {
 
     pa_assert(s);
     pa_assert(a);
+    pa_assert(*a);
     pa_assert(b);
 
     an = strlen(a);
@@ -3193,7 +3215,7 @@ char *pa_replace(const char*s, const char*a, const char *b) {
 
     pa_strbuf_puts(sb, s);
 
-    return pa_strbuf_tostring_free(sb);
+    return pa_strbuf_to_string_free(sb);
 }
 
 char *pa_escape(const char *p, const char *chars) {
@@ -3215,7 +3237,7 @@ char *pa_escape(const char *p, const char *chars) {
         pa_strbuf_putc(buf, *s);
     }
 
-    return pa_strbuf_tostring_free(buf);
+    return pa_strbuf_to_string_free(buf);
 }
 
 char *pa_unescape(char *p) {
@@ -3471,6 +3493,16 @@ int pa_pipe_cloexec(int pipefd[2]) {
     if ((r = pipe2(pipefd, O_CLOEXEC)) >= 0)
         goto finish;
 
+    if (errno == EMFILE) {
+        pa_log_error("The per-process limit on the number of open file descriptors has been reached.");
+        return r;
+    }
+
+    if (errno == ENFILE) {
+        pa_log_error("The system-wide limit on the total number of open files has been reached.");
+        return r;
+    }
+
     if (errno != EINVAL && errno != ENOSYS)
         return r;
 
@@ -3478,6 +3510,16 @@ int pa_pipe_cloexec(int pipefd[2]) {
 
     if ((r = pipe(pipefd)) >= 0)
         goto finish;
+
+    if (errno == EMFILE) {
+        pa_log_error("The per-process limit on the number of open file descriptors has been reached.");
+        return r;
+    }
+
+    if (errno == ENFILE) {
+        pa_log_error("The system-wide limit on the total number of open files has been reached.");
+        return r;
+    }
 
     /* return error */
     return r;
@@ -3492,6 +3534,8 @@ finish:
 int pa_accept_cloexec(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     int fd;
 
+    errno = 0;
+
 #ifdef HAVE_ACCEPT4
     if ((fd = accept4(sockfd, addr, addrlen, SOCK_CLOEXEC)) >= 0)
         goto finish;
@@ -3499,6 +3543,11 @@ int pa_accept_cloexec(int sockfd, struct sockaddr *addr, socklen_t *addrlen) {
     if (errno != EINVAL && errno != ENOSYS)
         return fd;
 
+#endif
+
+#ifdef HAVE_PACCEPT
+    if ((fd = paccept(sockfd, addr, addrlen, NULL, SOCK_CLOEXEC)) >= 0)
+        goto finish;
 #endif
 
     if ((fd = accept(sockfd, addr, addrlen)) >= 0)
@@ -3641,4 +3690,24 @@ bool pa_running_in_vm(void) {
 #endif
 
     return false;
+}
+
+size_t pa_page_size(void) {
+#if defined(PAGE_SIZE)
+    return PAGE_SIZE;
+#elif defined(PAGESIZE)
+    return PAGESIZE;
+#elif defined(HAVE_SYSCONF)
+    static size_t page_size = 4096; /* Let's hope it's like x86. */
+
+    PA_ONCE_BEGIN {
+        long ret = sysconf(_SC_PAGE_SIZE);
+        if (ret > 0)
+            page_size = ret;
+    } PA_ONCE_END;
+
+    return page_size;
+#else
+    return 4096;
+#endif
 }

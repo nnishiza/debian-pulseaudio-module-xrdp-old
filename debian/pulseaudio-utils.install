@@ -12,6 +12,9 @@ usr/share/man/man1/pacat.1
 usr/share/man/man1/pacmd.1
 usr/share/man/man1/pactl.1
 usr/share/man/man1/padsp.1
+usr/share/man/man1/pamon.1
 usr/share/man/man1/paplay.1
+usr/share/man/man1/parec.1
+usr/share/man/man1/parecord.1
 usr/share/man/man1/pasuspender.1
 usr/share/man/man1/pax11publish.1

@@ -550,7 +550,7 @@ int main(int argc, char *argv[]) {
         case PA_CMD_DUMP_CONF: {
 
             if (d < argc) {
-                pa_log("Too many arguments.\n");
+                pa_log("Too many arguments.");
                 goto finish;
             }
 
@@ -565,7 +565,7 @@ int main(int argc, char *argv[]) {
             int i;
 
             if (d < argc) {
-                pa_log("Too many arguments.\n");
+                pa_log("Too many arguments.");
                 goto finish;
             }
 
@@ -585,7 +585,7 @@ int main(int argc, char *argv[]) {
         case PA_CMD_VERSION :
 
             if (d < argc) {
-                pa_log("Too many arguments.\n");
+                pa_log("Too many arguments.");
                 goto finish;
             }
 
@@ -597,7 +597,7 @@ int main(int argc, char *argv[]) {
             pid_t pid;
 
             if (d < argc) {
-                pa_log("Too many arguments.\n");
+                pa_log("Too many arguments.");
                 goto finish;
             }
 
@@ -614,7 +614,7 @@ int main(int argc, char *argv[]) {
         case PA_CMD_KILL:
 
             if (d < argc) {
-                pa_log("Too many arguments.\n");
+                pa_log("Too many arguments.");
                 goto finish;
             }
 
@@ -628,7 +628,7 @@ int main(int argc, char *argv[]) {
         case PA_CMD_CLEANUP_SHM:
 
             if (d < argc) {
-                pa_log("Too many arguments.\n");
+                pa_log("Too many arguments.");
                 goto finish;
             }
 
@@ -642,7 +642,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (d < argc) {
-        pa_log("Too many arguments.\n");
+        pa_log("Too many arguments.");
         goto finish;
     }
 
@@ -918,7 +918,7 @@ int main(int argc, char *argv[]) {
 
     pa_log_debug("Found %u CPUs.", pa_ncpus());
 
-    pa_log_info("Page size is %lu bytes", (unsigned long) PA_PAGE_SIZE);
+    pa_log_info("Page size is %zu bytes", pa_page_size());
 
 #ifdef HAVE_VALGRIND_MEMCHECK_H
     pa_log_debug("Compiled with Valgrind support: yes");
@@ -971,8 +971,7 @@ int main(int argc, char *argv[]) {
     pa_log_info("Running in system mode: %s", pa_yes_no(pa_in_system_mode()));
 
     if (pa_in_system_mode())
-        pa_log_warn(_("OK, so you are running PA in system mode. Please note that you most likely shouldn't be doing that.\n"
-                      "If you do it nonetheless then it's your own fault if things don't work as expected.\n"
+        pa_log_warn(_("OK, so you are running PA in system mode. Please make sure that you actually do want to do that.\n"
                       "Please read http://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/User/WhatIsWrongWithSystemWide/ for an explanation why system mode is usually a bad idea."));
 
     if (conf->use_pid_file) {
@@ -998,9 +997,9 @@ int main(int argc, char *argv[]) {
     pa_disable_sigpipe();
 
     if (pa_rtclock_hrtimer())
-        pa_log_info("Fresh high-resolution timers available! Bon appetit.");
+        pa_log_info("System supports high resolution timers");
     else
-        pa_log_info("Dude, your kernel stinks! The chef's recommendation today is Linux with high-resolution timers enabled.");
+        pa_log_info("System appears to not support high resolution timers");
 
     if (conf->lock_memory) {
 #if defined(HAVE_SYS_MMAN_H) && !defined(__ANDROID__)
@@ -1017,7 +1016,9 @@ int main(int argc, char *argv[]) {
 
     pa_assert_se(mainloop = pa_mainloop_new());
 
-    if (!(c = pa_core_new(pa_mainloop_get_api(mainloop), !conf->disable_shm, conf->shm_size))) {
+    if (!(c = pa_core_new(pa_mainloop_get_api(mainloop), !conf->disable_shm,
+                          !conf->disable_shm && !conf->disable_memfd && pa_memfd_is_locally_supported(),
+                          conf->shm_size))) {
         pa_log(_("pa_core_new() failed."));
         goto finish;
     }
@@ -1082,7 +1083,7 @@ int main(int argc, char *argv[]) {
         if (r >= 0)
             r = pa_cli_command_execute(c, conf->script_commands, buf, &conf->fail);
 
-        pa_log_error("%s", s = pa_strbuf_tostring_free(buf));
+        pa_log_error("%s", s = pa_strbuf_to_string_free(buf));
         pa_xfree(s);
 
         if (r < 0 && conf->fail) {

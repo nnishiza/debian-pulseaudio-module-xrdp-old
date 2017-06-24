@@ -1,14 +1,162 @@
-pulseaudio-module-xrdp (7.1-2~bpo8+1wm1) jessie-backports; urgency=medium
+pulseaudio-module-xrdp (10.0-1wm1) unstable; urgency=medium
 
-  * New package
+  * New upstream release
 
- -- Nobuyuki Nishizawa <nobuyuki@westmarsh.jp>  Fri, 05 May 2017 20:56:47 +0900
+ -- Nobuyuki Nishizawa <nobuyuki@westmarsh.jp>  Sat, 24 Jun 2017 16:26:33 +0900
 
-pulseaudio (7.1-2~bpo8+1) jessie-backports; urgency=medium
+pulseaudio (10.0-1) unstable; urgency=medium
 
-  * Rebuild for jessie-backports.
+  * New upstream release
+    - Memfd is enabled by default. This unbreaks using pa within firejail or
+      similar. (Closes: #804120)
+  * Document qpaeq AGPL license
 
- -- Felipe Sateler <fsateler@debian.org>  Fri, 13 Nov 2015 10:16:11 -0300
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 19 Jan 2017 20:49:55 -0300
+
+pulseaudio (9.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+    - Drop all patches, applied upstream
+    - Install new allow-passthrough module
+  * shlibs.local: only the major and minor version
+    elements are used for the internal library SONAMEs
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 04 Jan 2017 15:43:30 -0300
+
+pulseaudio (9.0-5) unstable; urgency=medium
+
+  [ Felipe Sateler ]
+  * Remove unnecessary compression=xz dpkg source option
+  * Reformat patches for use with gbp-pq
+  * Backport upstream patch for building with openssl 1.1 (Closes: #828515)
+
+  [ Adam Conrad ]
+  * Bumping packages off the system requires Conflicts/Replaces, not Breaks.
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 04 Nov 2016 19:18:11 -0300
+
+pulseaudio (9.0-4) unstable; urgency=medium
+
+  * Generate shlibs.local file on build, to avoid hardcoding
+    on each new upstream version
+  * Enable hardening flags
+  * Fix build on nonlinux archs
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 09 Oct 2016 13:23:58 -0300
+
+pulseaudio (9.0-3) unstable; urgency=medium
+
+  [ Willem Mulder ]
+  * Split equalizer sink module into its own package (Closes: #794650)
+
+  [ Felipe Sateler ]
+  * Switch from CDBS to short-form dh
+  * Use upstream-provided pamon,parec,parecord links instead of creating our own
+  * Now that we ship everything upstream ships, enable --fail-missing
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 28 Aug 2016 13:15:28 -0300
+
+pulseaudio (9.0-2) unstable; urgency=medium
+
+  * Merge module-udev-detect back into main package.
+    Closes: #831518, #831355
+  * Demote udev Depends to Suggests.
+    Turns out libudev does not error out when udev is not available,
+    instead it just does nothing.
+  * Merge pulseaudio-module-x11 back into main package.
+    Split is not very useful, as main pulseaudio package
+    already depends on X libs. Therefore, only 56Kb are added
+    to the main package.
+    Closes: #833011
+  * Drop versioned breaks against ancient libltdl version
+  * Drop versioned breaks against avahi-daemon version older than jessie
+  * libpulsedsp: drop versioned breaks against ancient pulseaudio-utils
+    version
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 12 Aug 2016 22:40:38 -0400
+
+pulseaudio (9.0-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Add 0001-Fix_detection_of_online_CPUs.patch to fix pa_ncpus()
+    on systems with dynamic CPU configurations. Closes: #829618
+
+ -- John Paul Adrian Glaubitz <glaubitz@physik.fu-berlin.de>  Mon, 04 Jul 2016 23:11:29 +0200
+
+pulseaudio (9.0-1) unstable; urgency=medium
+
+  [ Luke Yelavich ]
+  * New upstream release
+  * Update shlibs file
+
+ -- Felipe Sateler <fsateler@debian.org>  Sun, 03 Jul 2016 12:00:25 -0400
+
+pulseaudio (8.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+    - Closes: #813423
+    - Drop patches, applied upstream
+  * Bump dependency on libwebrtc-audio-processing to >= 0.2
+
+ -- Felipe Sateler <fsateler@debian.org>  Sat, 14 May 2016 15:16:09 -0300
+
+pulseaudio (8.0-3) experimental; urgency=medium
+
+  * Split module-udev-detect into a separate package
+
+ -- Felipe Sateler <fsateler@debian.org>  Thu, 21 Apr 2016 23:59:41 -0300
+
+pulseaudio (8.0-2) unstable; urgency=medium
+
+  * Add patch from upstream to switch back to HDMI when port is back.
+    (Closes: #816963)
+  * Bump standards-version (no changes needed)
+  * Use canonical Vcs-* urls
+    - Use cgit url for browser
+    - Use https url for git
+  * Drop XS-Testsuite header.
+    - Newer dpkg-dev adds the field automatically
+    - Add versioned Build-Depends for such a version (1.17.14)
+  * Fix Build-Profile stage1 support
+    - Mark libbluetooth-dev dependency as <!stage1>
+    - Mark pulseaudio-module-bluetooth as <!stage1>
+    - Build-depend on new enough debhelper (9.20141010)
+    - Use correct flag --disable-bluez5
+    - Drop manual ignoring of bluetooth packages, debhelper knows to do so
+
+ -- Felipe Sateler <fsateler@debian.org>  Sat, 02 Apr 2016 20:42:36 -0300
+
+pulseaudio (8.0-1) unstable; urgency=medium
+
+  [ Luke Yelavich ]
+  * New upstream release
+  * Update shlibs file
+
+  [ Felipe Sateler ]
+  * Release to unstable
+
+ -- Felipe Sateler <fsateler@debian.org>  Wed, 27 Jan 2016 20:44:59 -0300
+
+pulseaudio (7.99.2-1) experimental; urgency=medium
+
+  * New upstream release candidate
+  * Drop build-sys-Fix-install-order-of-libpulsecore.patch, applied
+    upstream
+
+ -- Felipe Sateler <fsateler@debian.org>  Fri, 15 Jan 2016 18:21:14 -0300
+
+pulseaudio (7.99.1-1) experimental; urgency=medium
+
+  * New upstream release candidate
+    - Update local shlibs file for 7.99
+    - libpulsecore is now installed in the package-private directory
+    - Update symbols file to add new balance functions
+  * Drop pulsecore related lintian overrides
+  * Drop stale pulseaudio-dev.install file
+  * Drop stale lintian overrides
+  * Add patch to fix install order of libpulsecore
+
+ -- Felipe Sateler <fsateler@debian.org>  Mon, 28 Dec 2015 17:34:22 -0300
 
 pulseaudio (7.1-2) unstable; urgency=medium
 
@@ -24,12 +172,6 @@ pulseaudio (7.1-1) unstable; urgency=medium
   * Silence lintian warning about pulsecore: it is internal library
 
  -- Felipe Sateler <fsateler@debian.org>  Sun, 01 Nov 2015 16:27:53 -0300
-
-pulseaudio (7.0-1~bpo8+1) jessie-backports; urgency=medium
-
-  * Rebuild for jessie-backports.
-
- -- Felipe Sateler <fsateler@debian.org>  Thu, 08 Oct 2015 22:46:32 -0300
 
 pulseaudio (7.0-1) unstable; urgency=medium
 

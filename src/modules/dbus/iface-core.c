@@ -1442,7 +1442,7 @@ static bool contains_space(const char *string) {
     pa_assert(string);
 
     for (p = string; *p; ++p) {
-        if (isspace(*p))
+        if (isspace((unsigned char)*p))
             return true;
     }
 
@@ -1504,16 +1504,15 @@ static void handle_load_module(DBusConnection *conn, DBusMessage *msg, void *use
         dbus_message_iter_next(&dict_iter);
     }
 
-    arg_string = pa_strbuf_tostring(arg_buffer);
+    arg_string = pa_strbuf_to_string(arg_buffer);
 
     if (!(module = pa_module_load(c->core, name, arg_string))) {
         pa_dbus_send_error(conn, msg, DBUS_ERROR_FAILED, "Failed to load module.");
         goto finish;
     }
 
-    dbus_module = pa_dbusiface_module_new(module);
-    pa_hashmap_put(c->modules, PA_UINT32_TO_PTR(module->index), dbus_module);
-
+    /* This is created during module loading in module_new_cb() */
+    dbus_module = pa_hashmap_get(c->modules, PA_UINT32_TO_PTR(module->index));
     object_path = pa_dbusiface_module_get_path(dbus_module);
 
     pa_dbus_send_basic_value_reply(conn, msg, DBUS_TYPE_OBJECT_PATH, &object_path);
@@ -1589,20 +1588,26 @@ static pa_hook_result_t module_new_cb(void *hook_data, void *call_data, void *sl
     pa_assert(c);
     pa_assert(module);
 
-    if (!(module_iface = pa_hashmap_get(c->modules, PA_UINT32_TO_PTR(module->index)))) {
-        module_iface = pa_dbusiface_module_new(module);
-        pa_assert_se(pa_hashmap_put(c->modules, PA_UINT32_TO_PTR(module->index), module_iface) >= 0);
-
-        object_path = pa_dbusiface_module_get_path(module_iface);
-
-        pa_assert_se((signal_msg = dbus_message_new_signal(PA_DBUS_CORE_OBJECT_PATH,
-                                                           PA_DBUS_CORE_INTERFACE,
-                                                           signals[SIGNAL_NEW_MODULE].name)));
-        pa_assert_se(dbus_message_append_args(signal_msg, DBUS_TYPE_OBJECT_PATH, &object_path, DBUS_TYPE_INVALID));
-
-        pa_dbus_protocol_send_signal(c->dbus_protocol, signal_msg);
-        dbus_message_unref(signal_msg);
+    if (pa_streq(module->name, "module-dbus-protocol")) {
+        /* module-dbus-protocol can only be loaded once, and will be accounted
+         * for while iterating core->modules in pa_dbusiface_core_new(). As it
+         * happens, we will also see it here when the hook is called after the
+         * module is initialised, so we ignore it. */
+        return PA_HOOK_OK;
     }
+
+    module_iface = pa_dbusiface_module_new(module);
+    pa_assert_se(pa_hashmap_put(c->modules, PA_UINT32_TO_PTR(module->index), module_iface) >= 0);
+
+    object_path = pa_dbusiface_module_get_path(module_iface);
+
+    pa_assert_se((signal_msg = dbus_message_new_signal(PA_DBUS_CORE_OBJECT_PATH,
+                                                       PA_DBUS_CORE_INTERFACE,
+                                                       signals[SIGNAL_NEW_MODULE].name)));
+    pa_assert_se(dbus_message_append_args(signal_msg, DBUS_TYPE_OBJECT_PATH, &object_path, DBUS_TYPE_INVALID));
+
+    pa_dbus_protocol_send_signal(c->dbus_protocol, signal_msg);
+    dbus_message_unref(signal_msg);
 
     return PA_HOOK_OK;
 }

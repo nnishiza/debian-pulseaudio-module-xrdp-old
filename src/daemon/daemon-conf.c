@@ -82,8 +82,8 @@ static const pa_daemon_conf default_conf = {
     .log_time = false,
     .resample_method = PA_RESAMPLER_AUTO,
     .disable_remixing = false,
-    .disable_lfe_remixing = false,
-    .lfe_crossover_freq = 120,
+    .disable_lfe_remixing = true,
+    .lfe_crossover_freq = 0,
     .config_file = NULL,
     .use_pid_file = true,
     .system_instance = false,
@@ -92,6 +92,7 @@ static const pa_daemon_conf default_conf = {
 #endif
     .no_cpu_limit = true,
     .disable_shm = false,
+    .disable_memfd = false,
     .lock_memory = false,
     .deferred_volume = true,
     .default_n_fragments = 4,
@@ -526,6 +527,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
         { "cpu-limit",                  pa_config_parse_not_bool, &c->no_cpu_limit, NULL },
         { "disable-shm",                pa_config_parse_bool,     &c->disable_shm, NULL },
         { "enable-shm",                 pa_config_parse_not_bool, &c->disable_shm, NULL },
+        { "enable-memfd",               pa_config_parse_not_bool, &c->disable_memfd, NULL },
         { "flat-volumes",               pa_config_parse_bool,     &c->flat_volumes, NULL },
         { "lock-memory",                pa_config_parse_bool,     &c->lock_memory, NULL },
         { "enable-deferred-volume",     pa_config_parse_bool,     &c->deferred_volume, NULL },
@@ -617,7 +619,7 @@ int pa_daemon_conf_load(pa_daemon_conf *c, const char *filename) {
     ci.default_channel_map_set = ci.default_sample_spec_set = false;
     ci.conf = c;
 
-    r = f ? pa_config_parse(c->config_file, f, table, NULL, NULL) : 0;
+    r = f ? pa_config_parse(c->config_file, f, table, NULL, true, NULL) : 0;
 
     if (r >= 0) {
 
@@ -804,5 +806,5 @@ char *pa_daemon_conf_dump(pa_daemon_conf *c) {
 
     pa_xfree(log_target);
 
-    return pa_strbuf_tostring_free(s);
+    return pa_strbuf_to_string_free(s);
 }

@@ -143,6 +143,8 @@ static void add_profiles(struct userdata *u, pa_hashmap *h, pa_hashmap *ports) {
 
         cp = pa_card_profile_new(ap->name, ap->description, sizeof(struct profile_data));
         cp->priority = ap->priority;
+        cp->input_name = pa_xstrdup(ap->input_name);
+        cp->output_name = pa_xstrdup(ap->output_name);
 
         if (ap->output_mappings) {
             cp->n_sinks = pa_idxset_size(ap->output_mappings);
@@ -304,7 +306,7 @@ static void init_profile(struct userdata *u) {
             am->source = pa_alsa_source_new(u->module, u->modargs, __FILE__, u->card, am);
 }
 
-static void report_port_state(pa_device_port *p, struct userdata *u) {
+static pa_available_t calc_port_state(pa_device_port *p, struct userdata *u) {
     void *state;
     pa_alsa_jack *jack;
     pa_available_t pa = PA_AVAILABLE_UNKNOWN;
@@ -348,9 +350,13 @@ static void report_port_state(pa_device_port *p, struct userdata *u) {
           pa = cpa;
         }
     }
-
-    pa_device_port_set_available(p, pa);
+    return pa;
 }
+
+struct temp_port_avail {
+    pa_device_port *port;
+    pa_available_t avail;
+};
 
 static int report_jack_state(snd_mixer_elem_t *melem, unsigned int mask) {
     struct userdata *u = snd_mixer_elem_get_callback_private(melem);
@@ -359,9 +365,25 @@ static int report_jack_state(snd_mixer_elem_t *melem, unsigned int mask) {
     bool plugged_in;
     void *state;
     pa_alsa_jack *jack;
-    pa_device_port *port;
+    struct temp_port_avail *tp, *tports;
+    pa_card_profile *profile;
 
     pa_assert(u);
+
+    /* Changing the jack state may cause a port change, and a port change will
+     * make the sink or source change the mixer settings. If there are multiple
+     * users having pulseaudio running, the mixer changes done by inactive
+     * users may mess up the volume settings for the active users, because when
+     * the inactive users change the mixer settings, those changes are picked
+     * up by the active user's pulseaudio instance and the changes are
+     * interpreted as if the active user changed the settings manually e.g.
+     * with alsamixer. Even single-user systems suffer from this, because gdm
+     * runs its own pulseaudio instance.
+     *
+     * We rerun this function when being unsuspended to catch up on jack state
+     * changes */
+    if (u->card->suspend_cause & PA_SUSPEND_SESSION)
+        return 0;
 
     if (mask == SND_CTL_EVENT_MASK_REMOVE)
         return 0;
@@ -376,6 +398,8 @@ static int report_jack_state(snd_mixer_elem_t *melem, unsigned int mask) {
 
     pa_log_debug("Jack '%s' is now %s", pa_strnull(snd_hctl_elem_get_name(elem)), plugged_in ? "plugged in" : "unplugged");
 
+    tports = tp = pa_xnew0(struct temp_port_avail, pa_hashmap_size(u->jacks)+1);
+
     PA_HASHMAP_FOREACH(jack, u->jacks, state)
         if (jack->melem == melem) {
             pa_alsa_jack_set_plugged_in(jack, plugged_in);
@@ -388,9 +412,48 @@ static int report_jack_state(snd_mixer_elem_t *melem, unsigned int mask) {
 
             /* When not using UCM, we have to do the jack state -> port
              * availability mapping ourselves. */
-            pa_assert_se(port = jack->path->port);
-            report_port_state(port, u);
+            pa_assert_se(tp->port = jack->path->port);
+            tp->avail = calc_port_state(tp->port, u);
+            tp++;
         }
+
+    /* Report available ports before unavailable ones: in case port 1 becomes available when port 2 becomes unavailable,
+       this prevents an unnecessary switch port 1 -> port 3 -> port 2 */
+
+    for (tp = tports; tp->port; tp++)
+        if (tp->avail != PA_AVAILABLE_NO)
+           pa_device_port_set_available(tp->port, tp->avail);
+    for (tp = tports; tp->port; tp++)
+        if (tp->avail == PA_AVAILABLE_NO)
+           pa_device_port_set_available(tp->port, tp->avail);
+
+    /* Update profile availabilities. The logic could be improved; for now we
+     * only set obviously unavailable profiles (those that contain only
+     * unavailable ports) to PA_AVAILABLE_NO and all others to
+     * PA_AVAILABLE_UNKNOWN. */
+    PA_HASHMAP_FOREACH(profile, u->card->profiles, state) {
+        pa_device_port *port;
+        void *state2;
+        pa_available_t available = PA_AVAILABLE_NO;
+
+        /* Don't touch the "off" profile. */
+        if (profile->n_sources == 0 && profile->n_sinks == 0)
+            continue;
+
+        PA_HASHMAP_FOREACH(port, u->card->ports, state2) {
+            if (!pa_hashmap_get(port->profiles, profile->name))
+                continue;
+
+            if (port->available != PA_AVAILABLE_NO) {
+                available = PA_AVAILABLE_UNKNOWN;
+                break;
+            }
+        }
+
+        pa_card_profile_set_available(profile, available);
+    }
+
+    pa_xfree(tports);
     return 0;
 }
 
@@ -555,6 +618,20 @@ static void set_card_name(pa_card_new_data *data, pa_modargs *ma, const char *de
     pa_xfree(t);
 }
 
+static pa_hook_result_t card_suspend_changed(pa_core *c, pa_card *card, struct userdata *u) {
+    void *state;
+    pa_alsa_jack *jack;
+
+    if (card->suspend_cause == 0) {
+        /* We were unsuspended, update jack state in case it changed while we were suspended */
+        PA_HASHMAP_FOREACH(jack, u->jacks, state) {
+            report_jack_state(jack->melem, 0);
+        }
+    }
+
+    return PA_HOOK_OK;
+}
+
 static pa_hook_result_t sink_input_put_hook_callback(pa_core *c, pa_sink_input *sink_input, struct userdata *u) {
     const char *role;
     pa_sink *sink = sink_input->sink;
@@ -621,7 +698,7 @@ int pa__init(pa_module *m) {
     struct userdata *u;
     pa_reserve_wrapper *reserve = NULL;
     const char *description;
-    const char *profile = NULL;
+    const char *profile_str = NULL;
     char *fn = NULL;
     bool namereg_fail = false;
 
@@ -664,7 +741,18 @@ int pa__init(pa_module *m) {
         }
     }
 
-    pa_modargs_get_value_boolean(u->modargs, "use_ucm", &u->use_ucm);
+    if (pa_modargs_get_value_boolean(u->modargs, "use_ucm", &u->use_ucm) < 0) {
+        pa_log("Failed to parse use_ucm argument.");
+        goto fail;
+    }
+
+    /* Force ALSA to reread its configuration. This matters if our device
+     * was hot-plugged after ALSA has already read its configuration - see
+     * https://bugs.freedesktop.org/show_bug.cgi?id=54029
+     */
+
+    snd_config_update_free_global();
+
     if (u->use_ucm && !pa_alsa_ucm_query_profiles(&u->ucm, u->alsa_card_index)) {
         pa_log_info("Found UCM profiles");
 
@@ -749,9 +837,6 @@ int pa__init(pa_module *m) {
         goto fail;
     }
 
-    if ((profile = pa_modargs_get_value(u->modargs, "profile", NULL)))
-        pa_card_new_data_set_profile(&data, profile);
-
     u->card = pa_card_new(m->core, &data);
     pa_card_new_data_done(&data);
 
@@ -761,7 +846,30 @@ int pa__init(pa_module *m) {
     u->card->userdata = u;
     u->card->set_profile = card_set_profile;
 
+    pa_module_hook_connect(m, &m->core->hooks[PA_CORE_HOOK_CARD_SUSPEND_CHANGED], PA_HOOK_NORMAL,
+            (pa_hook_cb_t) card_suspend_changed, u);
+
     init_jacks(u);
+
+    pa_card_choose_initial_profile(u->card);
+
+    /* If the "profile" modarg is given, we have to override whatever the usual
+     * policy chose in pa_card_choose_initial_profile(). */
+    profile_str = pa_modargs_get_value(u->modargs, "profile", NULL);
+    if (profile_str) {
+        pa_card_profile *profile;
+
+        profile = pa_hashmap_get(u->card->profiles, profile_str);
+        if (!profile) {
+            pa_log("No such profile: %s", profile_str);
+            goto fail;
+        }
+
+        pa_card_set_profile(u->card, profile, false);
+    }
+
+    pa_card_put(u->card);
+
     init_profile(u);
     init_eld_ctls(u);
 

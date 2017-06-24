@@ -2,19 +2,17 @@ Source: pulseaudio-module-xrdp
 Section: sound
 Priority: optional
 Maintainer: Nobuyuki Nishizawa <nobuyuki@westmarsh.jp>
-# The following packages can be omitted for bootstrapping (DEB_BUILD_PROFILES=stage1):
-#  libbluetooth-dev
-Build-Depends: debhelper (>= 9),
-    cdbs (>= 0.4.93),
+Build-Depends: debhelper (>= 9.20141010),
     check,
     dh-autoreconf,
     dh-exec,
+    dpkg-dev (>= 1.17.14),
     intltool,
     libasound2-dev (>= 1.0.24) [linux-any],
     libasyncns-dev,
     libatomic-ops-dev,
     libavahi-client-dev,
-    libbluetooth-dev (>= 4.99) [linux-any],
+    libbluetooth-dev (>= 4.99) [linux-any] <!stage1>,
     libsbc-dev [linux-any],
     libcap-dev [linux-any],
     libfftw3-dev,
@@ -35,16 +33,15 @@ Build-Depends: debhelper (>= 9),
     libsystemd-dev [linux-any],
     libtdb-dev [!hurd-any],
     libudev-dev (>= 143) [linux-any],
-    libwebrtc-audio-processing-dev,
+    libwebrtc-audio-processing-dev (>= 0.2) [linux-any],
     libwrap0-dev,
     libx11-xcb-dev,
     libxcb1-dev (>= 1.6),
     libxtst-dev
-Standards-Version: 3.9.6
+Standards-Version: 3.9.8
 Vcs-Git: https://github.com/nnishiza/debian-pulseaudio-module-xrdp.git
 Vcs-Browser: https://github.com/nnishiza/debian-pulseaudio-module-xrdp
 Homepage: http://www.pulseaudio.org
-XS-Testsuite: autopkgtest
 
 Package: pulseaudio-module-xrdp
 Architecture: any
@@ -57,15 +54,3 @@ Description: xrdp module for PulseAudio sound server
  This module enables PulseAudio to connect to an xrdp server.
  .
  The modules are called module-xrdp-sink and module-xrdp-source.
-
-Package: pulseaudio-module-xrdp-dbg
-Architecture: any
-Priority: extra
-Section: debug
-Depends: ${misc:Depends}, pulseaudio-module-xrdp (= ${binary:Version})
-Description: XRDP module for PulseAudio sound server (debugging symbols)
- PulseAudio, previously known as Polypaudio, is a sound server for POSIX and
- WIN32 systems. It is a drop in replacement for the ESD sound server with
- much better latency, mixing/re-sampling quality and overall architecture.
- .
- This package contains debugging symbols for the PulseAudio xrdp modules.

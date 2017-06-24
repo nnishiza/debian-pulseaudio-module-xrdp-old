@@ -111,7 +111,10 @@ Create a PID file. If this options is disabled it is possible to run multiple so
 Do not install CPU load limiter on platforms that support it. By default, PulseAudio will terminate itself when it notices that it takes up too much CPU time. This is useful as a protection against system lockups when real-time scheduling is used (see below). Disabling this mechanism is useful when debugging PulseAudio with tools like \fBvalgrind(1)\f1 which slow down execution.
 .TP
 \fB--disable-shm\f1\fI[=BOOL]\f1
-PulseAudio clients and the server can exchange audio data via POSIX shared memory segments (on systems that support this). If disabled PulseAudio will communicate exclusively over sockets. Please note that data transfer via shared memory segments is always disabled when PulseAudio is running with \fB--system\f1 enabled (see above).
+PulseAudio clients and the server can exchange audio data via POSIX or memfd shared memory segments (on systems that support this). If disabled PulseAudio will communicate exclusively over sockets. Please note that data transfer via shared memory segments is always disabled when PulseAudio is running with \fB--system\f1 enabled (see above).
+.TP
+\fB--enable-memfd\f1\fI[=BOOL]\f1
+PulseAudio clients and the server can exchange audio data via memfds - the anonymous Linux Kernel shared memory mechanism (on kernels that support this). If disabled PulseAudio will communicate via POSIX shared memory.
 .TP
 \fB-L | --load\f1\fI="MODULE ARGUMENTS"\f1
 Load the specified plugin module with the specified arguments.
@@ -125,11 +128,11 @@ Open a command interpreter on STDIN/STDOUT after startup. This may be used to co
 \fB-n\f1
 Don't load default script file \fIdefault.pa\f1 (see below) on startup. Useful in conjunction with \fB-C\f1 or \fB--file\f1.
 .SH FILES
-\fI~/.config/pulse/daemon.conf\f1, \fI/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
+\fI~/.config/pulse/daemon.conf\f1, \fI/usr/local/etc/pulse/daemon.conf\f1: configuration settings for the PulseAudio daemon. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-daemon.conf(5)\f1 for more information.
 
-\fI~/.config/pulse/default.pa\f1, \fI/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
+\fI~/.config/pulse/default.pa\f1, \fI/usr/local/etc/pulse/default.pa\f1: the default configuration script to execute when the PulseAudio daemon is started. If the version in the user's home directory does not exist the global configuration script is loaded. See \fBdefault.pa(5)\f1 for more information.
 
-\fI~/.config/pulse/client.conf\f1, \fI/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
+\fI~/.config/pulse/client.conf\f1, \fI/usr/local/etc/pulse/client.conf\f1: configuration settings for PulseAudio client applications. If the version in the user's home directory does not exist the global configuration file is loaded. See \fBpulse-client.conf(5)\f1 for more information.
 .SH SIGNALS
 \fISIGINT, SIGTERM\f1: the PulseAudio daemon will shut down (Same as \fB--kill\f1).
 

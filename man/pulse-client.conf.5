@@ -4,10 +4,14 @@ pulse-client.conf \- PulseAudio client configuration file
 .SH SYNOPSIS
 \fB\fI~/.config/pulse/client.conf\fB
 
-\fI/etc/pulse/client.conf\fB
+\fI~/.config/pulse/client.conf.d/*.conf\fB
+
+\fI/usr/local/etc/pulse/client.conf\fB
+
+\fI/usr/local/etc/pulse/client.conf.d/*.conf\fB
 \f1
 .SH DESCRIPTION
-The PulseAudio client library reads configuration directives from a file \fI~/.config/pulse/client.conf\f1 on startup and when that file doesn't exist from \fI/etc/pulse/client.conf\f1.
+The PulseAudio client library reads configuration directives from a configuration file on startup. If the per-user file \fI~/.config/pulse/client.conf\f1 exists, it is used, otherwise the system configuration file \fI/usr/local/etc/pulse/client.conf\f1 is used. In addition to those main files, configuration directives can also be put in files under directories \fI~/.config/pulse/client.conf.d/\f1 and \fI/usr/local/etc/pulse/client.conf.d/\f1. Those files have to have the .conf file name extension, but otherwise the file names can be chosen freely. The files under client.conf.d are processed in alphabetical order. In case the same option is set in multiple files, the last file to set an option overrides earlier files. The main client.conf file is processed first, so options set in files under client.conf.d override the main file.
 
 The configuration file is a simple collection of variable declarations. If the configuration file parser encounters either ; or # it ignores the rest of the line until its end.
 
@@ -28,7 +32,9 @@ For the settings that take a boolean argument the values \fBtrue\f1, \fByes\f1, 
 .TP
 \fBcookie-file=\f1 Specify the path to the PulseAudio authentication cookie. Defaults to \fI~/.config/pulse/cookie\f1.
 .TP
-\fBenable-shm=\f1 Enable data transfer via POSIX shared memory. Takes a boolean argument, defaults to \fByes\f1.
+\fBenable-shm=\f1 Enable data transfer via POSIX or memfd shared memory. Takes a boolean argument, defaults to \fByes\f1. If set to \fBno\f1, communication with the server will be exclusively done through data-copy over sockets.
+.TP
+\fBenable-memfd=\f1. Enable data transfer via memfd shared memory. Takes a boolean argument, defaults to \fByes\f1.
 .TP
 \fBshm-size-bytes=\f1 Sets the shared memory segment size for clients, in bytes. If left unspecified or is set to 0 it will default to some system-specific default, usually 64 MiB. Please note that usually there is no need to change this value, unless you are running an OS kernel that does not do memory overcommit.
 .TP

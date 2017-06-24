@@ -1778,7 +1778,7 @@ static void pstream_die_callback(pa_pstream *p, void *userdata) {
 }
 
 /* Called from main context */
-static void pstream_packet_callback(pa_pstream *p, pa_packet *packet, const pa_cmsg_ancil_data *ancil_data, void *userdata) {
+static void pstream_packet_callback(pa_pstream *p, pa_packet *packet, pa_cmsg_ancil_data *ancil_data, void *userdata) {
     struct userdata *u = userdata;
 
     pa_assert(p);
@@ -1968,7 +1968,11 @@ int pa__init(pa_module*m) {
     u->counter = u->counter_delta = 0;
 
     u->rtpoll = pa_rtpoll_new();
-    pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll);
+
+    if (pa_thread_mq_init(&u->thread_mq, m->core->mainloop, u->rtpoll) < 0) {
+        pa_log("pa_thread_mq_init() failed.");
+        goto fail;
+    }
 
     if (pa_modargs_get_value_boolean(ma, "auto", &automatic) < 0) {
         pa_log("Failed to parse argument \"auto\".");
@@ -2200,8 +2204,6 @@ int pa__init(pa_module*m) {
     u->mcalign = pa_mcalign_new(pa_frame_size(&u->source->sample_spec));
 #endif
 
-    pa_xfree(dn);
-
     u->time_event = NULL;
 
     u->maxlength = (uint32_t) -1;
@@ -2221,6 +2223,8 @@ int pa__init(pa_module*m) {
 #else
     pa_source_put(u->source);
 #endif
+
+    pa_xfree(dn);
 
     if (server)
         pa_xfree(server);

@@ -298,9 +298,9 @@ pa_source* pa_source_new(
         s->active_port = pa_device_port_find_best(s->ports);
 
     if (s->active_port)
-        s->latency_offset = s->active_port->latency_offset;
+        s->port_latency_offset = s->active_port->latency_offset;
     else
-        s->latency_offset = 0;
+        s->port_latency_offset = 0;
 
     s->save_volume = data->save_volume;
     s->save_muted = data->save_muted;
@@ -330,7 +330,7 @@ pa_source* pa_source_new(
     pa_sw_cvolume_multiply(&s->thread_info.current_hw_volume, &s->soft_volume, &s->real_volume);
     s->thread_info.volume_change_safety_margin = core->deferred_volume_safety_margin_usec;
     s->thread_info.volume_change_extra_delay = core->deferred_volume_extra_delay_usec;
-    s->thread_info.latency_offset = s->latency_offset;
+    s->thread_info.port_latency_offset = s->port_latency_offset;
 
     /* FIXME: This should probably be moved to pa_source_put() */
     pa_assert_se(pa_idxset_put(core->sources, s, &s->index) >= 0);
@@ -612,11 +612,16 @@ void pa_source_unlink(pa_source *s) {
     bool linked;
     pa_source_output *o, PA_UNUSED *j = NULL;
 
-    pa_assert(s);
+    pa_source_assert_ref(s);
     pa_assert_ctl_context();
 
     /* See pa_sink_unlink() for a couple of comments how this function
      * works. */
+
+    if (s->unlink_requested)
+        return;
+
+    s->unlink_requested = true;
 
     linked = PA_SOURCE_IS_LINKED(s->state);
 
@@ -656,9 +661,7 @@ static void source_free(pa_object *o) {
     pa_assert(s);
     pa_assert_ctl_context();
     pa_assert(pa_source_refcnt(s) == 0);
-
-    if (PA_SOURCE_IS_LINKED(s->state))
-        pa_source_unlink(s);
+    pa_assert(!PA_SOURCE_IS_LINKED(s->state));
 
     pa_log_info("Freeing source %u \"%s\"", s->index, s->name);
 
@@ -1098,8 +1101,8 @@ pa_usec_t pa_source_get_latency(pa_source *s) {
 
     /* usec is unsigned, so check that the offset can be added to usec without
      * underflowing. */
-    if (-s->latency_offset <= (int64_t) usec)
-        usec += s->latency_offset;
+    if (-s->port_latency_offset <= (int64_t) usec)
+        usec += s->port_latency_offset;
     else
         usec = 0;
 
@@ -1132,8 +1135,8 @@ pa_usec_t pa_source_get_latency_within_thread(pa_source *s) {
 
     /* usec is unsigned, so check that the offset can be added to usec without
      * underflowing. */
-    if (-s->thread_info.latency_offset <= (int64_t) usec)
-        usec += s->thread_info.latency_offset;
+    if (-s->thread_info.port_latency_offset <= (int64_t) usec)
+        usec += s->thread_info.port_latency_offset;
     else
         usec = 0;
 
@@ -1573,7 +1576,7 @@ void pa_source_set_volume(
         bool send_msg,
         bool save) {
 
-    pa_cvolume new_reference_volume;
+    pa_cvolume new_reference_volume, root_real_volume;
     pa_source *root_source;
 
     pa_source_assert_ref(s);
@@ -1630,11 +1633,21 @@ void pa_source_set_volume(
         /* Ok, let's determine the new real volume */
         compute_real_volume(root_source);
 
-        /* Let's 'push' the reference volume if necessary */
-        pa_cvolume_merge(&new_reference_volume, &s->reference_volume, &root_source->real_volume);
-        /* If the source and its root don't have the same number of channels, we need to remap */
+        /* To propagate the reference volume from the filter to the root source,
+         * we first take the real volume from the root source and remap it to
+         * match the filter. Then, we merge in the reference volume from the
+         * filter on top of this, and remap it back to the root source channel
+         * count and map */
+        root_real_volume = root_source->real_volume;
+        /* First we remap root's real volume to filter channel count and map if needed */
+        if (s != root_source && !pa_channel_map_equal(&s->channel_map, &root_source->channel_map))
+            pa_cvolume_remap(&root_real_volume, &root_source->channel_map, &s->channel_map);
+        /* Then let's 'push' the reference volume if necessary */
+        pa_cvolume_merge(&new_reference_volume, &s->reference_volume, &root_real_volume);
+        /* If the source and its root don't have the same number of channels, we need to remap back */
         if (s != root_source && !pa_channel_map_equal(&s->channel_map, &root_source->channel_map))
             pa_cvolume_remap(&new_reference_volume, &s->channel_map, &root_source->channel_map);
+
         update_reference_volume(root_source, &new_reference_volume, &root_source->channel_map, save);
 
         /* Now that the reference volume is updated, we can update the streams'
@@ -1930,7 +1943,7 @@ unsigned pa_source_used_by(pa_source *s) {
 }
 
 /* Called from main thread */
-unsigned pa_source_check_suspend(pa_source *s) {
+unsigned pa_source_check_suspend(pa_source *s, pa_source_output *ignore) {
     unsigned ret;
     pa_source_output *o;
     uint32_t idx;
@@ -1945,6 +1958,9 @@ unsigned pa_source_check_suspend(pa_source *s) {
 
     PA_IDXSET_FOREACH(o, s->outputs, idx) {
         pa_source_output_state_t st;
+
+        if (o == ignore)
+            continue;
 
         st = pa_source_output_get_state(o);
 
@@ -2018,11 +2034,7 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
                 pa_hashmap_put(o->thread_info.direct_on_input->thread_info.direct_outputs, PA_UINT32_TO_PTR(o->index), o);
             }
 
-            pa_assert(!o->thread_info.attached);
-            o->thread_info.attached = true;
-
-            if (o->attach)
-                o->attach(o);
+            pa_source_output_attach(o);
 
             pa_source_output_set_state_within_thread(o, o->state);
 
@@ -2046,11 +2058,7 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
 
             pa_source_output_set_state_within_thread(o, o->state);
 
-            if (o->detach)
-                o->detach(o);
-
-            pa_assert(o->thread_info.attached);
-            o->thread_info.attached = false;
+            pa_source_output_detach(o);
 
             if (o->thread_info.direct_on_input) {
                 pa_hashmap_remove(o->thread_info.direct_on_input->thread_info.direct_outputs, PA_UINT32_TO_PTR(o->index));
@@ -2229,8 +2237,8 @@ int pa_source_process_msg(pa_msgobject *object, int code, void *userdata, int64_
             pa_source_get_mute(s, true);
             return 0;
 
-        case PA_SOURCE_MESSAGE_SET_LATENCY_OFFSET:
-            s->thread_info.latency_offset = offset;
+        case PA_SOURCE_MESSAGE_SET_PORT_LATENCY_OFFSET:
+            s->thread_info.port_latency_offset = offset;
             return 0;
 
         case PA_SOURCE_MESSAGE_MAX:
@@ -2273,8 +2281,7 @@ void pa_source_detach_within_thread(pa_source *s) {
     pa_assert(PA_SOURCE_IS_LINKED(s->thread_info.state));
 
     PA_HASHMAP_FOREACH(o, s->thread_info.outputs, state)
-        if (o->detach)
-            o->detach(o);
+        pa_source_output_detach(o);
 }
 
 /* Called from IO thread */
@@ -2287,8 +2294,7 @@ void pa_source_attach_within_thread(pa_source *s) {
     pa_assert(PA_SOURCE_IS_LINKED(s->thread_info.state));
 
     PA_HASHMAP_FOREACH(o, s->thread_info.outputs, state)
-        if (o->attach)
-            o->attach(o);
+        pa_source_output_attach(o);
 }
 
 /* Called from IO thread */
@@ -2557,15 +2563,15 @@ void pa_source_set_fixed_latency_within_thread(pa_source *s, pa_usec_t latency) 
 }
 
 /* Called from main thread */
-void pa_source_set_latency_offset(pa_source *s, int64_t offset) {
+void pa_source_set_port_latency_offset(pa_source *s, int64_t offset) {
     pa_source_assert_ref(s);
 
-    s->latency_offset = offset;
+    s->port_latency_offset = offset;
 
     if (PA_SOURCE_IS_LINKED(s->state))
-        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_LATENCY_OFFSET, NULL, offset, NULL) == 0);
+        pa_assert_se(pa_asyncmsgq_send(s->asyncmsgq, PA_MSGOBJECT(s), PA_SOURCE_MESSAGE_SET_PORT_LATENCY_OFFSET, NULL, offset, NULL) == 0);
     else
-        s->thread_info.latency_offset = offset;
+        s->thread_info.port_latency_offset = offset;
 }
 
 /* Called from main thread */
@@ -2623,6 +2629,8 @@ int pa_source_set_port(pa_source *s, const char *name, bool save) {
 
     s->active_port = port;
     s->save_port = save;
+
+    pa_source_set_port_latency_offset(s, s->active_port->latency_offset);
 
     pa_hook_fire(&s->core->hooks[PA_CORE_HOOK_SOURCE_PORT_CHANGED], s);
 
