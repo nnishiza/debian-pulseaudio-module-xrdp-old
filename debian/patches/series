@@ -1,0 +1,4 @@
+volume-test.patch
+alsa-mixer-Update-to-support-Arctis-Pro-Wireless-headset.patch
+alsa-mixer-Add-support-for-2018-Arctis-7.patch
+Don-t-compile-with-ffast-math.patch

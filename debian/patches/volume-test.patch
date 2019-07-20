@@ -1,0 +1,39 @@
+Description: Allow rounding without having to allow a random number of errors
+ in tests/volume-test.c
+Bug: https://gitlab.freedesktop.org/pulseaudio/pulseaudio/issues/559
+Origin: upstream, https://gitlab.freedesktop.org/pulseaudio/pulseaudio/merge_requests/7
+Bug-Debian: https://bugs.debian.org/906504
+Last-update: 2018-09-09
+Reviewed-by: Joseph Herlant <herlantj@gmail.com>
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+--- a/src/tests/volume-test.c
++++ b/src/tests/volume-test.c
+@@ -131,7 +131,11 @@
+             if (p1 < p && p - p1 > md)
+                 md = p - p1;
+ 
+-            if (p1 != p || p2 != p)
++            /* As the hardware, the compiler version and the compilation flags
++             * may sometimes generate rounding errors, we allow p1 and p2 to have
++             * a difference of + or - 1. Note that those are uint32_t, so unsigned.
++             */
++            if ((p > 0 && p1 < p-1) || p1 > p+1 || (p > 0 && p2 < p-1) || p2 > p+1)
+                 mdn++;
+         }
+     }
+@@ -139,13 +143,7 @@
+     pa_log("max deviation: %lu n=%lu", (unsigned long) md, (unsigned long) mdn);
+ 
+     fail_unless(md <= 1);
+-
+-    /* mdn counts the times there were rounding errors during the test. The
+-     * number of rounding errors seems to vary slightly depending on the
+-     * hardware. The original limit was 251 errors, but it was increased to 253
+-     * when the test was failing on Tanu's laptop.
+-     * See https://bugs.freedesktop.org/show_bug.cgi?id=72374 */
+-    fail_unless(mdn <= 253);
++    fail_unless(mdn <= 0);
+ }
+ END_TEST
+ 
