@@ -10,76 +10,43 @@ include /usr/share/dpkg/default.mk
 
 export AUTOPOINT=intltoolize --automake --copy
 
-# Needed for testsuite
-export XDG_RUNTIME_DIR = $(CURDIR)/debian/tmp/tmp/xdgruntimedir
-export CK_TIMEOUT_MULTIPLIER = 0
-
-# Libs should be in the multi-arch path, but the modules should be in the
-# normal directory as pulseaudio is foreign
-DEB_CONFIGURE_EXTRA_FLAGS = --enable-x11 --disable-hal-compat \
-  --libdir=\$${prefix}/lib/$(DEB_HOST_MULTIARCH) \
-  --with-module-dir=\$${prefix}/lib/pulse-$(DEB_VERSION_UPSTREAM)/modules \
-  --with-zsh-completion-dir=\$${datadir}/zsh/vendor-completions \
-  --with-bash-completion-dir=\$${datadir}/bash-completion/completions \
-  --with-systemduserunitdir=\$${prefix}/lib/systemd/user \
-  --disable-bluez4 \
-  --disable-esound \
-  --enable-gsettings \
-  --disable-gconf
-
-PA_MAJORMINOR = $(shell echo $(DEB_VERSION_UPSTREAM) | sed -r -e 's/^([0-9]+\.[0-9]+).*/\1/')
-
-ifeq ($(words $(sort $(filter stage1,$(DEB_BUILD_PROFILES)))),1)
-  DEB_CONFIGURE_EXTRA_FLAGS += --disable-bluez5
-endif
-
 %:
 	dh $@
 
 
 build:
-	(cd pulseaudio; quilt push -a)
+	dpkg-source -x $(CURDIR)/debian/pulseaudio_12.2-4+deb10u1.dsc
 	dh build
 
 clean:
 	dh clean
-	(cd pulseaudio; quilt pop -a)
+
+override_dh_testdir:
+	(cd pulseaudio-12.2; dh_testdir)
+	dh_testdir
+
+override_dh_update_autotools_config:
+	(cd pulseaudio-12.2; dh_update_autotools_config)
+	dh_update_autotools_config
+
+override_dh_autoreconf:
+	(cd pulseaudio-12.2; dh_autoreconf)
+	dh_autoreconf
 
 override_dh_auto_configure:
-	dh_auto_configure -- $(DEB_CONFIGURE_EXTRA_FLAGS)
+	(cd pulseaudio-12.2; debian/rules override_dh_auto_configure)
+	dh_auto_configure -- PULSE_DIR=$(CURDIR)/pulseaudio-12.2
 
 override_dh_auto_install:
 	dh_auto_install
-	find debian/tmp -name "*.la" -delete
-	install -d $(CURDIR)/debian/tmp/usr/share/apport/package-hooks
-	cp $(CURDIR)/debian/apport-hook.py $(CURDIR)/debian/tmp/usr/share/apport/package-hooks/source_pulseaudio.py
-ifeq ($(DEB_HOST_ARCH_OS),linux)
-	mkdir -p $(CURDIR)/debian/tmp/usr/share/alsa/alsa.conf.d
-	cp -a $(CURDIR)/debian/pulse.conf \
-		$(CURDIR)/debian/tmp/usr/share/alsa/alsa.conf.d
-	cp -a $(CURDIR)/debian/pulse-alsa.conf $(CURDIR)/debian/tmp/usr/share/alsa
-endif
-
-override_dh_makeshlibs:
-	sed 's/PA_MAJORMINOR/$(PA_MAJORMINOR)/' debian/shlibs.local.in > debian/shlibs.local
-	dh_makeshlibs --exclude=usr/lib/pulse-$(DEB_VERSION_UPSTREAM)/modules \
-		--exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pulseaudio
-
-override_dh_shlibdeps:
-	dh_shlibdeps --libpackage=pulseaudio
+	-rm $(CURDIR)/debian/pulseaudio-module-xrdp/usr/lib/pulse-*/modules/*.la
 
 override_dh_missing:
 	dh_missing --fail-missing
 
-override_dh_link:
-	dh_link
-ifeq ($(DEB_HOST_ARCH_OS),linux)
-	dh_link usr/lib/systemd/user/pulseaudio.socket usr/lib/systemd/user/sockets.target.wants/pulseaudio.socket
-endif
-
-override_dh_installdocs:
-	dh_installdocs -A NEWS README
-
 override_dh_clean:
+	#-(cd pulseaudio-12.2; dh clean)
+	rm -rf pulseaudio-12.2
+	rm -f pulseaudio_12.2.orig.tar.xz
 	dh_clean
 	rm -f debian/shlibs.local
