@@ -2,11 +2,15 @@
 
 DPKG_EXPORT_BUILDFLAGS = 1
 
-DEB_LDFLAGS_MAINT_APPEND = -Wl,--no-as-needed
+DEB_LDFLAGS_MAINT_APPEND = -Wl,--as-needed
 
 DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 include /usr/share/dpkg/default.mk
+
+PULSEAUDIO_DSC = $(CURDIR)/debian/pulseaudio_12.2-4+deb10u1.dsc
+PULSEAUDIO_DIR = $(CURDIR)/pulseaudio-12.2
+PULSEAUDIO_ORIG_TAR = $(CURDIR)/pulseaudio_12.2.orig.tar.xz
 
 export AUTOPOINT=intltoolize --automake --copy
 
@@ -22,31 +26,34 @@ clean:
 	dh clean
 
 override_dh_testdir:
-	(cd pulseaudio-12.2; dh_testdir)
+	(cd $(PULSEAUDIO_DIR); dh_testdir)
 	dh_testdir
 
 override_dh_update_autotools_config:
-	(cd pulseaudio-12.2; dh_update_autotools_config)
+	(cd $(PULSEAUDIO_DIR); dh_update_autotools_config)
 	dh_update_autotools_config
 
 override_dh_autoreconf:
-	(cd pulseaudio-12.2; dh_autoreconf)
+	(cd $(PULSEAUDIO_DIR); dh_autoreconf)
 	dh_autoreconf
 
 override_dh_auto_configure:
-	(cd pulseaudio-12.2; debian/rules override_dh_auto_configure)
-	dh_auto_configure -- PULSE_DIR=$(CURDIR)/pulseaudio-12.2
+	(cd $(PULSEAUDIO_DIR); debian/rules override_dh_auto_configure)
+	dh_auto_configure -- PULSE_DIR=$(PULSEAUDIO_DIR)
 
 override_dh_auto_install:
 	dh_auto_install
 	-rm $(CURDIR)/debian/pulseaudio-module-xrdp/usr/lib/pulse-*/modules/*.la
 
+override_dh_shlibdeps:
+	dh_shlibdeps --dpkg-shlibdeps-params=--ignore-missing-info
+
 override_dh_missing:
 	dh_missing --fail-missing
 
 override_dh_clean:
-	#-(cd pulseaudio-12.2; dh clean)
-	rm -rf pulseaudio-12.2
-	rm -f pulseaudio_12.2.orig.tar.xz
+	#-(cd $(PULSEAUDIO_DIR); dh clean)
 	dh_clean
+	rm -rf $(PULSEAUDIO_DIR)
+	rm -f $(PULSEAUDIO_ORIG_TAR)
 	rm -f debian/shlibs.local

@@ -35,7 +35,8 @@ Build-Depends: debhelper-compat (= 11),
     libwrap0-dev,
     libx11-xcb-dev,
     libxcb1-dev,
-    libxtst-dev
+    libxtst-dev,
+    pkg-config
 Standards-Version: 4.2.1
 Rules-Requires-Root: no
 Vcs-Git: https://github.com/nnishiza/debian-pulseaudio-module-xrdp.git

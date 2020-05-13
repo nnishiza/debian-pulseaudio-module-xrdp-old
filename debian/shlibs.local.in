@@ -1,2 +1,2 @@
-libpulsecommon PA_MAJORMINOR libpulse0 (= ${binary:Version})
-libpulsecore PA_MAJORMINOR pulseaudio (= ${binary:Version})
+libpulsecommon @PA_MAJORMINOR@ libpulse0 (>= @PA_MAJORMINOR@), libpulse0 (<< @PA_MAJORMINOR_PLUS_1@)
+libpulsecore @PA_MAJORMINOR@ pulseaudio (>= @PA_MAJORMINOR@), pulseaudio (<< @PA_MAJORMINOR_PLUS_1@)

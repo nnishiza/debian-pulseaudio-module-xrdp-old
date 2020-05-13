@@ -1,5 +1,5 @@
-pulseaudio-module-xrdp (0.4-1~wm1+12.2+4+deb10u1) unstable; urgency=medium
+pulseaudio-module-xrdp (0.4+20191121-1~wm1+12.2+4+deb10u1) unstable; urgency=medium
 
   * New upstream release
 
- -- Nobuyuki Nishizawa <nobuyuki@westmarsh.jp>  Sat, 22 Feb 2020 20:43:28 +0900
+ -- Nobuyuki Nishizawa <nobuyuki@westmarsh.jp>  Thu, 14 May 2020 06:04:43 +0900

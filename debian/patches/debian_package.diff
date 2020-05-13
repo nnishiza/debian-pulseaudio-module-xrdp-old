@@ -1,0 +1,41 @@
+--- a/src/Makefile.am
++++ b/src/Makefile.am
+@@ -5,7 +5,11 @@
+             $(XRDP_CFLAGS)
+ 
+ AM_LDFLAGS = -module \
+-             -avoid-version
++             -avoid-version \
++             -lpulsecommon-$(PA_MAJORMINOR) \
++             -lpulsecore-$(PA_MAJORMINOR) \
++             -L$(libdir)/pulseaudio \
++             -Wl,-rpath=$(libdir)/pulseaudio
+ 
+ modlibexec_LTLIBRARIES = module-xrdp-sink.la module-xrdp-source.la
+ 
+--- a/configure.ac
++++ b/configure.ac
+@@ -23,6 +23,7 @@
+ # get system's pulseaudio version
+ m4_define([pa_major], [`$PKG_CONFIG --modversion libpulse | cut -d. -f1`])
+ m4_define([pa_minor], [`$PKG_CONFIG --modversion libpulse | cut -d. -f2`])
++m4_define([pa_minor_plus_1], [`$PKG_CONFIG --modversion libpulse | cut -d. -f2 | xargs expr 1 +`])
+ # pulseaudio module/lib directory
+ PA_LIBDIR=`$PKG_CONFIG --variable=libdir libpulse`
+ PA_MODDIR=`$PKG_CONFIG --variable=modlibexecdir libpulse`
+@@ -31,6 +32,7 @@
+ AC_SUBST([PA_MAJOR], [pa_major])
+ AC_SUBST([PA_MINOR], [pa_minor])
+ AC_SUBST([PA_MAJORMINOR], [pa_major].[pa_minor])
++AC_SUBST([PA_MAJORMINOR_PLUS_1], [pa_major].[pa_minor_plus_1])
+ 
+ # Build shared libraries
+ LT_INIT([shared disable-static])
+@@ -80,5 +82,6 @@
+ AC_CHECK_FUNCS([memset socket])
+ 
+ AC_CONFIG_FILES([Makefile
+-                 src/Makefile])
++                 src/Makefile
++                 debian/shlibs.local])
+ AC_OUTPUT
